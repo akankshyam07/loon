@@ -5,6 +5,19 @@ If you come back after a break, read §0 and §8 first.
 
 ---
 
+## Status (2026-09-30)
+
+All five milestones (M1–M5, §8) are built and verified by `npm test` and `npm run selftest` (the real app, the real
+model, the real extension in Chrome for Testing, and a packaged-app run). Per-milestone details and leftovers:
+TODO-M1.md … TODO-M5.md. Deliberate deviations from this design:
+
+- **Voice:** ⌥⇧V press-to-talk with automatic end of turn instead of hold-to-talk. Hold-to-talk needs uiohook plus
+  Accessibility and Input Monitoring permissions.
+- **Wake word:** "Hey Loon" uses keyword spotting on Moonshine transcripts instead of openWakeWord.
+- **Unit prices:** a small table of exact conversion constants instead of js-quantities.
+- **Test model:** the local model during development was Llama 3 8B already on this Mac. First-run users get Qwen3.
+- **Before going public:** THIRD_PARTY.md has an open eSpeak NG (GPL) question to decide.
+
 ## 0. Decisions so far
 
 - Loon is **open source, free, and a showcase of how far open tools can go.** It needs no account, no API key, and no paid service, and it works offline after the first model download.

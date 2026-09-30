@@ -47,12 +47,14 @@ async function run(ctx) {
   const head = await cat(`(() => { const r = document.querySelector('#headShape').getBoundingClientRect(); return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) }; })()`);
   check('cat renders', head.x > 0 && head.y > 0, `head at ${head.x},${head.y}`);
 
-  mouse('mouseMove', head.x, head.y);
-  await wait(150);
-  check('hovering the cat captures clicks', lastIgnore === false);
+  // Start from a known state (the real pointer may be resting over the window), then hover.
   mouse('mouseMove', 3, 3);
   await wait(150);
-  check('empty space passes clicks through', lastIgnore === true);
+  lastIgnore = null;
+  mouse('mouseMove', head.x, head.y);
+  check('hovering the cat captures clicks', await waitFor(() => lastIgnore === false, 1500, 50), `last=${lastIgnore}`);
+  mouse('mouseMove', 3, 3);
+  check('empty space passes clicks through', await waitFor(() => lastIgnore === true, 1500, 50), `last=${lastIgnore}`);
 
   mouse('mouseDown', head.x, head.y);
   await wait(60);
@@ -214,6 +216,51 @@ async function run(ctx) {
     check('Focus mode: the cat naps and skips tricks', focused && (await cat('window.__loon.state')) !== 'move');
     setToggle('focus', false);
     await waitFor(async () => (await cat('window.__loon.pose')) === 'sit', 3000);
+
+    // ---- M5: voice, driven by audio files made with macOS `say` (the mic is never opened; playback is muted) ----
+    const { voice, voiceEngine } = ctx;
+    if (voiceEngine.modelsReady()) {
+      const { execFileSync } = require('child_process');
+      const spoken = (text) => {
+        const file = path.join(tmp, `${text.replace(/\W+/g, '-')}.wav`);
+        execFileSync('say', ['-o', file, '--data-format=LEF32@16000', text]);
+        return require('sherpa-onnx-node').readWave(file, false).samples; // Electron's V8 sandbox forbids external buffers
+      };
+      const sayCalls = [];
+      const savedSay = ctx.hooks.say;
+      ctx.hooks.say = async (t) => { sayCalls.push(t); };
+      await voiceEngine.loadTts();
+      const played = () => cat('window.__loon.played');
+      try {
+        executed.length = 0;
+        const heard = voiceEngine.transcribe(spoken('Remind me to call mom at five.'));
+        voice.handleTranscript(heard);
+        const confirmShown = await waitFor(() => bubble(`Boolean(document.querySelector('.confirm'))`), 5000);
+        const promptSpoken = await waitFor(async () => (await played()) > 0 || sayCalls.length > 0, 30000);
+        check('voice: a spoken reminder becomes a confirm card and Loon reads it back', confirmShown && promptSpoken && Boolean(voice.pendingConfirm), `${heard} · card ${confirmShown} · spoken ${promptSpoken} · pending ${Boolean(voice.pendingConfirm)}`);
+        voice.handleTranscript(voiceEngine.transcribe(spoken('Yes.')));
+        await waitFor(() => executed.length > 0, 5000);
+        check('voice: saying "yes" runs it (stubbed) with no model call', executed[0]?.title === 'call mom' && new Date(executed[0].when).getHours() === 17);
+        await bubble('window.loon.closeBubble()');
+
+        const before = await played();
+        voice.handleTranscript(voiceEngine.transcribe(spoken('What is the capital of France?')));
+        await waitFor(() => bubble(`Boolean([...document.querySelectorAll('.tier')].pop())`), 120000, 250);
+        const answered = await bubble(`[...document.querySelectorAll('.a')].pop()?.textContent || ''`);
+        const replied = await waitFor(async () => (await played()) > before, 30000);
+        check('voice: an open question is answered in the bubble and spoken with Kokoro', /Paris/i.test(answered) && replied, answered.slice(0, 60));
+        await bubble('window.loon.closeBubble()');
+
+        voice.handleTranscript(voiceEngine.transcribe(spoken('Turn on focus mode.')));
+        check('voice: "turn on focus mode" flips the toggle', await waitFor(async () => (await cat('window.__loon.focus')) === true, 3000));
+        setToggle('focus', false);
+      } finally {
+        ctx.hooks.say = savedSay;
+        voice.stopSpeaking();
+      }
+    } else {
+      console.log('SKIP  voice checks (voice models not downloaded)');
+    }
 
     ipcMain.emit('open-settings');
     const settingsWin = await (async () => {

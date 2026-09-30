@@ -21,8 +21,24 @@ done. Free, open source, and private by default: everything runs on your Mac, wi
 - **Privacy.** On bank, password and health pages the cat covers its eyes and reads nothing (unless you click
   "Look anyway"). Card numbers, API keys and passwords are removed before anything is processed.
 - **Use a plan you already have.** "Ask in Claude / ChatGPT / Gemini" copies the question and opens the official app.
+- **Personal assistant.** "Remind me to call mom at 5", "add dentist Friday 3pm", "open Spotify", "find my resume"
+  become confirm cards (nothing happens until you click ✓), with an action log. Notes are plain markdown in
+  ~/Documents/Loon, "What have I found?" summarizes them, and "Quiz me" makes fill-in-the-blank cards.
+- **Memory you control.** Say "remember that I'm vegetarian" and menu picks respect it. Edit or delete memories in
+  Settings; Privacy mode turns memory off.
+- **Voice.** Press **⌥⇧V** and talk; Loon listens until you pause, answers in the bubble, and reads the first sentences
+  aloud. Everyday commands ("remind me…", "summarize this page", "which one is cheapest?") never touch the language
+  model. Say "yes" to confirm, "stop" to interrupt. An optional "Hey Loon" wake word is in Settings (off by default).
+- **Modes.** Focus (the cat naps; no pop-ups), Privacy, and Judgmental (sass about prices and heavy food).
 
-## Install (developer preview)
+## Install
+
+### From the .dmg
+
+`npm run dist` builds `dist/Loon-<version>-arm64.dmg`. It isn't signed (signing needs a paid Apple developer
+account), so the first time: drag Loon to Applications, then right-click it → **Open** → **Open**.
+
+### From source (developer preview)
 
 Requirements: macOS on Apple Silicon, Node 20+, Google Chrome.
 
@@ -51,6 +67,7 @@ The extension only talks to the Loon app on your own computer (127.0.0.1), and o
 |---|---|
 | ⌥Space | Ask Loon, or help with text selected in any app (needs Accessibility permission) |
 | ⌥⇧S | Explain a screenshot region (needs Screen Recording permission) |
+| ⌥⇧V | Talk to Loon (needs Microphone permission; speech models download once, ~240 MB) |
 | Esc | Close the bubble |
 
 ## How it stays fast, free and private
@@ -62,8 +79,9 @@ and the research behind it.
 
 ## Open-source parts
 
-Electron · llama.cpp via node-llama-cpp · Qwen3 · Bergamot (Firefox Translations) · WordNet · Harper · Tesseract ·
-Defuddle · quicktype · franc · linkedom · ws. Each keeps its own license.
+Electron · llama.cpp via node-llama-cpp · Qwen3 · sherpa-onnx · Moonshine · Silero VAD · Kokoro · Bergamot (Firefox
+Translations) · WordNet · Harper · Tesseract · Defuddle · quicktype · chrono · franc · linkedom · ws.
+See [THIRD_PARTY.md](THIRD_PARTY.md) for licenses, including a note about eSpeak NG (GPL) to resolve before a public release.
 
 ## Tests
 

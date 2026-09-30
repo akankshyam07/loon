@@ -404,6 +404,15 @@ window.loon.onBubbleSensitive(({ id }) => {
   }
   renderContext({ ...context, mode: 'sensitive', sensitive: true, chips: [] });
 });
+// Voice turns arrive as text and take exactly the typed path, so the bubble shows what Loon heard.
+window.loon.onBubbleAsk(({ text }) => { if (!current) ask(text); });
+window.loon.onCancelConfirm(({ id }) => {
+  const card = log.querySelector('.confirm');
+  if (!card) return;
+  card.replaceWith(Object.assign(document.createElement('div'), { className: 'note', textContent: 'Cancelled. Nothing was changed.' }));
+  if (current?.id === id) current = null;
+  autosize();
+});
 window.loon.onBubbleRun(({ task }) => {
   const known = context.chips.find((c) => c.id === task);
   runChip(task, known?.label || task);

@@ -27,6 +27,18 @@ function extractWhen(text, now = new Date()) {
 
 const tidy = (s) => s.replace(/^[\s,:-]+|[\s,.!?]+$/g, '');
 
+// Speech-to-text writes numbers as words ("at five thirty", "in twenty minutes"); chrono needs digits.
+const UNITS_WORDS = { zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19 };
+const TENS_WORDS = { twenty: 20, thirty: 30, forty: 40, fifty: 50 };
+const NUMBER = new RegExp(`\\b(?:(${Object.keys(TENS_WORDS).join('|')})(?:[-\\s](${Object.keys(UNITS_WORDS).slice(1, 10).join('|')}))?|(${Object.keys(UNITS_WORDS).join('|')}))\\b`, 'gi');
+function normalizeSpoken(text) {
+  let out = text.replace(/\bo'?clock\b/gi, '').replace(/[.!?]+$/, '');
+  out = out.replace(NUMBER, (m, tens, unit, single) => String(tens ? TENS_WORDS[tens.toLowerCase()] + (unit ? UNITS_WORDS[unit.toLowerCase()] : 0) : UNITS_WORDS[single.toLowerCase()]));
+  // "at 5 30" → "at 5:30"
+  out = out.replace(/\b(at|by|until)\s+(\d{1,2})\s+(\d{2})\b/gi, (m, prep, h, mm) => `${prep} ${h}:${mm}`);
+  return out.replace(/\s{2,}/g, ' ').trim();
+}
+
 function parseCommand(input, now = new Date()) {
   const text = input.trim();
   let m;
@@ -70,4 +82,4 @@ function describe(command) {
   }
 }
 
-module.exports = { parseCommand, extractWhen, describe };
+module.exports = { parseCommand, extractWhen, describe, normalizeSpoken };

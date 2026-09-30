@@ -4,7 +4,7 @@ const { TASKS, SELECTION_CHIPS, pageChipsFor, handoffPrompt } = require('../brai
 const { keySentences } = require('../brain/textrank');
 const { classifySelection } = require('../extension/lib/classify');
 const { selectionPacket, pagePacket } = require('./context');
-const { parseCommand, describe } = require('../brain/commands');
+const { parseCommand, describe, normalizeSpoken } = require('../brain/commands');
 
 const HANDOFF_URLS = {
   claude: 'https://claude.ai/new',
@@ -155,7 +155,8 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
   // Commands ("remind me…", "open…") are parsed without a model and shown as a confirm card.
   // Local, append-only or read-only actions (notes, file search) run straight away.
   async function command(id, question, bubble) {
-    const parsed = parseCommand(question);
+    // normalizeSpoken: voice transcripts say "at five"; typed text is unaffected unless it spells numbers out.
+    const parsed = parseCommand(normalizeSpoken(question));
     if (!parsed) return false;
     if (parsed.action === 'note' || parsed.action === 'find') {
       bubble('action-done', { id, ...(await actions.execute(parsed)) });

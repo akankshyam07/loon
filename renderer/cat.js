@@ -54,7 +54,7 @@
   // T = targets, S = smoothed values that chase T, M = tweened move offsets, FX = short-lived micro motion.
   const T = { headRot: 0, headX: 0, headY: 0, earL: 0, earR: 0, lookX: 0, lookY: 0, pupil: 1, lidL: 0.08, lidR: 0.08, angL: 0, angR: 0, lowL: 0, lowR: 0, happy: 0, bodySy: 1, glow: 0 };
   const S = { ...T };
-  const M = { catX: 0, catY: 0, catSx: 1, catSy: 1, bodyRot: 0 };
+  const M = { catX: 0, catY: 0, catSx: 1, catSy: 1, catRot: 0, bodyRot: 0 };
   const FX = { blink: 0, twitchL: 0, twitchR: 0 };
   const SPEED = { lookX: 16, lookY: 16, pupil: 10, lidL: 14, lidR: 14, happy: 12 };
 
@@ -191,7 +191,7 @@
     const headY = S.headY - breath * (napping ? 1.2 : 0.6);
     const sway = Math.sin((now / tailStyle.period) * Math.PI * 2) * tailStyle.amp;
 
-    P.cat.setAttribute('transform', tf(M.catX, M.catY, 0, M.catSx, M.catSy, 110, 250));
+    P.cat.setAttribute('transform', tf(M.catX, M.catY, M.catRot, M.catSx, M.catSy, 110, M.catRot ? 150 : 250));
     P.body.setAttribute('transform', tf(0, 0, M.bodyRot, 1, bodySy, 110, 239));
     P.collar.setAttribute('transform', `translate(${(S.headX * 0.4).toFixed(2)} ${(headY * 0.9).toFixed(2)})`);
     const headTf = tf(S.headX, headY, S.headRot, 1, 1, 110, 126);
@@ -466,15 +466,85 @@
     }
   }
 
-  const MOVES = { moonMagic, pounce, edgePeek };
+  // Stretch + yawn: long and low, eyes shut, mouth open, then a satisfied shake.
+  async function stretch() {
+    setPose('crouch');
+    await Promise.all([tween(M, 'catSx', 1.14, 500), tween(M, 'catSy', 0.84, 500)]);
+    setMood('asleep');
+    moodTilt = -6;
+    setMouth('open');
+    await wait(900);
+    setMouth('smile');
+    setPose('sit');
+    await Promise.all([tween(M, 'catSx', 1, 300, easeOutBack), tween(M, 'catSy', 1, 300, easeOutBack)]);
+    for (let i = 0; i < 3; i++) await tween(M, 'bodyRot', i % 2 ? -3 : 3, 90);
+    await tween(M, 'bodyRot', 0, 90);
+    setMood('happy');
+    await wait(700);
+  }
+
+  // Tail chase: two spins, then acts like nothing happened.
+  async function tailChase() {
+    setMood('focused');
+    lookOverride = { x: 5, y: 2 };
+    tailStyle = { amp: 14, period: 400 };
+    await tween(M, 'catRot', 720, 1600, easeInOut);
+    M.catRot = 0;
+    tailStyle = IDLE_TAIL;
+    lookOverride = { x: -5, y: -1 };
+    setMood('judgy');
+    await wait(1200);
+  }
+
+  // Knock it off: a tiny cup appears on the ledge, Loon holds eye contact, then swats it away.
+  async function knockItOff() {
+    const cup = document.createElement('div');
+    cup.className = 'cup';
+    cup.innerHTML = '<svg viewBox="0 0 20 22"><path d="M3 5h12v10a5 5 0 0 1-5 5H8a5 5 0 0 1-5-5z" fill="#eef1f4" stroke="#8e949c" stroke-width="1.2"/><path d="M15 8h2a2.5 2.5 0 0 1 0 5h-2" fill="none" stroke="#8e949c" stroke-width="1.2"/><path d="M6 1.5c0 1.5 1.5 1.5 1.5 3M10 1.5c0 1.5 1.5 1.5 1.5 3" fill="none" stroke="#b9dcaa" stroke-width="1"/></svg>';
+    const spot = toStage(200, 226);
+    Object.assign(cup.style, { left: `${spot.x}px`, top: `${spot.y}px` });
+    fxLayer.appendChild(cup);
+    lookOverride = { x: 5, y: 3 };
+    setMood('curious');
+    await wait(700);
+    lookOverride = { x: 0, y: 0 }; // stares at you
+    setMood('judgy');
+    await wait(1100);
+    setPose('pawsUp');
+    await wait(160);
+    cup.classList.add('knocked');
+    setPose('sit');
+    setMood('happy');
+    await wait(900);
+    cup.remove();
+  }
+
+  // Zoomies: a burst of fast hops back and forth, then an instant, innocent sit.
+  async function zoomies() {
+    setMood('wide');
+    tailStyle = { amp: 12, period: 500 };
+    for (const dx of [90, -150, 120, -60]) {
+      tween(M, 'catSy', 1.06, 100);
+      await window.loon.animateWindow({ dx, duration: 230, arc: 18 });
+      await Promise.all([tween(M, 'catSy', 0.9, 60), tween(M, 'catSx', 1.06, 60)]);
+      await Promise.all([tween(M, 'catSy', 1, 90), tween(M, 'catSx', 1, 90)]);
+    }
+    tailStyle = IDLE_TAIL;
+    setMood('neutral');
+    await blink();
+    await wait(600);
+  }
+
+  const MOVES = { moonMagic, pounce, edgePeek, stretch, tailChase, knockItOff, zoomies };
   async function doMove(name) {
     if (state !== 'idle' || bubbleOpen || dragging || privacy || focusMode) return;
-    if (name === 'random') name = Object.keys(MOVES)[Math.floor(Math.random() * 3)];
+    if (name === 'random') name = Object.keys(MOVES)[Math.floor(Math.random() * Object.keys(MOVES).length)];
     state = 'move';
     try {
       await (MOVES[name] || hopAround)();
     } finally {
       M.catY = 0;
+      M.catRot = 0;
       M.bodyRot = 0;
       lookOverride = null;
       moodTilt = 0;
@@ -698,6 +768,83 @@
     }
   });
 
+  // ---------- voice: mic capture, playback, and the listening/speaking looks ----------
+  const micBadge = $('#mic');
+  let mic = null; // { stream, context, node }
+  let audioContext = null;
+  let playing = new Set();
+  let playedCount = 0;
+
+  async function startMic() {
+    if (mic) return;
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 } });
+    const context = new AudioContext({ sampleRate: 16000 }); // Chromium resamples the mic for us
+    await context.audioWorklet.addModule('mic-worklet.js');
+    const node = new AudioWorkletNode(context, 'loon-mic');
+    node.port.onmessage = (e) => window.loon.micChunk(e.data);
+    context.createMediaStreamSource(stream).connect(node);
+    mic = { stream, context, node };
+  }
+  function stopMic() {
+    if (!mic) return;
+    mic.stream.getTracks().forEach((t) => t.stop());
+    mic.context.close();
+    mic = null;
+  }
+  window.loon.onMic(async ({ on }) => {
+    try {
+      if (on) await startMic();
+      else stopMic();
+    } catch (err) {
+      console.error('[mic]', err);
+      window.loon.micError(err.message);
+    }
+  });
+
+  // TTS plays here (not in main) so Chromium's echo cancellation can subtract it from the mic.
+  window.loon.onPlay(async ({ id, samples, sampleRate, muted }) => {
+    audioContext ??= new AudioContext();
+    const buffer = audioContext.createBuffer(1, samples.length, sampleRate);
+    buffer.copyToChannel(Float32Array.from(samples), 0);
+    const source = audioContext.createBufferSource();
+    source.buffer = buffer;
+    const gain = audioContext.createGain();
+    gain.gain.value = muted ? 0 : 1; // the selftest plays real audio silently
+    source.connect(gain).connect(audioContext.destination);
+    playing.add(source);
+    const finish = () => { playing.delete(source); playedCount++; window.loon.audioPlayed(id); };
+    source.onended = finish;
+    source.start();
+  });
+  window.loon.onStopAudio(() => {
+    for (const source of playing) { source.onended = null; try { source.stop(); } catch { /* already stopped */ } }
+    playing.clear();
+  });
+
+  let voiceFlap = null;
+  window.loon.onVoice(({ state: voiceState }) => {
+    clearInterval(voiceFlap);
+    micBadge.hidden = voiceState !== 'listening' && voiceState !== 'wake';
+    micBadge.classList.toggle('passive', voiceState === 'wake'); // mic open for "Hey Loon", not yet in a turn
+    if (voiceState === 'listening') {
+      if (state === 'napping') wakeUp();
+      const p = toStage(160, 18);
+      Object.assign(micBadge.style, { left: `${p.x}px`, top: `${p.y}px` });
+      setMood('curious');
+      T.earL = T.earR = -10; // ears up while listening
+      lookOverride = { x: 0, y: 1 };
+    } else if (voiceState === 'speaking') {
+      voiceFlap = setInterval(() => setMouth(Math.random() < 0.55 ? 'open' : 'smile'), 140);
+    } else if (voiceState === 'wake') {
+      const p = toStage(160, 18);
+      Object.assign(micBadge.style, { left: `${p.x}px`, top: `${p.y}px` });
+    } else if (voiceState === 'idle' && state === 'idle') {
+      setMouth('smile');
+      lookOverride = null;
+      setMood(bubbleOpen ? 'curious' : 'neutral');
+    }
+  });
+
   // ---------- debug hook (used by `--cmd=<json>` screenshots and the "Do a trick" menu item) ----------
   window.loon.onDebug((cmd) => {
     if (cmd.pose) setPose(cmd.pose);
@@ -714,6 +861,7 @@
   window.__loon = {
     get state() { return state; }, get pose() { return pose; }, get mood() { return mood; },
     get privacy() { return privacy; }, get nudge() { return !nudgeButton.hidden; }, get focus() { return focusMode; },
+    get listening() { return !micBadge.hidden; }, get played() { return playedCount; },
   };
 
   setPose('sit');

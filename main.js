@@ -1,4 +1,4 @@
-const { app, BrowserWindow, screen, ipcMain, globalShortcut, Menu, powerMonitor, clipboard, shell, nativeImage, systemPreferences } = require('electron');
+const { app, BrowserWindow, screen, ipcMain, globalShortcut, Menu, powerMonitor, clipboard, shell, nativeImage, systemPreferences, session } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const { Brain } = require('./brain/ai');
@@ -11,6 +11,7 @@ const capture = require('./main/capture');
 const { Actions } = require('./main/actions');
 const { Notes } = require('./brain/notes');
 const { Memory } = require('./brain/memory');
+const { VoiceEngine, createVoiceController } = require('./main/voice');
 
 // Cat height in px per size preset; the window adds room around it for sparkles and hops.
 const SIZES = { S: 120, M: 160, L: 210 };
@@ -22,9 +23,10 @@ const EDGE_MARGIN = 12;
 
 const arg = (name) => process.argv.find((a) => a.startsWith(`--${name}=`))?.split('=').slice(1).join('=');
 const DEMO = process.argv.includes('--demo') || process.env.LOON_DEMO === '1';
+const SELFTEST = process.argv.includes('--selftest');
 
 let settingsFile;
-let settings = { size: 'M', focus: false, privacy: false, judgmental: true };
+let settings = { size: 'M', focus: false, privacy: false, judgmental: true, wakeWord: false, speakReplies: 'voiceOnly' };
 let catWin;
 let bubbleWin;
 let brain;
@@ -38,8 +40,14 @@ let actions;
 let notes;
 let memory;
 let settingsWin = null;
+let voice;
+let voiceEngine;
+const pendingPlays = new Map();
+const toBubbleRef = { current: null };
+let playId = 0;
 // Swappable side effects so the selftest never opens a real browser tab or touches the clipboard.
 const hooks = {
+  say: (text) => new Promise((resolve) => require('child_process').execFile('say', [text], () => resolve())),
   openExternal: (url) => shell.openExternal(url),
   clipboard: (text, imagePath) => (imagePath ? clipboard.write({ text, image: nativeImage.createFromPath(imagePath) }) : clipboard.writeText(text)),
 };
@@ -207,6 +215,30 @@ async function onAskHotkey() {
   openAskBubble();
 }
 
+// One-time voice model download, with progress shown in the bubble.
+async function setUpVoice() {
+  companion.showNotice('Downloading the speech models (open source, ~240 MB). You can keep using Loon meanwhile.');
+  showBubble();
+  try {
+    await voiceEngine.downloadModels((p) => bubbleWin.webContents.send('bubble-context', { ...companion.context(), notice: `Downloading the speech models… ${Math.round(p * 100)}%` }));
+    companion.showNotice('Voice is ready. Press ⌥⇧V and talk. Loon listens until you pause.');
+  } catch (err) {
+    companion.showNotice(`Voice download failed: ${err.message}. Try again from the cat's menu.`);
+  }
+  bubbleWin.webContents.send('bubble-context', companion.context());
+}
+
+async function onVoiceHotkey() {
+  if (process.platform === 'darwin' && systemPreferences.getMediaAccessStatus('microphone') !== 'granted') {
+    const granted = await systemPreferences.askForMediaAccess('microphone');
+    if (!granted) {
+      companion.showNotice('Loon needs microphone access for voice: System Settings → Privacy & Security → Microphone.');
+      return showBubble();
+    }
+  }
+  voice.start('hotkey');
+}
+
 // ⌥⇧S: macOS's region picker → OCR on this Mac → the usual chips.
 async function onScreenshotHotkey() {
   const file = await capture.screenshotRegion();
@@ -274,6 +306,8 @@ function setToggle(key, value) {
   settings[key] = value;
   saveSettings();
   if (key === 'focus') catWin.webContents.send('focus', { on: value });
+  // "Hey Loon" pauses in Focus and Privacy modes and resumes after.
+  if (['wakeWord', 'focus', 'privacy'].includes(key)) voice.setWake(settings.wakeWord && !settings.focus && !settings.privacy);
   settingsWin?.webContents.send('settings-changed', settingsSnapshot());
 }
 
@@ -306,6 +340,9 @@ function showCatMenu() {
   Menu.buildFromTemplate([
     { label: 'Ask Loon…', accelerator: 'Alt+Space', click: openAskBubble },
     { label: 'Explain a screenshot…', accelerator: 'Alt+Shift+S', click: onScreenshotHotkey },
+    voiceEngine.modelsReady()
+      ? { label: voice.listening ? 'Stop listening' : 'Talk to Loon', accelerator: 'Alt+Shift+V', click: () => voice.start('menu') }
+      : { label: 'Set up voice (download ~240 MB)…', click: setUpVoice },
     { label: 'Do a trick', click: () => catWin.webContents.send('debug', { move: 'random' }) },
     {
       label: bridge.clients.size ? 'Browser connected ✓' : `Pair browser… code ${settings.pairingCode} (click to copy)`,
@@ -316,6 +353,7 @@ function showCatMenu() {
     { label: 'Focus mode', type: 'checkbox', checked: settings.focus, click: (item) => setToggle('focus', item.checked) },
     { label: 'Privacy mode', type: 'checkbox', checked: settings.privacy, click: (item) => setToggle('privacy', item.checked) },
     { label: 'Judgmental', type: 'checkbox', checked: settings.judgmental, click: (item) => setToggle('judgmental', item.checked) },
+    { label: '"Hey Loon" wake word', type: 'checkbox', checked: settings.wakeWord, enabled: voiceEngine.modelsReady(), click: (item) => setToggle('wakeWord', item.checked) },
     { label: 'Settings…', click: openSettings },
     { type: 'separator' },
     ...Object.keys(SIZES).map((size) => ({
@@ -366,9 +404,11 @@ function registerIpc() {
 
   // Bubble ↔ companion. Every answer streams back as ask-chunk / ask-done / ask-error.
   const toBubble = (type, payload) => {
+    voice.observe(type, payload);
     const channel = { chunk: 'ask-chunk', done: 'ask-done', error: 'ask-error', context: 'bubble-context', sensitive: 'bubble-sensitive', confirm: 'bubble-confirm', 'action-done': 'bubble-action' }[type];
     bubbleWin.webContents.send(channel, payload);
   };
+  toBubbleRef.current = toBubble;
   ipcMain.on('ask', (_e, { id, text }) => companion.run({ id, question: text }, toBubble));
   ipcMain.on('run-task', (_e, { id, task, deeper }) => companion.run({ id, task, deeper }, toBubble));
   ipcMain.on('ask-cancel', () => companion.cancel());
@@ -388,7 +428,8 @@ function registerIpc() {
   ipcMain.on('reveal', (_e, file) => { if (typeof file === 'string' && path.isAbsolute(file) && fs.existsSync(file)) shell.showItemInFolder(file); });
   ipcMain.handle('settings-get', () => settingsSnapshot());
   ipcMain.handle('settings-set', (_e, { key, value }) => {
-    if (['focus', 'privacy', 'judgmental'].includes(key)) setToggle(key, Boolean(value));
+    if (['focus', 'privacy', 'judgmental', 'wakeWord'].includes(key)) setToggle(key, Boolean(value));
+    if (key === 'speakReplies') { settings.speakReplies = value ? 'voiceOnly' : 'never'; saveSettings(); }
     return settingsSnapshot();
   });
   ipcMain.handle('memory-update', (_e, { id, text }) => { memory.update(id, text); return settingsSnapshot(); });
@@ -397,6 +438,13 @@ function registerIpc() {
   ipcMain.on('open-notes-folder', () => { fs.mkdirSync(notes.dir, { recursive: true }); shell.openPath(notes.dir); });
   ipcMain.on('copy-pairing-code', () => clipboard.writeText(settings.pairingCode));
   ipcMain.on('open-settings', openSettings);
+  ipcMain.on('mic-chunk', (_e, samples) => voice.onChunk(Float32Array.from(samples)));
+  ipcMain.on('mic-error', (_e, message) => {
+    voice.stop();
+    companion.showNotice(`I couldn't open the microphone (${message}).`);
+    showBubble();
+  });
+  ipcMain.on('audio-played', (_e, id) => { pendingPlays.get(id)?.(); pendingPlays.delete(id); });
   ipcMain.on('nudge-click', () => companion.onNudgeClick());
   ipcMain.on('nudge-ignored', (_e, kind) => companion.onNudgeIgnored(kind));
 }
@@ -468,6 +516,53 @@ app.whenReady().then(() => {
     },
   });
   // A malformed message must never surface as a modal error dialog in the main process.
+  voiceEngine = new VoiceEngine(path.join(app.getPath('userData'), 'voice'));
+  voice = createVoiceController({
+    engine: voiceEngine,
+    session: companion.session,
+    settings,
+    setToggle,
+    ui: {
+      cat: (channel, payload) => catWin.webContents.send(channel, payload),
+      mic: (on) => catWin.webContents.send('mic', { on }),
+      micAllowed: () => !SELFTEST,
+      transcript: () => {},
+      showNotice: (notice) => { companion.showNotice(notice); showBubble(); },
+      ask: (text) => {
+        if (!bubbleWin.isVisible()) openAskBubble();
+        setTimeout(() => bubbleWin.webContents.send('bubble-ask', { text }), bubbleWin.isVisible() ? 0 : 250);
+      },
+      runTask: (task, text) => {
+        if (text) {
+          companion.fromCapture({ text, app: 'voice' });
+          showBubble();
+        } else if (!bubbleWin.isVisible()) {
+          openAskBubble();
+        }
+        setTimeout(() => bubbleWin.webContents.send('bubble-run', { task }), 300);
+      },
+      confirm: ({ id, command }) => companion.confirm(command, toBubbleRef.current, id),
+      cancelConfirm: (id) => bubbleWin.webContents.send('bubble-cancel-confirm', { id }),
+      play: ({ samples, sampleRate }) => new Promise((resolve) => {
+        const id = ++playId;
+        pendingPlays.set(id, resolve);
+        catWin.webContents.send('play-audio', { id, samples, sampleRate, muted: SELFTEST });
+        setTimeout(() => { if (pendingPlays.delete(id)) resolve(); }, (samples.length / sampleRate) * 1000 + 2000);
+      }),
+      stopAudio: () => {
+        catWin.webContents.send('stop-audio');
+        for (const resolve of pendingPlays.values()) resolve();
+        pendingPlays.clear();
+      },
+      sayFallback: (text) => hooks.say(text),
+    },
+  });
+  // Let only the cat window use the microphone; everything else is denied.
+  session.defaultSession.setPermissionRequestHandler((wc, permission, callback) => callback(permission === 'media' && wc === catWin?.webContents));
+  session.defaultSession.setPermissionCheckHandler((wc, permission) => permission === 'media' && wc === catWin?.webContents);
+
+  if (settings.wakeWord) setTimeout(() => voice.setWake(!settings.focus && !settings.privacy), 3000);
+
   bridge.on('message', (message) => {
     try {
       companion.onBridgeMessage(message);
@@ -482,7 +577,7 @@ app.whenReady().then(() => {
   scheduleScreenshot();
   if (process.argv.includes('--selftest')) {
     catWin.webContents.once('did-finish-load', async () => {
-      const ok = await require('./test/selftest').run({ catWin, bubbleWin, bridge, companion, resolver, hooks, settings, openScreenshot, actions, notes, memory, setToggle }).catch((err) => { console.error(err); return false; });
+      const ok = await require('./test/selftest').run({ catWin, bubbleWin, bridge, companion, resolver, hooks, settings, openScreenshot, actions, notes, memory, setToggle, voice, voiceEngine }).catch((err) => { console.error(err); return false; });
       app.exit(ok ? 0 : 1);
     });
   }
@@ -494,6 +589,7 @@ app.whenReady().then(() => {
   powerMonitor.on('resume', () => setPaused(false));
   if (!globalShortcut.register('Alt+Space', onAskHotkey)) console.warn('Loon: ⌥Space is taken by another app; open the bubble by clicking the cat.');
   if (!globalShortcut.register('Alt+Shift+S', onScreenshotHotkey)) console.warn('Loon: ⌥⇧S is taken by another app.');
+  if (!globalShortcut.register('Alt+Shift+V', onVoiceHotkey)) console.warn('Loon: ⌥⇧V is taken by another app.');
 });
 
 app.on('will-quit', () => {

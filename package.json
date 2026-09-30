@@ -7,10 +7,12 @@
     "start": "electron .",
     "demo": "electron . --demo",
     "selftest": "electron . --selftest --keep-bubble",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "dist": "electron-builder --mac dmg --arm64 --publish never"
   },
   "devDependencies": {
     "electron": "^44.5.0",
+    "electron-builder": "^26.15.3",
     "playwright-core": "^1.63.0"
   },
   "dependencies": {
@@ -29,5 +31,61 @@
     "ws": "^8.22.0"
   },
   "description": "A free, open-source AI black cat that lives on your desktop.",
-  "license": "MIT"
+  "license": "MIT",
+  "build": {
+    "appId": "dev.loon.desktop",
+    "productName": "Loon",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "main/**",
+      "brain/**",
+      "renderer/**",
+      "extension/**",
+      "test/selftest.js",
+      "package.json",
+      "!node_modules/onnxruntime-node/bin/napi-v3/{linux,win32}/**",
+      "!**/*.map"
+    ],
+    "extraResources": [
+      {
+        "from": "extension",
+        "to": "extension"
+      }
+    ],
+    "asarUnpack": [
+      "node_modules/node-llama-cpp/**",
+      "node_modules/@node-llama-cpp/**",
+      "node_modules/sherpa-onnx-node/**",
+      "node_modules/sherpa-onnx-darwin-arm64/**",
+      "node_modules/onnxruntime-node/**",
+      "node_modules/@browsermt/**",
+      "brain/translator-host.mjs"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "identity": null,
+      "hardenedRuntime": false,
+      "extendInfo": {
+        "LSUIElement": true,
+        "NSMicrophoneUsageDescription": "Loon listens only while you talk to it (after \u2325\u21e7V or the optional \"Hey Loon\"). Audio is processed on this Mac and never saved.",
+        "NSAppleEventsUsageDescription": "Loon adds reminders and calendar events only after you confirm them.",
+        "NSScreenCaptureUsageDescription": "Loon reads the screen region you pick with \u2325\u21e7S."
+      }
+    },
+    "dmg": {
+      "title": "Loon"
+    }
+  }
 }

@@ -1,7 +1,7 @@
 const $ = (id) => document.getElementById(id);
 
 function render(s) {
-  for (const box of document.querySelectorAll('[data-key]')) box.checked = Boolean(s[box.dataset.key]);
+  for (const box of document.querySelectorAll('[data-key]')) box.checked = box.dataset.key === 'speakReplies' ? s.speakReplies !== 'never' : Boolean(s[box.dataset.key]);
   $('browser').textContent = s.connected ? 'Connected to Chrome ✓' : 'Not connected. Load the extension, then paste the pairing code into its popup.';
   const { code = 0, cache = 0, local = 0 } = s.counts?.tiers || {};
   $('counts').textContent = `${code + cache} answers were instant (no model), ${local} used the model on your Mac.`;
