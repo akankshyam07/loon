@@ -1,0 +1,95 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#stage { position: relative; width: 100%; height: 100%; }
+
+#catBox {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  /* width/height set by cat.js; clip only the bottom edge so the cat can duck behind it */
+  clip-path: inset(-200% -200% 0 -200%);
+}
+#catBox svg { display: block; width: 100%; height: 100%; overflow: visible; }
+#cat { cursor: pointer; }
+#whiskers { pointer-events: none; }
+
+#fx { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+
+.sparkle {
+  position: absolute;
+  width: var(--size, 14px);
+  height: var(--size, 14px);
+  margin: calc(var(--size, 14px) / -2) 0 0 calc(var(--size, 14px) / -2);
+  animation: sparkle var(--dur, 1s) ease-out forwards;
+}
+.sparkle svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 0 3px rgba(233, 255, 217, 0.9)); }
+@keyframes sparkle {
+  0% { transform: translate(0, 0) scale(0.3) rotate(0deg); opacity: 0; }
+  15% { transform: translate(calc(var(--dx, 0) * 0.2), calc(var(--dy, -40px) * 0.2)) scale(1) rotate(20deg); opacity: 1; }
+  65% { opacity: 1; }
+  100% { transform: translate(var(--dx, 0), var(--dy, -40px)) scale(0.7) rotate(90deg); opacity: 0; }
+}
+
+.zzz {
+  position: absolute;
+  font: 700 var(--size, 14px)/1 ui-rounded, 'SF Pro Rounded', system-ui, sans-serif;
+  color: #dfe9d9;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  animation: zzz 2.4s ease-out forwards;
+}
+@keyframes zzz {
+  0% { transform: translate(0, 0) scale(0.6); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translate(18px, -38px) scale(1.1); opacity: 0; }
+}
+
+#thought {
+  z-index: 3;
+  position: absolute;
+  display: flex;
+  gap: 4px;
+  padding: 5px 8px;
+  border-radius: 12px;
+  background: #fbfaf5;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  transform: translate(-50%, -100%);
+}
+#thought[hidden] { display: none; }
+#thought span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #6f9a66;
+  animation: dot 1s ease-in-out infinite;
+}
+#thought span:nth-child(2) { animation-delay: 0.15s; }
+#thought span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes dot {
+  0%, 100% { transform: translateY(0); opacity: 0.5; }
+  50% { transform: translateY(-3px); opacity: 1; }
+}
+
+#fish {
+  position: absolute;
+  width: 40px;
+  height: 27px;
+  cursor: pointer;
+  animation: bob 1.6s ease-in-out infinite;
+  transition: left 0.45s ease-in, top 0.45s ease-in, transform 0.45s ease-in, opacity 0.45s;
+}
+#fish[hidden] { display: none; }
+#fish svg { width: 100%; height: 100%; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.4)); }
+#fish.eaten { animation: none; transform: scale(0.2); opacity: 0; }
+@keyframes bob {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -6px; }
+}
