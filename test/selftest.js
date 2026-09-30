@@ -13,7 +13,8 @@ async function waitFor(fn, timeoutMs, stepMs = 100) {
   return false;
 }
 
-async function run({ catWin, bubbleWin }) {
+async function run(ctx) {
+  const { catWin, bubbleWin } = ctx;
   const results = [];
   const check = (name, ok, detail = '') => {
     results.push({ name, ok });
@@ -35,6 +36,13 @@ async function run({ catWin, bubbleWin }) {
   ipcMain.on('drag-end', () => { dragEnded = true; });
 
   await waitFor(() => cat('Boolean(window.__loon)'), 5000);
+  if (process.argv.includes('--browser-only')) {
+    console.log('— browser companion —');
+    await require('./selftest-browser').run(ctx, check);
+    const failedEarly = results.filter((r) => !r.ok).length;
+    console.log(`\n${results.length - failedEarly}/${results.length} checks passed`);
+    return failedEarly === 0;
+  }
   await wait(800); // let the first layout and mouse state settle
   const head = await cat(`(() => { const r = document.querySelector('#headShape').getBoundingClientRect(); return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) }; })()`);
   check('cat renders', head.x > 0 && head.y > 0, `head at ${head.x},${head.y}`);
@@ -127,6 +135,10 @@ async function run({ catWin, bubbleWin }) {
   check('weekly counters show in the footer', /instant/.test(counts) && /on-device/.test(counts), counts);
 
   catWin.setBounds(homeBounds);
+  if (!process.argv.includes('--no-browser')) {
+    console.log('\n— browser companion —');
+    await require('./selftest-browser').run(ctx, check);
+  }
   const failed = results.filter((r) => !r.ok).length;
   console.log(`\n${results.length - failed}/${results.length} checks passed`);
   return failed === 0;

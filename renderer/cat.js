@@ -18,6 +18,7 @@
   const fxLayer = $('#fx');
   const thought = $('#thought');
   const fish = $('#fish');
+  const nudgeButton = $('#nudge');
 
   catBox.innerHTML = await window.loon.getCatSvg();
   const part = (id) => catBox.querySelector(`#${id}`);
@@ -67,6 +68,7 @@
   let gaze = { x: 0, y: 0, rot: 0 }; // from the cursor
   let lookOverride = null; // {x, y} forces where the eyes point
   let bubbleOpen = false;
+  let privacy = false; // a private page is in front: paws over the eyes, no tricks
   let dragging = false;
   const IDLE_TAIL = { amp: 3, period: 4200 };
   let tailStyle = IDLE_TAIL;
@@ -465,7 +467,7 @@
 
   const MOVES = { moonMagic, pounce, edgePeek };
   async function doMove(name) {
-    if (state !== 'idle' || bubbleOpen || dragging) return;
+    if (state !== 'idle' || bubbleOpen || dragging || privacy) return;
     if (name === 'random') name = Object.keys(MOVES)[Math.floor(Math.random() * 3)];
     state = 'move';
     try {
@@ -486,7 +488,7 @@
   })();
   (function scheduleRoam() {
     later(async () => {
-      if (state === 'idle' && !bubbleOpen && !dragging) {
+      if (state === 'idle' && !bubbleOpen && !dragging && !privacy) {
         state = 'move';
         try { await hopAround(); } finally { if (state === 'move') state = 'idle'; }
       }
@@ -609,6 +611,68 @@
     }
   });
 
+  // ---------- browser companion ----------
+  window.loon.onPrivacy(({ on }) => {
+    if (on === privacy) return;
+    privacy = on;
+    if (state === 'napping') return;
+    setPose(on ? 'pawsUp' : 'sit');
+    setMood(on ? 'protective' : 'neutral');
+    if (on) hideNudge(false);
+  });
+
+  // Ears perk, eyes go to the selection, and a far-away selection is worth a hop (DESIGN.md §3.2).
+  window.loon.onSelection(async ({ anchor }) => {
+    if (state !== 'idle' || privacy || !anchor) return;
+    const { win } = await window.loon.windowInfo();
+    const dx = anchor.x + anchor.w / 2 - (win.x + win.width / 2);
+    const dy = anchor.y - win.y;
+    setMood('curious');
+    lookOverride = { x: Math.sign(dx) * 5.5, y: dy < 0 ? -3.5 : 2 };
+    if (Math.abs(dx) > 260) {
+      state = 'move';
+      try {
+        await Promise.all([tween(M, 'catSy', 0.92, 90), tween(M, 'catSx', 1.05, 90)]);
+        tween(M, 'catSy', 1.04, 150);
+        tween(M, 'catSx', 0.97, 150);
+        await window.loon.animateWindow({ dx: Math.sign(dx) * Math.min(300, Math.abs(dx) - 200), duration: 420, arc: 30 });
+        await squash();
+      } finally {
+        if (state === 'move') state = 'idle';
+      }
+    }
+    setTimeout(() => {
+      if (state !== 'idle') return;
+      lookOverride = bubbleOpen ? { x: -4.5, y: -3.5 } : null;
+      setMood(bubbleOpen ? 'curious' : 'neutral');
+    }, 2500);
+  });
+
+  let nudgeTimer = null;
+  let nudgeKind = null;
+  function hideNudge(ignored) {
+    clearTimeout(nudgeTimer);
+    if (nudgeButton.hidden) return;
+    nudgeButton.hidden = true;
+    T.glow = 0;
+    if (ignored) window.loon.nudgeIgnored(nudgeKind);
+  }
+  window.loon.onNudge(({ kind }) => {
+    if (privacy || state !== 'idle' || bubbleOpen) return;
+    nudgeKind = kind;
+    const p = toStage(160, 22);
+    Object.assign(nudgeButton.style, { left: `${p.x}px`, top: `${p.y}px` });
+    nudgeButton.hidden = false;
+    T.glow = 0.7;
+    setMood('curious');
+    setTimeout(() => { if (mood === 'curious' && state === 'idle' && !bubbleOpen) setMood('neutral'); }, 1500);
+    nudgeTimer = setTimeout(() => hideNudge(true), 8000);
+  });
+  nudgeButton.addEventListener('click', () => {
+    hideNudge(false);
+    window.loon.nudgeClick();
+  });
+
   // ---------- debug hook (used by `--cmd=<json>` screenshots and the "Do a trick" menu item) ----------
   window.loon.onDebug((cmd) => {
     if (cmd.pose) setPose(cmd.pose);
@@ -622,7 +686,10 @@
   });
 
   // read-only view for test/selftest.js
-  window.__loon = { get state() { return state; }, get pose() { return pose; }, get mood() { return mood; } };
+  window.__loon = {
+    get state() { return state; }, get pose() { return pose; }, get mood() { return mood; },
+    get privacy() { return privacy; }, get nudge() { return !nudgeButton.hidden; },
+  };
 
   setPose('sit');
   setMood('neutral');

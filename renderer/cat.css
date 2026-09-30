@@ -93,3 +93,24 @@ html, body {
   0%, 100% { translate: 0 0; }
   50% { translate: 0 -6px; }
 }
+
+#nudge {
+  position: absolute;
+  z-index: 3;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 50%;
+  background: #fbfaf5;
+  color: #4f7a47;
+  font: 800 15px/26px ui-rounded, 'SF Pro Rounded', system-ui, sans-serif;
+  box-shadow: 0 0 0 2px #9cc48f, 0 2px 8px rgba(0, 0, 0, 0.3);
+  transform: translate(-50%, -100%);
+  cursor: pointer;
+  animation: nudge 1.4s ease-in-out infinite;
+}
+#nudge[hidden] { display: none; }
+@keyframes nudge {
+  0%, 100% { translate: 0 0; box-shadow: 0 0 0 2px #9cc48f, 0 2px 8px rgba(0, 0, 0, 0.3); }
+  50% { translate: 0 -4px; box-shadow: 0 0 0 4px rgba(156, 196, 143, 0.6), 0 2px 8px rgba(0, 0, 0, 0.3); }
+}

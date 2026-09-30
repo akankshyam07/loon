@@ -13,6 +13,14 @@
       <button id="close" title="Close (Esc)" aria-label="Close">×</button>
     </header>
 
+    <div id="source" hidden><span id="sourceLabel"></span><span id="redacted"></span></div>
+    <div id="chips" role="toolbar" aria-label="What should I do?"></div>
+
+    <section id="sensitive" hidden>
+      <p>🔒 Private page. I looked away and didn't read anything.</p>
+      <button id="lookAnyway" class="secondary">Look anyway, just this once</button>
+    </section>
+
     <section id="setup" hidden>
       <p id="setupText"></p>
       <button id="download" class="primary"></button>

@@ -10,10 +10,22 @@
     "test": "node --test test/*.test.js"
   },
   "devDependencies": {
-    "electron": "^44.5.0"
+    "electron": "^44.5.0",
+    "playwright-core": "^1.63.0"
   },
   "dependencies": {
-    "node-llama-cpp": "^3.22.1"
+    "@browsermt/bergamot-translator": "^0.4.9",
+    "chrono-node": "^2.10.1",
+    "defuddle": "^0.19.4",
+    "franc-min": "^6.2.0",
+    "harper.js": "^2.10.0",
+    "js-quantities": "^1.8.0",
+    "linkedom": "^0.18.13",
+    "node-llama-cpp": "^3.22.1",
+    "quicktype-core": "^26.0.0",
+    "tesseract.js": "^7.0.0",
+    "wordpos": "^2.1.0",
+    "ws": "^8.22.0"
   },
   "description": "A free, open-source AI black cat that lives on your desktop.",
   "license": "MIT"

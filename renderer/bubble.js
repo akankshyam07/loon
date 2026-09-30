@@ -8,6 +8,9 @@ const setup = $('setup');
 
 let current = null; // { id, el, raw }
 let nextId = 1;
+let context = { mode: 'ask', chips: [] };
+let lastTask = null;
+let focused = true; // false while showing chips beside a selection without taking focus
 
 const escapeHtml = (s) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
@@ -33,8 +36,8 @@ function formatCounts(counts) {
   return `this week: ${code + cache} instant · ${local} on-device`;
 }
 
-function tierLabel({ tier, model }) {
-  if (tier === 'code') return '⚡ instant · no model needed';
+function tierLabel({ tier, model, detail }) {
+  if (tier === 'code') return `⚡ instant · ${detail || 'no model needed'}`;
   if (tier === 'cache') return '⚡ instant · remembered answer';
   return `🐾 on your Mac · ${model}`;
 }
@@ -62,11 +65,86 @@ async function refreshStatus() {
     $('setupText').textContent = `I need my brain first: ${name}, about ${sizeGb} GB. It downloads once, then I run fully offline on your Mac. No account, no key.`;
     $('download').textContent = `Download ${name}`;
     $('download').disabled = Boolean(status.downloading);
-  } else {
+  } else if (focused) {
     input.focus();
   }
   autosize();
 }
+
+function renderContext(next) {
+  context = next || context;
+  $('source').hidden = !context.label;
+  $('sourceLabel').textContent = context.label || '';
+  $('redacted').textContent = context.redactions ? `· ${context.redactions} private item${context.redactions > 1 ? 's' : ''} hidden` : '';
+  $('sensitive').hidden = !context.sensitive;
+  input.placeholder = context.placeholder || 'Ask me anything…';
+  $('chips').replaceChildren(...(context.chips || []).map(({ id, label }) => {
+    const b = document.createElement('button');
+    b.className = 'chip';
+    b.dataset.task = id;
+    b.textContent = label;
+    b.addEventListener('click', () => runChip(id, label));
+    return b;
+  }));
+  $('context').textContent = { selection: 'used: your selection', page: 'used: this page', sensitive: 'used: nothing' }[context.mode] || 'used: what you typed';
+}
+
+function startAnswer(questionText) {
+  const q = document.createElement('div');
+  q.className = 'q';
+  q.textContent = questionText;
+  const a = document.createElement('div');
+  a.className = 'a';
+  a.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>';
+  log.append(q, a);
+  current = { id: nextId++, el: a, raw: '' };
+  autosize();
+  log.scrollTop = log.scrollHeight;
+  return current.id;
+}
+
+function runChip(task, label, deeper = false) {
+  if (current) return;
+  lastTask = task;
+  const id = startAnswer(deeper ? `${label} (deeper)` : label);
+  window.loon.runTask(id, task, deeper);
+}
+
+async function handoff(app) {
+  try {
+    const { name } = await window.loon.handoff({ app, task: lastTask });
+    const note = document.createElement('div');
+    note.className = 'note';
+    note.textContent = `Copied. Paste it into ${name} with ⌘V.`;
+    log.append(note);
+    log.scrollTop = log.scrollHeight;
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+function answerActions({ canGoDeeper }) {
+  const row = document.createElement('div');
+  row.className = 'actions';
+  const add = (label, onClick) => {
+    const b = document.createElement('button');
+    b.textContent = label;
+    b.addEventListener('click', onClick);
+    row.append(b);
+  };
+  if (canGoDeeper && lastTask) add('Go deeper', () => runChip(lastTask, context.chips.find((c) => c.id === lastTask)?.label || 'Answer', true));
+  const label = document.createElement('span');
+  label.textContent = 'Ask in:';
+  row.append(label);
+  add('Claude', () => handoff('claude'));
+  add('ChatGPT', () => handoff('chatgpt'));
+  add('Gemini', () => handoff('gemini'));
+  return row;
+}
+
+$('lookAnyway').addEventListener('click', () => window.loon.lookAnyway());
+// Chips can show without focus (so the browser keeps its selection); typing needs focus.
+input.addEventListener('mousedown', () => { if (!focused) { focused = true; window.loon.focusBubble(); } });
 
 $('download').addEventListener('click', async () => {
   $('download').disabled = true;
@@ -88,18 +166,11 @@ window.loon.onDownloadProgress(({ downloaded, total }) => {
 });
 
 function ask(text) {
-  const q = document.createElement('div');
-  q.className = 'q';
-  q.textContent = text;
-  const a = document.createElement('div');
-  a.className = 'a';
-  a.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>';
-  log.append(q, a);
-  current = { id: nextId++, el: a, raw: '' };
-  window.loon.ask(current.id, text);
+  lastTask = null;
+  const id = startAnswer(text);
+  window.loon.ask(id, text);
   input.value = '';
   autosize();
-  log.scrollTop = log.scrollHeight;
 }
 
 $('askForm').addEventListener('submit', (e) => {
@@ -128,11 +199,11 @@ window.loon.onAskDone(({ id, text, ...meta }) => {
   const badge = document.createElement('span');
   badge.className = 'tier';
   badge.textContent = tierLabel(meta);
-  current.el.appendChild(badge);
+  current.el.append(badge, answerActions(meta));
   $('counts').textContent = formatCounts(meta.counts);
   current = null;
   autosize();
-  input.focus();
+  if (focused) input.focus();
 });
 window.loon.onAskError(({ id, message }) => {
   if (current?.id !== id) return;
@@ -142,7 +213,27 @@ window.loon.onAskError(({ id, message }) => {
   autosize();
 });
 
-window.loon.onBubbleShown(refreshStatus);
+window.loon.onBubbleShown(({ context: next, focus } = {}) => {
+  focused = focus !== false;
+  log.replaceChildren();
+  current = null;
+  lastTask = null;
+  renderContext(next);
+  refreshStatus();
+});
+window.loon.onBubbleContext(renderContext);
+window.loon.onBubbleSensitive(({ id }) => {
+  if (current?.id === id) {
+    current.el.textContent = '';
+    current = null;
+    autosize();
+  }
+  renderContext({ ...context, mode: 'sensitive', sensitive: true, chips: [] });
+});
+window.loon.onBubbleRun(({ task }) => {
+  const known = context.chips.find((c) => c.id === task);
+  runChip(task, known?.label || task);
+});
 window.loon.onBubbleHidden(() => {
   log.replaceChildren();
   current = null;

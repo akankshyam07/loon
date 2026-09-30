@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "Loon",
+  "version": "0.2.0",
+  "description": "Connects your browser to Loon, the black cat on your desktop. Only what you select or ask about is shared, and only with the Loon app on this computer.",
+  "minimum_chrome_version": "116",
+  "permissions": ["storage", "contextMenus"],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["lib/classify.js", "lib/page-kind.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": { "default_popup": "popup.html", "default_title": "Loon" },
+  "icons": { "128": "icons/loon-128.png" }
+}

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  body { width: 260px; margin: 0; padding: 14px; font: 13px/1.4 -apple-system, system-ui, sans-serif; color: #1c1a1f; background: #fbfaf5; }
+  h1 { font-size: 14px; margin: 0 0 6px; display: flex; align-items: center; gap: 6px; }
+  h1 i { width: 9px; height: 9px; border-radius: 50%; background: #9b3b3b; display: inline-block; }
+  h1 i.on { background: #8fdc5a; box-shadow: 0 0 0 2px #1d3616; }
+  p { margin: 0 0 10px; color: #7a7580; }
+  form { display: flex; gap: 6px; }
+  input { flex: 1; font: 600 14px ui-monospace, Menlo, monospace; letter-spacing: 2px; text-transform: uppercase; padding: 6px 8px; border: 1px solid #e7e3da; border-radius: 8px; }
+  button { border: 0; border-radius: 8px; padding: 6px 10px; background: #1c1a1f; color: #fbfaf5; font-weight: 600; cursor: pointer; }
+</style>
+</head>
+<body>
+  <h1><i id="dot"></i><span id="state">Loon</span></h1>
+  <p id="help">Right-click the cat → “Pair browser…” to see your code, then enter it here.</p>
+  <form id="form">
+    <input id="code" maxlength="6" placeholder="ABC234" aria-label="Pairing code" autocomplete="off" />
+    <button type="submit">Pair</button>
+  </form>
+  <script src="popup.js"></script>
+</body>
+</html>
