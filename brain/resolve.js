@@ -2,7 +2,7 @@
 // Tiers per task: code (templates, WordNet, offline translator, TextRank) → cache (exact match) → local LLM.
 const fs = require('fs');
 const { ResponseCache } = require('./cache');
-const { TASKS, MAX_CONTEXT_CHARS, buildPrompt } = require('./tasks');
+const { TASKS, MAX_CONTEXT_CHARS, buildPrompt, memoryGroup } = require('./tasks');
 const { define } = require('./define');
 const { keySentences, trimForModel } = require('./textrank');
 const { languageName } = require('./translate');
@@ -86,8 +86,11 @@ function createMoodParser(onText) {
 const EMPTY_TIERS = () => ({ code: 0, cache: 0, local: 0 });
 
 class Resolver {
-  constructor({ brain, cacheFile, countsFile, translator = null, skills = null }) {
+  constructor({ brain, cacheFile, countsFile, translator = null, skills = null, memory = null, notes = null, settings = {} }) {
     this.brain = brain;
+    this.memory = memory;
+    this.notes = notes;
+    this.settings = settings;
     this.translator = translator;
     this.skills = skills;
     this.cache = new ResponseCache(cacheFile);
@@ -123,6 +126,9 @@ class Resolver {
     const task = TASKS[taskId];
     if (!task) throw new Error(`Unknown task: ${taskId}`);
     const tiers = task.tiers || [];
+    // Privacy mode (§3.15): no memory in prompts, no cache reads or writes.
+    const privacy = Boolean(this.settings.privacy);
+    const memory = privacy || !this.memory ? [] : this.memory.forGroup(memoryGroup(taskId));
     let prefix = '';
 
     if (taskId === 'ask' && !packet.text) {
@@ -166,7 +172,7 @@ class Resolver {
     // M3 code tiers: shopping, reviews, basket, food, known errors, DTOs, grammar.
     if (!deeper && !question && this.skills) {
       for (const tier of tiers.filter((t) => !['define', 'translate', 'keypoints'].includes(t))) {
-        const result = await this.skills.run(tier, taskId, packet);
+        const result = await this.skills.run(tier, taskId, packet, { memory, judgmental: this.settings.judgmental !== false });
         if (!result) continue;
         onText(result.text);
         // Honest labels: a one-time model call (e.g. writing a site extractor) counts as on-device, not instant.
@@ -179,6 +185,14 @@ class Resolver {
     if (task.contextFrom === 'shopping' && this.skills) {
       const { items } = await this.skills.products(packet);
       packet = { ...packet, text: items.length ? shopping.renderTable(shopping.analyze(items, packet.text)) : packet.text };
+    } else if (task.contextFrom === 'notes' && this.notes) {
+      const entries = this.notes.entries(60);
+      if (!entries.length) {
+        const text = "You haven't saved any notes yet. Tap \u201cSave to notes\u201d under any answer to start.";
+        onText(text);
+        return { text, mood: 'curious', tier: 'code', detail: 'notes' };
+      }
+      packet = { ...packet, source: 'notes', text: entries.map((e) => `- ${e.heading}: ${e.body.replace(/\s+/g, ' ').slice(0, 400)}${e.source ? ` (${e.source})` : ''}`).join('\n') };
     } else if (task.contextFrom === 'menu') {
       const items = food.extractMenu(packet.text || '');
       if (items.length) packet = { ...packet, text: items.map((i) => `- ${i.name}${i.description ? `: ${i.description}` : ''}`).join('\n') };
@@ -193,9 +207,9 @@ class Resolver {
       }
     }
 
-    const prompt = buildPrompt(taskId, { ...packet, text: packet.text && trimForModel(packet.text, MAX_CONTEXT_CHARS) }, { deeper, question });
+    const prompt = buildPrompt(taskId, { ...packet, text: packet.text && trimForModel(packet.text, MAX_CONTEXT_CHARS) }, { deeper, question, memory });
     // Follow-ups depend on the conversation so far, so only a thread's first turn is cacheable.
-    const cacheable = firstInThread && !question;
+    const cacheable = firstInThread && !question && !privacy;
     // Errors cache by fingerprint so the same error with different paths/values reuses one answer.
     const identity = task.cacheByFingerprint ? fingerprint(packet.text || '').hash : normalize(prompt);
     const key = cacheable ? ResponseCache.key(taskId, identity, String(deeper), this.brain.modelId(), PROMPT_VERSION) : null;

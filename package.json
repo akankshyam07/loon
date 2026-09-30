@@ -19,9 +19,11 @@
     "defuddle": "^0.19.4",
     "franc-min": "^6.2.0",
     "harper.js": "^2.10.0",
+    "kokoro-js": "^1.2.1",
     "linkedom": "^0.18.13",
     "node-llama-cpp": "^3.22.1",
     "quicktype-core": "^26.0.0",
+    "sherpa-onnx-node": "^1.13.8",
     "tesseract.js": "^7.0.0",
     "wordpos": "^2.1.0",
     "ws": "^8.22.0"

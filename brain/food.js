@@ -52,9 +52,9 @@ const GOALS = {
   vegetarian: { title: 'Likely vegetarian', sort: (a, b) => a.heaviness - b.heaviness, filter: (i) => i.likelyVegetarian },
 };
 
-function recommend(items, goal = 'lightest', count = 3) {
+function recommend(items, goal = 'lightest', { count = 3, vegetarianOnly = false, judgmental = true } = {}) {
   const { title, sort, filter } = GOALS[goal];
-  const picks = items.map(score).filter(filter || (() => true)).sort(sort).slice(0, count);
+  const picks = items.map(score).filter(filter || (() => true)).filter((i) => !vegetarianOnly || i.likelyVegetarian).sort(sort).slice(0, count);
   if (!picks.length) return { text: `Nothing on this menu looks ${goal === 'vegetarian' ? 'vegetarian' : 'like a match'}.`, mood: 'confused' };
   const lines = picks.map((p) => {
     const why = p.reasons.length ? ` (${p.reasons.join(', ')})` : '';
@@ -64,8 +64,9 @@ function recommend(items, goal = 'lightest', count = 3) {
   });
   const note = goal === 'vegetarian' ? '\n\nBased on ingredients listed; ask the restaurant about allergens and hidden meat stocks.' : '\n\nFrom menu wording only: no numbers here. Tap "Estimate calories" for rough estimates.';
   const heavy = items.map(score).sort((a, b) => b.heaviness - a.heaviness)[0];
-  const quip = goal === 'lightest' && heavy && heavy.heaviness >= 5 ? `\n\nTiny warning: ${heavy.name} is probably doing crimes.` : '';
-  return { text: `**${title}**\n${lines.join('\n')}${note}${quip}`, mood: quip ? 'judgy' : 'happy' };
+  const quip = judgmental && goal === 'lightest' && heavy && heavy.heaviness >= 5 && (!vegetarianOnly || heavy.likelyVegetarian) ? `\n\nTiny warning: ${heavy.name} is probably doing crimes.` : '';
+  const filtered = vegetarianOnly && goal !== 'vegetarian' ? '\n\n_Only vegetarian picks, because you asked me to remember that._' : '';
+  return { text: `**${title}**\n${lines.join('\n')}${note}${filtered}${quip}`, mood: quip ? 'judgy' : 'happy' };
 }
 
 module.exports = { extractMenu, score, recommend };

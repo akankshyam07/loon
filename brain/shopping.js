@@ -180,14 +180,15 @@ function analyze(items, pageText = '') {
 }
 
 // Verdict lines keyed on computed facts: the Judgmental personality lives here, not in a model.
-function verdict({ items, unit, cheapest, bestValue, premium, mixedUnits }) {
+function verdict({ items, unit, cheapest, bestValue, premium, mixedUnits }, { judgmental = true } = {}) {
   if (!items.length) return { text: "I couldn't find prices I trust on this page.", mood: 'confused' };
   if (mixedUnits) return { text: `These are different kinds of products (some by weight, some by volume or count), so only total prices compare. ${short(cheapest.name)} is the cheapest at ${money(cheapest)}.`, mood: 'curious' };
   if (items.length === 1) return { text: `One product here: ${short(items[0].name)} at ${money(items[0])}. Add it to your compare basket to weigh it against others.`, mood: 'curious' };
   const expensive = [...items].filter((i) => i.unitPrice != null).sort((a, b) => b.unitPrice - a.unitPrice)[0];
   if (bestValue === cheapest) return { text: `${short(cheapest.name)} is the cheapest *and* the best value. Easy choice.`, mood: 'happy' };
   if (premium > 0.4 && expensive) {
-    return { text: `${short(bestValue.name)} is the best value. ${short(expensive.name)} costs ${Math.round(premium * 100)}% more ${UNIT_LABEL[unit]}. You'd be paying for the logo.`, mood: 'judgy' };
+    const sass = judgmental ? " You'd be paying for the logo." : '';
+    return { text: `${short(bestValue.name)} is the best value. ${short(expensive.name)} costs ${Math.round(premium * 100)}% more ${UNIT_LABEL[unit]}.${sass}`, mood: judgmental ? 'judgy' : 'focused' };
   }
   return { text: `${short(bestValue.name)} wins ${UNIT_LABEL[unit] || 'on price'}, but it's close.`, mood: 'focused' };
 }

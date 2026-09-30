@@ -8,6 +8,7 @@ const food = require('./food');
 const { lookupKnown } = require('./errors');
 const { jsonToDto, fixGrammar } = require('./devtools');
 const { redact } = require('./redact');
+const { makeQuiz } = require('./quiz');
 
 class Skills {
   constructor({ dataDir, brain }) {
@@ -84,13 +85,13 @@ class Skills {
   }
 
   // ---------- dispatcher ----------
-  async run(tier, taskId, packet) {
+  async run(tier, taskId, packet, { memory = [], judgmental = true } = {}) {
     switch (tier) {
       case 'shopping': {
         const { items, via } = await this.products(packet);
         if (!items.length) return { text: "I couldn't find products with prices on this page.", mood: 'confused', detail: 'no products found' };
         const analysis = shopping.analyze(items, packet.text);
-        const { text: line, mood } = shopping.verdict(analysis);
+        const { text: line, mood } = shopping.verdict(analysis, { judgmental });
         packet.analysis = analysis;
         return { text: `${line}\n\n${shopping.renderTable(analysis)}`, mood, detail: `${items.length} products · ${via}`, usedModel: via.startsWith('new site extractor') };
       }
@@ -123,8 +124,10 @@ class Skills {
         const items = food.extractMenu(packet.text || '');
         if (!items.length) return { text: "I couldn't read menu items with prices here. A screenshot (⌥⇧S) can help with menu images.", mood: 'confused' };
         const goal = { food_lightest: 'lightest', food_protein: 'protein', food_veg: 'vegetarian' }[taskId];
-        const result = food.recommend(items, goal);
-        return { ...result, detail: `${items.length} menu items · keywords, no model` };
+        // Memory without a model: a saved "I'm vegetarian" filters every menu answer.
+        const vegetarian = memory.some((m) => /\b(vegetarian|vegan)\b/i.test(m)) && !/\bnot (vegetarian|vegan)\b/i.test(memory.join(' '));
+        const result = food.recommend(items, goal, { vegetarianOnly: vegetarian, judgmental });
+        return { ...result, detail: `${items.length} menu items · keywords, no model${vegetarian ? ' · using your saved diet' : ''}` };
       }
       case 'errors': {
         const text = lookupKnown(packet.text || '');
@@ -141,6 +144,11 @@ class Skills {
       }
       case 'ocr-text':
         return packet.text ? { text: `\`\`\`\n${packet.text}\n\`\`\``, mood: 'happy', detail: 'Tesseract OCR on this Mac', copyText: packet.text } : null;
+      case 'quiz': {
+        const quiz = makeQuiz(packet.text || '', 3);
+        if (!quiz.length) return { text: 'There isn\u2019t enough text here for a quiz.', mood: 'confused' };
+        return { text: `**Quiz**: fill in the blanks (${quiz.length} questions).`, mood: 'focused', detail: 'cloze cards from key sentences, no model', quiz };
+      }
       case 'grammar': {
         const { fixed, changes } = await fixGrammar(packet.text || '');
         if (!changes.length) return { text: 'No grammar or spelling problems found. ✨', mood: 'happy', detail: 'Harper grammar checker' };

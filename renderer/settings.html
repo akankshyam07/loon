@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'" />
+<title>Loon Settings</title>
+<link rel="stylesheet" href="settings.css" />
+</head>
+<body>
+  <h1><span class="dot"></span> Loon</h1>
+
+  <section>
+    <h2>Behavior</h2>
+    <label class="toggle"><input type="checkbox" data-key="focus" /> <span><b>Focus mode</b> The cat naps; no hints or pop-up chips. ⌥Space and clicking still work.</span></label>
+    <label class="toggle"><input type="checkbox" data-key="privacy" /> <span><b>Privacy mode</b> No memory used, nothing remembered, no answer cache.</span></label>
+    <label class="toggle"><input type="checkbox" data-key="judgmental" /> <span><b>Judgmental</b> A little sass about overpriced things and heavy food.</span></label>
+  </section>
+
+  <section>
+    <h2>Browser</h2>
+    <p id="browser"></p>
+    <button id="copyCode">Copy pairing code</button>
+  </section>
+
+  <section>
+    <h2>This week</h2>
+    <p id="counts"></p>
+  </section>
+
+  <section>
+    <h2>Notes</h2>
+    <p id="notesDir" class="mono"></p>
+    <button id="openNotes">Open notes folder</button>
+  </section>
+
+  <section>
+    <h2>Memory</h2>
+    <p class="muted">Only things you asked me to remember. Edit or delete anything.</p>
+    <ul id="memory"></ul>
+    <button id="clearMemory" class="danger">Forget everything</button>
+  </section>
+
+  <section>
+    <h2>Recent actions</h2>
+    <p class="muted">What Loon did for you (details like titles are not stored).</p>
+    <ul id="audit"></ul>
+  </section>
+  <script src="settings.js"></script>
+</body>
+</html>

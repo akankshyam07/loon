@@ -61,6 +61,19 @@ const TASKS = {
     instruction: () => 'For each menu item, estimate calories, protein, fat and carbs as ranges (for example "550–700 kcal"). These are rough estimates from the description: say so once. One short line per item.',
     maxTokens: 700,
   },
+  // Notes, research, study (§3.10–3.11)
+  research_found: {
+    label: 'What have I found?',
+    contextFrom: 'notes',
+    instruction: () => 'These are notes the user saved while researching. Summarize what they have found so far in a few bullets, and cite each point with its source link when there is one. Only use what is in the notes.',
+    maxTokens: 500,
+  },
+  quiz: { label: 'Quiz me', tiers: ['quiz'] },
+  quiz_harder: {
+    label: 'Harder questions',
+    instruction: () => 'Write 3 short conceptual questions that test real understanding of this text, each followed by a one-line answer on its own line starting with "Answer:".',
+    maxTokens: 400,
+  },
   page_summary: { label: 'Summarize page', tiers: ['keypoints'], instruction: () => 'Summarize this page in 3-5 short bullet points.', maxTokens: 380, page: true },
   page_notes: { label: 'Notes', instruction: () => 'Turn this page into concise study notes with short headings and bullets.', maxTokens: 600, page: true },
   page_checklist: { label: 'Checklist', instruction: () => 'Turn this page into a practical checklist of steps or action items.', maxTokens: 500, page: true },
@@ -76,14 +89,14 @@ const TASKS = {
 const SELECTION_CHIPS = {
   word: ['define', 'meaning_here', 'translate', 'explain'],
   sentence: ['explain', 'simplify', 'translate', 'rewrite', 'examples', 'fact_check'],
-  paragraph: ['explain', 'summarize', 'simplify', 'translate', 'rewrite', 'fact_check'],
+  paragraph: ['explain', 'summarize', 'simplify', 'translate', 'rewrite', 'fact_check', 'quiz'],
   code: ['explain_code', 'find_bug', 'explain'],
   json: ['explain_json', 'make_dto_java', 'make_dto_ts'],
   stacktrace: ['explain_error', 'likely_fix'],
   editable: ['fix_grammar', 'shorter', 'professional', 'warmer', 'rewrite', 'translate'],
   screenshot: ['extract_text', 'explain', 'summarize', 'translate'],
 };
-const PAGE_CHIPS = ['page_summary', 'page_todo', 'page_notes', 'page_checklist'];
+const PAGE_CHIPS = ['page_summary', 'page_todo', 'page_notes', 'page_checklist', 'quiz'];
 // Page chips by page kind (§2.5 modes): picked automatically from what the content script detected.
 const MODE_CHIPS = {
   shopping: ['shop_value', 'shop_reviews', 'shop_add', 'shop_basket', 'shop_take', 'page_summary'],
@@ -100,13 +113,23 @@ function contextBlock(packet, text) {
 }
 
 // Full user message for a task on a packet: instruction first, then the (already redacted) context.
-function buildPrompt(taskId, packet, { deeper = false, question } = {}) {
+// Which memory categories a task may use (brain/memory.js TASK_CATEGORIES).
+function memoryGroup(taskId) {
+  if (/^food_/.test(taskId)) return 'food';
+  if (/^shop_/.test(taskId)) return 'shopping';
+  if (['rewrite', 'shorter', 'professional', 'warmer', 'fix_grammar'].includes(taskId)) return 'writing';
+  if (taskId === 'translate') return 'translate';
+  return 'default';
+}
+
+function buildPrompt(taskId, packet, { deeper = false, question, memory = [] } = {}) {
   const task = TASKS[taskId];
   const instruction = taskId === 'ask' || question ? question || packet.question : task.instruction(packet);
   const text = task.contextText ? task.contextText(packet) : packet.text;
   const depth = deeper ? '\nGo deeper than usual: give a thorough, well-structured answer.' : '';
-  if (!text) return instruction + depth;
-  return `${instruction}${depth}\n\n${contextBlock(packet, text)}`;
+  const about = memory.length ? `About the user (they chose to share this; use it only when relevant):\n${memory.map((m) => `- ${m}`).join('\n')}\n\n` : '';
+  if (!text) return about + instruction + depth;
+  return `${about}${instruction}${depth}\n\n${contextBlock(packet, text)}`;
 }
 
 // Hand-off (§3.17): the same prompt, formatted for pasting into Claude / ChatGPT / Gemini.
@@ -117,4 +140,4 @@ function handoffPrompt(taskId, packet, question) {
   return packet.text ? `${instruction}\n\nHere is the text${where}:\n"""\n${packet.text}\n"""` : instruction;
 }
 
-module.exports = { TASKS, SELECTION_CHIPS, PAGE_CHIPS, MODE_CHIPS, pageChipsFor, MAX_CONTEXT_CHARS, buildPrompt, handoffPrompt };
+module.exports = { TASKS, SELECTION_CHIPS, PAGE_CHIPS, MODE_CHIPS, pageChipsFor, MAX_CONTEXT_CHARS, buildPrompt, handoffPrompt, memoryGroup };

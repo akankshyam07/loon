@@ -8,6 +8,9 @@ const { Skills } = require('./brain/skills');
 const { Bridge, newPairingCode } = require('./main/bridge');
 const { createCompanion } = require('./main/companion');
 const capture = require('./main/capture');
+const { Actions } = require('./main/actions');
+const { Notes } = require('./brain/notes');
+const { Memory } = require('./brain/memory');
 
 // Cat height in px per size preset; the window adds room around it for sparkles and hops.
 const SIZES = { S: 120, M: 160, L: 210 };
@@ -21,7 +24,7 @@ const arg = (name) => process.argv.find((a) => a.startsWith(`--${name}=`))?.spli
 const DEMO = process.argv.includes('--demo') || process.env.LOON_DEMO === '1';
 
 let settingsFile;
-let settings = { size: 'M' };
+let settings = { size: 'M', focus: false, privacy: false, judgmental: true };
 let catWin;
 let bubbleWin;
 let brain;
@@ -31,6 +34,10 @@ let windowAnimation = null;
 let bridge;
 let companion;
 let translator;
+let actions;
+let notes;
+let memory;
+let settingsWin = null;
 // Swappable side effects so the selftest never opens a real browser tab or touches the clipboard.
 const hooks = {
   openExternal: (url) => shell.openExternal(url),
@@ -95,6 +102,7 @@ function createCatWindow() {
   // Transparent pixels pass clicks through; the renderer turns this off while the cursor is over the cat.
   catWin.setIgnoreMouseEvents(true, { forward: true });
   catWin.loadFile(path.join(__dirname, 'renderer', 'cat.html'), { query: { demo: DEMO ? '1' : '0' } });
+  catWin.webContents.once('did-finish-load', () => { if (settings.focus) catWin.webContents.send('focus', { on: true }); });
   catWin.on('moved', () => {
     settings.position = catWin.getBounds();
     saveSettings();
@@ -261,6 +269,39 @@ function setSize(size) {
   catWin.setBounds({ ...pos, ...next });
 }
 
+// Behavior toggles (§3.15). The resolver and companion read `settings` live, so no restart is needed.
+function setToggle(key, value) {
+  settings[key] = value;
+  saveSettings();
+  if (key === 'focus') catWin.webContents.send('focus', { on: value });
+  settingsWin?.webContents.send('settings-changed', settingsSnapshot());
+}
+
+function settingsSnapshot() {
+  return {
+    ...settings,
+    notesDir: notes.dir,
+    connected: bridge.clients.size > 0,
+    counts: resolver.counts,
+    memory: memory.all(),
+    audit: actions.recent(20),
+  };
+}
+
+function openSettings() {
+  if (settingsWin && !settingsWin.isDestroyed()) return settingsWin.focus();
+  settingsWin = new BrowserWindow({
+    width: 520,
+    height: 640,
+    title: 'Loon Settings',
+    backgroundColor: '#fbfaf5',
+    webPreferences: { preload: path.join(__dirname, 'renderer', 'preload.js') },
+  });
+  settingsWin.loadFile(path.join(__dirname, 'renderer', 'settings.html'));
+  settingsWin.webContents.on('will-navigate', (e) => e.preventDefault());
+  settingsWin.on('closed', () => { settingsWin = null; });
+}
+
 function showCatMenu() {
   Menu.buildFromTemplate([
     { label: 'Ask Loon…', accelerator: 'Alt+Space', click: openAskBubble },
@@ -271,6 +312,11 @@ function showCatMenu() {
       enabled: !bridge.clients.size,
       click: () => clipboard.writeText(settings.pairingCode),
     },
+    { type: 'separator' },
+    { label: 'Focus mode', type: 'checkbox', checked: settings.focus, click: (item) => setToggle('focus', item.checked) },
+    { label: 'Privacy mode', type: 'checkbox', checked: settings.privacy, click: (item) => setToggle('privacy', item.checked) },
+    { label: 'Judgmental', type: 'checkbox', checked: settings.judgmental, click: (item) => setToggle('judgmental', item.checked) },
+    { label: 'Settings…', click: openSettings },
     { type: 'separator' },
     ...Object.keys(SIZES).map((size) => ({
       label: { S: 'Small', M: 'Medium', L: 'Large' }[size],
@@ -320,7 +366,7 @@ function registerIpc() {
 
   // Bubble ↔ companion. Every answer streams back as ask-chunk / ask-done / ask-error.
   const toBubble = (type, payload) => {
-    const channel = { chunk: 'ask-chunk', done: 'ask-done', error: 'ask-error', context: 'bubble-context', sensitive: 'bubble-sensitive' }[type];
+    const channel = { chunk: 'ask-chunk', done: 'ask-done', error: 'ask-error', context: 'bubble-context', sensitive: 'bubble-sensitive', confirm: 'bubble-confirm', 'action-done': 'bubble-action' }[type];
     bubbleWin.webContents.send(channel, payload);
   };
   ipcMain.on('ask', (_e, { id, text }) => companion.run({ id, question: text }, toBubble));
@@ -336,6 +382,21 @@ function registerIpc() {
     bubbleWin.setFocusable(true);
     bubbleWin.focus();
   });
+  ipcMain.on('confirm-action', (_e, { id, command }) => companion.confirm(command, toBubble, id));
+  ipcMain.handle('save-note', (_e, entry) => companion.saveNote(entry));
+  // Only reveals files a Loon file search just returned (they exist on disk); never arbitrary paths from a page.
+  ipcMain.on('reveal', (_e, file) => { if (typeof file === 'string' && path.isAbsolute(file) && fs.existsSync(file)) shell.showItemInFolder(file); });
+  ipcMain.handle('settings-get', () => settingsSnapshot());
+  ipcMain.handle('settings-set', (_e, { key, value }) => {
+    if (['focus', 'privacy', 'judgmental'].includes(key)) setToggle(key, Boolean(value));
+    return settingsSnapshot();
+  });
+  ipcMain.handle('memory-update', (_e, { id, text }) => { memory.update(id, text); return settingsSnapshot(); });
+  ipcMain.handle('memory-delete', (_e, id) => { memory.remove(id); return settingsSnapshot(); });
+  ipcMain.handle('memory-clear', () => { memory.clear(); resolver.cache.clear(); return settingsSnapshot(); });
+  ipcMain.on('open-notes-folder', () => { fs.mkdirSync(notes.dir, { recursive: true }); shell.openPath(notes.dir); });
+  ipcMain.on('copy-pairing-code', () => clipboard.writeText(settings.pairingCode));
+  ipcMain.on('open-settings', openSettings);
   ipcMain.on('nudge-click', () => companion.onNudgeClick());
   ipcMain.on('nudge-ignored', (_e, kind) => companion.onNudgeIgnored(kind));
 }
@@ -376,10 +437,16 @@ app.whenReady().then(() => {
   }
   brain = new Brain({ modelsDir: path.join(app.getPath('userData'), 'models'), settings });
   translator = new Translator({ cacheDir: path.join(app.getPath('userData'), 'translation-models') });
+  notes = new Notes(settings.notesDir || path.join(app.getPath('documents'), 'Loon'));
+  memory = new Memory(path.join(app.getPath('userData'), 'memory.json'));
+  actions = new Actions({ auditFile: path.join(app.getPath('userData'), 'audit.jsonl'), notes, memory, openExternal: (url) => hooks.openExternal(url) });
   resolver = new Resolver({
     brain,
     translator,
     skills: new Skills({ dataDir: app.getPath('userData'), brain }),
+    memory,
+    notes,
+    settings,
     cacheFile: path.join(app.getPath('userData'), 'cache.json'),
     countsFile: path.join(app.getPath('userData'), 'counts.json'),
   });
@@ -389,6 +456,9 @@ app.whenReady().then(() => {
     resolver,
     brain,
     hooks,
+    actions,
+    notes,
+    settings,
     ui: {
       showBubble,
       hideBubble,
@@ -412,7 +482,7 @@ app.whenReady().then(() => {
   scheduleScreenshot();
   if (process.argv.includes('--selftest')) {
     catWin.webContents.once('did-finish-load', async () => {
-      const ok = await require('./test/selftest').run({ catWin, bubbleWin, bridge, companion, resolver, hooks, settings, openScreenshot }).catch((err) => { console.error(err); return false; });
+      const ok = await require('./test/selftest').run({ catWin, bubbleWin, bridge, companion, resolver, hooks, settings, openScreenshot, actions, notes, memory, setToggle }).catch((err) => { console.error(err); return false; });
       app.exit(ok ? 0 : 1);
     });
   }

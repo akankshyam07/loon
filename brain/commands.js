@@ -1,0 +1,73 @@
+// Everyday commands without a model (DESIGN.md §3.13): chrono-node reads dates, a few patterns read the intent.
+// Anything unmatched falls through to the normal question path.
+const chrono = require('chrono-node');
+
+// Pulls the first date/time phrase out of text: { date, text-without-it } or { date: null }.
+function extractWhen(text, now = new Date()) {
+  const [found] = chrono.parse(text, now, { forwardDate: true });
+  if (!found) return { date: null, rest: text.trim() };
+  const rest = (text.slice(0, found.index) + text.slice(found.index + found.text.length))
+    .replace(/\s+(at|on|by|for|in)\s*$/i, '')
+    .replace(/^\s*(at|on|by|for|in)\s+/i, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+  const date = found.start.date();
+  const DAY = 24 * 60 * 60 * 1000;
+  // "at 5" with no am/pm means 5pm, the next sensible waking-hours time. chrono may already have pushed 5am to
+  // tomorrow, so after switching to pm, pull it back to today if today's 5pm is still ahead.
+  if (!found.start.isCertain('meridiem') && found.start.isCertain('hour') && date.getHours() < 7) {
+    date.setHours(date.getHours() + 12);
+    if (!found.start.isCertain('day') && date.getTime() - DAY > now.getTime()) date.setTime(date.getTime() - DAY);
+  }
+  // "morning" is 6am in chrono; 9am is a kinder reminder time.
+  if (/morning/i.test(found.text) && !found.start.isCertain('hour')) date.setHours(9, 0, 0, 0);
+  if (date < now && !found.start.isCertain('day')) date.setTime(date.getTime() + DAY);
+  return { date, rest, end: found.end ? found.end.date() : null };
+}
+
+const tidy = (s) => s.replace(/^[\s,:-]+|[\s,.!?]+$/g, '');
+
+function parseCommand(input, now = new Date()) {
+  const text = input.trim();
+  let m;
+  if ((m = text.match(/^remind me (?:to |about )?(.+)$/i))) {
+    const { date, rest } = extractWhen(m[1], now);
+    return { action: 'reminder', title: tidy(rest) || tidy(m[1]), when: date };
+  }
+  if ((m = text.match(/^(?:add|create|schedule|put|book) (?:an? )?(.+)$/i))) {
+    const { date, rest, end } = extractWhen(m[1], now);
+    if (date) {
+      const title = tidy(rest.replace(/^(?:an? )?event\s+/i, '').replace(/^(?:to|on) (?:my )?calendar\s*/i, '').replace(/\s*(?:to|on) (?:my )?calendar$/i, ''));
+      return { action: 'event', title: title || 'Event', start: date, end: end || new Date(date.getTime() + 60 * 60 * 1000) };
+    }
+  }
+  if ((m = text.match(/^open (.+)$/i))) {
+    const target = tidy(m[1]);
+    const isUrl = /^(https?:\/\/)?[\w-]+(\.[\w-]+)+(\/\S*)?$/i.test(target);
+    return { action: 'open', target: isUrl && !/^https?:/i.test(target) ? `https://${target}` : target, kind: isUrl ? 'url' : 'app' };
+  }
+  if ((m = text.match(/^(?:find|search for|look for|where is|where's)(?: my)? (.+?)(?: files?)?\??$/i))) {
+    return { action: 'find', query: tidy(m[1]) };
+  }
+  if ((m = text.match(/^(?:note|take a note|save a note|jot down)[:\s]+(.+)$/i))) return { action: 'note', text: tidy(m[1]) };
+  if ((m = text.match(/^remember (?:that )?(.+)$/i))) return { action: 'remember', text: tidy(m[1]) };
+  if ((m = text.match(/^forget (?:that )?(.+)$/i))) return { action: 'forget', text: tidy(m[1]) };
+  return null;
+}
+
+// Plain-language summary for confirm cards and voice ("Reminder to call mom, today at 5:00 PM").
+function describe(command) {
+  const at = (d) => d.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  switch (command.action) {
+    case 'reminder': return `Reminder: ${command.title}${command.when ? `, ${at(command.when)}` : ' (no time)'}`;
+    case 'event': return `Calendar event: ${command.title}, ${at(command.start)}`;
+    case 'open': return `Open ${command.kind === 'url' ? command.target : `the ${command.target} app`}`;
+    case 'find': return `Find files matching "${command.query}"`;
+    case 'note': return `Save a note: ${command.text}`;
+    case 'remember': return `Remember: ${command.text}`;
+    case 'forget': return `Forget memories about "${command.text}"`;
+    default: return command.action;
+  }
+}
+
+module.exports = { parseCommand, extractWhen, describe };

@@ -4,6 +4,7 @@ const { TASKS, SELECTION_CHIPS, pageChipsFor, handoffPrompt } = require('../brai
 const { keySentences } = require('../brain/textrank');
 const { classifySelection } = require('../extension/lib/classify');
 const { selectionPacket, pagePacket } = require('./context');
+const { parseCommand, describe } = require('../brain/commands');
 
 const HANDOFF_URLS = {
   claude: 'https://claude.ai/new',
@@ -23,7 +24,7 @@ const domainOf = (url) => {
 };
 const chip = (id) => ({ id, label: TASKS[id].label });
 
-function createCompanion({ bridge, resolver, brain, ui, hooks }) {
+function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, settings }) {
   const session = { mode: 'ask', packet: null, threadStarted: false, lastTask: null, pendingTask: null };
   let activePage = null; // latest page report from the focused, visible tab
   let active = null; // { controller, id }
@@ -66,9 +67,17 @@ function createCompanion({ bridge, resolver, brain, ui, hooks }) {
     if (bridge.clients.size && activePage?.sensitive) {
       return { mode: 'sensitive', label: `Private page · ${domainOf(activePage.url)}`, chips: [], sensitive: true, placeholder: 'Ask me anything…' };
     }
-    // Typed questions; offer page chips when a readable page is in front.
+    // Typed questions; offer page chips when a readable page is in front, and research once notes exist.
     const pageChips = bridge.clients.size && activePage && !activePage.sensitive ? pageChipsFor(activePage.kind).slice(0, 3).map(chip) : [];
-    return { mode: 'ask', label: pageChips.length ? `About ${domainOf(activePage.url)}?` : '', chips: pageChips, redactions: 0, placeholder: 'Ask me anything…' };
+    const research = notes.files().length ? [chip('research_found')] : [];
+    return {
+      mode: 'ask',
+      label: pageChips.length ? `About ${domainOf(activePage.url)}?` : '',
+      chips: [...pageChips, ...research],
+      redactions: 0,
+      placeholder: 'Ask me anything, or "remind me to…"',
+      privacy: Boolean(settings.privacy),
+    };
   }
 
   function startSession(mode, packet) {
@@ -79,6 +88,8 @@ function createCompanion({ bridge, resolver, brain, ui, hooks }) {
 
   // ---------- extension events ----------
   function onBridgeMessage(message) {
+    // Focus mode (§3.15): no chips popping up next to selections and no nudges; the ⌥Space and click paths still work.
+    if (settings.focus && ['selection', 'selection-cleared'].includes(message.type)) return;
     if (message.type === 'page') {
       if (message.active && message.visible) {
         activePage = message;
@@ -103,7 +114,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks }) {
 
   // ---------- nudges (§3.14): at most once per page, 30 min per domain, 6 per hour, back off when ignored ----------
   function maybeNudge(page) {
-    if (page.sensitive) return;
+    if (page.sensitive || settings.focus) return;
     const kind = NUDGE_KINDS.includes(page.kind) ? page.kind : page.dense ? 'dense' : null;
     if (!kind) return;
     const now = Date.now();
@@ -141,13 +152,42 @@ function createCompanion({ bridge, resolver, brain, ui, hooks }) {
     return pagePacket(reply, activePage?.tabId);
   }
 
+  // Commands ("remind me…", "open…") are parsed without a model and shown as a confirm card.
+  // Local, append-only or read-only actions (notes, file search) run straight away.
+  async function command(id, question, bubble) {
+    const parsed = parseCommand(question);
+    if (!parsed) return false;
+    if (parsed.action === 'note' || parsed.action === 'find') {
+      bubble('action-done', { id, ...(await actions.execute(parsed)) });
+      return true;
+    }
+    bubble('confirm', { id, summary: describe(parsed), command: parsed });
+    ui.cat('brain', { state: 'done', mood: 'curious' });
+    return true;
+  }
+
+  async function confirm(command, bubble, id) {
+    for (const key of ['when', 'start', 'end']) if (command[key]) command[key] = new Date(command[key]);
+    const result = await actions.execute(command);
+    bubble('action-done', { id, ...result });
+    ui.cat('brain', { state: 'done', mood: result.ok ? 'happy' : 'confused' });
+    return result;
+  }
+
+  function saveNote({ question, text }) {
+    const packet = session.packet;
+    return notes.save({ title: question, text, url: packet?.url });
+  }
+
   async function run({ id, task, deeper = false, question }, bubble) {
     active?.controller.abort();
     const controller = new AbortController();
     active = { controller, id };
     try {
+      if (!task && question && session.mode !== 'selection' && session.mode !== 'app' && (await command(id, question, bubble))) return;
       let packet = session.packet;
-      if (TASKS[task]?.page || (question && session.mode === 'page')) {
+      // In page mode every chip works on the page (e.g. Quiz me), not just the page-only tasks.
+      if (TASKS[task]?.page || session.mode === 'page') {
         packet = await ensurePagePacket();
         if (!packet) {
           session.pendingTask = { id, task, deeper, question };
@@ -251,7 +291,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks }) {
   }
 
   return {
-    onBridgeMessage, run, lookAnyway, handoff, replace, openAsk, fromCapture, showNotice, context, cancel, onNudgeClick, onNudgeIgnored,
+    onBridgeMessage, run, lookAnyway, handoff, replace, openAsk, fromCapture, showNotice, context, cancel, onNudgeClick, onNudgeIgnored, confirm, saveNote,
     isBusy: () => Boolean(active),
     session,
     get activePage() { return activePage; },

@@ -69,6 +69,7 @@
   let lookOverride = null; // {x, y} forces where the eyes point
   let bubbleOpen = false;
   let privacy = false; // a private page is in front: paws over the eyes, no tricks
+  let focusMode = false; // Focus mode (§3.15): napping in a loaf, no tricks, hints or reminders
   let dragging = false;
   const IDLE_TAIL = { amp: 3, period: 4200 };
   let tailStyle = IDLE_TAIL;
@@ -467,7 +468,7 @@
 
   const MOVES = { moonMagic, pounce, edgePeek };
   async function doMove(name) {
-    if (state !== 'idle' || bubbleOpen || dragging || privacy) return;
+    if (state !== 'idle' || bubbleOpen || dragging || privacy || focusMode) return;
     if (name === 'random') name = Object.keys(MOVES)[Math.floor(Math.random() * 3)];
     state = 'move';
     try {
@@ -488,7 +489,7 @@
   })();
   (function scheduleRoam() {
     later(async () => {
-      if (state === 'idle' && !bubbleOpen && !dragging && !privacy) {
+      if (state === 'idle' && !bubbleOpen && !dragging && !privacy && !focusMode) {
         state = 'move';
         try { await hopAround(); } finally { if (state === 'move') state = 'idle'; }
       }
@@ -499,7 +500,7 @@
   // ---------- reminders: snack + nap ----------
   let fishTimeout = null;
   function showFish() {
-    if (state === 'idle' && !bubbleOpen) {
+    if (state === 'idle' && !bubbleOpen && !focusMode) {
       const p = toStage(20, 60);
       Object.assign(fish.style, { left: `${Math.max(4, p.x - 20)}px`, top: `${Math.max(4, p.y)}px` });
       fish.classList.remove('eaten');
@@ -534,6 +535,7 @@
   let zzzTimer = null;
   let napEnd = null;
   function startNap() {
+    if (focusMode) return later(startNap, TIMING.nap);
     if (state !== 'idle' || bubbleOpen) return later(startNap, [DEMO ? 10_000 : MIN, DEMO ? 15_000 : 2 * MIN]);
     state = 'napping';
     setPose('loaf');
@@ -602,12 +604,14 @@
     bubbleOpen = open;
     if (open) {
       if (state === 'napping') wakeUp();
+      if (focusMode) setPose('sit');
       lookOverride = { x: -4.5, y: -3.5 };
       setMood('curious');
     } else {
       if (state === 'thinking' || state === 'talking') onBrain({ state: 'done', mood: 'neutral' });
       lookOverride = null;
       setMood('neutral');
+      if (focusMode) setTimeout(applyFocusLook, 1500);
     }
   });
 
@@ -658,7 +662,7 @@
     if (ignored) window.loon.nudgeIgnored(nudgeKind);
   }
   window.loon.onNudge(({ kind }) => {
-    if (privacy || state !== 'idle' || bubbleOpen) return;
+    if (privacy || focusMode || state !== 'idle' || bubbleOpen) return;
     nudgeKind = kind;
     const p = toStage(160, 22);
     Object.assign(nudgeButton.style, { left: `${p.x}px`, top: `${p.y}px` });
@@ -671,6 +675,27 @@
   nudgeButton.addEventListener('click', () => {
     hideNudge(false);
     window.loon.nudgeClick();
+  });
+
+  let focusZzz = null;
+  function applyFocusLook() {
+    if (!focusMode || state !== 'idle' || bubbleOpen) return;
+    setPose('loaf');
+    setMood('asleep');
+    tailStyle = { amp: 1.5, period: 6000 };
+  }
+  window.loon.onFocus(({ on }) => {
+    focusMode = on;
+    clearInterval(focusZzz);
+    if (on) {
+      hideNudge(false);
+      applyFocusLook();
+      focusZzz = setInterval(() => { if (focusMode && state === 'idle' && !bubbleOpen) zzz(); }, 6000);
+    } else if (state === 'idle') {
+      setPose(privacy ? 'pawsUp' : 'sit');
+      setMood(privacy ? 'protective' : 'neutral');
+      tailStyle = IDLE_TAIL;
+    }
   });
 
   // ---------- debug hook (used by `--cmd=<json>` screenshots and the "Do a trick" menu item) ----------
@@ -688,7 +713,7 @@
   // read-only view for test/selftest.js
   window.__loon = {
     get state() { return state; }, get pose() { return pose; }, get mood() { return mood; },
-    get privacy() { return privacy; }, get nudge() { return !nudgeButton.hidden; },
+    get privacy() { return privacy; }, get nudge() { return !nudgeButton.hidden; }, get focus() { return focusMode; },
   };
 
   setPose('sit');

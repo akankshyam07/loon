@@ -176,6 +176,16 @@ async function run(ctx, check) {
     check('key sentences are highlighted on the page', highlighted > 0, `${highlighted} ranges`);
     await closeBubble();
 
+    companion.onNudgeClick(); // page mode on the article: every page chip
+    await waitFor(() => bubbleWin.isVisible(), 2000);
+    await wait(400);
+    const quiz = await clickChip('quiz', 10000);
+    const inputs = await bubble(`document.querySelectorAll('.quiz input').length`);
+    await bubble(`document.querySelector('.quiz button').click()`);
+    const graded = await bubble(`document.querySelector('.quiz .note').textContent`);
+    check('Quiz me: cloze cards graded in code, no model', inputs === 3 && /no model/.test(quiz?.tier) && /^0\/3 right\. Answers: /.test(graded), graded.slice(0, 60));
+    await closeBubble();
+
     // ---- nudges + code selections ----
     companion.resetNudges();
     await page.goto(`${base}/code.html`);

@@ -134,6 +134,109 @@ async function run(ctx) {
   const counts = await bubble(`document.getElementById('counts').textContent`);
   check('weekly counters show in the footer', /instant/.test(counts) && /on-device/.test(counts), counts);
 
+  // ---- M4: assistant (notes, memory, actions, toggles) with real files swapped for temp ones ----
+  const os = require('os');
+  const fs = require('fs');
+  const path = require('path');
+  const { BrowserWindow } = require('electron');
+  const { actions, notes, memory, setToggle, resolver } = ctx;
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-selftest-m4-'));
+  const saved = { notesDir: notes.dir, memoryFile: memory.file, auditFile: actions.auditFile, executors: actions.executors };
+  notes.dir = path.join(tmp, 'notes');
+  memory.file = path.join(tmp, 'memory.json');
+  actions.auditFile = path.join(tmp, 'audit.jsonl');
+  const executed = [];
+  actions.executors = {
+    reminder: async (c) => { executed.push(c); return 'Added to Reminders.'; },
+    event: async (c) => { executed.push(c); return 'Added to Calendar.'; },
+    open: async (c) => { executed.push(c); return 'Opened.'; },
+    find: async () => [path.join(tmp, 'resume.pdf')],
+  };
+  const typeInBubble = async (text) => {
+    ipcMain.emit('open-bubble');
+    await waitFor(() => bubbleWin.isVisible(), 1500);
+    await wait(300);
+    await bubble(`(() => { const i = document.getElementById('input'); i.value = ${JSON.stringify(text)}; i.dispatchEvent(new Event('input')); document.getElementById('askForm').requestSubmit(); })()`);
+  };
+  try {
+    const localBefore = resolver.counts.tiers.local || 0;
+    await typeInBubble('remind me to call mom at 5');
+    const card = await waitFor(() => bubble(`Boolean(document.querySelector('.confirm'))`), 3000);
+    const cardText = await bubble(`document.querySelector('.confirm')?.textContent || ''`);
+    check('"remind me…" shows a confirm card with no model call', card && /call mom/.test(cardText) && (resolver.counts.tiers.local || 0) === localBefore, cardText.slice(0, 60));
+    check('nothing runs before the click', executed.length === 0);
+    await bubble(`document.querySelector('.confirm .primary').click()`);
+    await waitFor(() => executed.length > 0, 3000);
+    const done = await waitFor(() => bubble(`[...document.querySelectorAll('.note')].some((n) => /Reminders/.test(n.textContent))`), 3000);
+    const audit = actions.recent();
+    check('✓ runs the reminder and logs it (no content in the log)', done && executed[0]?.title === 'call mom' && new Date(executed[0].when).getHours() === 17 && audit[0]?.action === 'reminder' && !fs.readFileSync(actions.auditFile, 'utf8').includes('call mom'));
+
+    await typeInBubble('remember that I like very short answers');
+    await waitFor(() => bubble(`Boolean(document.querySelector('.confirm'))`), 3000);
+    await bubble(`document.querySelector('.confirm .primary').click()`);
+    await waitFor(() => memory.all().length > 0, 3000);
+    check('"remember…" saves to memory after confirmation', memory.all()[0]?.text === 'I like very short answers');
+    await bubble('window.loon.closeBubble()');
+
+    // unique per run: a cached answer from an earlier run would skip building a fresh prompt
+    await typeInBubble(`What is a black hole? One sentence. (run ${Date.now() % 100000})`);
+    await waitFor(() => bubble(`Boolean([...document.querySelectorAll('.tier')].pop())`), 120000, 250);
+    check('memory is included in the next prompt', /About the user[\s\S]*I like very short answers/.test(resolver.lastPrompt || ''));
+    await bubble(`[...document.querySelectorAll('.actions button')].find((b) => b.textContent === 'Save to notes').click()`);
+    await waitFor(() => notes.files().length > 0, 3000);
+    check('Save to notes writes a markdown file', notes.files().length === 1 && /black hole/i.test(fs.readFileSync(notes.files()[0], 'utf8')));
+    await bubble('window.loon.closeBubble()');
+
+    setToggle('privacy', true);
+    await typeInBubble('What is a black hole? One sentence.');
+    await waitFor(() => bubble(`Boolean([...document.querySelectorAll('.tier')].pop())`), 120000, 250);
+    const privateTier = await bubble(`[...document.querySelectorAll('.tier')].pop().textContent`);
+    check('Privacy mode: no memory in the prompt and no cached answer', !/I like very short answers/.test(resolver.lastPrompt) && /on your Mac/.test(privateTier), privateTier);
+    setToggle('privacy', false);
+    await bubble('window.loon.closeBubble()');
+
+    await typeInBubble('find my resume');
+    const found = await waitFor(() => bubble(`Boolean(document.querySelector('.note button.linkish'))`), 3000);
+    check('file search runs locally and lists results', found);
+    await bubble('window.loon.closeBubble()');
+
+    ipcMain.emit('open-bubble');
+    await waitFor(() => bubbleWin.isVisible(), 1500);
+    await wait(300);
+    const research = await bubble(`[...document.querySelectorAll('.chip')].map((c) => c.dataset.task)`);
+    check('saved notes add a "What have I found?" chip', research.includes('research_found'), research.join(','));
+    await bubble('window.loon.closeBubble()');
+
+    setToggle('focus', true);
+    const focused = await waitFor(async () => (await cat('window.__loon.focus')) && (await cat('window.__loon.pose')) === 'loaf', 3000);
+    catWin.webContents.send('debug', { move: 'moonMagic' });
+    await wait(600);
+    check('Focus mode: the cat naps and skips tricks', focused && (await cat('window.__loon.state')) !== 'move');
+    setToggle('focus', false);
+    await waitFor(async () => (await cat('window.__loon.pose')) === 'sit', 3000);
+
+    ipcMain.emit('open-settings');
+    const settingsWin = await (async () => {
+      for (let i = 0; i < 30; i++) {
+        const w = BrowserWindow.getAllWindows().find((x) => x.getTitle() === 'Loon Settings');
+        if (w) return w;
+        await wait(100);
+      }
+      return null;
+    })();
+    await waitFor(async () => settingsWin && (await settingsWin.webContents.executeJavaScript(`document.querySelectorAll('#memory input').length`)) > 0, 5000);
+    const memoryShown = settingsWin && (await settingsWin.webContents.executeJavaScript(`[...document.querySelectorAll('#memory input')].map((i) => i.value).join('|')`));
+    await settingsWin?.webContents.executeJavaScript(`document.querySelector('#memory button').click()`);
+    await waitFor(() => memory.all().length === 0, 3000);
+    check('Settings lists memory and deletes it', /very short answers/.test(memoryShown || '') && memory.all().length === 0, memoryShown);
+    settingsWin?.close();
+  } finally {
+    Object.assign(notes, { dir: saved.notesDir });
+    Object.assign(memory, { file: saved.memoryFile });
+    Object.assign(actions, { auditFile: saved.auditFile, executors: saved.executors });
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+
   catWin.setBounds(homeBounds);
   if (!process.argv.includes('--no-browser')) {
     console.log('\n— browser companion —');
