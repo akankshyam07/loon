@@ -69,7 +69,8 @@
     const body = doc.body ? doc.body.innerText ?? doc.body.textContent ?? '' : '';
     const types = jsonLdTypes(doc);
     const prices = body.match(PRICE) || [];
-    const buyText = /\b(add to (cart|bag|basket)|buy now|checkout)\b/i.test(body);
+    // No leading \b: sites often render "$9.99Add to cart" with no space between price and button.
+    const buyText = /(add to (cart|bag|basket)|buy now|checkout)\b/i.test(body);
     const foodWords = new Set((body.match(FOOD_WORDS) || []).map((w) => w.toLowerCase()));
     const { grade, avgSentence, words } = readability(text);
     const dense = words > 300 && (grade > 12 || avgSentence > 25);

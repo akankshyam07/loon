@@ -14,21 +14,49 @@ let focused = true; // false while showing chips beside a selection without taki
 
 const escapeHtml = (s) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
-// Small markdown subset: code fences, inline code, bold, bullet lists, paragraphs.
+// Small markdown subset: code fences, tables, quotes, bullet lists, inline code/bold/italic/links, paragraphs.
+function inline(t) {
+  return t
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[\s(])_([^_]+)_(?=[\s).,!?]|$)/g, '$1<em>$2</em>')
+    .replace(/(^|[\s(])\*([^*\s][^*]*)\*(?=[\s).,!?]|$)/g, '$1<em>$2</em>')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (_m, label, url) => `<a href="#" data-url="${url}">${label}</a>`);
+}
+
+function renderBlock(para) {
+  const lines = para.split('\n');
+  if (lines.every((l) => /^\s*\|.*\|\s*$/.test(l)) && lines.length >= 2) {
+    const cells = (l) => l.trim().slice(1, -1).split('|').map((c) => inline(c.trim()));
+    const body = lines.filter((l) => !/^\s*\|[\s:|-]+\|\s*$/.test(l));
+    const [head, ...rows] = body.map(cells);
+    return `<table><thead><tr>${head.map((c) => `<th>${c}</th>`).join('')}</tr></thead><tbody>${rows.map((r) => `<tr>${r.map((c) => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  }
+  if (lines.every((l) => /^&gt; ?/.test(l))) return `<blockquote>${lines.map((l) => inline(l.replace(/^&gt; ?/, ''))).join('<br>')}</blockquote>`;
+  if (lines.every((l) => /^\s*([-*•]|\d+\.) /.test(l) || /^\s{2,}\S/.test(l) || !l.trim())) {
+    const items = [];
+    for (const l of lines.filter((x) => x.trim())) {
+      if (/^\s*([-*•]|\d+\.) /.test(l)) items.push(inline(l.replace(/^\s*([-*•]|\d+\.) /, '')));
+      else items[items.length - 1] += `<br>${inline(l.trim())}`;
+    }
+    const ordered = /^\s*\d+\. /.test(lines[0]);
+    return `<${ordered ? 'ol' : 'ul'}>${items.map((i) => `<li>${i}</li>`).join('')}</${ordered ? 'ol' : 'ul'}>`;
+  }
+  return `<p>${lines.map(inline).join('<br>')}</p>`;
+}
+
 function renderMarkdown(raw) {
   const parts = raw.split(/```(?:[\w-]+)?\n?/);
-  return parts.map((chunk, i) => {
-    if (i % 2) return `<pre>${escapeHtml(chunk.replace(/\n$/, ''))}</pre>`;
-    return escapeHtml(chunk).split(/\n{2,}/).map((para) => {
-      const lines = para.split('\n');
-      const inline = (t) => t.replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-      if (lines.every((l) => /^\s*[-*•] /.test(l) || !l.trim())) {
-        return `<ul>${lines.filter((l) => l.trim()).map((l) => `<li>${inline(l.replace(/^\s*[-*•] /, ''))}</li>`).join('')}</ul>`;
-      }
-      return `<p>${lines.map(inline).join('<br>')}</p>`;
-    }).join('');
-  }).join('');
+  return parts.map((chunk, i) => (i % 2 ? `<pre>${escapeHtml(chunk.replace(/\n$/, ''))}</pre>` : escapeHtml(chunk).split(/\n{2,}/).filter((p) => p.trim()).map(renderBlock).join(''))).join('');
 }
+
+// Links open in the user's browser; the bubble itself never navigates.
+log.addEventListener('click', (e) => {
+  const link = e.target.closest('a[data-url]');
+  if (!link) return;
+  e.preventDefault();
+  window.loon.openLink(link.dataset.url);
+});
 
 function formatCounts(counts) {
   if (!counts) return '';
@@ -36,10 +64,11 @@ function formatCounts(counts) {
   return `this week: ${code + cache} instant · ${local} on-device`;
 }
 
-function tierLabel({ tier, model, detail }) {
+function tierLabel({ tier, model, detail, estimated }) {
+  const suffix = estimated ? ' · estimated' : '';
   if (tier === 'code') return `⚡ instant · ${detail || 'no model needed'}`;
-  if (tier === 'cache') return '⚡ instant · remembered answer';
-  return `🐾 on your Mac · ${model}`;
+  if (tier === 'cache') return `⚡ instant · remembered answer${suffix}`;
+  return `🐾 on your Mac · ${model}${detail ? ` · ${detail}` : ''}${suffix}`;
 }
 
 function reportHeight() {
@@ -77,6 +106,8 @@ function renderContext(next) {
   $('sourceLabel').textContent = context.label || '';
   $('redacted').textContent = context.redactions ? `· ${context.redactions} private item${context.redactions > 1 ? 's' : ''} hidden` : '';
   $('sensitive').hidden = !context.sensitive;
+  $('notice').hidden = !context.notice;
+  $('notice').textContent = context.notice || '';
   input.placeholder = context.placeholder || 'Ask me anything…';
   $('chips').replaceChildren(...(context.chips || []).map(({ id, label }) => {
     const b = document.createElement('button');
@@ -123,7 +154,7 @@ async function handoff(app) {
   }
 }
 
-function answerActions({ canGoDeeper }) {
+function answerActions({ canGoDeeper, replaceText }) {
   const row = document.createElement('div');
   row.className = 'actions';
   const add = (label, onClick) => {
@@ -132,6 +163,18 @@ function answerActions({ canGoDeeper }) {
     b.addEventListener('click', onClick);
     row.append(b);
   };
+  if (replaceText && context.editable) {
+    add('Replace', async (e) => {
+      try {
+        await window.loon.replace(replaceText);
+        e.target.textContent = 'Replaced ✓';
+        e.target.disabled = true;
+      } catch (err) {
+        e.target.textContent = 'Could not replace';
+        console.error(err);
+      }
+    });
+  }
   if (canGoDeeper && lastTask) add('Go deeper', () => runChip(lastTask, context.chips.find((c) => c.id === lastTask)?.label || 'Answer', true));
   const label = document.createElement('span');
   label.textContent = 'Ask in:';

@@ -32,6 +32,8 @@ contextBridge.exposeInMainWorld('loon', {
   runTask: (id, task, deeper = false) => ipcRenderer.send('run-task', { id, task, deeper }),
   lookAnyway: () => ipcRenderer.invoke('look-anyway'),
   handoff: (opts) => ipcRenderer.invoke('handoff', opts),
+  replace: (text) => ipcRenderer.invoke('replace', text),
+  openLink: (url) => ipcRenderer.send('open-link', url),
   focusBubble: () => ipcRenderer.send('bubble-focus'),
   onBubbleContext: on('bubble-context'),
   onBubbleSensitive: on('bubble-sensitive'),

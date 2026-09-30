@@ -1,11 +1,13 @@
-const { app, BrowserWindow, screen, ipcMain, globalShortcut, Menu, powerMonitor, clipboard, shell } = require('electron');
+const { app, BrowserWindow, screen, ipcMain, globalShortcut, Menu, powerMonitor, clipboard, shell, nativeImage, systemPreferences } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const { Brain } = require('./brain/ai');
 const { Resolver } = require('./brain/resolve');
 const { Translator } = require('./brain/translate');
+const { Skills } = require('./brain/skills');
 const { Bridge, newPairingCode } = require('./main/bridge');
 const { createCompanion } = require('./main/companion');
+const capture = require('./main/capture');
 
 // Cat height in px per size preset; the window adds room around it for sparkles and hops.
 const SIZES = { S: 120, M: 160, L: 210 };
@@ -30,7 +32,10 @@ let bridge;
 let companion;
 let translator;
 // Swappable side effects so the selftest never opens a real browser tab or touches the clipboard.
-const hooks = { openExternal: (url) => shell.openExternal(url), clipboard: (text) => clipboard.writeText(text) };
+const hooks = {
+  openExternal: (url) => shell.openExternal(url),
+  clipboard: (text, imagePath) => (imagePath ? clipboard.write({ text, image: nativeImage.createFromPath(imagePath) }) : clipboard.writeText(text)),
+};
 
 function loadSettings() {
   settingsFile = path.join(app.getPath('userData'), 'settings.json');
@@ -114,6 +119,9 @@ function createBubbleWindow() {
   bubbleWin.setAlwaysOnTop(true, 'screen-saver');
   bubbleWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   bubbleWin.loadFile(path.join(__dirname, 'renderer', 'bubble.html'));
+  // The bubble shows model output; it must never navigate or open windows itself.
+  bubbleWin.webContents.on('will-navigate', (e) => e.preventDefault());
+  bubbleWin.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   bubbleWin.on('blur', () => {
     if (!companion.isBusy() && !process.argv.includes('--keep-bubble')) hideBubble();
   });
@@ -169,9 +177,43 @@ function openAskBubble() {
   showBubble();
 }
 
-function toggleBubble() {
-  if (bubbleWin.isVisible()) hideBubble();
-  else openAskBubble();
+// ⌥Space: with text selected in another app, that selection; otherwise a typed question (DESIGN.md §3.3).
+async function onAskHotkey() {
+  if (bubbleWin.isVisible()) return hideBubble();
+  const cursor = screen.getCursorScreenPoint();
+  const anchor = { x: cursor.x, y: cursor.y, w: 1, h: 1 };
+  try {
+    const selection = await capture.captureSelection(clipboard);
+    if (selection) {
+      companion.fromCapture(selection);
+      return showBubble({ anchor });
+    }
+  } catch (err) {
+    if (err instanceof capture.AccessibilityError) {
+      systemPreferences.isTrustedAccessibilityClient(true); // shows macOS's permission prompt, once
+      companion.showNotice('To help with text selected in other apps, allow Loon in System Settings → Privacy & Security → Accessibility.');
+      return showBubble();
+    }
+    console.warn('[capture]', err.message);
+  }
+  openAskBubble();
+}
+
+// ⌥⇧S: macOS's region picker → OCR on this Mac → the usual chips.
+async function onScreenshotHotkey() {
+  const file = await capture.screenshotRegion();
+  if (file) await openScreenshot(file);
+}
+
+async function openScreenshot(file) {
+  catWin.webContents.send('brain', { state: 'thinking' });
+  try {
+    const text = await capture.ocr(file, path.join(app.getPath('userData'), 'ocr'));
+    companion.fromCapture({ text: text || '(no readable text)', source: 'screenshot', imagePath: file, lowText: text.replace(/\s/g, '').length < 20 });
+    showBubble();
+  } finally {
+    catWin.webContents.send('brain', { state: 'done', mood: 'curious' });
+  }
 }
 
 let lastCursor = null;
@@ -222,6 +264,7 @@ function setSize(size) {
 function showCatMenu() {
   Menu.buildFromTemplate([
     { label: 'Ask Loon…', accelerator: 'Alt+Space', click: openAskBubble },
+    { label: 'Explain a screenshot…', accelerator: 'Alt+Shift+S', click: onScreenshotHotkey },
     { label: 'Do a trick', click: () => catWin.webContents.send('debug', { move: 'random' }) },
     {
       label: bridge.clients.size ? 'Browser connected ✓' : `Pair browser… code ${settings.pairingCode} (click to copy)`,
@@ -285,6 +328,10 @@ function registerIpc() {
   ipcMain.on('ask-cancel', () => companion.cancel());
   ipcMain.handle('look-anyway', () => companion.lookAnyway(toBubble));
   ipcMain.handle('handoff', (_e, opts) => companion.handoff(opts));
+  ipcMain.handle('replace', (_e, text) => companion.replace(text));
+  ipcMain.on('open-link', (_e, url) => {
+    if (/^https?:\/\//i.test(url)) hooks.openExternal(url);
+  });
   ipcMain.on('bubble-focus', () => {
     bubbleWin.setFocusable(true);
     bubbleWin.focus();
@@ -332,6 +379,7 @@ app.whenReady().then(() => {
   resolver = new Resolver({
     brain,
     translator,
+    skills: new Skills({ dataDir: app.getPath('userData'), brain }),
     cacheFile: path.join(app.getPath('userData'), 'cache.json'),
     countsFile: path.join(app.getPath('userData'), 'counts.json'),
   });
@@ -364,7 +412,7 @@ app.whenReady().then(() => {
   scheduleScreenshot();
   if (process.argv.includes('--selftest')) {
     catWin.webContents.once('did-finish-load', async () => {
-      const ok = await require('./test/selftest').run({ catWin, bubbleWin, bridge, companion, resolver, hooks, settings }).catch((err) => { console.error(err); return false; });
+      const ok = await require('./test/selftest').run({ catWin, bubbleWin, bridge, companion, resolver, hooks, settings, openScreenshot }).catch((err) => { console.error(err); return false; });
       app.exit(ok ? 0 : 1);
     });
   }
@@ -374,7 +422,8 @@ app.whenReady().then(() => {
   powerMonitor.on('suspend', () => setPaused(true));
   powerMonitor.on('unlock-screen', () => setPaused(false));
   powerMonitor.on('resume', () => setPaused(false));
-  if (!globalShortcut.register('Alt+Space', toggleBubble)) console.warn('Loon: ⌥Space is taken by another app; open the bubble by clicking the cat.');
+  if (!globalShortcut.register('Alt+Space', onAskHotkey)) console.warn('Loon: ⌥Space is taken by another app; open the bubble by clicking the cat.');
+  if (!globalShortcut.register('Alt+Shift+S', onScreenshotHotkey)) console.warn('Loon: ⌥⇧S is taken by another app.');
 });
 
 app.on('will-quit', () => {

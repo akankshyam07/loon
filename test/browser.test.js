@@ -50,12 +50,14 @@ test('selection kinds pick the right chips', () => {
 
 test('page kinds: sensitive wins, shops and articles are recognized', async () => {
   const { parseHTML } = await import('linkedom');
-  const page = (html, url = 'https://example.com/') => detectPage(parseHTML(html).document, new URL(url));
+  const page = (html, url = 'https://example.com/') => detectPage(parseHTML(`<!doctype html><html><body>${html}</body></html>`).document, new URL(url));
   assert.strictEqual(page('<form><input type="password"></form>').kind, 'sensitive');
   assert.strictEqual(page('<p>hi</p>', 'https://www.chase.com/login').sensitive, true);
   const shop = '<script type="application/ld+json">{"@type":"Product","name":"Mug","offers":{"@type":"Offer","price":"9.99"}}</script><p>$9.99</p>';
   assert.strictEqual(page(shop).kind, 'shopping');
   assert.strictEqual(page('<pre>a</pre><pre>b</pre>', 'https://github.com/x/y').kind, 'code');
+  const tight = '<ul>' + ['9.99', '21.50', '16.00'].map((p) => `<li><span>Beans</span><span>$${p}</span><button>Add to cart</button></li>`).join('') + '</ul>';
+  assert.strictEqual(page(tight).kind, 'shopping');
   assert.strictEqual(page('<article><p>Short article.</p></article>').kind, 'article');
 });
 

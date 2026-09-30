@@ -1,6 +1,6 @@
 // Browser companion (DESIGN.md §3.2, §3.4, §3.14, §3.17): turns extension events into bubble sessions and tasks.
 // Owns the current session: what context the bubble is about, which chips it offers, and the running task.
-const { TASKS, SELECTION_CHIPS, PAGE_CHIPS, handoffPrompt } = require('../brain/tasks');
+const { TASKS, SELECTION_CHIPS, pageChipsFor, handoffPrompt } = require('../brain/tasks');
 const { keySentences } = require('../brain/textrank');
 const { classifySelection } = require('../extension/lib/classify');
 const { selectionPacket, pagePacket } = require('./context');
@@ -39,11 +39,26 @@ function createCompanion({ bridge, resolver, brain, ui, hooks }) {
         label: `Selection${domain ? ` · ${domain}` : ''}`,
         chips: (SELECTION_CHIPS[packet.selectionKind] || SELECTION_CHIPS.paragraph).map(chip),
         redactions: packet.redactions,
+        editable: Boolean(packet.editable),
         placeholder: 'Ask about this…',
       };
     }
     if (mode === 'page') {
-      return { mode, label: `This page${domain ? ` · ${domain}` : ''}`, chips: PAGE_CHIPS.map(chip), redactions: packet?.redactions || 0, placeholder: 'Ask about this page…' };
+      const kindLabel = { shopping: 'Shopping page', menu: 'Menu', code: 'Code page', article: 'Article' }[activePage?.kind] || 'This page';
+      return { mode, label: `${kindLabel}${domain ? ` · ${domain}` : ''}`, chips: pageChipsFor(activePage?.kind).map(chip), redactions: packet?.redactions || 0, placeholder: 'Ask about this page…' };
+    }
+    if (mode === 'app') {
+      return {
+        mode,
+        label: packet.source === 'screenshot' ? 'Screenshot · read on this Mac' : `Selection · ${packet.app || 'app'}`,
+        chips: (SELECTION_CHIPS[packet.selectionKind] || SELECTION_CHIPS.paragraph).map(chip),
+        redactions: packet.redactions,
+        notice: packet.notice,
+        placeholder: 'Ask about this…',
+      };
+    }
+    if (mode === 'notice') {
+      return { mode: 'ask', label: '', chips: [], notice: session.notice, placeholder: 'Ask me anything…' };
     }
     if (mode === 'sensitive') {
       return { mode, label: `Private page${domain ? ` · ${domain}` : ''}`, chips: [], sensitive: true, placeholder: 'Ask me anything…' };
@@ -52,7 +67,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks }) {
       return { mode: 'sensitive', label: `Private page · ${domainOf(activePage.url)}`, chips: [], sensitive: true, placeholder: 'Ask me anything…' };
     }
     // Typed questions; offer page chips when a readable page is in front.
-    const pageChips = bridge.clients.size && activePage && !activePage.sensitive ? PAGE_CHIPS.slice(0, 2).map(chip) : [];
+    const pageChips = bridge.clients.size && activePage && !activePage.sensitive ? pageChipsFor(activePage.kind).slice(0, 3).map(chip) : [];
     return { mode: 'ask', label: pageChips.length ? `About ${domainOf(activePage.url)}?` : '', chips: pageChips, redactions: 0, placeholder: 'Ask me anything…' };
   }
 
@@ -198,9 +213,32 @@ function createCompanion({ bridge, resolver, brain, ui, hooks }) {
     let packet = session.packet;
     if (!packet && (session.mode === 'page' || TASKS[task]?.page)) packet = await ensurePagePacket();
     const prompt = handoffPrompt(task || session.lastTask || (packet ? 'explain' : 'ask'), packet || { question: question || '' }, question);
-    hooks.clipboard(prompt);
+    // Screenshots hand off the picture too, so the official app can look at it.
+    hooks.clipboard(prompt, packet?.imagePath);
     await hooks.openExternal(url);
     return { name: HANDOFF_NAMES[app], chars: prompt.length };
+  }
+
+  // Puts rewritten text back into the page's text field (the content script keeps the selection and undo).
+  async function replace(text) {
+    const tabId = session.packet?.tabId;
+    if (!session.packet?.editable || !tabId) throw new Error('Nothing to replace here');
+    const reply = await bridge.request({ type: 'replace', tabId, text });
+    if (reply.error || !reply.ok) throw new Error(reply.error || 'The page would not accept the text');
+    return { ok: true };
+  }
+
+  // ⌥Space with a selection in another app, or text read from a screenshot.
+  function fromCapture({ text, app, source = 'selection', imagePath = null, lowText = false }) {
+    const packet = selectionPacket({ text, kind: source === 'screenshot' ? 'screenshot' : classifySelection(text) });
+    Object.assign(packet, { source, app, imagePath, url: undefined, tabId: undefined });
+    if (lowText) packet.notice = "I can't read much text in this picture. \u201cAsk in Claude\u201d sends the image itself.";
+    startSession('app', packet);
+  }
+
+  function showNotice(notice) {
+    startSession('notice', null);
+    session.notice = notice;
   }
 
   function openAsk() {
@@ -213,7 +251,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks }) {
   }
 
   return {
-    onBridgeMessage, run, lookAnyway, handoff, openAsk, context, cancel, onNudgeClick, onNudgeIgnored,
+    onBridgeMessage, run, lookAnyway, handoff, replace, openAsk, fromCapture, showNotice, context, cancel, onNudgeClick, onNudgeIgnored,
     isBusy: () => Boolean(active),
     session,
     get activePage() { return activePage; },

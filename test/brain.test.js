@@ -50,7 +50,8 @@ test('ladder: templates skip the model, repeats hit the cache, follow-ups do not
 
   assert.strictEqual((await ask('What time is it?')).tier, 'code');
   assert.strictEqual(modelCalls, 0);
-  assert.deepStrictEqual(await ask('Why boxes?'), { text: 'Boxes feel safe.', mood: 'curious', tier: 'local' });
+  const first = await ask('Why boxes?');
+  assert.deepStrictEqual([first.text, first.mood, first.tier], ['Boxes feel safe.', 'curious', 'local']);
   assert.strictEqual((await ask('  why   BOXES? ')).tier, 'cache');
   assert.strictEqual((await ask('Why boxes?', false)).tier, 'local');
   assert.strictEqual(modelCalls, 2);

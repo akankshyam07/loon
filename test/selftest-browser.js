@@ -5,6 +5,7 @@ const path = require('path');
 const http = require('http');
 const WebSocket = require('ws');
 const { PORT } = require('../main/bridge');
+const { ipcMain } = require('electron');
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 async function waitFor(fn, timeoutMs, stepMs = 150) {
@@ -37,7 +38,8 @@ function serveFixtures() {
   return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server)));
 }
 
-async function run({ catWin, bubbleWin, bridge, companion, resolver, hooks, settings }, check) {
+async function run(ctx, check) {
+  const { catWin, bubbleWin, bridge, companion, resolver, hooks, settings } = ctx;
   const exe = findChrome();
   if (!exe) {
     console.log('SKIP  browser checks (no Chrome for Testing in ~/Library/Caches/ms-playwright)');
@@ -60,7 +62,11 @@ async function run({ catWin, bubbleWin, bridge, companion, resolver, hooks, sett
   const chips = () => bubble(`[...document.querySelectorAll('.chip')].map((c) => c.dataset.task)`);
   async function clickChip(task, timeoutMs = 150000) {
     const before = await tierCount();
-    await bubble(`document.querySelector('.chip[data-task="${task}"]').click()`);
+    const found = await bubble(`(() => { const c = document.querySelector('.chip[data-task="${task}"]'); if (c) c.click(); return Boolean(c); })()`);
+    if (!found) {
+      console.log(`  (no "${task}" chip; bubble offers: ${(await chips()).join(', ')}; mode ${companion.session.mode}, page kind ${companion.activePage?.kind})`);
+      return null;
+    }
     await waitFor(async () => (await tierCount()) > before, timeoutMs, 250);
     return lastAnswer();
   }
@@ -159,7 +165,6 @@ async function run({ catWin, bubbleWin, bridge, companion, resolver, hooks, sett
     await closeBubble();
 
     // ---- page summary + highlights ----
-    const { ipcMain } = require('electron');
     ipcMain.emit('open-bubble');
     await waitFor(() => bubbleWin.isVisible(), 2000);
     await wait(300);
@@ -178,6 +183,100 @@ async function run({ catWin, bubbleWin, bridge, companion, resolver, hooks, sett
     await selectAndWait('#trace');
     check('a stack trace gets error chips', (await chips()).includes('explain_error'));
     await closeBubble();
+
+    // ---- M3: shopping, food, developer, writing ----
+    const skills = resolver.skills;
+    const extractorFile = path.join(skills.extractorsDir, '127.0.0.1.json');
+    fs.rmSync(extractorFile, { force: true });
+    const savedBasket = skills.basket();
+    skills.saveBasket([]);
+    const localCalls = () => resolver.counts.tiers.local || 0;
+    const openAsk = async () => {
+      ipcMain.emit('open-bubble');
+      await waitFor(() => bubbleWin.isVisible(), 2000);
+      await wait(400);
+    };
+
+    await page.goto(`${base}/shop.html`);
+    await waitFor(() => companion.activePage?.kind === 'shopping', 5000);
+    await openAsk();
+    const shopChips = await chips();
+    check('shop page: shopping chips', shopChips.includes('shop_value') && shopChips.includes('shop_reviews'), shopChips.join(','));
+    let before = localCalls();
+    const value = await clickChip('shop_value', 20000);
+    check('Best value: unit-price table with zero model calls',
+      /Bubbly/.test(value?.text) && /per 100 ml/.test(value?.text) && localCalls() === before && /structured data/.test(value?.tier), value?.text.slice(0, 90));
+    const reviews = await clickChip('shop_reviews', 10000);
+    check('Reviews: summary from review keywords, no model', /Average 3\.7★/.test(reviews?.text) && localCalls() === before, reviews?.text.slice(0, 60));
+    await clickChip('shop_add', 10000);
+    await closeBubble();
+
+    await page.goto(`${base}/shop-plain.html`);
+    await waitFor(() => companion.activePage?.url?.includes('shop-plain'), 5000);
+    await openAsk();
+    before = localCalls();
+    const plain = await clickChip('shop_value', 150000);
+    check('no structured data: the model writes a site extractor once', /Espresso/.test(plain?.text) && /on your Mac.*new site extractor/.test(plain?.tier), plain?.tier);
+    await closeBubble();
+    await openAsk();
+    before = localCalls();
+    const plainAgain = await clickChip('shop_value', 20000);
+    check('second visit reuses the saved extractor with zero model calls', /saved site extractor/.test(plainAgain?.tier) && localCalls() === before, plainAgain?.tier);
+    await clickChip('shop_add', 10000);
+    await closeBubble();
+    companion.onNudgeClick(); // page mode: every chip for the page kind, like clicking the cat's "?"
+    await waitFor(() => bubbleWin.isVisible(), 2000);
+    await wait(400);
+    const basket = await clickChip('shop_basket', 10000);
+    check('compare basket compares products across pages (and admits when they differ)', /Fizz/.test(basket?.text) && /(House|Espresso|Ethiopia)/.test(basket?.text) && /different kinds of products/.test(basket?.text), basket?.text.slice(0, 80));
+    await closeBubble();
+
+    await page.goto(`${base}/menu.html`);
+    await waitFor(() => companion.activePage?.kind === 'menu', 5000);
+    await openAsk();
+    before = localCalls();
+    const lightest = await clickChip('food_lightest', 20000);
+    check('menu: lightest picks from keywords, no model', /Lightest picks/.test(lightest?.text) && /(Dumplings|Sorbet|Salad)/.test(lightest?.text) && localCalls() === before, lightest?.text.slice(0, 80));
+    await closeBubble();
+
+    await page.goto(`${base}/code.html`);
+    await selectAndWait('#json');
+    const dto = await clickChip('make_dto_java', 20000);
+    check('JSON → Java DTO with quicktype', /class Root/.test(dto?.text) && /quicktype/.test(dto?.tier), dto?.tier);
+    await selectAndWait('#trace');
+    before = localCalls();
+    const known = await clickChip('explain_error', 10000);
+    check('known errors answer from the table, no model', /NullPointerException \(Java\)/.test(known?.text) && localCalls() === before, known?.tier);
+    await closeBubble();
+
+    await page.goto(`${base}/write.html`);
+    await page.evaluate(() => {
+      const t = document.getElementById('draft');
+      t.focus();
+      t.setSelectionRange(0, t.value.length);
+      document.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+    });
+    await waitFor(() => companion.session.packet?.editable, 5000);
+    await wait(300);
+    const fixed = await clickChip('fix_grammar', 20000);
+    check('Fix grammar with Harper, no model', /There is an issue with the report/.test(fixed?.text) && /Harper/.test(fixed?.tier), fixed?.text.slice(0, 60));
+    await bubble(`[...document.querySelectorAll('.actions button')].find((b) => b.textContent === 'Replace').click()`);
+    const replaced = await waitFor(async () => /There is an issue with the report\.$/.test(await page.inputValue('#draft')), 5000);
+    check('Replace puts the fixed text back into the text box', replaced, await page.inputValue('#draft'));
+    await closeBubble();
+    // Screenshot → OCR (same path as ⌥⇧S, minus the interactive picker)
+    await page.goto(`${base}/article.html`);
+    const shotFile = path.join(os.tmpdir(), `loon-selftest-shot-${Date.now()}.png`);
+    await page.screenshot({ path: shotFile, clip: { x: 0, y: 0, width: 800, height: 260 } });
+    await ctx.openScreenshot(shotFile);
+    await waitFor(() => bubbleWin.isVisible(), 60000);
+    await wait(400);
+    const ocrText = await clickChip('extract_text', 10000);
+    check('screenshot text is read on this Mac (Tesseract)', /cats love boxes/i.test(ocrText?.text) && /Tesseract/.test(ocrText?.tier), ocrText?.text.slice(0, 60));
+    await closeBubble();
+    fs.rmSync(shotFile, { force: true });
+    skills.saveBasket(savedBasket);
+    fs.rmSync(extractorFile, { force: true });
 
     // ---- sensitive page ----
     await page.goto(`${base}/bank.html`);

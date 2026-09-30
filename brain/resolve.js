@@ -6,6 +6,9 @@ const { TASKS, MAX_CONTEXT_CHARS, buildPrompt } = require('./tasks');
 const { define } = require('./define');
 const { keySentences, trimForModel } = require('./textrank');
 const { languageName } = require('./translate');
+const { fingerprint } = require('./errors');
+const shopping = require('./shopping');
+const food = require('./food');
 
 const PROMPT_VERSION = 'v2';
 const MOODS = ['happy', 'curious', 'judgy', 'sleepy', 'suspicious', 'focused', 'protective', 'confused'];
@@ -83,9 +86,10 @@ function createMoodParser(onText) {
 const EMPTY_TIERS = () => ({ code: 0, cache: 0, local: 0 });
 
 class Resolver {
-  constructor({ brain, cacheFile, countsFile, translator = null }) {
+  constructor({ brain, cacheFile, countsFile, translator = null, skills = null }) {
     this.brain = brain;
     this.translator = translator;
+    this.skills = skills;
     this.cache = new ResponseCache(cacheFile);
     this.countsFile = countsFile;
     this.counts = this.loadCounts();
@@ -159,6 +163,27 @@ class Resolver {
       }
     }
 
+    // M3 code tiers: shopping, reviews, basket, food, known errors, DTOs, grammar.
+    if (!deeper && !question && this.skills) {
+      for (const tier of tiers.filter((t) => !['define', 'translate', 'keypoints'].includes(t))) {
+        const result = await this.skills.run(tier, taskId, packet);
+        if (!result) continue;
+        onText(result.text);
+        // Honest labels: a one-time model call (e.g. writing a site extractor) counts as on-device, not instant.
+        this.count(result.usedModel ? 'local' : 'code');
+        return { ...result, tier: result.usedModel ? 'local' : 'code' };
+      }
+    }
+
+    // Some model tasks work on computed data instead of raw page text (the model never recomputes numbers).
+    if (task.contextFrom === 'shopping' && this.skills) {
+      const { items } = await this.skills.products(packet);
+      packet = { ...packet, text: items.length ? shopping.renderTable(shopping.analyze(items, packet.text)) : packet.text };
+    } else if (task.contextFrom === 'menu') {
+      const items = food.extractMenu(packet.text || '');
+      if (items.length) packet = { ...packet, text: items.map((i) => `- ${i.name}${i.description ? `: ${i.description}` : ''}`).join('\n') };
+    }
+
     // Instant key points from TextRank, then the model writes the summary under them.
     if (!deeper && !question && tiers.includes('keypoints')) {
       const points = keySentences(packet.text, 4);
@@ -171,12 +196,14 @@ class Resolver {
     const prompt = buildPrompt(taskId, { ...packet, text: packet.text && trimForModel(packet.text, MAX_CONTEXT_CHARS) }, { deeper, question });
     // Follow-ups depend on the conversation so far, so only a thread's first turn is cacheable.
     const cacheable = firstInThread && !question;
-    const key = cacheable ? ResponseCache.key(taskId, normalize(prompt), String(deeper), this.brain.modelId(), PROMPT_VERSION) : null;
+    // Errors cache by fingerprint so the same error with different paths/values reuses one answer.
+    const identity = task.cacheByFingerprint ? fingerprint(packet.text || '').hash : normalize(prompt);
+    const key = cacheable ? ResponseCache.key(taskId, identity, String(deeper), this.brain.modelId(), PROMPT_VERSION) : null;
     const hit = key && this.cache.get(key);
     if (hit) {
       onText(hit.text);
       this.count('cache');
-      return { text: prefix + hit.text, mood: hit.mood, tier: 'cache' };
+      return { text: prefix + hit.text, mood: hit.mood, tier: 'cache', estimated: Boolean(task.estimated), replaceText: task.replaceable ? hit.text : undefined };
     }
 
     this.lastPrompt = prompt;
@@ -187,7 +214,7 @@ class Resolver {
     text = text.trim();
     this.count('local');
     if (key && text && !signal?.aborted) this.cache.set(key, { text, mood });
-    return { text: prefix + text, mood, tier: 'local' };
+    return { text: prefix + text, mood, tier: 'local', estimated: Boolean(task.estimated), replaceText: task.replaceable ? text : undefined };
   }
 }
 

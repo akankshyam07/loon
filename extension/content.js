@@ -18,14 +18,14 @@
     const inField = active && (active.tagName === 'TEXTAREA' || (active.tagName === 'INPUT' && /^(text|search|email|url)?$/.test(active.type)));
     if (inField) {
       const text = active.value.slice(active.selectionStart, active.selectionEnd);
-      return { text, editable: true, rect: active.getBoundingClientRect(), node: active };
+      return { text, editable: true, rect: active.getBoundingClientRect(), node: active, restore: { field: active, start: active.selectionStart, end: active.selectionEnd } };
     }
     const sel = window.getSelection();
     if (!sel || sel.isCollapsed || !sel.rangeCount) return null;
     const range = sel.getRangeAt(0);
     const node = range.commonAncestorContainer.nodeType === 1 ? range.commonAncestorContainer : range.commonAncestorContainer.parentElement;
     const editable = Boolean(node?.closest('[contenteditable=""], [contenteditable="true"]'));
-    return { text: sel.toString(), editable, rect: range.getBoundingClientRect(), node };
+    return { text: sel.toString(), editable, rect: range.getBoundingClientRect(), node, restore: editable ? { range: range.cloneRange(), host: node.closest('[contenteditable]') } : null };
   }
 
   // Screen coordinates are approximate: the toolbar height is inferred from outer/inner size (DESIGN.md §3.2).
@@ -43,6 +43,7 @@
   }
 
   let lastSent = '';
+  let lastEditable = null; // where "Replace" puts rewritten text back
   let debounce = null;
   function onSelectionChange() {
     clearTimeout(debounce);
@@ -57,6 +58,7 @@
       if (text === lastSent) return;
       lastSent = text;
       if (page.sensitive) return send({ type: 'selection-blocked', reason: page.reason });
+      lastEditable = info.editable ? info.restore : null;
       const monospace = info.node && /mono|courier|consolas|menlo/i.test(getComputedStyle(info.node).fontFamily);
       send({
         type: 'selection',
@@ -123,6 +125,24 @@
     return ranges.length;
   }
 
+  // execCommand('insertText') goes through the editor's normal input path, so ⌘Z undo keeps working.
+  function replaceSelection(text) {
+    if (!lastEditable) return { ok: false, error: 'The selection is gone' };
+    if (lastEditable.field) {
+      const { field, start, end } = lastEditable;
+      field.focus();
+      field.setSelectionRange(start, end);
+    } else {
+      lastEditable.host?.focus();
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(lastEditable.range);
+    }
+    const ok = document.execCommand('insertText', false, text);
+    lastEditable = null;
+    return { ok };
+  }
+
   function pageOutline() {
     const labels = [...document.querySelectorAll('h1, h2, h3, label, button, [role="button"], input[type="submit"]')]
       .map((el) => (el.innerText || el.value || el.getAttribute('aria-label') || '').trim())
@@ -140,6 +160,8 @@
     } else if (message.type === 'clear-highlight') {
       if ('highlights' in CSS) CSS.highlights.delete('loon-key');
       reply({ ok: true });
+    } else if (message.type === 'replace') {
+      reply(replaceSelection(message.text));
     } else if (message.type === 'report-page') {
       page = detectPage(document, location);
       reportPage();

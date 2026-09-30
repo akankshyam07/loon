@@ -11,6 +11,7 @@ function selectionPacket(message) {
     surrounding: surrounding.text,
     redactions: text.count + surrounding.count,
     selectionKind: message.kind || 'paragraph',
+    editable: message.kind === 'editable',
     pageKind: message.pageKind,
     url: message.url,
     title: message.title,
@@ -36,6 +37,8 @@ async function pagePacket(reply, tabId) {
   return {
     source: 'page',
     text: cleaned.text,
+    // Raw HTML stays in the main process for deterministic extractors (prices, reviews); prompts only ever use `text`.
+    html: reply.html,
     redactions: cleaned.count,
     url: reply.url,
     title: reply.title,

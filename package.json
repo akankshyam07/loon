@@ -19,7 +19,6 @@
     "defuddle": "^0.19.4",
     "franc-min": "^6.2.0",
     "harper.js": "^2.10.0",
-    "js-quantities": "^1.8.0",
     "linkedom": "^0.18.13",
     "node-llama-cpp": "^3.22.1",
     "quicktype-core": "^26.0.0",
