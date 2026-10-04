@@ -152,6 +152,8 @@ class Skills {
         const found = this.leetcode.lookup(packet.url || '');
         return found ? { text: found.text, mood: 'focused', detail: 'your Leetcode repo, no model' } : { text: "This problem isn't in your Leetcode repo's company lists.", mood: 'curious' };
       }
+      case 'csv':
+        return { text: require('./files').csvOverview(packet.text || '', packet.title), mood: 'focused', detail: 'computed from the file, no model' };
       case 'ocr-text':
         return packet.text ? { text: `\`\`\`\n${packet.text}\n\`\`\``, mood: 'happy', detail: 'Tesseract OCR on this Mac', copyText: packet.text } : null;
       case 'quiz': {

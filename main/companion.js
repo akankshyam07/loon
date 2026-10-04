@@ -56,7 +56,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
     if (mode === 'app') {
       return {
         mode,
-        label: packet.source === 'screenshot' ? 'Screenshot · read on this Mac' : `Selection · ${packet.app || 'app'}`,
+        label: packet.source === 'screenshot' ? 'Screenshot · read on this Mac' : packet.source === 'file' ? `File · ${packet.title}${packet.fileNote ? ` · ${packet.fileNote}` : ''}` : `Selection · ${packet.app || 'app'}`,
         chips: (SELECTION_CHIPS[packet.selectionKind] || SELECTION_CHIPS.paragraph).map(chip),
         redactions: packet.redactions,
         notice: packet.notice,
@@ -329,9 +329,9 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
   }
 
   // ⌥Space with a selection in another app, or text read from a screenshot.
-  function fromCapture({ text, app, source = 'selection', imagePath = null, lowText = false }) {
-    const packet = selectionPacket({ text, kind: source === 'screenshot' ? 'screenshot' : classifySelection(text) });
-    Object.assign(packet, { source, app, imagePath, url: undefined, tabId: undefined });
+  function fromCapture({ text, app, source = 'selection', imagePath = null, lowText = false, kind = null, title = null, note = null }) {
+    const packet = selectionPacket({ text, kind: kind || (source === 'screenshot' ? 'screenshot' : classifySelection(text)) });
+    Object.assign(packet, { source, app, imagePath, title, fileNote: note, url: undefined, tabId: undefined });
     if (lowText) packet.notice = "I can't read much text in this picture. \u201cAsk in Claude\u201d sends the image itself.";
     startSession('app', packet);
   }

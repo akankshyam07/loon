@@ -247,6 +247,33 @@ async function onScreenshotHotkey() {
   if (file) await openScreenshot(file);
 }
 
+// A file dropped on the cat: read locally, then the usual chips (DESIGN M6).
+async function openDroppedFile(file) {
+  const { readDropped } = require('./brain/files');
+  catWin.webContents.send('brain', { state: 'thinking' });
+  try {
+    const read = await readDropped(file);
+    if (read.error) {
+      companion.showNotice(read.error);
+      return showBubble();
+    }
+    if (read.kind === 'image') return openScreenshot(file, read.name);
+    const kind = read.kind === 'csv' ? 'csv' : read.kind === 'pdf' ? 'document' : classifyText(read.text);
+    companion.fromCapture({ text: read.text, source: 'file', kind, title: read.name, note: read.note });
+    showBubble();
+  } catch (err) {
+    companion.showNotice(`I couldn't read that file: ${err.message}`);
+    showBubble();
+  } finally {
+    catWin.webContents.send('brain', { state: 'done', mood: 'curious' });
+  }
+}
+
+function classifyText(text) {
+  const kind = require('./extension/lib/classify').classifySelection(text.slice(0, 4000));
+  return ['code', 'json', 'stacktrace'].includes(kind) ? kind : 'document';
+}
+
 async function openScreenshot(file) {
   catWin.webContents.send('brain', { state: 'thinking' });
   try {
@@ -259,13 +286,22 @@ async function openScreenshot(file) {
 }
 
 let lastCursor = null;
+let catBodyOpen = false;
 function startCursorFeed() {
   setInterval(() => {
     if (!catWin || catWin.isDestroyed()) return;
     const cursor = screen.getCursorScreenPoint();
     if (lastCursor && cursor.x === lastCursor.x && cursor.y === lastCursor.y) return;
     lastCursor = cursor;
-    catWin.webContents.send('cursor', { cursor, win: catWin.getBounds() });
+    const win = catWin.getBounds();
+    catWin.webContents.send('cursor', { cursor, win });
+    // During a file drag the page gets no mouse events, so main opens the cat's body area by cursor position.
+    const inBody = cursor.x > win.x + win.width * 0.3 && cursor.x < win.x + win.width * 0.7 && cursor.y > win.y + win.height * 0.4 && cursor.y < win.y + win.height;
+    if (inBody !== catBodyOpen) {
+      catBodyOpen = inBody;
+      if (inBody) catWin.setIgnoreMouseEvents(false);
+      else catWin.webContents.send('cursor-left-body');
+    }
   }, 50);
 }
 
@@ -455,6 +491,7 @@ function registerIpc() {
   ipcMain.on('open-notes-folder', () => { fs.mkdirSync(notes.dir, { recursive: true }); shell.openPath(notes.dir); });
   ipcMain.on('copy-pairing-code', () => clipboard.writeText(settings.pairingCode));
   ipcMain.on('open-settings', openSettings);
+  ipcMain.on('drop-file', (_e, file) => { if (typeof file === 'string' && path.isAbsolute(file) && fs.existsSync(file)) openDroppedFile(file); });
   ipcMain.on('mic-chunk', (_e, samples) => voice.onChunk(Float32Array.from(samples)));
   ipcMain.on('mic-error', (_e, message) => {
     voice.stop();
@@ -600,7 +637,7 @@ app.whenReady().then(() => {
   scheduleScreenshot();
   if (process.argv.includes('--selftest')) {
     catWin.webContents.once('did-finish-load', async () => {
-      const ok = await require('./test/selftest').run({ catWin, bubbleWin, bridge, companion, resolver, hooks, settings, openScreenshot, actions, notes, memory, setToggle, voice, voiceEngine, hub }).catch((err) => { console.error(err); return false; });
+      const ok = await require('./test/selftest').run({ catWin, bubbleWin, bridge, companion, resolver, hooks, settings, openScreenshot, openDroppedFile, actions, notes, memory, setToggle, voice, voiceEngine, hub }).catch((err) => { console.error(err); return false; });
       app.exit(ok ? 0 : 1);
     });
   }

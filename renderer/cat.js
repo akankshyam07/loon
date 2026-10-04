@@ -768,6 +768,27 @@
     }
   });
 
+  // ---------- files dropped on the cat ----------
+  document.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    if (state === 'idle' && mood !== 'wide') {
+      setMood('wide');
+      T.earL = T.earR = -10;
+    }
+  });
+  document.addEventListener('dragleave', () => { if (state === 'idle') setMood('neutral'); });
+  document.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    setMood('happy');
+    sparklesAround(110, 120, 4);
+    window.loon.dropFile(file);
+  });
+  // main opened the body area for a possible drag; hand click-through back once the cursor leaves it
+  window.loon.onCursorLeftBody(() => { if (!press) { ignoring = false; setIgnore(true); } });
+
   // ---------- voice: mic capture, playback, and the listening/speaking looks ----------
   const micBadge = $('#mic');
   let mic = null; // { stream, context, node }

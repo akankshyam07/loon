@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 const on = (channel) => (callback) => ipcRenderer.on(channel, (_event, payload) => callback(payload));
 
@@ -55,6 +55,8 @@ contextBridge.exposeInMainWorld('loon', {
   onSettingsChanged: on('settings-changed'),
   onFocus: on('focus'),
   onMic: on('mic'),
+  dropFile: (file) => ipcRenderer.send('drop-file', webUtils.getPathForFile(file)),
+  onCursorLeftBody: on('cursor-left-body'),
   onPlay: on('play-audio'),
   onStopAudio: on('stop-audio'),
   onVoice: on('voice'),

@@ -77,3 +77,25 @@ test('hub commands: catch-up and Shortcuts, with fuzzy Shortcut names', async ()
   assert.strictEqual((await actions.execute({ action: 'shortcut', name: 'New Note with Date' })).ok, true);
   assert.deepStrictEqual(ran, ['New Note with Date']);
 });
+
+test('dropped files: CSV overview in code, text and PDF read locally, unknown types refused', async () => {
+  const { readDropped, csvOverview, kindOf } = require('../brain/files');
+  const csv = 'name,price,size\nFizz,6.99,12 x 330ml\nBubbly,11.49,24 x 355ml\nSpritz,"7,25",8 x 500ml\n';
+  const overview = csvOverview(csv, 'water.csv');
+  assert.match(overview, /\*\*water\.csv\*\*: 3 rows × 3 columns/);
+  assert.match(overview, /\| price \| number \| 6\.99 – 725, avg/);
+  assert.match(overview, /\| name \| text \| all 3 unique/);
+  assert.deepStrictEqual(['a.pdf', 'b.CSV', 'c.png', 'd.ts', 'e.zip'].map(kindOf), ['pdf', 'csv', 'image', 'text', null]);
+  const dir = tmp();
+  fs.writeFileSync(path.join(dir, 'notes.md'), '# Notes\nCats like boxes.');
+  assert.strictEqual((await readDropped(path.join(dir, 'notes.md'))).text, '# Notes\nCats like boxes.');
+  assert.match((await readDropped(path.join(dir, 'x.zip'))).error, /not \.zip/);
+  try {
+    execFileSync('cupsfilter', [path.join(dir, 'notes.md')], { stdio: ['ignore', fs.openSync(path.join(dir, 'notes.pdf'), 'w'), 'ignore'] });
+  } catch {
+    return; // no cupsfilter: skip the PDF half
+  }
+  const pdf = await readDropped(path.join(dir, 'notes.pdf'));
+  assert.strictEqual(pdf.kind, 'pdf');
+  assert.match(pdf.text, /Cats like boxes\./);
+});

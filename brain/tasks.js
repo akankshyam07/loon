@@ -28,6 +28,8 @@ const TASKS = {
   explain_json: { label: 'Explain', instruction: () => 'Explain the structure of this JSON: its main fields and what they likely mean.', maxTokens: 360 },
   // Screenshots (§3.5): the OCR text itself, no model
   extract_text: { label: 'Copy text', tiers: ['ocr-text'] },
+  // Files dropped on the cat (M6)
+  csv_overview: { label: 'Overview', tiers: ['csv'] },
   // Projects (M6): answered from the user's local Leetcode repo, no model
   leetcode_companies: { label: 'Which companies ask this?', tiers: ['leetcode'] },
   // Developer (§3.8)
@@ -97,6 +99,8 @@ const SELECTION_CHIPS = {
   stacktrace: ['explain_error', 'likely_fix'],
   editable: ['fix_grammar', 'shorter', 'professional', 'warmer', 'rewrite', 'translate'],
   screenshot: ['extract_text', 'explain', 'summarize', 'translate'],
+  csv: ['csv_overview', 'summarize', 'explain'],
+  document: ['summarize', 'explain', 'quiz', 'simplify', 'translate'],
 };
 const PAGE_CHIPS = ['page_summary', 'page_todo', 'page_notes', 'page_checklist', 'quiz'];
 // Page chips by page kind (§2.5 modes): picked automatically from what the content script detected.

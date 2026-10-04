@@ -14,7 +14,7 @@ Loon never writes to other repos: git is only ever read, with `--no-optional-loc
 - [x] 4. Local apps via OpenAPI: discover `openapi.json` on localhost dev ports, turn operations into tools (GET = read, others = confirm), keyword routing, model only as a tie-breaker; "Send this page to …"
 
 ## Everyday
-- [ ] 5. Drop a file on the cat: PDF / text / CSV / image → the usual chips (pdf.js text, Tesseract for images)
+- [x] 5. Drop a file on the cat: PDF / text / CSV / image → the usual chips (pdf.js text, Tesseract for images)
 
 ## Polish
 - [ ] 6. Graphics + UX pass: cat details, bubble and settings visual refinement, dark mode, first-run welcome, empty states

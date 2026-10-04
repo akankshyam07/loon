@@ -24,6 +24,7 @@
     "kokoro-js": "^1.2.1",
     "linkedom": "^0.18.13",
     "node-llama-cpp": "^3.22.1",
+    "pdfjs-dist": "^6.4.299",
     "quicktype-core": "^26.0.0",
     "sherpa-onnx-node": "^1.13.8",
     "tesseract.js": "^7.0.0",
@@ -79,9 +80,9 @@
       "hardenedRuntime": false,
       "extendInfo": {
         "LSUIElement": true,
-        "NSMicrophoneUsageDescription": "Loon listens only while you talk to it (after \u2325\u21e7V or the optional \"Hey Loon\"). Audio is processed on this Mac and never saved.",
+        "NSMicrophoneUsageDescription": "Loon listens only while you talk to it (after ⌥⇧V or the optional \"Hey Loon\"). Audio is processed on this Mac and never saved.",
         "NSAppleEventsUsageDescription": "Loon adds reminders and calendar events only after you confirm them.",
-        "NSScreenCaptureUsageDescription": "Loon reads the screen region you pick with \u2325\u21e7S."
+        "NSScreenCaptureUsageDescription": "Loon reads the screen region you pick with ⌥⇧S."
       }
     },
     "dmg": {

@@ -293,6 +293,18 @@ async function run(ctx) {
       ctx.settings.projects = savedProjects;
     }
 
+    // ---- M6: files dropped on the cat (the drop handler's IPC path; Electron can't fake an OS file drag) ----
+    const csvFile = path.join(tmp, 'water.csv');
+    fs.writeFileSync(csvFile, 'name,price\nFizz,6.99\nBubbly,11.49\n');
+    await ctx.openDroppedFile(csvFile);
+    await waitFor(() => bubbleWin.isVisible(), 3000);
+    await wait(400);
+    const csvChips = await bubble(`[...document.querySelectorAll('.chip')].map((c) => c.dataset.task)`);
+    await bubble(`document.querySelector('.chip[data-task="csv_overview"]').click()`);
+    const csvDone = await waitFor(() => bubble(`[...document.querySelectorAll('.a')].some((a) => /2 rows × 2 columns/.test(a.textContent))`), 5000);
+    check('drop a CSV on the cat: instant overview computed from the file', csvChips.includes('csv_overview') && csvDone, csvChips.join(','));
+    await bubble('window.loon.closeBubble()');
+
     // ---- M6: a connected local app (a fake FastAPI-style app, never the user's real projects) ----
     const fakeApp = await require('./fixtures/openapi-app').start();
     const connector = ctx.hub.add({ name: 'Career Intel', baseUrl: `http://127.0.0.1:${fakeApp.port}` });
