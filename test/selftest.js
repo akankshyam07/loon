@@ -293,6 +293,33 @@ async function run(ctx) {
       ctx.settings.projects = savedProjects;
     }
 
+    // ---- M6: a connected local app (a fake FastAPI-style app, never the user's real projects) ----
+    const fakeApp = await require('./fixtures/openapi-app').start();
+    const connector = ctx.hub.add({ name: 'Career Intel', baseUrl: `http://127.0.0.1:${fakeApp.port}` });
+    try {
+      await ctx.hub.refresh();
+      await typeInBubble('career: search python jobs');
+      const listed = await waitFor(() => bubble(`[...document.querySelectorAll('.a')].some((a) => /Backend Engineer/.test(a.textContent))`), 8000);
+      check('"career: search python jobs" calls the app\'s search endpoint (a read, no confirm, no model)', listed);
+      await bubble('window.loon.closeBubble()');
+
+      await typeInBubble('career: save a job');
+      await waitFor(() => bubble(`Boolean(document.querySelector('.confirm'))`), 5000);
+      const fieldNames = await bubble(`[...document.querySelectorAll('.confirm label')].map((l) => l.firstChild.textContent).join(',')`);
+      await bubble(`(() => { const inputs = document.querySelectorAll('.confirm input'); inputs[0].value = 'https://jobs.test/42'; inputs[1].value = 'ML Engineer'; document.querySelector('.confirm .primary').click(); })()`);
+      const saved = await waitFor(() => fakeApp.jobs.some((j) => j.url === 'https://jobs.test/42'), 5000);
+      check('writes ask first: confirm card with the API\'s fields, then the job is saved', /url \*,title \*/.test(fieldNames) && saved, fieldNames);
+      await bubble('window.loon.closeBubble()');
+
+      await typeInBubble('career: job');
+      const choices = await waitFor(() => bubble(`Boolean(document.querySelector('.choices'))`), 5000);
+      check('an ambiguous request shows buttons to pick from instead of guessing', choices);
+      await bubble('window.loon.closeBubble()');
+    } finally {
+      ctx.hub.remove(connector.id);
+      fakeApp.server.close();
+    }
+
     ipcMain.emit('open-settings');
     const settingsWin = await (async () => {
       for (let i = 0; i < 30; i++) {

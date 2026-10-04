@@ -12,6 +12,7 @@ const { Actions } = require('./main/actions');
 const { Notes } = require('./brain/notes');
 const { Memory } = require('./brain/memory');
 const { VoiceEngine, createVoiceController } = require('./main/voice');
+const { ConnectorHub } = require('./main/hub');
 
 // Cat height in px per size preset; the window adds room around it for sparkles and hops.
 const SIZES = { S: 120, M: 160, L: 210 };
@@ -26,7 +27,7 @@ const DEMO = process.argv.includes('--demo') || process.env.LOON_DEMO === '1';
 const SELFTEST = process.argv.includes('--selftest');
 
 let settingsFile;
-let settings = { size: 'M', focus: false, privacy: false, judgmental: true, wakeWord: false, speakReplies: 'voiceOnly', projects: [] };
+let settings = { size: 'M', focus: false, privacy: false, judgmental: true, wakeWord: false, speakReplies: 'voiceOnly', projects: [], connectors: [] };
 let catWin;
 let bubbleWin;
 let brain;
@@ -41,6 +42,7 @@ let notes;
 let memory;
 let settingsWin = null;
 let voice;
+let hub;
 let voiceEngine;
 const pendingPlays = new Map();
 const toBubbleRef = { current: null };
@@ -318,6 +320,7 @@ function settingsSnapshot() {
   return {
     ...settings,
     projectChoices: [...known.values()].map((p) => ({ ...p, allowed: (settings.projects || []).includes(p.path) })),
+    connectorList: (settings.connectors || []).map((x) => ({ ...x, ready: hub.cache.has(x.id), operations: hub.cache.get(x.id)?.ops.length || 0, canSend: hub.senders.has(x.id) })),
     notesDir: notes.dir,
     connected: bridge.clients.size > 0,
     counts: resolver.counts,
@@ -409,7 +412,7 @@ function registerIpc() {
   // Bubble ↔ companion. Every answer streams back as ask-chunk / ask-done / ask-error.
   const toBubble = (type, payload) => {
     voice.observe(type, payload);
-    const channel = { chunk: 'ask-chunk', done: 'ask-done', error: 'ask-error', context: 'bubble-context', sensitive: 'bubble-sensitive', confirm: 'bubble-confirm', 'action-done': 'bubble-action' }[type];
+    const channel = { chunk: 'ask-chunk', done: 'ask-done', error: 'ask-error', context: 'bubble-context', sensitive: 'bubble-sensitive', confirm: 'bubble-confirm', 'action-done': 'bubble-action', choices: 'bubble-choices' }[type];
     bubbleWin.webContents.send(channel, payload);
   };
   toBubbleRef.current = toBubble;
@@ -443,6 +446,9 @@ function registerIpc() {
     }
     return settingsSnapshot();
   });
+  ipcMain.handle('connectors-discover', () => hub.discover());
+  ipcMain.handle('connectors-add', (_e, found) => { hub.add(found); return settingsSnapshot(); });
+  ipcMain.handle('connectors-remove', (_e, id) => { hub.remove(id); return settingsSnapshot(); });
   ipcMain.handle('memory-update', (_e, { id, text }) => { memory.update(id, text); return settingsSnapshot(); });
   ipcMain.handle('memory-delete', (_e, id) => { memory.remove(id); return settingsSnapshot(); });
   ipcMain.handle('memory-clear', () => { memory.clear(); resolver.cache.clear(); return settingsSnapshot(); });
@@ -500,7 +506,8 @@ app.whenReady().then(() => {
   memory = new Memory(path.join(app.getPath('userData'), 'memory.json'));
   // Only folders the user ticked in Settings → Projects are ever read.
   const allowedProjects = () => (settings.projects || []).filter((p) => fs.existsSync(p));
-  actions = new Actions({ auditFile: path.join(app.getPath('userData'), 'audit.jsonl'), notes, memory, projects: allowedProjects, openExternal: (url) => hooks.openExternal(url) });
+  hub = new ConnectorHub({ settings, save: saveSettings });
+  actions = new Actions({ auditFile: path.join(app.getPath('userData'), 'audit.jsonl'), notes, memory, hub, projects: allowedProjects, openExternal: (url) => hooks.openExternal(url) });
   resolver = new Resolver({
     brain,
     translator,
@@ -517,6 +524,7 @@ app.whenReady().then(() => {
     resolver,
     brain,
     hooks,
+    hub,
     actions,
     notes,
     settings,
@@ -575,6 +583,8 @@ app.whenReady().then(() => {
   session.defaultSession.setPermissionCheckHandler((wc, permission) => permission === 'media' && wc === catWin?.webContents);
 
   if (settings.wakeWord) setTimeout(() => voice.setWake(!settings.focus && !settings.privacy), 3000);
+  hub.refresh();
+  setInterval(() => hub.refresh(), 5 * 60 * 1000); // apps come and go; keep "Send to …" chips current
 
   bridge.on('message', (message) => {
     try {
@@ -590,7 +600,7 @@ app.whenReady().then(() => {
   scheduleScreenshot();
   if (process.argv.includes('--selftest')) {
     catWin.webContents.once('did-finish-load', async () => {
-      const ok = await require('./test/selftest').run({ catWin, bubbleWin, bridge, companion, resolver, hooks, settings, openScreenshot, actions, notes, memory, setToggle, voice, voiceEngine }).catch((err) => { console.error(err); return false; });
+      const ok = await require('./test/selftest').run({ catWin, bubbleWin, bridge, companion, resolver, hooks, settings, openScreenshot, actions, notes, memory, setToggle, voice, voiceEngine, hub }).catch((err) => { console.error(err); return false; });
       app.exit(ok ? 0 : 1);
     });
   }

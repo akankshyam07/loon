@@ -288,6 +288,28 @@ async function run(ctx, check) {
     skills.saveBasket(savedBasket);
     fs.rmSync(extractorFile, { force: true });
 
+    // ---- Send this page to a connected local app ----
+    const fakeApp = await require('./fixtures/openapi-app').start();
+    const connector = ctx.hub.add({ name: 'Career Intel', baseUrl: `http://127.0.0.1:${fakeApp.port}` });
+    try {
+      await ctx.hub.refresh();
+      await page.goto(`${base}/article.html`);
+      await waitFor(() => companion.activePage?.kind === 'article', 5000);
+      await selectAndWait('#s1');
+      const sendChip = `send:${connector.id}`;
+      const offered = (await chips()).includes(sendChip);
+      await bubble(`document.querySelector('.chip[data-task="${sendChip}"]').click()`);
+      await waitFor(() => bubble(`Boolean(document.querySelector('.confirm'))`), 5000);
+      const prefilled = await bubble(`[...document.querySelectorAll('.confirm input')].map((i) => i.value).join(' | ')`);
+      await bubble(`document.querySelector('.confirm .primary').click()`);
+      const sent = await waitFor(() => fakeApp.jobs.some((j) => /article\.html/.test(j.url || '')), 5000);
+      check('"Send to Career Intel" offers the page, prefilled, and saves it after ✓', offered && /article\.html/.test(prefilled) && sent, prefilled.slice(0, 80));
+      await closeBubble();
+    } finally {
+      ctx.hub.remove(connector.id);
+      fakeApp.server.close();
+    }
+
     // ---- sensitive page ----
     await page.goto(`${base}/bank.html`);
     check('private page: the cat covers its eyes', await waitFor(async () => (await cat('window.__loon.privacy')) && (await cat('window.__loon.pose')) === 'pawsUp', 5000));

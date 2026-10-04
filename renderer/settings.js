@@ -6,6 +6,20 @@ function render(s) {
   const { code = 0, cache = 0, local = 0 } = s.counts?.tiers || {};
   $('counts').textContent = `${code + cache} answers were instant (no model), ${local} used the model on your Mac.`;
   $('notesDir').textContent = s.notesDir;
+  $('connectors').replaceChildren(...(s.connectorList.length ? s.connectorList : [null]).map((x) => {
+    const li = document.createElement('li');
+    if (!x) { li.className = 'muted'; li.textContent = 'No apps connected yet.'; return li; }
+    li.className = 'row';
+    const text = document.createElement('span');
+    text.innerHTML = '<b></b> <span class="mono"></span> <span class="tag"></span>';
+    text.querySelector('b').textContent = x.name;
+    text.querySelector('.mono').textContent = x.baseUrl;
+    text.querySelector('.tag').textContent = x.ready ? `${x.operations} actions${x.canSend ? ' · can receive pages' : ''}` : 'not running';
+    const remove = Object.assign(document.createElement('button'), { textContent: 'Remove' });
+    remove.addEventListener('click', async () => render(await window.loon.removeConnector(x.id)));
+    li.append(text, remove);
+    return li;
+  }));
   $('projects').replaceChildren(...(s.projectChoices.length ? s.projectChoices : [null]).map((p) => {
     const li = document.createElement('li');
     if (!p) { li.className = 'muted'; li.textContent = 'No git projects found on your Desktop.'; return li; }
@@ -50,6 +64,21 @@ $('copyCode').addEventListener('click', () => { window.loon.copyPairingCode(); $
 $('openNotes').addEventListener('click', () => window.loon.openNotesFolder());
 $('clearMemory').addEventListener('click', async () => {
   if (confirm('Forget everything Loon remembers about you? This also clears remembered answers.')) render(await window.loon.clearMemory());
+});
+$('discover').addEventListener('click', async () => {
+  $('discover').textContent = 'Looking…';
+  const found = await window.loon.discoverConnectors();
+  $('discover').textContent = 'Find apps on this Mac';
+  $('found').replaceChildren(...(found.length ? found : [null]).map((f) => {
+    const li = document.createElement('li');
+    if (!f) { li.className = 'muted'; li.textContent = 'No running apps with an OpenAPI description found on common ports (3000, 5000, 5173, 8000, 8080…).'; return li; }
+    li.className = 'row';
+    li.append(Object.assign(document.createElement('span'), { textContent: `${f.name} · ${f.baseUrl} · ${f.operations} actions` }));
+    const add = Object.assign(document.createElement('button'), { textContent: 'Connect' });
+    add.addEventListener('click', async () => { render(await window.loon.addConnector(f)); li.remove(); });
+    li.append(add);
+    return li;
+  }));
 });
 window.loon.onSettingsChanged(render);
 window.loon.getSettings().then(render);

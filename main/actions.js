@@ -66,8 +66,9 @@ const realExecutors = {
 };
 
 class Actions {
-  constructor({ auditFile, notes, memory, openExternal, projects = () => [], executors = realExecutors }) {
+  constructor({ auditFile, notes, memory, openExternal, projects = () => [], hub = null, executors = realExecutors }) {
     this.projects = projects;
+    this.hub = hub;
     this.auditFile = auditFile;
     this.notes = notes;
     this.memory = memory;
@@ -117,6 +118,12 @@ class Actions {
           const removed = this.memory.forget(command.text);
           message = removed.length ? `Forgot ${removed.length} thing${removed.length > 1 ? 's' : ''}.` : "I didn't have anything like that saved.";
           break;
+        }
+        case 'api': {
+          const values = Object.fromEntries((command.fields || []).map((f) => [f.name, f.value]));
+          const result = await this.hub.call(command.connectorId, command.opId, values);
+          this.audit({ action: 'api', ok: true, connector: command.connectorName, op: command.opId, write: !command.read });
+          return { ok: true, message: `**${command.connectorName}** · ${command.label}\n\n${result}`, markdown: true };
         }
         case 'briefing': {
           const { briefing } = require('../brain/projects');

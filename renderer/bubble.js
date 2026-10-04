@@ -254,6 +254,8 @@ function confirmCard(id, summary, command) {
     card.append(row);
     fields[key] = input;
   };
+  // Connector calls list their parameters; required ones are marked.
+  for (const f of command.fields || []) addField(`field:${f.name}`, `${f.name}${f.required ? ' *' : ''}`, 'text', f.value ?? '');
   if (command.title !== undefined) addField('title', 'What', 'text', command.title);
   if (command.text !== undefined) addField('text', 'What', 'text', command.text);
   if (command.action === 'reminder') addField('when', 'When', 'datetime-local', command.when ? toLocalInput(command.when) : '');
@@ -268,7 +270,9 @@ function confirmCard(id, summary, command) {
   no.textContent = 'Cancel';
   yes.addEventListener('click', () => {
     const edited = { ...command };
+    if (edited.fields) edited.fields = edited.fields.map((f) => ({ ...f, value: fields[`field:${f.name}`].value.trim() }));
     for (const [key, input] of Object.entries(fields)) {
+      if (key.startsWith('field:')) continue;
       if (input.type === 'datetime-local') edited[key] = input.value ? new Date(input.value).toISOString() : null;
       else edited[key] = input.value.trim();
     }
@@ -291,6 +295,29 @@ window.loon.onBubbleConfirm(({ id, summary, command }) => {
   if (current?.id !== id) return;
   current.el.replaceChildren(confirmCard(id, summary, command));
 });
+// Close calls from connector routing: the user picks, instead of a model guessing.
+window.loon.onBubbleChoices(({ id, prompt, options }) => {
+  if (current?.id !== id) return;
+  const box = document.createElement('div');
+  box.append(Object.assign(document.createElement('div'), { className: 'note', textContent: prompt }));
+  const row = document.createElement('div');
+  row.className = 'choices';
+  for (const option of options) {
+    const b = Object.assign(document.createElement('button'), { className: 'chip', textContent: option.label });
+    b.addEventListener('click', () => {
+      if (option.direct) {
+        box.replaceWith(Object.assign(document.createElement('div'), { className: 'note', textContent: `${option.label}…` }));
+        window.loon.confirmAction(id, option.command);
+      } else {
+        box.replaceWith(confirmCard(id, `${option.command.connectorName}: ${option.label}`, option.command));
+      }
+    });
+    row.append(b);
+  }
+  box.append(row);
+  current.el.replaceChildren(box);
+});
+
 window.loon.onBubbleAction(({ id, ok, message, results, markdown }) => {
   const note = Object.assign(document.createElement('div'), { className: ok ? (markdown ? 'a' : 'note') : 'a error' });
   if (markdown) note.innerHTML = renderMarkdown(message);

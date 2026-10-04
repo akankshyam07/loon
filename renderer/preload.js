@@ -40,6 +40,10 @@ contextBridge.exposeInMainWorld('loon', {
   openSettings: () => ipcRenderer.send('open-settings'),
   onBubbleConfirm: on('bubble-confirm'),
   onBubbleAction: on('bubble-action'),
+  onBubbleChoices: on('bubble-choices'),
+  discoverConnectors: () => ipcRenderer.invoke('connectors-discover'),
+  addConnector: (found) => ipcRenderer.invoke('connectors-add', found),
+  removeConnector: (id) => ipcRenderer.invoke('connectors-remove', id),
   // settings window
   getSettings: () => ipcRenderer.invoke('settings-get'),
   setSetting: (key, value) => ipcRenderer.invoke('settings-set', { key, value }),

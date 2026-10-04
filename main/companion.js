@@ -5,6 +5,8 @@ const { keySentences } = require('../brain/textrank');
 const { classifySelection } = require('../extension/lib/classify');
 const { selectionPacket, pagePacket } = require('./context');
 const { parseCommand, describe, normalizeSpoken } = require('../brain/commands');
+const connectorsLib = require('../brain/connectors');
+const { ConnectorHub } = require('./hub');
 
 const HANDOFF_URLS = {
   claude: 'https://claude.ai/new',
@@ -24,11 +26,14 @@ const domainOf = (url) => {
 };
 const chip = (id) => ({ id, label: TASKS[id].label });
 
-function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, settings }) {
+function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, settings, hub }) {
   const session = { mode: 'ask', packet: null, threadStarted: false, lastTask: null, pendingTask: null };
   let activePage = null; // latest page report from the focused, visible tab
   let active = null; // { controller, id }
   const nudges = { shownFor: new Set(), byDomain: new Map(), times: [], ignored: new Map() };
+
+  // "Send to <app>" chips for connected local apps that accept a URL.
+  const sendChips = () => (hub ? hub.list().filter((x) => hub.senders.has(x.id)).map((x) => ({ id: `send:${x.id}`, label: `Send to ${x.name}` })) : []);
 
   // ---------- bubble context ----------
   function context() {
@@ -38,7 +43,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
       return {
         mode,
         label: `Selection${domain ? ` · ${domain}` : ''}`,
-        chips: (SELECTION_CHIPS[packet.selectionKind] || SELECTION_CHIPS.paragraph).map(chip),
+        chips: [...(SELECTION_CHIPS[packet.selectionKind] || SELECTION_CHIPS.paragraph).map(chip), ...sendChips()],
         redactions: packet.redactions,
         editable: Boolean(packet.editable),
         placeholder: 'Ask about this…',
@@ -46,7 +51,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
     }
     if (mode === 'page') {
       const kindLabel = { shopping: 'Shopping page', menu: 'Menu', code: 'Code page', article: 'Article' }[activePage?.kind] || 'This page';
-      return { mode, label: `${kindLabel}${domain ? ` · ${domain}` : ''}`, chips: pageChipsFor(activePage?.kind).map(chip), redactions: packet?.redactions || 0, placeholder: 'Ask about this page…' };
+      return { mode, label: `${kindLabel}${domain ? ` · ${domain}` : ''}`, chips: [...pageChipsFor(activePage?.kind).map(chip), ...sendChips()], redactions: packet?.redactions || 0, placeholder: 'Ask about this page…' };
     }
     if (mode === 'app') {
       return {
@@ -73,7 +78,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
     return {
       mode: 'ask',
       label: pageChips.length ? `About ${domainOf(activePage.url)}?` : '',
-      chips: [...pageChips, ...research],
+      chips: [...pageChips, ...(pageChips.length ? sendChips() : []), ...research],
       redactions: 0,
       placeholder: 'Ask me anything, or "remind me to…"',
       privacy: Boolean(settings.privacy),
@@ -154,7 +159,41 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
 
   // Commands ("remind me…", "open…") are parsed without a model and shown as a confirm card.
   // Local, append-only or read-only actions (notes, file search) run straight away.
+  // Requests that name a connected app ("career: search python jobs") go to its API. Keyword routing picks the
+  // endpoint; close calls become buttons. Reads with everything filled run straight away; the rest need ✓.
+  async function connectorRequest(id, question, bubble) {
+    if (!hub) return false;
+    const named = connectorsLib.findConnector(question, hub.list());
+    if (!named) return false;
+    let ops;
+    try {
+      ops = await hub.ops(named.connector);
+    } catch (err) {
+      bubble('action-done', { id, ok: false, message: err.message });
+      return true;
+    }
+    const pageContext = { url: session.packet?.url || activePage?.url, title: session.packet?.title || activePage?.title, text: session.packet?.source === 'selection' ? session.packet.text : undefined };
+    const routed = connectorsLib.route(named.request, ops, pageContext);
+    if (routed.kind === 'call') {
+      const cmd = ConnectorHub.command(named.connector, routed.op, routed.values);
+      if (routed.op.read && !routed.missing.length) {
+        bubble('action-done', { id, ...(await actions.execute(cmd)), markdown: true });
+      } else {
+        bubble('confirm', { id, summary: `${named.connector.name}: ${routed.op.label}`, command: cmd });
+      }
+      return true;
+    }
+    const options = (routed.kind === 'choose' ? routed.options : ops.filter((o) => o.read).slice(0, 5));
+    bubble('choices', {
+      id,
+      prompt: routed.kind === 'choose' ? `Which one in ${named.connector.name}?` : `I couldn't match that in ${named.connector.name}. It can:`,
+      options: options.map((op) => ({ label: op.label, command: ConnectorHub.command(named.connector, op, connectorsLib.fill(op, named.request, pageContext).values), direct: op.read && !connectorsLib.fill(op, named.request, pageContext).missing.length })),
+    });
+    return true;
+  }
+
   async function command(id, question, bubble) {
+    if (await connectorRequest(id, question, bubble)) return true;
     // normalizeSpoken: voice transcripts say "at five"; typed text is unaffected unless it spells numbers out.
     const parsed = parseCommand(normalizeSpoken(question));
     if (!parsed) return false;
@@ -195,6 +234,17 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
     active = { controller, id };
     try {
       if (!task && question && session.mode !== 'selection' && session.mode !== 'app' && (await command(id, question, bubble))) return;
+      if (task?.startsWith('send:')) {
+        const connector = hub?.get(task.slice(5));
+        const ops = connector ? await hub.ops(connector) : [];
+        const op = ops.find((o) => o.id === hub.senders.get(connector?.id));
+        if (!op) throw new Error('That app is not available right now.');
+        let packet = session.packet;
+        if (!packet && activePage) packet = await ensurePagePacket().catch(() => null);
+        const values = connectorsLib.fill(op, '', { url: packet?.url || activePage?.url, title: packet?.title || activePage?.title, text: packet?.source === 'selection' ? packet.text : undefined }).values;
+        bubble('confirm', { id, summary: `Send to ${connector.name}: ${op.label}`, command: ConnectorHub.command(connector, op, values) });
+        return;
+      }
       let packet = session.packet;
       // In page mode every chip works on the page (e.g. Quiz me), not just the page-only tasks.
       if (TASKS[task]?.page || session.mode === 'page') {
