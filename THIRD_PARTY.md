@@ -24,6 +24,7 @@ Models are downloaded at first use, not stored in this repository.
 | chrono-node | date parsing | MIT |
 | wordpos / wordnet-db | dictionary lookups | MIT (package); WordNet data under the WordNet 3.1 license |
 | ws | extension bridge | MIT |
+| pdfjs-dist | reading dropped PDFs | Apache-2.0 |
 
 ## Models and data (downloaded on first use)
 

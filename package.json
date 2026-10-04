@@ -47,6 +47,7 @@
       "renderer/**",
       "extension/**",
       "test/selftest.js",
+      "test/fixtures/openapi-app.js",
       "package.json",
       "!node_modules/onnxruntime-node/bin/napi-v3/{linux,win32}/**",
       "!**/*.map"
@@ -80,9 +81,9 @@
       "hardenedRuntime": false,
       "extendInfo": {
         "LSUIElement": true,
-        "NSMicrophoneUsageDescription": "Loon listens only while you talk to it (after ⌥⇧V or the optional \"Hey Loon\"). Audio is processed on this Mac and never saved.",
+        "NSMicrophoneUsageDescription": "Loon listens only while you talk to it (after \u2325\u21e7V or the optional \"Hey Loon\"). Audio is processed on this Mac and never saved.",
         "NSAppleEventsUsageDescription": "Loon adds reminders and calendar events only after you confirm them.",
-        "NSScreenCaptureUsageDescription": "Loon reads the screen region you pick with ⌥⇧S."
+        "NSScreenCaptureUsageDescription": "Loon reads the screen region you pick with \u2325\u21e7S."
       }
     },
     "dmg": {

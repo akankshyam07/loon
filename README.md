@@ -30,6 +30,14 @@ done. Free, open source, and private by default: everything runs on your Mac, wi
   aloud. Everyday commands ("remind me…", "summarize this page", "which one is cheapest?") never touch the language
   model. Say "yes" to confirm, "stop" to interrupt. An optional "Hey Loon" wake word is in Settings (off by default).
 - **Modes.** Focus (the cat naps; no pop-ups), Privacy, and Judgmental (sass about prices and heavy food).
+- **Your projects.** "Where did I leave off?" catches you up on projects you allow in Settings: recent commits, open
+  TODO items and the files you last touched. Read-only; Loon never changes your repos.
+- **Your local apps.** Connect apps running on your Mac that publish an OpenAPI description (FastAPI does by default).
+  Then "career: search python jobs" calls them, and "Send to …" appears on pages. Reads run directly; anything that
+  changes data asks first. If a request is ambiguous, Loon shows buttons instead of guessing.
+- **Leetcode.** On a leetcode.com problem, "Which companies ask this?" answers from your local Leetcode repo.
+- **Shortcuts.** "Run new note" runs a matching macOS Shortcut after you confirm.
+- **Drop a file on the cat.** PDFs, text and code, images (read with OCR) and CSVs (instant overview).
 
 ## Install
 

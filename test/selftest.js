@@ -267,7 +267,8 @@ async function run(ctx) {
 
     // ---- M6: projects, Leetcode, Shortcuts (read-only reads of real repos; the Shortcut run is stubbed) ----
     const savedProjects = ctx.settings.projects;
-    const loonDir = path.join(__dirname, '..');
+    // In the packaged app __dirname is inside app.asar (not a git repo), so fall back to the source checkout.
+    const loonDir = fs.existsSync(path.join(__dirname, '..', '.git')) ? path.join(__dirname, '..') : path.join(os.homedir(), 'Desktop', 'Loon');
     const leetcodeDir = path.join(os.homedir(), 'Desktop', 'Leetcode');
     ctx.settings.projects = [loonDir, ...(fs.existsSync(leetcodeDir) ? [leetcodeDir] : [])];
     try {
