@@ -16,7 +16,7 @@ TODO-M1.md … TODO-M5.md. Deliberate deviations from this design:
 - **Wake word:** "Hey Loon" uses keyword spotting on Moonshine transcripts instead of openWakeWord.
 - **Unit prices:** a small table of exact conversion constants instead of js-quantities.
 - **Test model:** the local model during development was Llama 3 8B already on this Mac. First-run users get Qwen3.
-- **Before going public:** THIRD_PARTY.md has an open eSpeak NG (GPL) question to decide.
+- **License:** the repo is MIT. The packaged .dmg bundles eSpeak NG (GPL-3.0), so distributed builds follow GPL-3.0 as a whole; see THIRD_PARTY.md.
 
 ## 0. Decisions so far
 

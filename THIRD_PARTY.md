@@ -38,14 +38,13 @@ Models are downloaded at first use, not stored in this repository.
 | Tesseract `eng` traineddata | OCR | Apache-2.0 |
 | WordNet 3.1 | definitions | WordNet 3.1 license (permissive) |
 
-## Note before a public release: eSpeak NG (GPL-3.0)
+## eSpeak NG (GPL-3.0) and the packaged app
 
-Kokoro's phonemizer embeds eSpeak NG, which is GPL-3.0-or-later. Distributing the packaged app with it is a
-GPL question for the whole bundle. Options:
+Kokoro's phonemizer embeds eSpeak NG, which is GPL-3.0-or-later. It is an npm dependency, not part of this repository.
 
-1. Keep it and meet GPL-3.0 for the distributed app (for example, license the app GPL-3.0, or ship it as a separate,
-   user-installed voice add-on).
-2. Make macOS's built-in voice (`say`) the default and offer Kokoro as an optional download.
-3. Swap in a permissively licensed phonemizer if a good one appears.
-
-This does not affect the private repository or personal use. It needs a decision before making the repo public.
+- **The source code in this repository is MIT.** MIT code can be combined with GPL code, so nothing here changes.
+- **The packaged app (`.dmg`) bundles eSpeak NG**, so anyone distributing a built Loon must follow GPL-3.0 for that
+  bundle as a whole: ship the license texts and offer the complete corresponding source (this repository at the
+  matching tag, plus the dependency sources from `package-lock.json`).
+- If that ever becomes a problem, the clean way out is to make macOS's built-in voice the default and offer Kokoro as
+  an optional download, or to swap in a permissively licensed phonemizer.

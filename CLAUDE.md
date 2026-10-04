@@ -1,5 +1,9 @@
 # CLAUDE.md — Loon
 
+> Setup, run and test instructions for agents are in AGENTS.md (imported below). This file is the product spec.
+
+@AGENTS.md
+
 ## One-line definition
 
 Loon is a personal black-cat AI companion that lives on the user's screen, understands what they are looking at, and helps them explain, compare, decide, and act — like a cute privacy-aware Jarvis.
