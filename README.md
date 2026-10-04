@@ -22,6 +22,10 @@
 
 ## 🐈‍⬛ Meet Loon
 
+<p align="center">
+  <img src="docs/loon.gif" width="260" alt="Loon follows the cursor with its eyes, squints happily while being petted, thinks with a little thought bubble, and does moon magic with sparkles">
+</p>
+
 Loon is a personal AI familiar: a little black cat with bright green eyes who sits in the corner of your screen, blinks
 at you, follows your cursor, and naps when you're busy. Highlight something confusing, click the cat, or just talk to
 it, and it helps right where you are.
