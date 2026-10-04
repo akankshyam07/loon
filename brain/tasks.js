@@ -28,6 +28,8 @@ const TASKS = {
   explain_json: { label: 'Explain', instruction: () => 'Explain the structure of this JSON: its main fields and what they likely mean.', maxTokens: 360 },
   // Screenshots (§3.5): the OCR text itself, no model
   extract_text: { label: 'Copy text', tiers: ['ocr-text'] },
+  // Projects (M6): answered from the user's local Leetcode repo, no model
+  leetcode_companies: { label: 'Which companies ask this?', tiers: ['leetcode'] },
   // Developer (§3.8)
   make_dto_java: { label: 'Java DTO', tiers: ['dto'] },
   make_dto_ts: { label: 'TypeScript types', tiers: ['dto'] },
@@ -101,6 +103,7 @@ const PAGE_CHIPS = ['page_summary', 'page_todo', 'page_notes', 'page_checklist',
 const MODE_CHIPS = {
   shopping: ['shop_value', 'shop_reviews', 'shop_add', 'shop_basket', 'shop_take', 'page_summary'],
   menu: ['food_lightest', 'food_protein', 'food_veg', 'food_estimate', 'page_summary'],
+  leetcode: ['leetcode_companies', 'page_summary', 'quiz'],
 };
 const pageChipsFor = (kind) => MODE_CHIPS[kind] || PAGE_CHIPS;
 

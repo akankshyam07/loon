@@ -158,7 +158,16 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
     // normalizeSpoken: voice transcripts say "at five"; typed text is unaffected unless it spells numbers out.
     const parsed = parseCommand(normalizeSpoken(question));
     if (!parsed) return false;
-    if (parsed.action === 'note' || parsed.action === 'find') {
+    if (parsed.action === 'shortcut') {
+      const match = await actions.resolveShortcut(parsed.name);
+      if (!match) {
+        bubble('action-done', { id, ok: false, message: `I couldn't find a Shortcut called "${parsed.name}".` });
+        return true;
+      }
+      parsed.name = match;
+    }
+    // Read-only or append-only actions run straight away; everything else gets a confirm card.
+    if (['note', 'find', 'briefing'].includes(parsed.action)) {
       bubble('action-done', { id, ...(await actions.execute(parsed)) });
       return true;
     }

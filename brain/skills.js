@@ -11,8 +11,10 @@ const { redact } = require('./redact');
 const { makeQuiz } = require('./quiz');
 
 class Skills {
-  constructor({ dataDir, brain }) {
+  constructor({ dataDir, brain, projects = () => [] }) {
     this.brain = brain;
+    this.projects = projects;
+    this.dataDir = dataDir;
     this.extractorsDir = path.join(dataDir, 'extractors');
     this.basketFile = path.join(dataDir, 'compare.json');
   }
@@ -141,6 +143,14 @@ class Skills {
         }
         const language = taskId === 'make_dto_ts' ? 'typescript' : 'java';
         return { text: await jsonToDto(packet.text, language), mood: 'happy', detail: 'quicktype' };
+      }
+      case 'leetcode': {
+        const { LeetcodeIndex, looksLikeRepo } = require('./leetcode');
+        const repo = this.projects().find(looksLikeRepo);
+        if (!repo) return { text: 'Allow your Leetcode repo in Settings → Projects and I can tell you which companies ask this.', mood: 'curious' };
+        if (!this.leetcode || this.leetcode.repoDir !== repo) this.leetcode = new LeetcodeIndex(repo, path.join(this.dataDir, 'leetcode-index.json'));
+        const found = this.leetcode.lookup(packet.url || '');
+        return found ? { text: found.text, mood: 'focused', detail: 'your Leetcode repo, no model' } : { text: "This problem isn't in your Leetcode repo's company lists.", mood: 'curious' };
       }
       case 'ocr-text':
         return packet.text ? { text: `\`\`\`\n${packet.text}\n\`\`\``, mood: 'happy', detail: 'Tesseract OCR on this Mac', copyText: packet.text } : null;

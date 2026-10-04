@@ -50,6 +50,14 @@ const realExecutors = {
     await run('open', ['-a', target]);
     return `Opened ${target}.`;
   },
+  async shortcuts() {
+    const out = await run('shortcuts', ['list']);
+    return out.split('\n').map((l) => l.trim()).filter(Boolean);
+  },
+  async shortcut({ name }) {
+    await run('shortcuts', ['run', name]);
+    return `Ran "${name}".`;
+  },
   async find({ query }) {
     const out = await run('mdfind', ['-name', query]);
     const paths = out.split('\n').filter((p) => p && !/\/(Library|node_modules|\.)/.test(p)).slice(0, 8);
@@ -58,7 +66,8 @@ const realExecutors = {
 };
 
 class Actions {
-  constructor({ auditFile, notes, memory, openExternal, executors = realExecutors }) {
+  constructor({ auditFile, notes, memory, openExternal, projects = () => [], executors = realExecutors }) {
+    this.projects = projects;
     this.auditFile = auditFile;
     this.notes = notes;
     this.memory = memory;
@@ -76,6 +85,18 @@ class Actions {
     } catch {
       return [];
     }
+  }
+
+  // Fuzzy-matches a spoken/typed name to one of the user's Shortcuts (exact, then prefix, then word overlap).
+  async resolveShortcut(name) {
+    const all = await this.executors.shortcuts().catch(() => []);
+    const norm = (x) => x.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
+    const want = norm(name);
+    const words = want.split(' ').filter(Boolean);
+    return all.find((s) => norm(s) === want)
+      || all.find((s) => norm(s).startsWith(want))
+      || all.map((s) => ({ s, hits: words.filter((w) => norm(s).split(' ').includes(w)).length })).filter((x) => x.hits).sort((a, b) => b.hits - a.hits)[0]?.s
+      || null;
   }
 
   // command comes from the (possibly user-edited) confirm card. Returns { ok, message, results? }.
@@ -96,6 +117,11 @@ class Actions {
           const removed = this.memory.forget(command.text);
           message = removed.length ? `Forgot ${removed.length} thing${removed.length > 1 ? 's' : ''}.` : "I didn't have anything like that saved.";
           break;
+        }
+        case 'briefing': {
+          const { briefing } = require('../brain/projects');
+          const result = await briefing(this.projects(), command.project);
+          return { ok: true, message: result.text, markdown: true };
         }
         case 'find':
           results = await this.executors.find(command);

@@ -6,6 +6,21 @@ function render(s) {
   const { code = 0, cache = 0, local = 0 } = s.counts?.tiers || {};
   $('counts').textContent = `${code + cache} answers were instant (no model), ${local} used the model on your Mac.`;
   $('notesDir').textContent = s.notesDir;
+  $('projects').replaceChildren(...(s.projectChoices.length ? s.projectChoices : [null]).map((p) => {
+    const li = document.createElement('li');
+    if (!p) { li.className = 'muted'; li.textContent = 'No git projects found on your Desktop.'; return li; }
+    const label = document.createElement('label');
+    label.className = 'toggle';
+    const box = Object.assign(document.createElement('input'), { type: 'checkbox', checked: p.allowed });
+    box.addEventListener('change', async () => render(await window.loon.setSetting('project', { path: p.path, allowed: box.checked })));
+    const text = document.createElement('span');
+    text.innerHTML = `<b></b><span class="mono"></span>`;
+    text.querySelector('b').textContent = p.name;
+    text.querySelector('.mono').textContent = p.path.replace(/^\/Users\/[^/]+/, '~');
+    label.append(box, text);
+    li.append(label);
+    return li;
+  }));
   $('memory').replaceChildren(...(s.memory.length ? s.memory : [null]).map((m) => {
     const li = document.createElement('li');
     if (!m) {

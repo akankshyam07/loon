@@ -61,6 +61,11 @@ function parseCommand(input, now = new Date()) {
   if ((m = text.match(/^(?:find|search for|look for|where is|where's)(?: my)? (.+?)(?: files?)?\??$/i))) {
     return { action: 'find', query: tidy(m[1]) };
   }
+  if ((m = text.match(/^(?:where did i leave off|what was i (?:working on|doing)|catch me up)(?: (?:in|on|with) (.+?))?\??$/i))) {
+    return { action: 'briefing', project: m[1] ? tidy(m[1]) : null };
+  }
+  if (/^(?:show |list )?my projects\??$/i.test(text)) return { action: 'briefing', project: null };
+  if ((m = text.match(/^run (?:the |my )?(?:shortcut )?(.+?)(?: shortcut)?$/i))) return { action: 'shortcut', name: tidy(m[1]) };
   if ((m = text.match(/^(?:note|take a note|save a note|jot down)[:\s]+(.+)$/i))) return { action: 'note', text: tidy(m[1]) };
   if ((m = text.match(/^remember (?:that )?(.+)$/i))) return { action: 'remember', text: tidy(m[1]) };
   if ((m = text.match(/^forget (?:that )?(.+)$/i))) return { action: 'forget', text: tidy(m[1]) };
@@ -75,6 +80,8 @@ function describe(command) {
     case 'event': return `Calendar event: ${command.title}, ${at(command.start)}`;
     case 'open': return `Open ${command.kind === 'url' ? command.target : `the ${command.target} app`}`;
     case 'find': return `Find files matching "${command.query}"`;
+    case 'briefing': return command.project ? `Catch up on ${command.project}` : 'Catch up on your projects';
+    case 'shortcut': return `Run the Shortcut "${command.name}"`;
     case 'note': return `Save a note: ${command.text}`;
     case 'remember': return `Remember: ${command.text}`;
     case 'forget': return `Forget memories about "${command.text}"`;

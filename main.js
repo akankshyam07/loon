@@ -26,7 +26,7 @@ const DEMO = process.argv.includes('--demo') || process.env.LOON_DEMO === '1';
 const SELFTEST = process.argv.includes('--selftest');
 
 let settingsFile;
-let settings = { size: 'M', focus: false, privacy: false, judgmental: true, wakeWord: false, speakReplies: 'voiceOnly' };
+let settings = { size: 'M', focus: false, privacy: false, judgmental: true, wakeWord: false, speakReplies: 'voiceOnly', projects: [] };
 let catWin;
 let bubbleWin;
 let brain;
@@ -312,8 +312,12 @@ function setToggle(key, value) {
 }
 
 function settingsSnapshot() {
+  const { discover } = require('./brain/projects');
+  const known = new Map(discover().map((p) => [p.path, p]));
+  for (const p of settings.projects || []) if (!known.has(p)) known.set(p, { name: path.basename(p), path: p });
   return {
     ...settings,
+    projectChoices: [...known.values()].map((p) => ({ ...p, allowed: (settings.projects || []).includes(p.path) })),
     notesDir: notes.dir,
     connected: bridge.clients.size > 0,
     counts: resolver.counts,
@@ -430,6 +434,13 @@ function registerIpc() {
   ipcMain.handle('settings-set', (_e, { key, value }) => {
     if (['focus', 'privacy', 'judgmental', 'wakeWord'].includes(key)) setToggle(key, Boolean(value));
     if (key === 'speakReplies') { settings.speakReplies = value ? 'voiceOnly' : 'never'; saveSettings(); }
+    if (key === 'project' && value?.path && fs.existsSync(value.path)) {
+      const set = new Set(settings.projects || []);
+      if (value.allowed) set.add(value.path);
+      else set.delete(value.path);
+      settings.projects = [...set];
+      saveSettings();
+    }
     return settingsSnapshot();
   });
   ipcMain.handle('memory-update', (_e, { id, text }) => { memory.update(id, text); return settingsSnapshot(); });
@@ -487,11 +498,13 @@ app.whenReady().then(() => {
   translator = new Translator({ cacheDir: path.join(app.getPath('userData'), 'translation-models') });
   notes = new Notes(settings.notesDir || path.join(app.getPath('documents'), 'Loon'));
   memory = new Memory(path.join(app.getPath('userData'), 'memory.json'));
-  actions = new Actions({ auditFile: path.join(app.getPath('userData'), 'audit.jsonl'), notes, memory, openExternal: (url) => hooks.openExternal(url) });
+  // Only folders the user ticked in Settings → Projects are ever read.
+  const allowedProjects = () => (settings.projects || []).filter((p) => fs.existsSync(p));
+  actions = new Actions({ auditFile: path.join(app.getPath('userData'), 'audit.jsonl'), notes, memory, projects: allowedProjects, openExternal: (url) => hooks.openExternal(url) });
   resolver = new Resolver({
     brain,
     translator,
-    skills: new Skills({ dataDir: app.getPath('userData'), brain }),
+    skills: new Skills({ dataDir: app.getPath('userData'), brain, projects: allowedProjects }),
     memory,
     notes,
     settings,

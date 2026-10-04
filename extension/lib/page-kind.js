@@ -76,7 +76,8 @@
     const dense = words > 300 && (grade > 12 || avgSentence > 25);
 
     let kind = 'other';
-    if (hostMatches(host, EMAIL_HOSTS)) kind = 'email';
+    if (host === 'leetcode.com' && /^\/problems\//.test(location.pathname)) kind = 'leetcode';
+    else if (hostMatches(host, EMAIL_HOSTS)) kind = 'email';
     else if (types.has('Menu') || types.has('Restaurant') || (prices.length >= 5 && foodWords.size >= 3)) kind = 'menu';
     else if (types.has('Product') || types.has('Offer') || types.has('ItemList') || (prices.length >= 3 && buyText)) kind = 'shopping';
     else if (hostMatches(host, CODE_DOMAINS) || doc.querySelectorAll('pre code, pre').length >= 2) kind = 'code';

@@ -153,6 +153,8 @@ async function run(ctx) {
     event: async (c) => { executed.push(c); return 'Added to Calendar.'; },
     open: async (c) => { executed.push(c); return 'Opened.'; },
     find: async () => [path.join(tmp, 'resume.pdf')],
+    shortcuts: async () => ['Open Breethe', 'New Note with Date'],
+    shortcut: async (c) => { executed.push(c); return `Ran "${c.name}".`; },
   };
   const typeInBubble = async (text) => {
     ipcMain.emit('open-bubble');
@@ -260,6 +262,35 @@ async function run(ctx) {
       }
     } else {
       console.log('SKIP  voice checks (voice models not downloaded)');
+    }
+
+    // ---- M6: projects, Leetcode, Shortcuts (read-only reads of real repos; the Shortcut run is stubbed) ----
+    const savedProjects = ctx.settings.projects;
+    const loonDir = path.join(__dirname, '..');
+    const leetcodeDir = path.join(os.homedir(), 'Desktop', 'Leetcode');
+    ctx.settings.projects = [loonDir, ...(fs.existsSync(leetcodeDir) ? [leetcodeDir] : [])];
+    try {
+      const before = resolver.counts.tiers.local || 0;
+      await typeInBubble('what was I working on in loon');
+      const briefed = await waitFor(() => bubble(`[...document.querySelectorAll('.a')].some((a) => /Recent commits/.test(a.textContent))`), 10000);
+      check('"what was I working on in loon" gives a briefing from git and TODOs, no model', briefed && (resolver.counts.tiers.local || 0) === before);
+      await bubble('window.loon.closeBubble()');
+
+      if (fs.existsSync(leetcodeDir)) {
+        const lc = await resolver.run('leetcode_companies', { source: 'page', url: 'https://leetcode.com/problems/two-sum/description/' }, { onText: () => {} });
+        check('Leetcode: which companies ask this, from the local repo', /asked at \*\*\d+\*\* companies/.test(lc.text) && lc.tier === 'code', lc.text.split('\n')[0]);
+      }
+
+      executed.length = 0;
+      await typeInBubble('run new note');
+      await waitFor(() => bubble(`Boolean(document.querySelector('.confirm'))`), 5000);
+      const shortcutCard = await bubble(`document.querySelector('.confirm')?.textContent || ''`);
+      await bubble(`document.querySelector('.confirm .primary').click()`);
+      await waitFor(() => executed.length > 0, 5000);
+      check('"run new note" matches the Shortcut, asks first, then runs it (stubbed)', /New Note with Date/.test(shortcutCard) && executed[0]?.name === 'New Note with Date');
+      await bubble('window.loon.closeBubble()');
+    } finally {
+      ctx.settings.projects = savedProjects;
     }
 
     ipcMain.emit('open-settings');

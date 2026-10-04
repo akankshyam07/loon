@@ -291,8 +291,10 @@ window.loon.onBubbleConfirm(({ id, summary, command }) => {
   if (current?.id !== id) return;
   current.el.replaceChildren(confirmCard(id, summary, command));
 });
-window.loon.onBubbleAction(({ id, ok, message, results }) => {
-  const note = Object.assign(document.createElement('div'), { className: ok ? 'note' : 'a error', textContent: message });
+window.loon.onBubbleAction(({ id, ok, message, results, markdown }) => {
+  const note = Object.assign(document.createElement('div'), { className: ok ? (markdown ? 'a' : 'note') : 'a error' });
+  if (markdown) note.innerHTML = renderMarkdown(message);
+  else note.textContent = message;
   if (results?.length) {
     const list = document.createElement('ul');
     for (const file of results) {
