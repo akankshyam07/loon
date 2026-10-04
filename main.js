@@ -623,15 +623,6 @@ app.whenReady().then(() => {
   session.defaultSession.setPermissionCheckHandler((wc, permission) => permission === 'media' && wc === catWin?.webContents);
 
   if (settings.wakeWord) setTimeout(() => voice.setWake(!settings.focus && !settings.privacy), 3000);
-  // First launch: a short hello in the bubble instead of a silent cat.
-  if (!settings.welcomed && !SELFTEST && !arg('shot')) {
-    catWin.webContents.once('did-finish-load', () => setTimeout(() => {
-      companion.showNotice("Hi, I'm Loon 🐾 Click me to ask anything, press and hold to pet me, or try ⌥Space. Right-click me for Settings, where you can connect Chrome and pick projects for me to keep up with. Everything stays on this Mac.");
-      showBubble();
-      settings.welcomed = true;
-      saveSettings();
-    }, 1800));
-  }
   hub.refresh();
   setInterval(() => hub.refresh(), 5 * 60 * 1000); // apps come and go; keep "Send to …" chips current
 
@@ -646,6 +637,15 @@ app.whenReady().then(() => {
   registerIpc();
   createCatWindow();
   createBubbleWindow();
+  // First launch (needs catWin, so it runs after the windows exist): a short hello in the bubble instead of a silent cat.
+  if (!settings.welcomed && !SELFTEST && !arg('shot')) {
+    catWin.webContents.once('did-finish-load', () => setTimeout(() => {
+      companion.showNotice("Hi, I'm Loon 🐾 Click me to ask anything, press and hold to pet me, or try ⌥Space. Right-click me for Settings, where you can connect Chrome and pick projects for me to keep up with. Everything stays on this Mac.");
+      showBubble();
+      settings.welcomed = true;
+      saveSettings();
+    }, 1800));
+  }
   scheduleScreenshot();
   if (process.argv.includes('--selftest')) {
     catWin.webContents.once('did-finish-load', async () => {
