@@ -24,7 +24,7 @@ body { font: 13.5px/1.45 -apple-system, BlinkMacSystemFont, 'SF Pro Text', syste
 }
 
 header { display: flex; align-items: center; gap: 7px; padding: 10px 12px 6px 14px; -webkit-app-region: drag; }
-header .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--eye); box-shadow: 0 0 0 2px #1d3616; }
+header .face { width: 20px; height: 18px; flex: none; }
 header .title { font-weight: 650; letter-spacing: 0.2px; }
 #close {
   margin-left: auto; -webkit-app-region: no-drag;
@@ -68,7 +68,20 @@ button.primary:disabled { opacity: 0.5; cursor: default; }
 #send { width: 26px; height: 26px; border: 0; border-radius: 8px; background: var(--ink); color: var(--paper); font-weight: 700; cursor: pointer; }
 #send:disabled { opacity: 0.35; cursor: default; }
 
-footer { display: flex; justify-content: space-between; gap: 8px; padding: 2px 14px 10px; font-size: 11px; color: var(--muted); }
+footer { display: flex; justify-content: space-between; gap: 10px; padding: 2px 14px 10px; font-size: 11px; color: var(--muted); white-space: nowrap; }
+footer span { overflow: hidden; text-overflow: ellipsis; }
+#empty { padding: 0 12px 2px; }
+#empty[hidden] { display: none; }
+#suggestions { display: flex; flex-wrap: wrap; gap: 6px; }
+.hint { margin: 8px 2px 0; font-size: 11.5px; color: var(--muted); }
+#card { transition: box-shadow 0.2s; }
+.chip { transition: background 0.15s, border-color 0.15s, transform 0.1s; }
+.chip:active { transform: scale(0.97); }
+.a { animation: rise 0.18s ease-out; }
+@keyframes rise { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+
+
+}
 
 #source { display: flex; gap: 8px; align-items: baseline; padding: 0 14px 6px; font-size: 11.5px; color: var(--muted); }
 #source[hidden] { display: none; }
@@ -110,3 +123,15 @@ button.secondary { justify-self: start; border: 1px solid var(--line); backgroun
 .confirm-buttons { display: flex; gap: 8px; }
 button.linkish { border: 0; background: none; padding: 0; font: inherit; color: #4f7a47; cursor: pointer; text-decoration: underline; }
 .choices { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+
+/* Dark mode: deep night-sky card, same sage accents */
+@media (prefers-color-scheme: dark) {
+  :root { --paper: #1b1f2a; --ink: #ece9e2; --muted: #9a97a3; --line: #2e3443; --sage: #8fc483; --sage-soft: #263326; }
+  #card { box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.06); }
+  #askForm, .chip, button.secondary, .confirm, .quiz-q input, .confirm input { background: #232838; color: var(--ink); }
+  .a code, .a pre { background: #262c3b; }
+  .a blockquote { color: #c4c0ca; }
+  #send, button.primary { background: var(--ink); color: var(--paper); }
+  header .face path { fill: #0f0e12; stroke: #3a3f4f; stroke-width: 0.8; }
+  .a a, .actions button, button.linkish { color: var(--sage); }
+  .a.error { color: #e08b8b; }

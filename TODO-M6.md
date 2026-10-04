@@ -17,7 +17,7 @@ Loon never writes to other repos: git is only ever read, with `--no-optional-loc
 - [x] 5. Drop a file on the cat: PDF / text / CSV / image → the usual chips (pdf.js text, Tesseract for images)
 
 ## Polish
-- [ ] 6. Graphics + UX pass: cat details, bubble and settings visual refinement, dark mode, first-run welcome, empty states
+- [x] 6. Graphics + UX pass: cat details, bubble and settings visual refinement, dark mode, first-run welcome, empty states
 - [ ] 7. Tests (unit + selftest), packaged build check, README/DESIGN updates
 
 ## Notes

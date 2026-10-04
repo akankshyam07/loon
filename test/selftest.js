@@ -82,10 +82,11 @@ async function run(ctx) {
   await waitFor(async () => (await cat('window.__loon.state')) === 'idle', 3000);
 
   for (const move of ['moonMagic', 'edgePeek', 'pounce']) {
+    await waitFor(async () => (await cat('window.__loon.state')) === 'idle', 5000);
     catWin.webContents.send('debug', { move });
     const started = await waitFor(async () => (await cat('window.__loon.state')) === 'move', 1500, 50);
     const finished = await waitFor(async () => (await cat('window.__loon.state')) === 'idle', 9000);
-    check(`cool move: ${move}`, started && finished);
+    check(`cool move: ${move}`, started && finished, `started ${started} · finished ${finished}`);
     catWin.setBounds(homeBounds);
     await wait(300);
   }

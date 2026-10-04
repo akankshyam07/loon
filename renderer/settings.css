@@ -1,19 +1,37 @@
 * { box-sizing: border-box; }
-body { margin: 0; padding: 20px 24px 32px; font: 13.5px/1.45 -apple-system, BlinkMacSystemFont, system-ui, sans-serif; color: #1c1a1f; background: #fbfaf5; }
-h1 { font-size: 18px; display: flex; align-items: center; gap: 8px; margin: 0 0 12px; }
-.dot { width: 11px; height: 11px; border-radius: 50%; background: #8fdc5a; box-shadow: 0 0 0 2px #1d3616; }
-section { padding: 12px 0; border-top: 1px solid #e7e3da; }
-h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px; color: #7a7580; margin: 0 0 8px; }
-.toggle { display: flex; gap: 10px; align-items: flex-start; margin: 6px 0; }
-.toggle span { display: grid; }
+:root { --paper: #f4f1ea; --card: #fbfaf5; --ink: #1c1a1f; --muted: #7a7580; --line: #e7e3da; --sage: #6f9a66; --sage-soft: #e6efe1; --danger: #9b3b3b; }
+@media (prefers-color-scheme: dark) {
+  :root { --paper: #151821; --card: #1b1f2a; --ink: #ece9e2; --muted: #9a97a3; --line: #2e3443; --sage: #8fc483; --sage-soft: #263326; --danger: #e08b8b; }
+}
+body { margin: 0; padding: 22px 22px 32px; font: 13.5px/1.45 -apple-system, BlinkMacSystemFont, system-ui, sans-serif; color: var(--ink); background: var(--paper); }
+header { display: flex; gap: 12px; align-items: center; margin: 0 2px 16px; }
+header .face { width: 40px; height: 36px; }
+h1 { font-size: 19px; margin: 0; }
+header .muted { margin: 0; }
+section { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; margin: 0 0 12px; }
+h2 { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.7px; color: var(--muted); margin: 0 0 8px; }
+.muted { color: var(--muted); font-size: 12.5px; margin: 0 0 8px; }
+.mono { font: 11.5px ui-monospace, Menlo, monospace; color: var(--muted); word-break: break-all; }
+
+/* toggle switch built on the checkbox, so it stays a real, accessible checkbox */
+.toggle { display: flex; gap: 12px; align-items: flex-start; margin: 8px 0; cursor: pointer; }
+.toggle span { display: grid; gap: 1px; }
 .toggle b { font-weight: 600; }
-.muted { color: #7a7580; font-size: 12.5px; margin: 0 0 6px; }
-.mono { font: 12px ui-monospace, Menlo, monospace; word-break: break-all; }
-button { border: 1px solid #e7e3da; background: #fff; border-radius: 8px; padding: 5px 10px; font: inherit; cursor: pointer; }
-button.danger { color: #9b3b3b; }
+.toggle input { appearance: none; flex: none; width: 34px; height: 20px; margin: 1px 0 0; border-radius: 999px; background: var(--line); position: relative; cursor: pointer; transition: background 0.18s; }
+.toggle input::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.3); transition: transform 0.18s; }
+.toggle input:checked { background: var(--sage); }
+.toggle input:checked::after { transform: translateX(14px); }
+.toggle input:focus-visible { outline: 2px solid var(--sage); outline-offset: 2px; }
+
+button { border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 9px; padding: 5px 11px; font: inherit; cursor: pointer; }
+button:hover { border-color: var(--sage); }
+button.danger { color: var(--danger); }
 ul { list-style: none; padding: 0; margin: 0 0 8px; display: grid; gap: 6px; }
+#projects { max-height: 220px; overflow-y: auto; padding-right: 4px; }
+#projects .toggle { margin: 4px 0; }
 #memory li { display: flex; gap: 6px; align-items: center; }
-#memory input { flex: 1; font: inherit; padding: 4px 8px; border: 1px solid #e7e3da; border-radius: 8px; }
-.tag { font-size: 11px; color: #6f9a66; background: #e6efe1; border-radius: 8px; padding: 1px 6px; }
-#audit li { font-size: 12.5px; color: #4d4953; }
+#memory input { flex: 1; font: inherit; color: var(--ink); background: var(--paper); padding: 4px 8px; border: 1px solid var(--line); border-radius: 8px; }
+.tag { font-size: 11px; color: var(--sage); background: var(--sage-soft); border-radius: 8px; padding: 1px 6px; }
+#audit li { font-size: 12.5px; color: var(--muted); }
 .row { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+@media (prefers-color-scheme: dark) { header .face path { fill: #0f0e12; stroke: #4a5064; stroke-width: 0.7; } }

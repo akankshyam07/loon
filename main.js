@@ -27,7 +27,7 @@ const DEMO = process.argv.includes('--demo') || process.env.LOON_DEMO === '1';
 const SELFTEST = process.argv.includes('--selftest');
 
 let settingsFile;
-let settings = { size: 'M', focus: false, privacy: false, judgmental: true, wakeWord: false, speakReplies: 'voiceOnly', projects: [], connectors: [] };
+let settings = { size: 'M', focus: false, privacy: false, judgmental: true, wakeWord: false, speakReplies: 'voiceOnly', projects: [], connectors: [], welcomed: false };
 let catWin;
 let bubbleWin;
 let brain;
@@ -105,7 +105,8 @@ function createCatWindow() {
     hasShadow: false,
     fullscreenable: false,
     focusable: false,
-    webPreferences: { preload: path.join(__dirname, 'renderer', 'preload.js') },
+    // The selftest may run while the screen is locked; real use keeps Chromium's throttling for hidden windows.
+    webPreferences: { preload: path.join(__dirname, 'renderer', 'preload.js'), backgroundThrottling: !SELFTEST },
   });
   catWin.setAlwaysOnTop(true, 'screen-saver');
   catWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
@@ -522,8 +523,9 @@ function scheduleScreenshot() {
         }
       }
     }, 1200);
+    if (process.argv.includes('--shot-settings')) setTimeout(openSettings, 1000);
     setTimeout(async () => {
-      const target = process.argv.includes('--shot-bubble') ? bubbleWin : catWin;
+      const target = process.argv.includes('--shot-settings') ? settingsWin : process.argv.includes('--shot-bubble') ? bubbleWin : catWin;
       fs.writeFileSync(shot, (await target.webContents.capturePage()).toPNG());
       app.quit();
     }, 1200 + delay);
@@ -531,6 +533,7 @@ function scheduleScreenshot() {
 }
 
 app.whenReady().then(() => {
+  if (arg('theme')) require('electron').nativeTheme.themeSource = arg('theme'); // screenshots in light/dark
   if (process.platform === 'darwin') app.dock.hide();
   loadSettings();
   if (!settings.pairingCode) {
@@ -620,6 +623,15 @@ app.whenReady().then(() => {
   session.defaultSession.setPermissionCheckHandler((wc, permission) => permission === 'media' && wc === catWin?.webContents);
 
   if (settings.wakeWord) setTimeout(() => voice.setWake(!settings.focus && !settings.privacy), 3000);
+  // First launch: a short hello in the bubble instead of a silent cat.
+  if (!settings.welcomed && !SELFTEST && !arg('shot')) {
+    catWin.webContents.once('did-finish-load', () => setTimeout(() => {
+      companion.showNotice("Hi, I'm Loon 🐾 Click me to ask anything, press and hold to pet me, or try ⌥Space. Right-click me for Settings, where you can connect Chrome and pick projects for me to keep up with. Everything stays on this Mac.");
+      showBubble();
+      settings.welcomed = true;
+      saveSettings();
+    }, 1800));
+  }
   hub.refresh();
   setInterval(() => hub.refresh(), 5 * 60 * 1000); // apps come and go; keep "Send to …" chips current
 
@@ -642,7 +654,7 @@ app.whenReady().then(() => {
     });
   }
   // Stop drawing while nobody can see the cat.
-  const setPaused = (paused) => catWin.webContents.send('power', { paused });
+  const setPaused = (paused) => { if (!SELFTEST) catWin.webContents.send('power', { paused }); };
   powerMonitor.on('lock-screen', () => setPaused(true));
   powerMonitor.on('suspend', () => setPaused(true));
   powerMonitor.on('unlock-screen', () => setPaused(false));

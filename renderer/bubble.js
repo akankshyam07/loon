@@ -26,6 +26,10 @@ function inline(t) {
 
 function renderBlock(para) {
   const lines = para.split('\n');
+  // "Intro:\n- a\n- b" → a paragraph followed by a list
+  if (lines.length > 2 && !/^\s*([-*•]|\d+\.) /.test(lines[0]) && lines.slice(1).every((l) => /^\s*([-*•]|\d+\.) /.test(l))) {
+    return renderBlock(lines[0]) + renderBlock(lines.slice(1).join('\n'));
+  }
   if (lines.every((l) => /^\s*\|.*\|\s*$/.test(l)) && lines.length >= 2) {
     const cells = (l) => l.trim().slice(1, -1).split('|').map((c) => inline(c.trim()));
     const body = lines.filter((l) => !/^\s*\|[\s:|-]+\|\s*$/.test(l));
@@ -117,7 +121,21 @@ function renderContext(next) {
     b.addEventListener('click', () => runChip(id, label));
     return b;
   }));
-  $('context').textContent = { selection: 'used: your selection', page: 'used: this page', sensitive: 'used: nothing' }[context.mode] || 'used: what you typed';
+  $('context').textContent = { selection: 'used: your selection', page: 'used: this page', sensitive: 'used: nothing', app: 'used: what you gave me' }[context.mode] || 'used: what you type';
+  renderEmpty();
+}
+
+// Empty bubble: a few things to try, so it never feels like a blank chat box.
+function renderEmpty() {
+  const empty = !log.children.length && !(context.chips || []).length && context.mode === 'ask' && !context.notice;
+  $('empty').hidden = !empty;
+  if (!empty) return;
+  const ideas = ['What can you do?', 'Where did I leave off?', 'Remind me to stretch in 30 minutes'];
+  $('suggestions').replaceChildren(...ideas.map((text) => {
+    const b = Object.assign(document.createElement('button'), { className: 'chip', textContent: text });
+    b.addEventListener('click', () => ask(text));
+    return b;
+  }));
 }
 
 function startAnswer(questionText) {
@@ -128,6 +146,7 @@ function startAnswer(questionText) {
   a.className = 'a';
   a.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>';
   log.append(q, a);
+  $('empty').hidden = true;
   current = { id: nextId++, el: a, raw: '', question: questionText };
   autosize();
   log.scrollTop = log.scrollHeight;

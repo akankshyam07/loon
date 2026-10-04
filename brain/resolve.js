@@ -24,6 +24,21 @@ const CODE_ANSWERS = [
     answer: () => ({ mood: 'happy', text: `It's ${new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}.` }),
   },
   {
+    match: /^(what can you do|help|what do you do|how do (i|you) use (you|this))\??$/,
+    answer: () => ({
+      mood: 'happy',
+      text: [
+        "Here's what I can do, all on your Mac:",
+        '- **Highlight text** in Chrome: define, translate, explain, rewrite',
+        '- **"Summarize this page"**, shopping tables, menu picks, error help',
+        '- **"Remind me to… at 5"**, "add … Friday 3pm", "open Spotify", "find my resume"',
+        '- **"Where did I leave off?"** on projects you allow in Settings',
+        '- **⌥⇧S** read a screenshot · **⌥⇧V** talk to me · **drop a file** on me',
+        '- **"Remember that…"** so I get to know you (Settings to edit)',
+      ].join('\n'),
+    }),
+  },
+  {
     match: /^(who|what) are you\??$/,
     answer: () => ({ mood: 'happy', text: "I'm Loon, a small black cat who lives on your screen. I run entirely on your Mac, so nothing you ask leaves it." }),
   },

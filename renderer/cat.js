@@ -833,8 +833,18 @@
     gain.gain.value = muted ? 0 : 1; // the selftest plays real audio silently
     source.connect(gain).connect(audioContext.destination);
     playing.add(source);
-    const finish = () => { playing.delete(source); playedCount++; window.loon.audioPlayed(id); };
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      playing.delete(source);
+      playedCount++;
+      window.loon.audioPlayed(id);
+    };
     source.onended = finish;
+    // 'ended' never fires if the audio device is unavailable (e.g. the screen is locked), so time it out too.
+    setTimeout(finish, buffer.duration * 1000 + 400);
+    if (audioContext.state === 'suspended') await audioContext.resume().catch(() => {});
     source.start();
   });
   window.loon.onStopAudio(() => {
