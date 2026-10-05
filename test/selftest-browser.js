@@ -57,12 +57,12 @@ async function run(ctx, check) {
   });
   const cat = (js) => catWin.webContents.executeJavaScript(js);
   const bubble = (js) => bubbleWin.webContents.executeJavaScript(js);
-  const tierCount = () => bubble(`document.querySelectorAll('.tier').length`);
-  const lastAnswer = () => bubble(`(() => { const a = [...document.querySelectorAll('.a')].pop(); return a ? { text: a.textContent, tier: a.querySelector('.tier')?.textContent || '' } : null; })()`);
-  const chips = () => bubble(`[...document.querySelectorAll('.chip')].map((c) => c.dataset.task)`);
+  const tierCount = () => bubble(`document.querySelectorAll('.tier-icon').length`);
+  const lastAnswer = () => bubble(`(() => { const a = [...document.querySelectorAll('.a')].pop(); return a ? { text: a.textContent, tier: a.querySelector('.tier-icon')?.title || '' } : null; })()`);
+  const chips = () => bubble(`(() => { document.querySelector('.chip[data-more]')?.click(); return [...document.querySelectorAll('.chip[data-task]')].map((c) => c.dataset.task); })()`);
   async function clickChip(task, timeoutMs = 150000) {
     const before = await tierCount();
-    const found = await bubble(`(() => { const c = document.querySelector('.chip[data-task="${task}"]'); if (c) c.click(); return Boolean(c); })()`);
+    const found = await bubble(`(() => { document.querySelector('.chip[data-more]')?.click(); const c = document.querySelector('.chip[data-task="${task}"]'); if (c) c.click(); return Boolean(c); })()`);
     if (!found) {
       console.log(`  (no "${task}" chip; bubble offers: ${(await chips()).join(', ')}; mode ${companion.session.mode}, page kind ${companion.activePage?.kind})`);
       return null;
@@ -136,11 +136,16 @@ async function run(ctx, check) {
     await selectAndWait('#s1');
     const explained = await clickChip('explain');
     if (process.env.LOON_SHOTS) fs.writeFileSync(path.join(process.env.LOON_SHOTS, 'bubble-explain.png'), (await bubbleWin.webContents.capturePage()).toPNG());
+    if (process.env.LOON_SHOTS) {
+      await bubble(`[...document.querySelectorAll('button[title="More actions"]')].pop().click()`);
+      await wait(300);
+      fs.writeFileSync(path.join(process.env.LOON_SHOTS, 'bubble-menu.png'), (await bubbleWin.webContents.capturePage()).toPNG());
+    }
     check('Explain answers on the local model with the selection as context',
       /on your Mac/.test(explained?.tier) && /<context source="selection"/.test(resolver.lastPrompt || ''), explained?.text.slice(0, 70));
 
     const deeperBefore = await tierCount();
-    await bubble(`[...document.querySelectorAll('.actions button')].find((b) => b.textContent === 'Go deeper').click()`);
+    await bubble(`[...document.querySelectorAll('.answer-tools button')].find((b) => b.textContent === 'Go deeper').click()`);
     await waitFor(async () => (await tierCount()) > deeperBefore, 200000, 250);
     const deeper = await lastAnswer();
     check('Go deeper gives a longer answer', deeper && deeper.text.length > explained.text.length, `${explained?.text.length} → ${deeper?.text.length} chars`);
@@ -158,7 +163,7 @@ async function run(ctx, check) {
     const original = { ...hooks };
     hooks.openExternal = async (url) => { opened.push(url); };
     hooks.clipboard = (text) => { copied = text; };
-    await bubble(`[...document.querySelectorAll('.actions button')].filter((b) => b.textContent === 'Claude').pop().click()`);
+    await bubble(`[...document.querySelectorAll('.answer-tools button')].filter((b) => b.textContent === 'Ask in Claude').pop().click()`);
     await waitFor(() => opened.length > 0, 3000);
     check('hand-off copies the prompt and opens Claude', opened[0] === 'https://claude.ai/new' && /Explain this/.test(copied) && !/4111/.test(copied), opened[0]);
     Object.assign(hooks, original);
@@ -270,7 +275,7 @@ async function run(ctx, check) {
     await wait(300);
     const fixed = await clickChip('fix_grammar', 20000);
     check('Fix grammar with Harper, no model', /There is an issue with the report/.test(fixed?.text) && /Harper/.test(fixed?.tier), fixed?.text.slice(0, 60));
-    await bubble(`[...document.querySelectorAll('.actions button')].find((b) => b.textContent === 'Replace').click()`);
+    await bubble(`[...document.querySelectorAll('.answer-tools button')].find((b) => b.textContent === 'Replace').click()`);
     const replaced = await waitFor(async () => /There is an issue with the report\.$/.test(await page.inputValue('#draft')), 5000);
     check('Replace puts the fixed text back into the text box', replaced, await page.inputValue('#draft'));
     await closeBubble();

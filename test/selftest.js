@@ -113,8 +113,8 @@ async function run(ctx) {
     await waitFor(() => bubbleWin.isVisible(), 1500);
     await wait(300);
     await bubble(`(() => { const i = document.getElementById('input'); i.value = ${JSON.stringify(text)}; i.dispatchEvent(new Event('input')); document.getElementById('askForm').requestSubmit(); })()`);
-    const done = await waitFor(() => bubble(`Boolean([...document.querySelectorAll('.tier')].pop())`), 120000, 250);
-    const out = await bubble(`(() => { const a = [...document.querySelectorAll('.a')].pop(); return { text: a.textContent, tier: a.querySelector('.tier')?.textContent || '' }; })()`);
+    const done = await waitFor(() => bubble(`Boolean([...document.querySelectorAll('.tier-icon')].pop())`), 120000, 250);
+    const out = await bubble(`(() => { const a = [...document.querySelectorAll('.a')].pop(); return { text: a.textContent, tier: a.querySelector('.tier-icon')?.title || '' }; })()`);
     await bubble('window.loon.closeBubble()');
     await waitFor(() => !bubbleWin.isVisible(), 1500);
     return { done, ...out };
@@ -134,8 +134,8 @@ async function run(ctx) {
   const second = await askViaBubble(question);
   check('same question again is a cache hit', second.done && /remembered/.test(second.tier), `${Date.now() - again} ms`);
 
-  const counts = await bubble(`document.getElementById('counts').textContent`);
-  check('weekly counters show in the footer', /instant/.test(counts) && /on-device/.test(counts), counts);
+  const card = await bubble(`({ footer: Boolean(document.querySelector('footer')), tools: document.querySelectorAll('.answer-tools > button').length })`);
+  check('minimal card: no footer, at most 3 visible answer buttons', !card.footer && card.tools <= 3, JSON.stringify(card));
 
   // ---- M4: assistant (notes, memory, actions, toggles) with real files swapped for temp ones ----
   const os = require('os');
@@ -185,17 +185,17 @@ async function run(ctx) {
 
     // unique per run: a cached answer from an earlier run would skip building a fresh prompt
     await typeInBubble(`What is a black hole? One sentence. (run ${Date.now() % 100000})`);
-    await waitFor(() => bubble(`Boolean([...document.querySelectorAll('.tier')].pop())`), 120000, 250);
+    await waitFor(() => bubble(`Boolean([...document.querySelectorAll('.tier-icon')].pop())`), 120000, 250);
     check('memory is included in the next prompt', /About the user[\s\S]*I like very short answers/.test(resolver.lastPrompt || ''));
-    await bubble(`[...document.querySelectorAll('.actions button')].find((b) => b.textContent === 'Save to notes').click()`);
+    await bubble(`[...document.querySelectorAll('.answer-tools button')].find((b) => b.textContent === 'Save to notes').click()`);
     await waitFor(() => notes.files().length > 0, 3000);
     check('Save to notes writes a markdown file', notes.files().length === 1 && /black hole/i.test(fs.readFileSync(notes.files()[0], 'utf8')));
     await bubble('window.loon.closeBubble()');
 
     setToggle('privacy', true);
     await typeInBubble('What is a black hole? One sentence.');
-    await waitFor(() => bubble(`Boolean([...document.querySelectorAll('.tier')].pop())`), 120000, 250);
-    const privateTier = await bubble(`[...document.querySelectorAll('.tier')].pop().textContent`);
+    await waitFor(() => bubble(`Boolean([...document.querySelectorAll('.tier-icon')].pop())`), 120000, 250);
+    const privateTier = await bubble(`[...document.querySelectorAll('.tier-icon')].pop().title`);
     check('Privacy mode: no memory in the prompt and no cached answer', !/I like very short answers/.test(resolver.lastPrompt) && /on your Mac/.test(privateTier), privateTier);
     setToggle('privacy', false);
     await bubble('window.loon.closeBubble()');
@@ -248,7 +248,7 @@ async function run(ctx) {
 
         const before = await played();
         voice.handleTranscript(voiceEngine.transcribe(spoken('What is the capital of France?')));
-        await waitFor(() => bubble(`Boolean([...document.querySelectorAll('.tier')].pop())`), 120000, 250);
+        await waitFor(() => bubble(`Boolean([...document.querySelectorAll('.tier-icon')].pop())`), 120000, 250);
         const answered = await bubble(`[...document.querySelectorAll('.a')].pop()?.textContent || ''`);
         const replied = await waitFor(async () => (await played()) > before, 30000);
         check('voice: an open question is answered in the bubble and spoken with Kokoro', /Paris/i.test(answered) && replied, answered.slice(0, 60));

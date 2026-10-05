@@ -238,7 +238,7 @@ class Resolver {
     this.lastPrompt = prompt;
     let text = '';
     const parser = createMoodParser((piece) => { text += piece; onText(piece); });
-    await this.brain.chat(prompt, { onText: (chunk) => parser.push(chunk), signal, maxTokens: deeper ? 900 : task.maxTokens });
+    await this.brain.chat(prompt, { onText: (chunk) => parser.push(chunk), signal, maxTokens: deeper ? 900 : task.maxTokens, smart: deeper });
     const mood = parser.finish();
     text = text.trim();
     this.count('local');

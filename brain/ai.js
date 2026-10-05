@@ -27,6 +27,42 @@ function recommendedModel() {
   return MODEL_CHOICES.find((m) => ramGb <= m.maxRamGb);
 }
 
+const SMART_IDLE_MS = 5 * 60 * 1000;
+
+// One loaded llama.cpp model with its context and chat session.
+class Slot {
+  constructor(brain, modelPath) {
+    this.brain = brain;
+    this.modelPath = modelPath;
+    this.session = null;
+    this.loading = null;
+    this.name = null;
+  }
+
+  async ensure() {
+    if (this.session) return this.session;
+    this.loading ??= (async () => {
+      const { getLlama, LlamaChatSession } = await import('node-llama-cpp');
+      this.brain.llama ??= await getLlama();
+      this.model = await this.brain.llama.loadModel({ modelPath: this.modelPath });
+      this.name = this.model.fileInfo?.metadata?.general?.name || null;
+      this.context = await this.model.createContext({ contextSize: { max: 8192 } });
+      this.session = new LlamaChatSession({ contextSequence: this.context.getSequence(), systemPrompt: SYSTEM_PROMPT });
+      return this.session;
+    })().finally(() => { this.loading = null; });
+    return this.loading;
+  }
+
+  async unload() {
+    const { model, context } = this;
+    this.session = null;
+    this.model = null;
+    this.context = null;
+    await context?.dispose().catch(() => {});
+    await model?.dispose().catch(() => {});
+  }
+}
+
 class Brain {
   constructor({ modelsDir, settings }) {
     this.modelsDir = modelsDir;
@@ -34,14 +70,21 @@ class Brain {
     this.backend = null; // { kind: 'llama', modelPath } | { kind: 'ollama', model }
     this.download = null; // { downloaded, total } while downloading
     this.llama = null;
-    this.session = null;
-    this.loading = null;
+    this.fast = null; // always-loaded model (Slot)
+    this.smart = null; // bigger model for "Go deeper", loaded on demand and unloaded when idle
+    this.smartTimer = null;
   }
 
   localModelPath() {
     if (this.settings.modelPath && fs.existsSync(this.settings.modelPath)) return this.settings.modelPath;
     const file = path.join(this.modelsDir, recommendedModel().file);
     return fs.existsSync(file) ? file : null;
+  }
+
+  // The "Go deeper" model: an explicit choice, else a downloaded Qwen3 8B, else none (the fast one goes deeper).
+  smartModelPath() {
+    const candidates = [this.settings.smartModelPath, path.join(this.modelsDir, MODEL_CHOICES[2].file)];
+    return candidates.find((p) => p && fs.existsSync(p) && p !== this.localModelPath()) || null;
   }
 
   async findOllamaModel() {
@@ -65,15 +108,17 @@ class Brain {
     return {
       ready: Boolean(this.backend),
       backend: this.backend && (this.backend.kind === 'llama' ? path.basename(this.backend.modelPath) : `ollama:${this.backend.model}`),
+      smart: this.smartModelPath() ? path.basename(this.smartModelPath()) : null,
       recommended: { name: rec.name, sizeGb: rec.sizeGb },
       downloading: this.download,
     };
   }
 
   // Human-readable name for the UI; the file name is only a fallback before the model loads.
-  modelLabel() {
+  modelLabel(smart = false) {
     if (this.backend?.kind === 'ollama') return this.backend.model;
-    return this.modelName || this.modelId();
+    const slot = smart && this.smart ? this.smart : this.fast;
+    return slot?.name || this.modelId();
   }
 
   modelId() {
@@ -81,17 +126,16 @@ class Brain {
     return this.backend.kind === 'llama' ? path.basename(this.backend.modelPath) : `ollama:${this.backend.model}`;
   }
 
-  async downloadModel(onProgress) {
+  async downloadModel(onProgress, choice = recommendedModel()) {
     if (this.download) throw new Error('Download already running');
     const { createModelDownloader } = await import('node-llama-cpp');
-    const rec = recommendedModel();
     fs.mkdirSync(this.modelsDir, { recursive: true });
-    this.download = { downloaded: 0, total: rec.sizeGb * 2 ** 30 };
+    this.download = { downloaded: 0, total: choice.sizeGb * 2 ** 30 };
     try {
       const downloader = await createModelDownloader({
-        modelUri: rec.uri,
+        modelUri: choice.uri,
         dirPath: this.modelsDir,
-        fileName: rec.file,
+        fileName: choice.file,
         showCliProgress: false,
         onProgress: ({ totalSize, downloadedSize }) => {
           this.download = { downloaded: downloadedSize, total: totalSize };
@@ -105,33 +149,46 @@ class Brain {
     return this.status();
   }
 
-  async ensureLlamaSession() {
-    if (this.session) return this.session;
-    if (!this.loading) {
-      this.loading = (async () => {
-        const { getLlama, LlamaChatSession } = await import('node-llama-cpp');
-        this.llama ??= await getLlama();
-        this.model = await this.llama.loadModel({ modelPath: this.backend.modelPath });
-        this.modelName = this.model.fileInfo?.metadata?.general?.name || null;
-        this.context = await this.model.createContext({ contextSize: { max: 8192 } });
-        this.session = new LlamaChatSession({ contextSequence: this.context.getSequence(), systemPrompt: SYSTEM_PROMPT });
-        return this.session;
-      })().finally(() => { this.loading = null; });
+  // The smart model (Qwen3 8B) is an optional 5 GB download for better "Go deeper" answers.
+  downloadSmartModel(onProgress) {
+    return this.downloadModel(onProgress, MODEL_CHOICES[2]);
+  }
+
+  // Loads the fast model in the background at startup, so the first question isn't a 20-second wait.
+  async warmUp() {
+    await this.status();
+    if (this.backend?.kind !== 'llama') return;
+    this.fast ??= new Slot(this, this.backend.modelPath);
+    await this.fast.ensure().catch((err) => console.warn('[brain] warm-up failed:', err.message));
+  }
+
+  async slot(smart) {
+    if (!this.backend) await this.status();
+    if (this.backend?.kind !== 'llama') return null;
+    if (this.fast?.modelPath !== this.backend.modelPath) this.fast = new Slot(this, this.backend.modelPath);
+    const smartPath = smart && this.smartModelPath();
+    if (!smartPath) return this.fast;
+    if (this.smart?.modelPath !== smartPath) {
+      await this.smart?.unload();
+      this.smart = new Slot(this, smartPath);
     }
-    return this.loading;
+    clearTimeout(this.smartTimer);
+    this.smartTimer = setTimeout(() => this.smart?.unload(), SMART_IDLE_MS); // ~5 GB of RAM back when idle
+    return this.smart;
   }
 
   // Starts a fresh conversation (a new bubble thread) without reloading the model.
   resetThread() {
-    this.session?.resetChatHistory();
+    this.fast?.session?.resetChatHistory();
+    this.smart?.session?.resetChatHistory();
     this.ollamaHistory = [];
   }
 
-  async chat(text, { onText, signal, maxTokens = 400 }) {
+  async chat(text, { onText, signal, maxTokens = 400, smart = false }) {
     if (!this.backend) await this.status();
     if (!this.backend) throw new Error('No model available');
     if (this.backend.kind === 'llama') {
-      const session = await this.ensureLlamaSession();
+      const session = await (await this.slot(smart)).ensure();
       return session.prompt(text, {
         maxTokens,
         signal,
@@ -175,4 +232,4 @@ class Brain {
   }
 }
 
-module.exports = { Brain, recommendedModel, SYSTEM_PROMPT };
+module.exports = { Brain, recommendedModel, SYSTEM_PROMPT, MODEL_CHOICES };

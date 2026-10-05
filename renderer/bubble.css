@@ -26,6 +26,9 @@ body { font: 13.5px/1.45 -apple-system, BlinkMacSystemFont, 'SF Pro Text', syste
 header { display: flex; align-items: center; gap: 7px; padding: 10px 12px 6px 14px; -webkit-app-region: drag; }
 header .face { width: 20px; height: 18px; flex: none; }
 header .title { font-weight: 650; letter-spacing: 0.2px; }
+header .source { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+#redacted { margin: 0 14px 6px; font-size: 11.5px; color: var(--sage); }
+#redacted[hidden] { display: none; }
 #close {
   margin-left: auto; -webkit-app-region: no-drag;
   width: 22px; height: 22px; border: 0; border-radius: 50%;
@@ -135,3 +138,36 @@ button.linkish { border: 0; background: none; padding: 0; font: inherit; color: 
   header .face path { fill: #0f0e12; stroke: #3a3f4f; stroke-width: 0.8; }
   .a a, .actions button, button.linkish { color: var(--sage); }
   .a.error { color: #e08b8b; }
+
+/* ---- minimal card (M7) ---- */
+#paw { display: none; }
+body.pill { padding: 4px; }
+body.pill #card { display: none; }
+body.pill #paw {
+  display: grid; place-items: center; width: 38px; height: 38px; border: 0; border-radius: 50%; cursor: pointer;
+  background: var(--paper); color: #1c1a20; box-shadow: 0 3px 12px rgba(0,0,0,.28), 0 0 0 1px rgba(0,0,0,.06);
+  animation: popIn .16s ease-out;
+}
+body.pill #paw svg { width: 20px; height: 20px; }
+body.pill #paw:hover { transform: scale(1.06); }
+@keyframes popIn { from { transform: scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
+#chips { padding: 0 12px 10px; }
+#chips[hidden] { display: none; }
+.chip.more { color: var(--muted); }
+.answer-tools { display: flex; align-items: center; gap: 12px; margin-top: 6px; font-size: 12px; }
+.answer-tools button { border: 0; background: none; padding: 0; font: inherit; color: var(--muted); cursor: pointer; }
+.answer-tools button:hover { color: var(--ink); }
+.answer-tools .tier-icon { margin-left: auto; cursor: help; opacity: .7; }
+.answer-tools .estimated { font-size: 11px; color: var(--sage); }
+.answer-tools { flex-wrap: wrap; }
+.menu-list { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 4px; padding: 6px; border-radius: 10px; background: var(--sage-soft); }
+.menu-list[hidden] { display: none; }
+.menu-list button { padding: 5px 9px; border-radius: 7px; color: var(--ink) !important; }
+.menu-list button:hover { background: var(--paper); }
+.q { margin-top: 2px; }
+#askForm[hidden] { display: none; }
+#askForm { margin-bottom: 12px; }
+@media (prefers-color-scheme: dark) {
+  body.pill #paw { background: #232838; color: #ece9e2; box-shadow: 0 3px 12px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.08); }
+  .menu-list button:hover { background: #2c3242; }
+}

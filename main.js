@@ -114,10 +114,8 @@ function createCatWindow() {
   catWin.setIgnoreMouseEvents(true, { forward: true });
   catWin.loadFile(path.join(__dirname, 'renderer', 'cat.html'), { query: { demo: DEMO ? '1' : '0' } });
   catWin.webContents.once('did-finish-load', () => { if (settings.focus) catWin.webContents.send('focus', { on: true }); });
-  catWin.on('moved', () => {
-    settings.position = catWin.getBounds();
-    saveSettings();
-  });
+  // settings.position is "home": only a user drag changes it (programmatic moves also fire 'moved').
+  home = { x: start.x, y: start.y };
   startCursorFeed();
 }
 
@@ -147,9 +145,16 @@ function createBubbleWindow() {
 }
 
 let bubbleAnchor = null; // screen rect of the selection the bubble belongs to, or null to sit by the cat
+let bubblePill = false; // a small paw beside the selection until clicked
 
 function placeBubble(height = bubbleWin.getBounds().height) {
   const cat = catWin.getBounds();
+  if (bubblePill && bubbleAnchor) {
+    const wa = workAreaFor(bubbleAnchor);
+    const x = Math.min(bubbleAnchor.x + bubbleAnchor.w + 4, wa.x + wa.width - 50);
+    const y = Math.max(bubbleAnchor.y - 46, wa.y);
+    return bubbleWin.setBounds({ x: Math.round(x), y: Math.round(y), width: 46, height: 46 });
+  }
   const wa = workAreaFor(bubbleAnchor || cat);
   let x;
   let y;
@@ -168,9 +173,10 @@ function placeBubble(height = bubbleWin.getBounds().height) {
 }
 
 // focus=false shows chips next to a selection without taking focus from the browser (§2.8).
-function showBubble({ anchor = null, focus = true } = {}) {
+function showBubble({ anchor = null, focus = true, pill = false } = {}) {
   bubbleAnchor = anchor;
-  placeBubble();
+  bubblePill = pill && Boolean(anchor);
+  placeBubble(bubblePill ? undefined : Math.max(bubbleWin.getBounds().height, 120));
   bubbleWin.setFocusable(focus);
   if (focus) {
     bubbleWin.show();
@@ -178,7 +184,7 @@ function showBubble({ anchor = null, focus = true } = {}) {
   } else {
     bubbleWin.showInactive();
   }
-  bubbleWin.webContents.send('bubble-shown', { context: companion.context(), focus });
+  bubbleWin.webContents.send('bubble-shown', { context: companion.context(), focus, pill: bubblePill });
   catWin.webContents.send('bubble', { open: true });
 }
 
@@ -288,6 +294,7 @@ async function openScreenshot(file) {
 
 let lastCursor = null;
 let catBodyOpen = false;
+let home = null; // where the user put the cat; tricks and hops walk back here
 function startCursorFeed() {
   setInterval(() => {
     if (!catWin || catWin.isDestroyed()) return;
@@ -297,7 +304,8 @@ function startCursorFeed() {
     const win = catWin.getBounds();
     catWin.webContents.send('cursor', { cursor, win });
     // During a file drag the page gets no mouse events, so main opens the cat's body area by cursor position.
-    const inBody = cursor.x > win.x + win.width * 0.3 && cursor.x < win.x + win.width * 0.7 && cursor.y > win.y + win.height * 0.4 && cursor.y < win.y + win.height;
+    // Only the middle of the cat's body (always opaque), so clicks next to the cat still reach the apps behind it.
+    const inBody = cursor.x > win.x + win.width * 0.42 && cursor.x < win.x + win.width * 0.58 && cursor.y > win.y + win.height * 0.62 && cursor.y < win.y + win.height * 0.95;
     if (inBody !== catBodyOpen) {
       catBodyOpen = inBody;
       if (inBody) catWin.setIgnoreMouseEvents(false);
@@ -338,6 +346,9 @@ function setSize(size) {
   // keep the cat's feet where they were
   const pos = clampToWorkArea(bounds.x + (bounds.width - next.width) / 2, bounds.y + bounds.height - next.height, next);
   catWin.setBounds({ ...pos, ...next });
+  home = { x: pos.x, y: pos.y };
+  settings.position = catWin.getBounds();
+  saveSettings();
 }
 
 // Behavior toggles (§3.15). The resolver and companion read `settings` live, so no restart is needed.
@@ -435,10 +446,19 @@ function registerIpc() {
     clearInterval(dragTimer);
     dragTimer = null;
     settings.position = catWin.getBounds();
+    home = { x: settings.position.x, y: settings.position.y };
     saveSettings();
   });
+  ipcMain.handle('go-home', () => {
+    const b = catWin.getBounds();
+    const dx = home.x - b.x;
+    const dy = home.y - b.y;
+    if (Math.hypot(dx, dy) < 12) return b;
+    return animateWindow({ dx, dy, duration: Math.min(900, 300 + Math.abs(dx) * 0.8), arc: Math.min(40, 10 + Math.abs(dx) / 10) });
+  });
 
-  ipcMain.on('bubble-height', (_e, height) => placeBubble(Math.min(Math.max(height, 80), 560)));
+  ipcMain.on('bubble-height', (_e, height) => { if (!bubblePill) placeBubble(Math.min(Math.max(height, 80), 560)); });
+  ipcMain.on('bubble-expand', () => { bubblePill = false; placeBubble(160); });
 
   ipcMain.handle('brain-status', async () => ({ ...(await brain.status()), counts: resolver.counts }));
   ipcMain.handle('download-model', async () => {
@@ -623,6 +643,8 @@ app.whenReady().then(() => {
   session.defaultSession.setPermissionCheckHandler((wc, permission) => permission === 'media' && wc === catWin?.webContents);
 
   if (settings.wakeWord) setTimeout(() => voice.setWake(!settings.focus && !settings.privacy), 3000);
+  // Load the fast model shortly after launch so the first answer starts streaming right away.
+  if (!SELFTEST) setTimeout(() => brain.warmUp(), 4000);
   hub.refresh();
   setInterval(() => hub.refresh(), 5 * 60 * 1000); // apps come and go; keep "Send to …" chips current
 

@@ -333,7 +333,7 @@
   });
   P.cat.addEventListener('pointermove', (e) => {
     if (!press || dragging || state === 'petted') return;
-    if (Math.hypot(e.clientX - press.cx, e.clientY - press.cy) > 5) {
+    if (Math.hypot(e.clientX - press.cx, e.clientY - press.cy) > 9) { // trackpad jitter on a click is not a drag
       clearTimeout(petTimer);
       dragging = true;
       window.loon.dragStart(press.cx, press.cy);
@@ -453,6 +453,22 @@
     await wait(800);
   }
 
+  // Walk back to the spot the user chose (main knows it), with a little hop, once nothing else is going on.
+  let homeTimer = null;
+  function comeHome(delay = 0) {
+    clearTimeout(homeTimer);
+    homeTimer = setTimeout(async () => {
+      if (state !== 'idle' || bubbleOpen || dragging || press) return comeHome(4000);
+      state = 'move';
+      try {
+        await window.loon.goHome();
+        await squash();
+      } finally {
+        if (state === 'move') state = 'idle';
+      }
+    }, delay);
+  }
+
   async function hopAround() {
     const { win, workArea } = await window.loon.windowInfo();
     let dx = rand(70, 150) * (Math.random() < 0.5 ? -1 : 1);
@@ -464,6 +480,7 @@
       await window.loon.animateWindow({ dx: dx / 2, duration: 330, arc: 24 });
       await squash();
     }
+    comeHome(rand(15000, 30000)); // a short wander, then back to its spot
   }
 
   // Stretch + yawn: long and low, eyes shut, mouth open, then a satisfied shake.
@@ -546,6 +563,7 @@
       M.catY = 0;
       M.catRot = 0;
       M.bodyRot = 0;
+      if (['pounce', 'zoomies'].includes(name)) setTimeout(comeHome, 2500);
       lookOverride = null;
       moodTilt = 0;
       T.glow = 0;
@@ -682,6 +700,7 @@
       lookOverride = null;
       setMood('neutral');
       if (focusMode) setTimeout(applyFocusLook, 1500);
+      comeHome(1500); // if it hopped toward a selection, walk back
     }
   });
 

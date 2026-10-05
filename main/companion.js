@@ -102,9 +102,10 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
         maybeNudge(message);
       }
     } else if (message.type === 'selection') {
-      startSession('selection', selectionPacket(message));
-      ui.showBubble({ anchor: message.anchor, focus: false });
+      const packet = selectionPacket(message);
+      startSession('selection', packet);
       ui.cat('selection', { anchor: message.anchor });
+      showSelection(message, packet);
     } else if (message.type === 'selection-cleared') {
       if (session.mode === 'selection' && !session.threadStarted && !ui.bubbleFocused()) ui.hideBubble();
     } else if (message.type === 'selection-blocked') {
@@ -115,6 +116,20 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
       ui.showBubble({ focus: true });
       ui.runInBubble(packet.selectionKind === 'word' ? 'define' : 'explain');
     }
+  }
+
+  // Instant answers where the intent is obvious and the answer is free (dictionary, error table, offline translator);
+  // anything else waits behind a small paw so selecting text never throws a card in the user's face.
+  async function showSelection(message, packet) {
+    const kind = packet.selectionKind;
+    let task = kind === 'word' ? 'define' : kind === 'stacktrace' ? 'explain_error' : null;
+    if (!task && ['sentence', 'paragraph'].includes(kind) && resolver.translator) {
+      const lang = await resolver.translator.detect(message.text).catch(() => null);
+      if (lang && lang !== 'en') task = 'translate';
+    }
+    if (session.packet !== packet) return; // a newer selection arrived while detecting
+    ui.showBubble({ anchor: message.anchor, focus: false, pill: !task });
+    if (task) ui.runInBubble(task);
   }
 
   // ---------- nudges (§3.14): at most once per page, 30 min per domain, 6 per hour, back off when ignored ----------
@@ -284,7 +299,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
           bubble('chunk', { id, chunk });
         },
       });
-      bubble('done', { id, ...result, model: brain.modelLabel(), counts: resolver.counts, canGoDeeper: result.tier !== 'code' || task === 'define' });
+      bubble('done', { id, ...result, model: brain.modelLabel(deeper), counts: resolver.counts, canGoDeeper: result.tier !== 'code' || task === 'define' });
       ui.cat('brain', { state: 'done', mood: result.mood });
     } catch (err) {
       if (controller.signal.aborted) return;

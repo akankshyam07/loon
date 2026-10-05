@@ -62,12 +62,6 @@ log.addEventListener('click', (e) => {
   window.loon.openLink(link.dataset.url);
 });
 
-function formatCounts(counts) {
-  if (!counts) return '';
-  const { code = 0, cache = 0, local = 0 } = counts.tiers;
-  return `this week: ${code + cache} instant · ${local} on-device`;
-}
-
 function tierLabel({ tier, model, detail, estimated }) {
   const suffix = estimated ? ' · estimated' : '';
   if (tier === 'code') return `⚡ instant · ${detail || 'no model needed'}`;
@@ -76,6 +70,7 @@ function tierLabel({ tier, model, detail, estimated }) {
 }
 
 function reportHeight() {
+  if (document.body.classList.contains('pill')) return;
   window.loon.setBubbleHeight(Math.ceil(card.getBoundingClientRect().height) + 20);
 }
 new ResizeObserver(reportHeight).observe(card);
@@ -89,7 +84,6 @@ input.addEventListener('input', autosize);
 
 async function refreshStatus() {
   const status = await window.loon.brainStatus();
-  $('counts').textContent = formatCounts(status.counts);
   const needsBrain = !status.ready;
   setup.hidden = !needsBrain;
   input.disabled = needsBrain && !status.downloading;
@@ -106,23 +100,42 @@ async function refreshStatus() {
 
 function renderContext(next) {
   context = next || context;
-  $('source').hidden = !context.label;
-  $('sourceLabel').textContent = context.label || '';
-  $('redacted').textContent = context.redactions ? `· ${context.redactions} private item${context.redactions > 1 ? 's' : ''} hidden` : '';
+  $('sourceLabel').textContent = context.label ? `· ${context.label}` : '';
+  $('redacted').hidden = !context.redactions;
+  $('redacted').textContent = context.redactions ? `🔒 ${context.redactions} private item${context.redactions > 1 ? 's' : ''} hidden from the model` : '';
   $('sensitive').hidden = !context.sensitive;
   $('notice').hidden = !context.notice;
   $('notice').textContent = context.notice || '';
   input.placeholder = context.placeholder || 'Ask me anything…';
-  $('chips').replaceChildren(...(context.chips || []).map(({ id, label }) => {
-    const b = document.createElement('button');
-    b.className = 'chip';
+  renderChips(false);
+  // Typing is for questions; next to a selection the buttons come first and "Ask…" reveals the box.
+  $('askForm').hidden = !(context.mode === 'ask' || context.mode === 'sensitive' || showInput);
+  renderEmpty();
+}
+
+// At most three buttons; the rest wait behind "More".
+let showInput = false;
+function renderChips(all) {
+  const list = context.chips || [];
+  const visible = all ? list : list.slice(0, 3);
+  const buttons = visible.map(({ id, label }) => {
+    const b = Object.assign(document.createElement('button'), { className: 'chip', textContent: label });
     b.dataset.task = id;
-    b.textContent = label;
     b.addEventListener('click', () => runChip(id, label));
     return b;
-  }));
-  $('context').textContent = { selection: 'used: your selection', page: 'used: this page', sensitive: 'used: nothing', app: 'used: what you gave me' }[context.mode] || 'used: what you type';
-  renderEmpty();
+  });
+  if (!all && list.length > 3) {
+    const more = Object.assign(document.createElement('button'), { className: 'chip more', textContent: 'More…' });
+    more.dataset.more = '1';
+    more.addEventListener('click', () => renderChips(true));
+    buttons.push(more);
+  }
+  if (context.mode !== 'ask' && context.mode !== 'sensitive' && !showInput) {
+    const askB = Object.assign(document.createElement('button'), { className: 'chip more', textContent: 'Ask…' });
+    askB.addEventListener('click', () => { showInput = true; $('askForm').hidden = false; askB.remove(); focused = true; window.loon.focusBubble(); input.focus(); });
+    buttons.push(askB);
+  }
+  $('chips').replaceChildren(...buttons);
 }
 
 // Empty bubble: a few things to try, so it never feels like a blank chat box.
@@ -138,14 +151,13 @@ function renderEmpty() {
   }));
 }
 
-function startAnswer(questionText) {
-  const q = document.createElement('div');
-  q.className = 'q';
-  q.textContent = questionText;
+function startAnswer(questionText, typed = true) {
   const a = document.createElement('div');
   a.className = 'a';
   a.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>';
-  log.append(q, a);
+  // Typed questions are echoed; a button press doesn't need repeating back.
+  if (typed) log.append(Object.assign(document.createElement('div'), { className: 'q', textContent: questionText }));
+  log.append(a);
   $('empty').hidden = true;
   current = { id: nextId++, el: a, raw: '', question: questionText };
   autosize();
@@ -155,8 +167,10 @@ function startAnswer(questionText) {
 
 function runChip(task, label, deeper = false) {
   if (current) return;
+  expandPill();
+  $('chips').hidden = true; // the answer takes the space; other actions live in its ⋯ menu
   lastTask = task;
-  const id = startAnswer(deeper ? `${label} (deeper)` : label);
+  const id = startAnswer(deeper ? `${label} (deeper)` : label, false);
   window.loon.runTask(id, task, deeper);
 }
 
@@ -173,45 +187,56 @@ async function handoff(app) {
   }
 }
 
-function answerActions({ canGoDeeper, replaceText, text, question, quiz }) {
+function answerActions({ canGoDeeper, replaceText, text, question, quiz, tier, model, detail, estimated }) {
   const row = document.createElement('div');
-  row.className = 'actions';
-  const add = (label, onClick) => {
-    const b = document.createElement('button');
-    b.textContent = label;
+  row.className = 'answer-tools';
+  const add = (parent, label, onClick) => {
+    const b = Object.assign(document.createElement('button'), { textContent: label });
     b.addEventListener('click', onClick);
-    row.append(b);
+    parent.append(b);
+    return b;
   };
+  const flash = (b, label) => { const old = b.textContent; b.textContent = label; setTimeout(() => { b.textContent = old; }, 1400); };
   if (replaceText && context.editable) {
-    add('Replace', async (e) => {
+    add(row, 'Replace', async (e) => {
       try {
         await window.loon.replace(replaceText);
         e.target.textContent = 'Replaced ✓';
         e.target.disabled = true;
       } catch (err) {
-        e.target.textContent = 'Could not replace';
+        flash(e.target, 'Could not replace');
         console.error(err);
       }
     });
   }
-  if (quiz) add('Harder questions', () => runChip('quiz_harder', 'Harder questions'));
-  if (canGoDeeper && lastTask) add('Go deeper', () => runChip(lastTask, context.chips.find((c) => c.id === lastTask)?.label || 'Answer', true));
-  add('Save to notes', async (e) => {
+  add(row, 'Copy', (e) => { navigator.clipboard.writeText(replaceText || text || ''); flash(e.target, 'Copied ✓'); });
+  if (quiz) add(row, 'Harder questions', () => runChip('quiz_harder', 'Harder questions'));
+  if (canGoDeeper && lastTask) add(row, 'Go deeper', () => runChip(lastTask, context.chips.find((c) => c.id === lastTask)?.label || 'Answer', true));
+
+  const menu = document.createElement('span');
+  menu.className = 'menu';
+  const list = Object.assign(document.createElement('div'), { className: 'menu-list', hidden: true });
+  add(menu, '⋯', () => { list.hidden = !list.hidden; requestAnimationFrame(reportHeight); }).title = 'More actions';
+  for (const chip of (context.chips || []).filter((c) => c.id !== lastTask)) add(list, chip.label, () => { list.hidden = true; runChip(chip.id, chip.label); });
+  if ($('askForm').hidden) add(list, 'Ask a follow-up', () => { list.hidden = true; showInput = true; $('askForm').hidden = false; focused = true; window.loon.focusBubble(); input.focus(); reportHeight(); });
+  add(list, 'Save to notes', async (e) => {
     try {
       await window.loon.saveNote({ question, text });
-      e.target.textContent = 'Saved ✓';
-      e.target.disabled = true;
+      flash(e.target, 'Saved ✓');
     } catch (err) {
-      e.target.textContent = 'Could not save';
+      flash(e.target, 'Could not save');
       console.error(err);
     }
   });
-  const label = document.createElement('span');
-  label.textContent = 'Ask in:';
-  row.append(label);
-  add('Claude', () => handoff('claude'));
-  add('ChatGPT', () => handoff('chatgpt'));
-  add('Gemini', () => handoff('gemini'));
+  add(list, 'Ask in Claude', () => { list.hidden = true; handoff('claude'); });
+  add(list, 'Ask in ChatGPT', () => { list.hidden = true; handoff('chatgpt'); });
+  add(list, 'Ask in Gemini', () => { list.hidden = true; handoff('gemini'); });
+  row.append(menu);
+
+  if (estimated) row.append(Object.assign(document.createElement('span'), { className: 'estimated', textContent: 'estimated' }));
+  const icon = Object.assign(document.createElement('span'), { className: 'tier-icon', textContent: tier === 'local' ? '🐾' : '⚡' });
+  icon.title = tierLabel({ tier, model, detail, estimated });
+  row.append(icon, list);
   return row;
 }
 
@@ -417,12 +442,8 @@ window.loon.onAskChunk(({ id, chunk }) => {
 window.loon.onAskDone(({ id, text, ...meta }) => {
   if (current?.id !== id) return;
   current.el.innerHTML = renderMarkdown(text || current.raw.trim() || '…');
-  const badge = document.createElement('span');
-  badge.className = 'tier';
-  badge.textContent = tierLabel(meta);
   if (meta.quiz) current.el.append(quizCard(meta.quiz));
-  current.el.append(badge, answerActions({ ...meta, text: text || current.raw, question: current.question }));
-  $('counts').textContent = formatCounts(meta.counts);
+  current.el.append(answerActions({ ...meta, text: text || current.raw, question: current.question }));
   current = null;
   autosize();
   if (focused) input.focus();
@@ -435,8 +456,20 @@ window.loon.onAskError(({ id, message }) => {
   autosize();
 });
 
-window.loon.onBubbleShown(({ context: next, focus } = {}) => {
+// Pill: a small paw beside a selection; clicking it opens the full card.
+function expandPill() {
+  if (!document.body.classList.contains('pill')) return;
+  document.body.classList.remove('pill');
+  window.loon.expandBubble();
+  requestAnimationFrame(reportHeight);
+}
+$('paw').addEventListener('click', expandPill);
+
+window.loon.onBubbleShown(({ context: next, focus, pill } = {}) => {
   focused = focus !== false;
+  showInput = false;
+  $('chips').hidden = false;
+  document.body.classList.toggle('pill', Boolean(pill));
   log.replaceChildren();
   current = null;
   lastTask = null;
