@@ -99,3 +99,24 @@ test('dropped files: CSV overview in code, text and PDF read locally, unknown ty
   assert.strictEqual(pdf.kind, 'pdf');
   assert.match(pdf.text, /Cats like boxes\./);
 });
+
+test('daily assistant: day and focus commands, and a day summary that survives missing permissions', () => {
+  const { formatDay } = require('../main/actions');
+  for (const q of ['good morning', "what's my day", 'What is on my schedule today?', 'plan my day']) assert.deepStrictEqual(parseCommand(q), { action: 'today' }, q);
+  assert.deepStrictEqual(parseCommand('focus for 25 minutes'), { action: 'focus', minutes: 25 });
+  assert.deepStrictEqual(parseCommand('start a focus session for 1 hour'), { action: 'focus', minutes: 60 });
+  assert.deepStrictEqual(parseCommand('pomodoro'), { action: 'focus', minutes: 25 });
+  assert.deepStrictEqual(parseCommand('stop focus'), { action: 'focus', minutes: 0 });
+  const now = new Date(2026, 9, 5, 9, 0);
+  const at = (h, m = 0) => new Date(2026, 9, 5, h, m);
+  const text = formatDay({
+    events: { value: [{ start: at(7), allDay: false, title: 'Gym (over)' }, { start: at(0), allDay: true, title: 'Mom birthday' }, { start: at(10, 30), allDay: false, title: 'Standup' }] },
+    reminders: { error: 'Not authorized to send Apple events to Reminders. (-1743)' },
+  }, now);
+  assert.match(text, /^\*\*Good morning!\*\*/);
+  assert.match(text, /all day · Mom birthday/);
+  assert.match(text, /10:30.*Standup/);
+  assert.doesNotMatch(text, /Gym/);
+  assert.match(text, /\*\*Reminders\*\*: needs permission/);
+  assert.match(formatDay({ events: { value: [] }, reminders: { value: [] } }, now), /nothing left today[\s\S]*nothing due/);
+});

@@ -4,6 +4,7 @@ const fs = require('fs');
 const { ResponseCache } = require('./cache');
 const { TASKS, MAX_CONTEXT_CHARS, buildPrompt, memoryGroup } = require('./tasks');
 const { define } = require('./define');
+const { scopeOf } = require('./memory');
 const { keySentences, trimForModel } = require('./textrank');
 const { languageName } = require('./translate');
 const { fingerprint } = require('./errors');
@@ -143,7 +144,9 @@ class Resolver {
     const tiers = task.tiers || [];
     // Privacy mode (§3.15): no memory in prompts, no cache reads or writes.
     const privacy = Boolean(this.settings.privacy);
-    const memory = privacy || !this.memory ? [] : this.memory.forGroup(memoryGroup(taskId));
+    const request = question || packet.question || String(packet.text || '').slice(0, 500);
+    const memory = privacy || !this.memory ? [] : this.memory.forGroup(memoryGroup(taskId), request, scopeOf(packet));
+    this.lastMemory = memory;
     let prefix = '';
 
     if (taskId === 'ask' && !packet.text) {

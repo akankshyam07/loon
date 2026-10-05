@@ -58,6 +58,41 @@ const realExecutors = {
     await run('shortcuts', ['run', name]);
     return `Ran "${name}".`;
   },
+  // Read-only. ponytail: Calendar's AppleScript skips repeating events' later instances; EventKit would catch them.
+  async events() {
+    const out = await run('osascript', ['-e', [
+      'set s to current date',
+      'set time of s to 0',
+      'set e to s + 86400',
+      'set out to ""',
+      'tell application "Calendar"',
+      '  repeat with c in calendars',
+      '    repeat with ev in (every event of c whose start date ≥ s and start date < e)',
+      '      set out to out & ((start date of ev) as «class isot» as string) & tab & (allday event of ev) & tab & (summary of ev) & linefeed',
+      '    end repeat',
+      '  end repeat',
+      'end tell',
+      'return out',
+    ].join('\n')]);
+    return out.split('\n').filter(Boolean).map((line) => {
+      const [start, allDay, ...title] = line.split('\t');
+      return { start: new Date(start), allDay: allDay === 'true', title: title.join('\t') };
+    }).sort((a, b) => a.start - b.start);
+  },
+  async dueReminders() {
+    const out = await run('osascript', ['-e', [
+      'set e to (current date)',
+      'set time of e to 86399',
+      'set out to ""',
+      'tell application "Reminders"',
+      '  repeat with r in (every reminder whose completed is false and due date ≤ e)',
+      '    set out to out & (name of r) & linefeed',
+      '  end repeat',
+      'end tell',
+      'return out',
+    ].join('\n')]);
+    return out.split('\n').map((l) => l.trim()).filter(Boolean);
+  },
   async find({ query }) {
     const out = await run('mdfind', ['-name', query]);
     const paths = out.split('\n').filter((p) => p && !/\/(Library|node_modules|\.)/.test(p)).slice(0, 8);
@@ -66,7 +101,8 @@ const realExecutors = {
 };
 
 class Actions {
-  constructor({ auditFile, notes, memory, openExternal, projects = () => [], hub = null, executors = realExecutors }) {
+  constructor({ auditFile, notes, memory, openExternal, projects = () => [], hub = null, onFocus = () => '', executors = realExecutors }) {
+    this.onFocus = onFocus;
     this.projects = projects;
     this.hub = hub;
     this.auditFile = auditFile;
@@ -130,6 +166,16 @@ class Actions {
           const result = await briefing(this.projects(), command.project);
           return { ok: true, message: result.text, markdown: true };
         }
+        case 'today': {
+          const settle = (p) => p.then((value) => ({ value }), (err) => ({ error: err.message }));
+          const [events, reminders] = await Promise.all([settle(this.executors.events()), settle(this.executors.dueReminders())]);
+          return { ok: true, message: formatDay({ events, reminders }), markdown: true };
+        }
+        case 'recall':
+          return { ok: true, message: command.facts ? formatFacts(this.memory.all()) : formatHistory(this.memory.searchEpisodes(command.query), command.query), markdown: true };
+        case 'focus':
+          message = this.onFocus(command.minutes);
+          break;
         case 'find':
           results = await this.executors.find(command);
           message = results.length ? `Found ${results.length} file${results.length > 1 ? 's' : ''}:` : 'No files matched.';
@@ -150,4 +196,48 @@ class Actions {
   }
 }
 
-module.exports = { Actions, appleDate };
+// events/reminders are { value } or { error }; a missing macOS permission shows as a hint instead of failing the briefing.
+function formatDay({ events, reminders }, now = new Date()) {
+  const hour = now.getHours();
+  const hello = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const time = (d) => d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  const denied = (err) => (/not allowed|1743|authoriz/i.test(err) ? 'needs permission: System Settings → Privacy & Security → Automation → Loon' : "couldn't read it");
+  const lines = [`**${hello}!** Here's ${now.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })}.`, ''];
+  if (events.error) lines.push(`**Calendar**: ${denied(events.error)}`);
+  else {
+    const left = events.value.filter((e) => e.allDay || e.start >= new Date(now.getTime() - 15 * 60 * 1000));
+    lines.push(left.length ? '**Calendar**' : '**Calendar**: nothing left today.');
+    for (const e of left) lines.push(`- ${e.allDay ? 'all day' : time(e.start)} · ${e.title}`);
+  }
+  lines.push('');
+  if (reminders.error) lines.push(`**Reminders**: ${denied(reminders.error)}`);
+  else {
+    lines.push(reminders.value.length ? '**Reminders due**' : '**Reminders**: nothing due.');
+    for (const r of reminders.value.slice(0, 8)) lines.push(`- ${r}`);
+  }
+  return lines.join('\n').trim();
+}
+
+function formatFacts(facts) {
+  if (!facts.length) return 'Nothing yet. Tell me "remember that…" and I\'ll keep it here, on this Mac.';
+  return ['**What I remember about you**', '', ...facts.map((f) => `- ${f.pinned ? '📌 ' : ''}${f.text}${f.scope ? ` _(on ${f.scope})_` : ''}`), '', '_Edit or delete any of these in Settings → Memory._'].join('\n');
+}
+
+function ago(at, now = Date.now()) {
+  const days = Math.floor((now - at) / 86400000);
+  if (days < 1) return new Date(at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  if (days === 1) return 'yesterday';
+  return days < 7 ? `${days} days ago` : new Date(at).toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
+function formatHistory(episodes, query, now = Date.now()) {
+  if (!episodes.length) return query ? `I don't have anything about "${query}" in your history.` : 'Your history is empty so far.';
+  const lines = [query ? `**About "${query}"**` : '**Recently**', ''];
+  for (const e of episodes) {
+    lines.push(`- **${e.title}** · ${ago(e.at, now)}${e.scope ? ` · ${e.scope}` : ''}`);
+    if (e.text) lines.push(`  ${e.text.replace(/\s+/g, ' ').slice(0, 140)}${e.text.length > 140 ? '…' : ''}`);
+  }
+  return lines.join('\n');
+}
+
+module.exports = { Actions, appleDate, formatDay, formatHistory };

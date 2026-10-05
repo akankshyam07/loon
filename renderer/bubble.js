@@ -187,7 +187,7 @@ async function handoff(app) {
   }
 }
 
-function answerActions({ canGoDeeper, replaceText, text, question, quiz, tier, model, detail, estimated }) {
+function answerActions({ canGoDeeper, replaceText, text, question, quiz, tier, model, detail, estimated, memoryUsed = [] }) {
   const row = document.createElement('div');
   row.className = 'answer-tools';
   const add = (parent, label, onClick) => {
@@ -235,7 +235,7 @@ function answerActions({ canGoDeeper, replaceText, text, question, quiz, tier, m
 
   if (estimated) row.append(Object.assign(document.createElement('span'), { className: 'estimated', textContent: 'estimated' }));
   const icon = Object.assign(document.createElement('span'), { className: 'tier-icon', textContent: tier === 'local' ? '🐾' : '⚡' });
-  icon.title = tierLabel({ tier, model, detail, estimated });
+  icon.title = tierLabel({ tier, model, detail, estimated }) + (memoryUsed.length ? `\nRemembered: ${memoryUsed.join('; ')}` : '');
   row.append(icon, list);
   return row;
 }

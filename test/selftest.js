@@ -146,7 +146,7 @@ async function run(ctx) {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-selftest-m4-'));
   const saved = { notesDir: notes.dir, memoryFile: memory.file, auditFile: actions.auditFile, executors: actions.executors };
   notes.dir = path.join(tmp, 'notes');
-  memory.file = path.join(tmp, 'memory.json');
+  memory.open(path.join(tmp, 'memory.db'));
   actions.auditFile = path.join(tmp, 'audit.jsonl');
   const executed = [];
   actions.executors = {
@@ -156,6 +156,8 @@ async function run(ctx) {
     find: async () => [path.join(tmp, 'resume.pdf')],
     shortcuts: async () => ['Open Breethe', 'New Note with Date'],
     shortcut: async (c) => { executed.push(c); return `Ran "${c.name}".`; },
+    events: async () => [{ start: new Date(Date.now() + 3600000), allDay: false, title: 'Selftest standup' }],
+    dueReminders: async () => ['Water the cat grass'],
   };
   const typeInBubble = async (text) => {
     ipcMain.emit('open-bubble');
@@ -181,6 +183,17 @@ async function run(ctx) {
     await bubble(`document.querySelector('.confirm .primary').click()`);
     await waitFor(() => memory.all().length > 0, 3000);
     check('"remember…" saves to memory after confirmation', memory.all()[0]?.text === 'I like very short answers');
+    await bubble('window.loon.closeBubble()');
+
+    await typeInBubble("what's my day");
+    const day = await waitFor(() => bubble(`/Selftest standup[\\s\\S]*Water the cat grass/.test(document.getElementById('log').textContent)`), 3000);
+    check('"what\'s my day" lists today\'s events and due reminders, no confirm needed', day);
+    await bubble('window.loon.closeBubble()');
+    await typeInBubble('focus for 30 minutes');
+    const focusOn = await waitFor(() => ctx.settings.focus === true, 3000);
+    await bubble('window.loon.closeBubble()');
+    await typeInBubble('stop focus');
+    check('"focus for 30 minutes" turns Focus on and "stop focus" turns it off', focusOn && await waitFor(() => ctx.settings.focus === false, 3000));
     await bubble('window.loon.closeBubble()');
 
     // unique per run: a cached answer from an earlier run would skip building a fresh prompt
@@ -351,7 +364,7 @@ async function run(ctx) {
     settingsWin?.close();
   } finally {
     Object.assign(notes, { dir: saved.notesDir });
-    Object.assign(memory, { file: saved.memoryFile });
+    memory.open(saved.memoryFile);
     Object.assign(actions, { auditFile: saved.auditFile, executors: saved.executors });
     fs.rmSync(tmp, { recursive: true, force: true });
   }

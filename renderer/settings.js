@@ -63,7 +63,7 @@ for (const box of document.querySelectorAll('[data-key]')) {
 $('copyCode').addEventListener('click', () => { window.loon.copyPairingCode(); $('copyCode').textContent = 'Copied ✓'; });
 $('openNotes').addEventListener('click', () => window.loon.openNotesFolder());
 $('clearMemory').addEventListener('click', async () => {
-  if (confirm('Forget everything Loon remembers about you? This also clears remembered answers.')) render(await window.loon.clearMemory());
+  if (confirm('Forget everything Loon remembers about you? This also clears your history and remembered answers.')) render(await window.loon.clearMemory());
 });
 $('discover').addEventListener('click', async () => {
   $('discover').textContent = 'Looking…';

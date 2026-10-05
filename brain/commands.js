@@ -65,10 +65,21 @@ function parseCommand(input, now = new Date()) {
     return { action: 'briefing', project: m[1] ? tidy(m[1]) : null };
   }
   if (/^(?:show |list )?my projects\??$/i.test(text)) return { action: 'briefing', project: null };
+  if (/^what do you (?:know|remember) about me\??$/i.test(text)) return { action: 'recall', facts: true };
+  if (/^what (?:did|have) i (?:ask(?:ed)?|look(?:ed)? up|search(?:ed)?(?: for)?|do(?:ne)?) (?:today|recently|lately)\??$/i.test(text)) return { action: 'recall', query: '' };
+  if ((m = text.match(/^(?:what did i (?:ask|look up|search(?: for)?|read|learn|find out)|when did i (?:ask|look up|read)|find my (?:question|search)) (?:about |on |for )?(.+?)\??$/i))) {
+    return { action: 'recall', query: tidy(m[1]) };
+  }
   if ((m = text.match(/^run (?:the |my )?(?:shortcut )?(.+?)(?: shortcut)?$/i))) return { action: 'shortcut', name: tidy(m[1]) };
   if ((m = text.match(/^(?:note|take a note|save a note|jot down)[:\s]+(.+)$/i))) return { action: 'note', text: tidy(m[1]) };
   if ((m = text.match(/^remember (?:that )?(.+)$/i))) return { action: 'remember', text: tidy(m[1]) };
   if ((m = text.match(/^forget (?:that )?(.+)$/i))) return { action: 'forget', text: tidy(m[1]) };
+  if (/^(?:good morning|(?:what'?s|what is) (?:on )?my (?:day|schedule|agenda)(?: (?:like )?today)?|my day|plan my day|what do i have today)\??$/i.test(text)) return { action: 'today' };
+  if ((m = text.match(/^(?:start (?:a )?)?focus(?: mode| timer| session)?(?: for)? (\d+)\s*(m|mins?|minutes?|h|hrs?|hours?)$/i))) {
+    return { action: 'focus', minutes: Math.min(Number(m[1]) * (/^h/i.test(m[2]) ? 60 : 1), 240) };
+  }
+  if (/^(?:start (?:a )?focus(?: timer| session)?|pomodoro)$/i.test(text)) return { action: 'focus', minutes: 25 };
+  if (/^(?:stop|end|cancel) (?:the )?focus(?: mode| timer| session)?$/i.test(text)) return { action: 'focus', minutes: 0 };
   return null;
 }
 

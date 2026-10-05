@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld('loon', {
   dragEnd: () => ipcRenderer.send('drag-end'),
   animateWindow: (opts) => ipcRenderer.invoke('animate-window', opts),
   goHome: () => ipcRenderer.invoke('go-home'),
+  atHome: () => ipcRenderer.invoke('at-home'),
   windowInfo: () => ipcRenderer.invoke('window-info'),
   showMenu: () => ipcRenderer.send('cat-menu'),
   openBubble: () => ipcRenderer.send('open-bubble'),

@@ -59,7 +59,7 @@ test('quiz: cloze cards with distinct answers; forgiving grading', () => {
 });
 
 test('memory: categories, per-task groups, forget', () => {
-  const memory = new Memory(path.join(tmp(), 'memory.json'));
+  const memory = new Memory(path.join(tmp(), 'memory.db'));
   assert.deepStrictEqual(['I am vegetarian', 'Keep emails casual', 'I like short answers'].map(categorize), ['diet', 'tone', 'preference']);
   memory.add('I am vegetarian');
   memory.add('I like short answers');
@@ -116,4 +116,48 @@ test('saved diet memory filters menu picks without a model', () => {
   assert.match(picks, /Dumplings/);
   assert.doesNotMatch(picks, /Chicken/);
   assert.match(picks, /because you asked me to remember/);
+});
+
+test('memory store: profile, BM25 recall with site boost, budget, history search, legacy import', () => {
+  const { ftsQuery, scopeOf } = require('../brain/memory');
+  const dir = tmp();
+  const legacy = path.join(dir, 'memory.json');
+  fs.writeFileSync(legacy, JSON.stringify([{ text: 'I like short answers', createdAt: '2026-01-01T00:00:00Z', source: 'user' }]));
+  let clock = Date.parse('2026-10-05T12:00:00Z');
+  const memory = new Memory(path.join(dir, 'memory.db'), { legacyJson: legacy, now: () => clock });
+  assert.ok(fs.existsSync(`${legacy}.imported`) && !fs.existsSync(legacy));
+  memory.add('My name is Akku');
+  memory.add('I am allergic to peanuts');
+  memory.add('I prefer Sony headphones', 'user', { scope: 'amazon.com' });
+  memory.add('I prefer Bose headphones');
+  for (let i = 0; i < 40; i++) memory.add(`Filler preference number ${i} about gardening`);
+
+  assert.strictEqual(ftsQuery('Which "laptop" is the cheapest?'), '"laptop"* OR "cheapest"*');
+  assert.strictEqual(ftsQuery('a an ?'), '');
+  assert.strictEqual(scopeOf({ url: 'https://www.amazon.com/dp/1' }), 'amazon.com');
+
+  // Pinned profile first, then BM25 matches; "peanut" finds "peanuts" (porter + prefix).
+  const food = memory.forGroup('food', 'is there peanut in this satay?');
+  assert.strictEqual(food[0], 'My name is Akku');
+  assert.ok(food.includes('I am allergic to peanuts'));
+  // The same request on Amazon prefers the Amazon-scoped fact.
+  const onAmazon = memory.forGroup('shopping', 'which headphones should I buy', 'amazon.com');
+  assert.ok(onAmazon.indexOf('I prefer Sony headphones') < onAmazon.indexOf('I prefer Bose headphones'));
+  // Never more than the budget, whatever is stored.
+  assert.ok(memory.forGroup('default', 'gardening preference').join('').length <= 1200);
+  assert.ok(memory.forGroup('default', 'gardening preference').length <= 8);
+
+  memory.logEpisode({ kind: 'explain', title: 'Explain · Kubernetes pods', text: 'A pod is the smallest deployable unit.', scope: 'kubernetes.io' });
+  clock += 3 * 86400000;
+  memory.logEpisode({ kind: 'ask', title: 'best rice cooker under $80', text: 'The Zojirushi is pricier but...', scope: 'amazon.com' });
+  assert.strictEqual(memory.searchEpisodes('kubernetes')[0].title, 'Explain · Kubernetes pods');
+  assert.strictEqual(memory.searchEpisodes('')[0].title, 'best rice cooker under $80');
+  assert.deepStrictEqual(memory.searchEpisodes('volcano'), []);
+  clock += 91 * 86400000;
+  memory.open(memory.file); // old history is dropped on open
+  assert.strictEqual(memory.historyCount(), 0);
+  memory.close();
+  assert.deepStrictEqual(parseCommand('what did I look up about kubernetes?'), { action: 'recall', query: 'kubernetes' });
+  assert.deepStrictEqual(parseCommand('What do you know about me?'), { action: 'recall', facts: true });
+  assert.deepStrictEqual(parseCommand('what did I ask today'), { action: 'recall', query: '' });
 });

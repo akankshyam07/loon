@@ -4,6 +4,7 @@ const { TASKS, SELECTION_CHIPS, pageChipsFor, handoffPrompt } = require('../brai
 const { keySentences } = require('../brain/textrank');
 const { classifySelection } = require('../extension/lib/classify');
 const { selectionPacket, pagePacket } = require('./context');
+const { scopeOf } = require('../brain/memory');
 const { parseCommand, describe, normalizeSpoken } = require('../brain/commands');
 const connectorsLib = require('../brain/connectors');
 const { ConnectorHub } = require('./hub');
@@ -26,7 +27,7 @@ const domainOf = (url) => {
 };
 const chip = (id) => ({ id, label: TASKS[id].label });
 
-function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, settings, hub }) {
+function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, settings, hub, memory = null }) {
   const session = { mode: 'ask', packet: null, threadStarted: false, lastTask: null, pendingTask: null };
   let activePage = null; // latest page report from the focused, visible tab
   let active = null; // { controller, id }
@@ -221,7 +222,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
       parsed.name = match;
     }
     // Read-only or append-only actions run straight away; everything else gets a confirm card.
-    if (['note', 'find', 'briefing'].includes(parsed.action)) {
+    if (['note', 'find', 'briefing', 'today', 'focus', 'recall'].includes(parsed.action)) {
       bubble('action-done', { id, ...(await actions.execute(parsed)) });
       return true;
     }
@@ -299,7 +300,12 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
           bubble('chunk', { id, chunk });
         },
       });
-      bubble('done', { id, ...result, model: brain.modelLabel(deeper), counts: resolver.counts, canGoDeeper: result.tier !== 'code' || task === 'define' });
+      bubble('done', { id, ...result, model: brain.modelLabel(deeper), counts: resolver.counts, memoryUsed: resolver.lastMemory || [], canGoDeeper: result.tier !== 'code' || task === 'define' });
+      // History for "what did I look up about…": local only, redacted text, never in Privacy mode.
+      if (memory && !settings.privacy && result.text) {
+        const subject = packet?.text ? ` · ${packet.text.replace(/\s+/g, ' ').slice(0, 80)}` : '';
+        memory.logEpisode({ kind: effectiveTask, title: question || `${TASKS[effectiveTask]?.label || effectiveTask}${subject}`, text: result.text.slice(0, 300), scope: scopeOf(packet || {}) });
+      }
       ui.cat('brain', { state: 'done', mood: result.mood });
     } catch (err) {
       if (controller.signal.aborted) return;

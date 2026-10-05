@@ -202,6 +202,60 @@ function openAskBubble() {
   showBubble();
 }
 
+function askInBubble(text) {
+  const wasOpen = bubbleWin.isVisible();
+  if (!wasOpen) openAskBubble();
+  setTimeout(() => bubbleWin.webContents.send('bubble-ask', { text }), wasOpen ? 0 : 250);
+}
+
+// "focus for 25 minutes": Focus mode (the cat naps, no chips or nudges) that switches itself off.
+let focusTimer = null;
+function startFocus(minutes) {
+  clearTimeout(focusTimer);
+  setToggle('focus', minutes > 0);
+  if (!minutes) return 'Focus is off. Welcome back.';
+  const until = new Date(Date.now() + minutes * 60000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  focusTimer = setTimeout(() => {
+    setToggle('focus', false);
+    companion.showNotice(`Focus session done: ${minutes} minutes. Nice work. Stand up, stretch, drink some water.`);
+    showBubble();
+  }, minutes * 60000);
+  return `Focus on until ${until}. I'll nap and keep quiet. Say "stop focus" to end early.`;
+}
+
+// Gentle rhythm: one "your day" nudge on the first morning activity and a stretch nudge after ~an hour of non-stop use.
+// The nudge is the cat's small "?" (ignored in 8 s, skipped in Focus and Privacy), never a popup.
+let dailyNudge = null;
+function startDayRhythm() {
+  let activeSince = Date.now();
+  setInterval(() => {
+    if (powerMonitor.getSystemIdleTime() > 5 * 60) { activeSince = Date.now(); return; }
+    if (settings.focus || settings.privacy || bubbleWin.isVisible()) return;
+    const now = new Date();
+    if (settings.lastDayNudge !== now.toDateString() && now.getHours() >= 6 && now.getHours() < 12) {
+      settings.lastDayNudge = now.toDateString();
+      saveSettings();
+      dailyNudge = 'today';
+      catWin.webContents.send('nudge', { kind: 'today' });
+    } else if (Date.now() - activeSince > 55 * 60000) {
+      activeSince = Date.now();
+      dailyNudge = 'break';
+      catWin.webContents.send('nudge', { kind: 'break' });
+    }
+  }, 60000);
+}
+
+function onNudgeClick() {
+  const kind = dailyNudge;
+  dailyNudge = null;
+  if (kind === 'today') return askInBubble("what's my day");
+  if (kind === 'break') {
+    companion.showNotice("You've been at it for about an hour. Quick break: stand up, roll your shoulders, look at something far away for 20 seconds.");
+    return showBubble();
+  }
+  companion.onNudgeClick();
+}
+
 // ⌥Space: with text selected in another app, that selection; otherwise a typed question (DESIGN.md §3.3).
 async function onAskHotkey() {
   if (bubbleWin.isVisible()) return hideBubble();
@@ -449,11 +503,12 @@ function registerIpc() {
     home = { x: settings.position.x, y: settings.position.y };
     saveSettings();
   });
+  ipcMain.handle('at-home', () => { const b = catWin.getBounds(); return Math.hypot(home.x - b.x, home.y - b.y) < 12; });
   ipcMain.handle('go-home', () => {
     const b = catWin.getBounds();
     const dx = home.x - b.x;
     const dy = home.y - b.y;
-    if (Math.hypot(dx, dy) < 12) return b;
+    if (Math.hypot(dx, dy) < 12) return null;
     return animateWindow({ dx, dy, duration: Math.min(900, 300 + Math.abs(dx) * 0.8), arc: Math.min(40, 10 + Math.abs(dx) / 10) });
   });
 
@@ -508,7 +563,7 @@ function registerIpc() {
   ipcMain.handle('connectors-remove', (_e, id) => { hub.remove(id); return settingsSnapshot(); });
   ipcMain.handle('memory-update', (_e, { id, text }) => { memory.update(id, text); return settingsSnapshot(); });
   ipcMain.handle('memory-delete', (_e, id) => { memory.remove(id); return settingsSnapshot(); });
-  ipcMain.handle('memory-clear', () => { memory.clear(); resolver.cache.clear(); return settingsSnapshot(); });
+  ipcMain.handle('memory-clear', () => { memory.clear(); memory.clearHistory(); resolver.cache.clear(); return settingsSnapshot(); });
   ipcMain.on('open-notes-folder', () => { fs.mkdirSync(notes.dir, { recursive: true }); shell.openPath(notes.dir); });
   ipcMain.on('copy-pairing-code', () => clipboard.writeText(settings.pairingCode));
   ipcMain.on('open-settings', openSettings);
@@ -520,8 +575,8 @@ function registerIpc() {
     showBubble();
   });
   ipcMain.on('audio-played', (_e, id) => { pendingPlays.get(id)?.(); pendingPlays.delete(id); });
-  ipcMain.on('nudge-click', () => companion.onNudgeClick());
-  ipcMain.on('nudge-ignored', (_e, kind) => companion.onNudgeIgnored(kind));
+  ipcMain.on('nudge-click', onNudgeClick);
+  ipcMain.on('nudge-ignored', (_e, kind) => { dailyNudge = null; companion.onNudgeIgnored(kind); });
 }
 
 // Debug/verification hook: --shot=out.png [--shot-delay=ms] [--cmd=<json>] [--shot-bubble [--ask=<question>]]
@@ -563,11 +618,11 @@ app.whenReady().then(() => {
   brain = new Brain({ modelsDir: path.join(app.getPath('userData'), 'models'), settings });
   translator = new Translator({ cacheDir: path.join(app.getPath('userData'), 'translation-models') });
   notes = new Notes(settings.notesDir || path.join(app.getPath('documents'), 'Loon'));
-  memory = new Memory(path.join(app.getPath('userData'), 'memory.json'));
+  memory = new Memory(path.join(app.getPath('userData'), 'memory.db'), { legacyJson: path.join(app.getPath('userData'), 'memory.json') });
   // Only folders the user ticked in Settings → Projects are ever read.
   const allowedProjects = () => (settings.projects || []).filter((p) => fs.existsSync(p));
   hub = new ConnectorHub({ settings, save: saveSettings });
-  actions = new Actions({ auditFile: path.join(app.getPath('userData'), 'audit.jsonl'), notes, memory, hub, projects: allowedProjects, openExternal: (url) => hooks.openExternal(url) });
+  actions = new Actions({ auditFile: path.join(app.getPath('userData'), 'audit.jsonl'), notes, memory, hub, projects: allowedProjects, onFocus: startFocus, openExternal: (url) => hooks.openExternal(url) });
   resolver = new Resolver({
     brain,
     translator,
@@ -580,6 +635,7 @@ app.whenReady().then(() => {
   });
   bridge = new Bridge({ pairingCode: settings.pairingCode });
   companion = createCompanion({
+    memory,
     bridge,
     resolver,
     brain,
@@ -609,10 +665,7 @@ app.whenReady().then(() => {
       micAllowed: () => !SELFTEST,
       transcript: () => {},
       showNotice: (notice) => { companion.showNotice(notice); showBubble(); },
-      ask: (text) => {
-        if (!bubbleWin.isVisible()) openAskBubble();
-        setTimeout(() => bubbleWin.webContents.send('bubble-ask', { text }), bubbleWin.isVisible() ? 0 : 250);
-      },
+      ask: askInBubble,
       runTask: (task, text) => {
         if (text) {
           companion.fromCapture({ text, app: 'voice' });
@@ -645,6 +698,7 @@ app.whenReady().then(() => {
   if (settings.wakeWord) setTimeout(() => voice.setWake(!settings.focus && !settings.privacy), 3000);
   // Load the fast model shortly after launch so the first answer starts streaming right away.
   if (!SELFTEST) setTimeout(() => brain.warmUp(), 4000);
+  if (!SELFTEST) startDayRhythm();
   hub.refresh();
   setInterval(() => hub.refresh(), 5 * 60 * 1000); // apps come and go; keep "Send to …" chips current
 
@@ -687,6 +741,7 @@ app.whenReady().then(() => {
 });
 
 app.on('will-quit', () => {
+  memory?.close();
   globalShortcut.unregisterAll();
   bridge?.stop();
   translator?.stop();

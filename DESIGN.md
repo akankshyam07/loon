@@ -487,13 +487,33 @@ Each feature is described by its flow, how it works, which parts are code and wh
 
 ### 3.12 Memory
 
-- **Store:** `memory.json`, a list of `{id, text, category: diet|tone|project|preference|budget|workflow, createdAt, source}`.
-- **Writes happen only by user choice:**
+Ideas taken from Hermes Agent (a small always-on profile plus searchable session history) and OpenClaw (atomic facts
+in a local full-text index). Loon's twist: no model is involved in storing or finding memories, memories carry the
+site or app they belong to, and nothing is saved silently.
+
+- **Store:** `memory.db`, one SQLite file through Node's built-in `node:sqlite` (no new dependency), with FTS5
+  full-text indexes (porter stemming). The old `memory.json` is imported once and renamed `.imported`.
+  - `facts`: `{id, text, category, scope, pinned, source, created, used, uses}`. `scope` is the site (`amazon.com`)
+    or app the fact belongs to, or empty for everywhere.
+  - `episodes`: a short history `{at, kind, title, text ≤600 chars, scope}` of what was asked and answered. Logged
+    after each answer, never in Privacy mode; private pages never get this far. Dropped after 90 days.
+- **Writes to facts happen only by user choice:**
   - The user says "Remember…".
   - The model proposes a `remember` action → a confirm chip, e.g. "Remember that you're vegetarian? ✓ ✗".
   - Nothing is stored silently.
-- **Reads:** each mode declares which categories it uses, and all matching entries go into the prompt. At personal scale this is tens of entries, so no retrieval system is needed; add one past ~100 entries.
-- **UI:** a Memory tab to list, edit, delete, and "forget everything". Includes a session-only toggle. Privacy mode skips memory completely.
+- **Reads (`recall`):** for each request, in order, at most 8 facts and 1,200 characters:
+  1. **Profile:** pinned facts (name, pronouns, where you live, work or study; pinned automatically), always included.
+  2. **Matches:** BM25 over the request's words, ×2 when the fact's scope is the current site/app, ×1.3 when used
+     in the last week, ×0.5 when untouched for six months.
+  3. **Task categories:** each mode's categories (food → diet, writing → tone, …), as before.
+  Recalled facts get `used`/`uses` bumped. Measured at ~4 ms per recall with 5,000 facts and ~5 ms per history
+  search with 20,000 episodes; real sizes are far smaller.
+- **Ask about it:** "what do you know about me", "what did I look up about X", "what did I ask today" answer from
+  the store in code. The answer's tier icon tooltip lists the memories that were used.
+- **UI:** a Memory tab to list, edit, delete, and "forget everything" (facts, history and cached answers). Privacy
+  mode skips memory completely.
+- **Later:** optional embeddings (a small GGUF embedding model through node-llama-cpp) fused with BM25 for
+  "same meaning, different words" matches; a "Remember this?" chip when a typed message states a preference.
 
 ### 3.13 Actions (Jarvis)
 

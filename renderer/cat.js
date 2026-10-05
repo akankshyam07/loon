@@ -760,6 +760,7 @@
     setMood('curious');
     setTimeout(() => { if (mood === 'curious' && state === 'idle' && !bubbleOpen) setMood('neutral'); }, 1500);
     nudgeTimer = setTimeout(() => hideNudge(true), 8000);
+    if (kind === 'break') doMove('stretch'); // show, don't tell
   });
   nudgeButton.addEventListener('click', () => {
     hideNudge(false);
