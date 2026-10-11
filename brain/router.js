@@ -1,5 +1,7 @@
 // Router and answer self-check (DESIGN.md §2.10). Both are plain code: no model call decides where a request goes
 // or whether its answer looks weak.
+const fs = require('fs');
+const { cosine, toBase64, fromBase64 } = require('./embed');
 
 // Tasks that are harder than their wording suggests (brain/tasks.js ids).
 const TASK_WEIGHT = { find_bug: 2, explain_code: 1, likely_fix: 1, explain_error: 1, fact_check: 1, quiz_harder: 1, research_found: 1 };
@@ -76,11 +78,50 @@ function script(text) {
   return count >= 4 ? name : null;
 }
 
+// Token confidence (local llama.cpp answers only): the probability the model gave each token it picked, after the
+// top-k/top-p cut, so values run high. Measured on Qwen3 4B (temp 0.7, top-p 0.8): ordinary answers, right or wrong,
+// sit at mean log-prob -0.02 to -0.15 with 0-8% of tokens below LOW_TOKEN_P. So the limits only catch an answer the
+// model was visibly unsure of while writing.
+// ponytail: borrowed, conservative thresholds. Calibrate them from logged cases (log-probs + whether the self-check
+// or "Go deeper" escalated) once a few hundred exist.
+const LOW_TOKEN_P = 0.5;
+const MIN_CONFIDENCE_TOKENS = 8;
+const CONFIDENCE_LIMITS = {
+  factual: { meanLogProb: -0.6, lowShare: 0.25 }, // a wrong fact is the costly failure, so this trips first
+  default: { meanLogProb: -0.8, lowShare: 0.3 },
+};
+const FACTUAL_TASKS = new Set(['ask', 'fact_check', 'meaning_here', 'define', 'explain_error', 'likely_fix']);
+// Rewrites and open-ended writing have many fine word choices, so low confidence there says nothing about quality:
+// these tasks never escalate on confidence alone.
+const NO_CONFIDENCE_TASKS = new Set(['rewrite', 'shorter', 'professional', 'warmer', 'simplify', 'translate', 'examples', 'quiz_harder', 'shop_take', 'food_estimate']);
+
+// Per-token probabilities → { meanLogProb, lowShare, tokens }, or null when there are too few to mean anything.
+function confidenceStats(probabilities) {
+  const ps = (probabilities || []).filter((p) => Number.isFinite(p));
+  if (ps.length < MIN_CONFIDENCE_TOKENS) return null;
+  const meanLogProb = ps.reduce((sum, p) => sum + Math.log(Math.max(p, 1e-9)), 0) / ps.length;
+  return { meanLogProb, lowShare: ps.filter((p) => p < LOW_TOKEN_P).length / ps.length, tokens: ps.length };
+}
+
+function unsure(confidence, taskId) {
+  if (!confidence || NO_CONFIDENCE_TASKS.has(taskId)) return false;
+  const limit = CONFIDENCE_LIMITS[FACTUAL_TASKS.has(taskId) ? 'factual' : 'default'];
+  return confidence.meanLogProb < limit.meanLogProb || confidence.lowShare > limit.lowShare;
+}
+
+// Qwen3 thinks before answering only where it pays for its latency: hard questions, comparisons, debugging.
+const DEBUG_TASKS = new Set(['find_bug', 'likely_fix', 'explain_error']);
+function thinkingFor({ taskId = 'ask', route = null } = {}) {
+  if (!route) return false;
+  return route.level === 'hard' || route.reasons.includes('comparison') || DEBUG_TASKS.has(taskId);
+}
+
 const squash = (text) => String(text || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
 
 // Flags a weak answer → [{ id, label }], empty when it looks fine. `request` is what was asked, `typed` says whether a
 // person wrote it (only then is its language a signal), `maxTokens` is the answer budget.
-function check(answer, { request = '', typed = false, level = 'easy', maxTokens = 400 } = {}) {
+// `confidence` is confidenceStats() of the answer when the runtime gave token probabilities, else null (skipped).
+function check(answer, { request = '', typed = false, level = 'easy', maxTokens = 400, taskId = 'ask', confidence = null } = {}) {
   const text = String(answer || '').trim();
   const flags = [];
   const flag = (id, label) => flags.push({ id, label });
@@ -101,7 +142,71 @@ function check(answer, { request = '', typed = false, level = 'easy', maxTokens 
     const got = script(text);
     if (want && got && want !== got) flag('language', 'first answer was in the wrong language');
   }
+  if (unsure(confidence, taskId)) flag('confidence', 'the model was unsure of its first answer');
   return flags;
 }
 
-module.exports = { estimate, pickTier, check };
+// kNN escalation memory: vectors of typed questions with whether they needed a stronger tier (self-check upgrade or
+// "Go deeper"). When most close neighbours of a new question escalated, it starts one tier up. Needs the optional
+// embedder; without it every call is a no-op.
+const NEIGHBOR_MIN = 0.8;
+const SAME_QUESTION = 0.97;
+const NEIGHBORS = 5;
+const MIN_NEIGHBORS = 2;
+const MAX_ESCALATION_ENTRIES = 1000;
+
+class EscalationLog {
+  constructor(file, { embedder = null } = {}) {
+    this.file = file;
+    this.embedder = embedder;
+    try {
+      this.entries = JSON.parse(fs.readFileSync(file, 'utf8')).map((e) => ({ ...e, vec: fromBase64(e.vec) })).filter((e) => e.vec);
+    } catch {
+      this.entries = []; // first run or unreadable
+    }
+  }
+
+  async vector(question) {
+    return this.embedder?.available() ? this.embedder.embed(question) : null;
+  }
+
+  // ponytail: linear scan over ≤1000 vectors (~1 ms); an index only if this ever grows past that.
+  nearest(vec) {
+    return this.entries.map((e) => ({ e, score: cosine(vec, e.vec) })).filter((n) => n.score >= NEIGHBOR_MIN)
+      .sort((a, b) => b.score - a.score).slice(0, NEIGHBORS);
+  }
+
+  // Records the outcome; the same question asked again replaces its old entry (so "Go deeper" flips it).
+  async record(question, escalated) {
+    const vec = await this.vector(question);
+    if (!vec) return;
+    const same = this.nearest(vec).find((n) => n.score >= SAME_QUESTION);
+    if (same) this.entries.splice(this.entries.indexOf(same.e), 1);
+    this.entries.push({ vec, escalated: Boolean(escalated) });
+    if (this.entries.length > MAX_ESCALATION_ENTRIES) this.entries.shift();
+    this.save();
+  }
+
+  // True when most of the close neighbours (and at least MIN_NEIGHBORS) escalated.
+  async likelyHard(question) {
+    const vec = await this.vector(question);
+    if (!vec) return false;
+    const near = this.nearest(vec);
+    return near.length >= MIN_NEIGHBORS && near.filter((n) => n.e.escalated).length > near.length / 2;
+  }
+
+  clear() {
+    this.entries = [];
+    this.save();
+  }
+
+  save() {
+    try {
+      fs.writeFileSync(this.file, JSON.stringify(this.entries.map((e) => ({ vec: toBase64(e.vec), escalated: e.escalated }))));
+    } catch (err) {
+      console.warn('[router] could not save the escalation log:', err.message);
+    }
+  }
+}
+
+module.exports = { estimate, pickTier, check, confidenceStats, thinkingFor, EscalationLog };
