@@ -1,7 +1,7 @@
 // Resolver ladder (DESIGN.md §2.10): try the cheapest tier that can answer, stop at the first hit.
 // Tiers per task: code (templates, WordNet, offline translator, TextRank) → cache (exact, then same meaning) → model.
-// brain/router.js picks the model: fast local, smart local, or the user's own Claude/ChatGPT plan via the official CLI
-// when "Cloud via your plan" is on (§3.17). A weak answer gets one automatic upgrade.
+// brain/router.js picks the model: fast local, smart local, or the cloud tier when the user turned on "Smarter answers"
+// (§3.17): their Claude/ChatGPT plan via the official CLI, or their own API key. A weak answer gets one automatic upgrade.
 const fs = require('fs');
 const path = require('path');
 const { ResponseCache } = require('./cache');
@@ -47,7 +47,7 @@ const CODE_ANSWERS = [
   },
   {
     match: /^(who|what) are you\??$/,
-    answer: () => ({ mood: 'happy', text: "I'm Loon, a small black cat who lives on your screen. I run on your Mac, and nothing you ask leaves it unless you switch on Cloud via your plan in Settings." }),
+    answer: () => ({ mood: 'happy', text: "I'm Loon, a small black cat who lives on your screen. I run on your Mac, and nothing you ask leaves it unless you switch on Smarter answers in Settings." }),
   },
 ];
 
@@ -108,12 +108,13 @@ function createMoodParser(onText) {
 // Qwen3 thinking must never reach the bubble or the cache, whatever the runtime streamed.
 const stripThink = (text) => String(text || '').replace(/<think>[\s\S]*?(<\/think>|$)/g, '');
 
-const EMPTY_TIERS = () => ({ code: 0, cache: 0, local: 0 });
+const EMPTY_TIERS = () => ({ code: 0, cache: 0, local: 0 }); // plus cloud (plan CLI) and api (own key) once used
 
 class Resolver {
-  constructor({ brain, cacheFile, countsFile, translator = null, skills = null, memory = null, notes = null, embedder = null, settings = {}, cli = require('./cli-provider') }) {
+  constructor({ brain, cacheFile, countsFile, translator = null, skills = null, memory = null, notes = null, embedder = null, settings = {}, cli = require('./cli-provider'), api = null }) {
     this.brain = brain;
     this.cli = cli;
+    this.api = api; // { route(settings) } from brain/api-provider.js; null = no API backend
     this.memory = memory;
     this.notes = notes;
     this.settings = settings;
@@ -149,7 +150,7 @@ class Resolver {
 
   // Runs a task (brain/tasks.js) on a context packet, cheapest tier first.
   // onText streams answer text; returns { text, mood, tier, detail? }.
-  async run(taskId, packet, { onText, onRestart = () => {}, signal, firstInThread = true, deeper = false, question } = {}) {
+  async run(taskId, packet, { onText, onRestart = () => {}, signal, firstInThread = true, deeper = false, question, sensitive = false } = {}) {
     const task = TASKS[taskId];
     if (!task) throw new Error(`Unknown task: ${taskId}`);
     const tiers = task.tiers || [];
@@ -237,16 +238,21 @@ class Resolver {
       }
     }
 
-    // "Cloud via your plan" is opt-in and Privacy mode always turns it off.
-    const cloud = !privacy && ['claude', 'codex'].includes(this.settings.cloudCli) ? this.settings.cloudCli : null;
-    const viaCloud = Boolean(cloud && deeper);
+    // The cloud tier is opt-in ("Smarter answers": plan CLI or own API key). Privacy mode and sensitive pages turn it off.
+    // The API key route is only used when picked; it is never a fallback for the plan CLI or the other way round.
+    const offline = privacy || sensitive;
+    const cli = !offline && ['claude', 'codex'].includes(this.settings.cloudCli) ? this.settings.cloudCli : null;
+    const api = !offline && this.settings.cloudCli === 'api' && this.api ? this.api.route(this.settings) : null;
+    const cloud = Boolean(cli || api);
+    const viaCloud = cloud && deeper;
     const prompt = buildPrompt(taskId, { ...packet, text: packet.text && trimForModel(packet.text, MAX_CONTEXT_CHARS) }, { deeper, question, memory });
     // Follow-ups depend on the conversation so far, so only a thread's first turn is cacheable.
     const cacheable = firstInThread && !question && !privacy;
     // Errors cache by fingerprint so the same error with different paths/values reuses one answer.
     const identity = task.cacheByFingerprint ? fingerprint(packet.text || '').hash : normalize(prompt);
     // Routed and upgraded answers share the plain key, so a question that needed a stronger tier is instant next time.
-    const model = viaCloud ? `cli:${cloud}` : this.brain.modelId();
+    // Cache keys name the provider and model, never the key.
+    const model = !viaCloud ? this.brain.modelId() : api ? `api:${api.provider}:${api.model(true)}` : `cli:${cli}`;
     const key = cacheable ? ResponseCache.key(taskId, identity, String(deeper), model, PROMPT_VERSION) : null;
     // A typed question may also match an earlier one with the same meaning, never across different context or memory.
     const similar = key && packet.question && !task.cacheByFingerprint
@@ -279,9 +285,14 @@ class Resolver {
       const onChunk = (chunk) => parser.push(chunk);
       // Redaction already ran on screen context (main/context.js); this pass also covers typed text and memory
       // before anything leaves the Mac.
-      if (target === 'cloud') await this.cli.ask(cloud, { system: SYSTEM_PROMPT, prompt: redact(prompt).text, onText: onChunk, signal });
-      else await this.brain.chat(prompt, { onText: onChunk, signal, maxTokens, smart: target === 'smart', thinking, onConfidence: (c) => { confidence = c; } });
-      return { text: stripThink(text).trim(), mood: parser.finish(), target, confidence };
+      // The API's hard model is for "Go deeper" and hard questions; upgrades and fallbacks use the normal one.
+      const hard = target === 'cloud' && Boolean(deeper || route?.level === 'hard');
+      if (target === 'cloud') {
+        const request = { system: SYSTEM_PROMPT, prompt: redact(prompt).text, onText: onChunk, signal };
+        if (api) await api.ask({ ...request, hard });
+        else await this.cli.ask(cli, request);
+      } else await this.brain.chat(prompt, { onText: onChunk, signal, maxTokens, smart: target === 'smart', thinking, onConfidence: (c) => { confidence = c; } });
+      return { text: stripThink(text).trim(), mood: parser.finish(), target, confidence, hard };
     };
     // Clears the streamed answer so a different one can take its place.
     const restart = () => {
@@ -335,13 +346,13 @@ class Resolver {
     }
 
     const tier = answer.target === 'cloud' ? 'cloud' : 'local';
-    this.count(tier);
+    this.count(tier === 'cloud' && api ? 'api' : tier); // "via your API key" is counted apart from "your plan"
     // "Go deeper" and a self-check upgrade both mean this question wanted a stronger tier. A pre-routed answer says
     // nothing about the weaker tier, so it leaves the log as it was.
     if (learn && !preRouted && !fallback && !signal?.aborted) this.escalations.record(asked, deeper || upgrading).catch(() => {});
     // Fallback answers and answers that still look weak are not cached.
     if (key && answer.text && !signal?.aborted && !fallback && !flags.length) this.cache.set(key, { text: answer.text, mood: answer.mood }, similar);
-    const detail = [tier === 'cloud' && this.cli.label(cloud), note].filter(Boolean).join(' · ') || undefined;
+    const detail = [tier === 'cloud' && (api ? api.label(answer.hard) : this.cli.label(cli)), note].filter(Boolean).join(' · ') || undefined;
     const { text, mood } = answer;
     return { text: prefix + text, mood, tier, detail, smart: answer.target === 'smart', estimated: Boolean(task.estimated), replaceText: task.replaceable ? text : undefined };
   }

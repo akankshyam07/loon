@@ -1,4 +1,4 @@
-const { app, BrowserWindow, screen, ipcMain, globalShortcut, Menu, powerMonitor, clipboard, shell, nativeImage, systemPreferences, session } = require('electron');
+const { app, BrowserWindow, screen, ipcMain, globalShortcut, Menu, powerMonitor, clipboard, shell, nativeImage, systemPreferences, session, safeStorage } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const { Brain } = require('./brain/ai');
@@ -15,6 +15,7 @@ const { Embedder } = require('./brain/embed');
 const { VoiceEngine, createVoiceController } = require('./main/voice');
 const { ConnectorHub } = require('./main/hub');
 const { createAgentRunner } = require('./main/agent');
+const apiProvider = require('./brain/api-provider');
 
 // Cat height in px per size preset; the window adds room around it for sparkles and hops.
 const SIZES = { S: 120, M: 160, L: 210 };
@@ -42,6 +43,7 @@ let settings = { size: 'M', focus: false, privacy: false, judgmental: true, wake
 let catWin;
 let bubbleWin;
 let brain;
+let apiKeys; // own API keys, encrypted (brain/api-provider.js KeyStore)
 let resolver;
 let dragTimer = null;
 let windowAnimation = null;
@@ -461,6 +463,7 @@ function settingsSnapshot() {
     notesDir: notes.dir,
     connected: bridge.clients.size > 0,
     counts: resolver.counts,
+    ...apiProvider.snapshot(settings, apiKeys), // key hints only; the keys never leave the main process
     memory: memory.all(),
     embedder: embedder.status(),
     audit: actions.recent(20),
@@ -591,7 +594,15 @@ function registerIpc() {
   ipcMain.handle('settings-set', (_e, { key, value }) => {
     if (['focus', 'privacy', 'judgmental', 'wakeWord'].includes(key)) setToggle(key, Boolean(value));
     if (key === 'speakReplies') { settings.speakReplies = value ? 'voiceOnly' : 'never'; saveSettings(); }
-    if (key === 'cloudCli' && ['off', 'claude', 'codex'].includes(value)) { settings.cloudCli = value; saveSettings(); }
+    if (key === 'cloudCli' && ['off', 'claude', 'codex', 'api'].includes(value)) { settings.cloudCli = value; saveSettings(); }
+    if (key === 'api' && value && typeof value === 'object') {
+      try {
+        settings.api = apiProvider.cleanConfig(value);
+        saveSettings();
+      } catch (err) {
+        return { ...settingsSnapshot(), apiError: err.message };
+      }
+    }
     if (key === 'project' && value?.path && fs.existsSync(value.path)) {
       const set = new Set(settings.projects || []);
       if (value.allowed) set.add(value.path);
@@ -602,6 +613,20 @@ function registerIpc() {
     return settingsSnapshot();
   });
   ipcMain.handle('cli-detect', () => require('./brain/cli-provider').detect());
+  // Own API key: the key comes in once from Settings, is encrypted with safeStorage, and only hints go back out.
+  ipcMain.handle('api-key-save', (_e, { provider, key }) => {
+    try {
+      apiKeys.save(provider, key);
+      return settingsSnapshot();
+    } catch (err) {
+      return { ...settingsSnapshot(), apiError: err.message };
+    }
+  });
+  ipcMain.handle('api-key-remove', (_e, provider) => { apiKeys.remove(provider); return settingsSnapshot(); });
+  ipcMain.handle('api-key-test', () => {
+    const { provider, baseUrl } = apiProvider.config(settings);
+    return apiProvider.testKey({ provider, baseUrl, key: apiKeys.get(provider) });
+  });
   ipcMain.handle('connectors-discover', () => hub.discover());
   ipcMain.handle('connectors-add', (_e, found) => { hub.add(found); return settingsSnapshot(); });
   ipcMain.handle('connectors-remove', (_e, id) => { hub.remove(id); return settingsSnapshot(); });
@@ -669,6 +694,7 @@ app.whenReady().then(() => {
     saveSettings();
   }
   brain = new Brain({ modelsDir: path.join(app.getPath('userData'), 'models'), settings });
+  apiKeys = new apiProvider.KeyStore(path.join(app.getPath('userData'), 'api-keys.json'), safeStorage);
   translator = new Translator({ cacheDir: path.join(app.getPath('userData'), 'translation-models') });
   notes = new Notes(settings.notesDir || path.join(app.getPath('documents'), 'Loon'));
   embedder = new Embedder({ modelsDir: path.join(app.getPath('userData'), 'models'), brain });
@@ -685,6 +711,7 @@ app.whenReady().then(() => {
     notes,
     embedder,
     settings,
+    api: { route: (s) => apiProvider.route(s, apiKeys) },
     cacheFile: path.join(app.getPath('userData'), 'cache.json'),
     countsFile: path.join(app.getPath('userData'), 'counts.json'),
   });

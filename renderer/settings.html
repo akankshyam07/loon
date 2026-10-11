@@ -9,7 +9,7 @@
 <body>
   <header>
     <svg class="face" viewBox="0 0 24 22" aria-hidden="true"><path d="M3 9 2 1.5 8.5 5.5h7L22 1.5 21 9c1 1.5 1.5 3 1.5 4.5C22.5 18.5 17.8 21 12 21S1.5 18.5 1.5 13.5C1.5 12 2 10.5 3 9Z" fill="#1c1a20"/><circle cx="8.2" cy="12.5" r="2.4" fill="#8fdc5a"/><circle cx="15.8" cy="12.5" r="2.4" fill="#8fdc5a"/><circle cx="8.4" cy="12.7" r="1.2" fill="#0a0c08"/><circle cx="16" cy="12.7" r="1.2" fill="#0a0c08"/></svg>
-    <div><h1>Loon</h1><p class="muted">Everything stays on this Mac unless you turn on Cloud via your plan.</p></div>
+    <div><h1>Loon</h1><p class="muted">Everything stays on this Mac unless you turn on Smarter answers.</p></div>
   </header>
 
   <section>
@@ -19,13 +19,26 @@
     <label class="toggle"><input type="checkbox" data-key="judgmental" /> <span><b>Judgmental</b> A little sass about overpriced things and heavy food.</span></label>
   </section>
 
-  <section>
-    <h2>Cloud via your plan</h2>
-    <p class="muted">Optional, off by default. "Go deeper" (and a missing local model) can use the Claude or ChatGPT plan you already have, through the official CLI you installed and logged into yourself. Loon runs it with no tools, in an empty folder, and redacts secrets first. Privacy mode always turns this off. Follow your provider's terms; this is for personal use.</p>
-    <div id="cloud" role="radiogroup" aria-label="Cloud via your plan">
+  <section id="smarter">
+    <h2>Smarter answers</h2>
+    <p class="muted">Optional, off by default. "Go deeper", hard questions and a missing local model can use a stronger cloud model. Secrets are redacted first, and Privacy mode and private pages always keep it off.</p>
+    <div id="cloud" role="radiogroup" aria-label="Smarter answers">
       <label class="choice"><input type="radio" name="cloudCli" value="off" /> <span><b>Off</b> Everything stays on this Mac.</span></label>
-      <label class="choice"><input type="radio" name="cloudCli" value="claude" /> <span><b>Claude Code</b> <span class="mono" data-status="claude">checking…</span></span></label>
-      <label class="choice"><input type="radio" name="cloudCli" value="codex" /> <span><b>Codex (ChatGPT)</b> <span class="mono" data-status="codex">checking…</span></span></label>
+      <label class="choice"><input type="radio" name="cloudCli" value="claude" /> <span><b>Your Claude plan, via Claude Code</b> <span class="mono" data-status="claude">checking…</span></span></label>
+      <label class="choice"><input type="radio" name="cloudCli" value="codex" /> <span><b>Your ChatGPT plan, via Codex</b> <span class="mono" data-status="codex">checking…</span></span></label>
+      <label class="choice"><input type="radio" name="cloudCli" value="api" /> <span><b>Your own API key</b> Pay per use: Anthropic, OpenAI, Gemini (has a free tier) or any OpenAI-compatible endpoint.</span></label>
+    </div>
+    <p class="muted">The plan options run the official CLI you installed and logged into yourself, with no tools, in an empty folder, and only with a subscription login (never API billing). Follow your provider's terms; this is for personal use.</p>
+    <div id="apiBox" hidden>
+      <label class="field">Provider <select id="apiProvider"></select></label>
+      <p id="geminiNote" class="muted" hidden>Gemini has a free tier: create a key at aistudio.google.com. Free-tier requests may be used by Google to improve its products.</p>
+      <label class="field" id="apiBaseRow" hidden>Base URL <input id="apiBase" placeholder="https://openrouter.ai/api/v1" spellcheck="false" /></label>
+      <label class="field">API key <input id="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="Paste your key" /></label>
+      <div class="row"><span id="apiKeyStatus" class="mono"></span><span><button id="apiSave">Save key</button> <button id="apiTest">Test key</button> <button id="apiRemove" class="danger">Remove key</button></span></div>
+      <label class="field">Model <input id="apiNormal" spellcheck="false" /></label>
+      <label class="field">"Go deeper" and hard questions <input id="apiHard" spellcheck="false" /></label>
+      <p class="warn">Billed by the provider per request.</p>
+      <p id="apiMsg" class="muted" role="status"></p>
     </div>
     <p id="cloudNote" class="muted" hidden>Paused while Privacy mode is on.</p>
   </section>

@@ -2,11 +2,10 @@ const $ = (id) => document.getElementById(id);
 
 function render(s) {
   for (const box of document.querySelectorAll('[data-key]')) box.checked = box.dataset.key === 'speakReplies' ? s.speakReplies !== 'never' : Boolean(s[box.dataset.key]);
-  for (const radio of document.querySelectorAll('[name=cloudCli]')) radio.checked = radio.value === (s.cloudCli || 'off');
-  $('cloudNote').hidden = !s.privacy || (s.cloudCli || 'off') === 'off';
+  renderSmarter(s);
   $('browser').textContent = s.connected ? 'Connected to Chrome ✓' : 'Not connected. Load the extension, then paste the pairing code into its popup.';
-  const { code = 0, cache = 0, local = 0, cloud = 0 } = s.counts?.tiers || {};
-  $('counts').textContent = `${code + cache} answers were instant (no model), ${local} used the model on your Mac${cloud ? `, ${cloud} used your plan` : ''}.`;
+  const { code = 0, cache = 0, local = 0, cloud = 0, api = 0 } = s.counts?.tiers || {};
+  $('counts').textContent = `${code + cache} answers were instant (no model), ${local} used the model on your Mac${cloud ? `, ${cloud} used your plan` : ''}${api ? `, ${api} went via your API key` : ''}.`;
   $('notesDir').textContent = s.notesDir;
   $('embedSize').textContent = `≈${s.embedder.sizeMb}`;
   $('embedStatus').textContent = s.embedder.ready ? `${s.embedder.name} installed ✓` : 'Not installed. Everything works without it.';
@@ -66,9 +65,54 @@ function render(s) {
 for (const box of document.querySelectorAll('[data-key]')) {
   box.addEventListener('change', async () => render(await window.loon.setSetting(box.dataset.key, box.checked)));
 }
+// ---------- Smarter answers: plan CLI or own API key ----------
+// The key is typed here once and sent to the main process; only "saved · ends in …abcd" ever comes back.
+let smarter = null;
+function renderSmarter(s) {
+  smarter = s;
+  const mode = s.cloudCli || 'off';
+  for (const radio of document.querySelectorAll('[name=cloudCli]')) radio.checked = radio.value === mode;
+  $('cloudNote').hidden = !s.privacy || mode === 'off';
+  $('apiBox').hidden = mode !== 'api';
+  const { provider, baseUrl, normal, hard } = s.apiConfig;
+  if (!$('apiProvider').options.length) {
+    $('apiProvider').append(...Object.entries(s.apiProviders).map(([id, p]) => new Option(p.name, id)));
+  }
+  $('apiProvider').value = provider;
+  const fill = (id, value) => { if (document.activeElement !== $(id)) $(id).value = value; };
+  fill('apiBase', baseUrl);
+  fill('apiNormal', normal);
+  fill('apiHard', hard);
+  $('apiNormal').placeholder = provider === 'custom' ? 'e.g. meta-llama/llama-3.3-70b-instruct' : '';
+  $('apiHard').placeholder = $('apiNormal').placeholder;
+  $('apiBaseRow').hidden = provider !== 'custom';
+  $('geminiNote').hidden = provider !== 'gemini';
+  const hint = s.apiKeys[provider];
+  $('apiKeyStatus').textContent = hint ? `saved · ends in …${hint.last4}` : provider === 'custom' ? 'no key (fine for a local server)' : 'no key saved';
+  $('apiRemove').hidden = !hint;
+  $('apiMsg').textContent = s.apiError || '';
+}
+const saveApiConfig = async (changes = {}) => {
+  const current = { provider: $('apiProvider').value, baseUrl: $('apiBase').value, normal: $('apiNormal').value, hard: $('apiHard').value };
+  render(await window.loon.setSetting('api', { ...current, ...changes }));
+};
 for (const radio of document.querySelectorAll('[name=cloudCli]')) {
   radio.addEventListener('change', async () => render(await window.loon.setSetting('cloudCli', radio.value)));
 }
+// A new provider starts from its own default models.
+$('apiProvider').addEventListener('change', () => saveApiConfig({ baseUrl: '', normal: '', hard: '' }));
+for (const id of ['apiBase', 'apiNormal', 'apiHard']) $(id).addEventListener('change', () => saveApiConfig());
+$('apiSave').addEventListener('click', async () => {
+  const key = $('apiKey').value;
+  $('apiKey').value = '';
+  if (key.trim()) render(await window.loon.saveApiKey(smarter.apiConfig.provider, key));
+});
+$('apiRemove').addEventListener('click', async () => render(await window.loon.removeApiKey(smarter.apiConfig.provider)));
+$('apiTest').addEventListener('click', async () => {
+  $('apiMsg').textContent = 'Testing…';
+  const { ok, error } = await window.loon.testApiKey();
+  $('apiMsg').textContent = ok ? 'Key works ✓ (checked without generating anything)' : error;
+});
 window.loon.detectCli().then((found) => {
   for (const [which, info] of Object.entries(found)) {
     const status = document.querySelector(`[data-status="${which}"]`);
