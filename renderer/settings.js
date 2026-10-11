@@ -2,9 +2,11 @@ const $ = (id) => document.getElementById(id);
 
 function render(s) {
   for (const box of document.querySelectorAll('[data-key]')) box.checked = box.dataset.key === 'speakReplies' ? s.speakReplies !== 'never' : Boolean(s[box.dataset.key]);
+  for (const radio of document.querySelectorAll('[name=cloudCli]')) radio.checked = radio.value === (s.cloudCli || 'off');
+  $('cloudNote').hidden = !s.privacy || (s.cloudCli || 'off') === 'off';
   $('browser').textContent = s.connected ? 'Connected to Chrome ✓' : 'Not connected. Load the extension, then paste the pairing code into its popup.';
-  const { code = 0, cache = 0, local = 0 } = s.counts?.tiers || {};
-  $('counts').textContent = `${code + cache} answers were instant (no model), ${local} used the model on your Mac.`;
+  const { code = 0, cache = 0, local = 0, cloud = 0 } = s.counts?.tiers || {};
+  $('counts').textContent = `${code + cache} answers were instant (no model), ${local} used the model on your Mac${cloud ? `, ${cloud} used your plan` : ''}.`;
   $('notesDir').textContent = s.notesDir;
   $('connectors').replaceChildren(...(s.connectorList.length ? s.connectorList : [null]).map((x) => {
     const li = document.createElement('li');
@@ -60,6 +62,17 @@ function render(s) {
 for (const box of document.querySelectorAll('[data-key]')) {
   box.addEventListener('change', async () => render(await window.loon.setSetting(box.dataset.key, box.checked)));
 }
+for (const radio of document.querySelectorAll('[name=cloudCli]')) {
+  radio.addEventListener('change', async () => render(await window.loon.setSetting('cloudCli', radio.value)));
+}
+window.loon.detectCli().then((found) => {
+  for (const [which, info] of Object.entries(found)) {
+    const status = document.querySelector(`[data-status="${which}"]`);
+    status.textContent = info.found ? `found${info.version ? ` · ${info.version}` : ''}` : 'not found on this Mac';
+    const radio = document.querySelector(`[name=cloudCli][value="${which}"]`);
+    if (!info.found && !radio.checked) radio.disabled = true;
+  }
+});
 $('copyCode').addEventListener('click', () => { window.loon.copyPairingCode(); $('copyCode').textContent = 'Copied ✓'; });
 $('openNotes').addEventListener('click', () => window.loon.openNotesFolder());
 $('clearMemory').addEventListener('click', async () => {

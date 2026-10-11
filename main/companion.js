@@ -284,7 +284,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
           bubble('chunk', { id, chunk });
         },
       });
-      bubble('done', { id, ...result, model: brain.modelLabel(), counts: resolver.counts, canGoDeeper: result.tier !== 'code' || task === 'define' });
+      bubble('done', { id, ...result, model: brain.modelLabel(), counts: resolver.counts, canGoDeeper: !['code', 'cloud'].includes(result.tier) || task === 'define' });
       ui.cat('brain', { state: 'done', mood: result.mood });
     } catch (err) {
       if (controller.signal.aborted) return;

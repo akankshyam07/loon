@@ -20,6 +20,17 @@
   </section>
 
   <section>
+    <h2>Cloud via your plan</h2>
+    <p class="muted">Optional, off by default. "Go deeper" (and a missing local model) can use the Claude or ChatGPT plan you already have, through the official CLI you installed and logged into yourself. Loon runs it with no tools, in an empty folder, and redacts secrets first. Privacy mode always turns this off. Follow your provider's terms; this is for personal use.</p>
+    <div id="cloud" role="radiogroup" aria-label="Cloud via your plan">
+      <label class="choice"><input type="radio" name="cloudCli" value="off" /> <span><b>Off</b> Everything stays on this Mac.</span></label>
+      <label class="choice"><input type="radio" name="cloudCli" value="claude" /> <span><b>Claude Code</b> <span class="mono" data-status="claude">checking…</span></span></label>
+      <label class="choice"><input type="radio" name="cloudCli" value="codex" /> <span><b>Codex (ChatGPT)</b> <span class="mono" data-status="codex">checking…</span></span></label>
+    </div>
+    <p id="cloudNote" class="muted" hidden>Paused while Privacy mode is on.</p>
+  </section>
+
+  <section>
     <h2>Voice</h2>
     <p class="muted">Press ⌥⇧V and talk; Loon listens until you pause. Audio is processed on this Mac and never saved.</p>
     <label class="toggle"><input type="checkbox" data-key="speakReplies" /> <span><b>Speak replies</b> Read the first sentences of answers aloud when you asked by voice.</span></label>

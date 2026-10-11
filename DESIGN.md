@@ -24,9 +24,10 @@ TODO-M1.md … TODO-M5.md. Deliberate deviations from this design:
 - **The default stack is 100% open source / open weights** (§2.11): llama.cpp through `node-llama-cpp` with Apache-2.0 models, sherpa-onnx, Kokoro, Harper, WordNet, Tesseract, Bergamot, and others.
 - **Optional accelerators, off by default and clearly labeled:**
   - free but closed OS built-ins: Apple Vision OCR, macOS Dictionary, Chrome's Gemini Nano;
-  - a "bring your own cloud key" setting (Anthropic / OpenAI / Gemini).
+  - a "bring your own cloud key" setting (Anthropic / OpenAI / Gemini);
+  - "Cloud via your plan" (§3.17.1): "Go deeper" can use the Claude or ChatGPT plan the user already has, by running the official Claude Code or Codex CLI that they installed and logged into themselves. Loon never touches the CLIs' logins.
 
-  Neither is ever required. Using a Claude/ChatGPT *subscription* through a CLI stays out because of provider terms.
+  None of these is ever required, and Privacy mode turns the cloud options off.
 - **Electron desktop app plus a Chrome extension.** No backend server and no accounts.
 - The **main process** handles AI calls, keys, memory, actions, and logs. Renderers only draw.
 - **Code handles numbers; the AI handles words.** Unit prices, rankings, dates, and redaction are computed in plain code, never by the model.
@@ -232,6 +233,7 @@ Each task in `modes.js` lists which tiers can answer it, in order. `resolve()` t
 | **T3 small local LLM** | llama.cpp through `node-llama-cpp`, an always-loaded ~4B Apache-2.0 model (e.g. Qwen 3.5 4B) | free, ~1–3s | explaining, summarizing, rewriting, extraction, classification |
 | **T3+ larger local LLM** | the same runtime, loading an ~8B model on demand for "Go deeper", code, and reasoning | free, slower, loaded when needed | explaining code, harder questions, research synthesis |
 | *T4 optional cloud* | *only if the user added their own API key* | *their bill* | *"Go deeper", when enabled* |
+| *T4 via your plan* | *opt-in: the official `claude` / `codex` CLI the user logged into (§3.17.1)* | *the user's existing plan* | *"Go deeper", or when the local model is unavailable* |
 | *Hand-off* | *copy a prepared prompt and open the official Claude / ChatGPT / Gemini app (§3.17)* | *the user's existing plan* | *"Ask in Claude"* |
 
 **Optional closed accelerators** (off by default; a toggle in settings):
@@ -657,8 +659,23 @@ Hand-off lets people use a plan they already pay for, or a free tier, **without 
   4. The cat says "Copied. Paste it in ⌘V".
 - **The context is never put in the URL,** even where a site supports prefilled `?q=` links. URLs end up in history, sync, and server logs.
 - **Why hand-off and not integration:** Loon never signs into, scripts, or scrapes those services, so it stays within their terms. The provider's rule is against third-party apps *using* consumer subscriptions, not against a user pasting into the provider's own app. It's also honest: the user sees exactly what's sent, in the provider's own UI.
-- **Not included:** routing through `claude -p`, Codex, or Gemini CLI logins; browser-session scraping; controlling Chrome's Gemini button.
+- **Not included:** Gemini CLI logins; browser-session scraping; controlling Chrome's Gemini button.
 - **Hand-off is the escape hatch** for the few things local models do poorly: hard reasoning, long PDFs, detailed image understanding.
+
+#### 3.17.1 Cloud via your plan (opt-in)
+
+For people who already pay for Claude or ChatGPT and want "Go deeper" answers in the bubble instead of a copy-paste.
+
+- **Setting:** Settings → "Cloud via your plan": **Off** (default) | Claude Code | Codex. Each option shows whether the CLI was found and its version. **Privacy mode always turns it off.**
+- **When it's used** (`brain/resolve.js`): only for **"Go deeper"**, and as a fallback when the local model fails or isn't downloaded. Everything else stays on the normal ladder (code → cache → local model). The bubble footer says so honestly ("☁️ Claude (your plan, via Claude Code)" or "☁️ ChatGPT (your plan, via Codex)"), and Settings counts these answers separately.
+- **How** (`brain/cli-provider.js`): Loon finds the binary on PATH plus the usual install folders (`~/.local/bin`, `/opt/homebrew/bin`, `/usr/local/bin`, `~/.npm-global/bin`), because apps opened from Finder get a minimal PATH. It spawns it directly (no shell), with a timeout and the bubble's cancel signal, and reads streamed JSON.
+  - Claude Code: `claude -p --output-format stream-json --verbose --include-partial-messages --tools "" --strict-mcp-config --permission-mode dontAsk --no-session-persistence --system-prompt <Loon's prompt>`, request on stdin.
+  - Codex: `codex exec --json --color never --sandbox read-only --skip-git-repo-check --ephemeral -c approval_policy="never" -c features.shell_tool=false -c features.unified_exec=false -c web_search="disabled" -C <temp dir> -`, Loon's prompt plus the request on stdin (codex exec has no system-prompt flag).
+- **How it stays safe:**
+  - every tool is off (no file edits, no commands, no MCP servers, no web search), and the working folder is a fresh empty temp folder, deleted afterwards;
+  - redaction (§4.2) runs on the whole prompt, including typed text and memory, before it reaches the CLI;
+  - Loon never reads, copies or stores the CLIs' tokens or config. It only starts the program the user already set up, and a missing login gives a clear message ("run `claude` once in Terminal").
+- **Terms:** users should follow their provider's terms. Anthropic restricts third-party apps from using consumer subscriptions, so Loon never signs in on the user's behalf or calls those services itself: it only drives the official CLI that the user installed, runs and logged into themselves, for their own personal use. That's why it is off by default and clearly labeled.
 
 ---
 

@@ -64,14 +64,15 @@ log.addEventListener('click', (e) => {
 
 function formatCounts(counts) {
   if (!counts) return '';
-  const { code = 0, cache = 0, local = 0 } = counts.tiers;
-  return `this week: ${code + cache} instant · ${local} on-device`;
+  const { code = 0, cache = 0, local = 0, cloud = 0 } = counts.tiers;
+  return `this week: ${code + cache} instant · ${local} on-device${cloud ? ` · ${cloud} via your plan` : ''}`;
 }
 
 function tierLabel({ tier, model, detail, estimated }) {
   const suffix = estimated ? ' · estimated' : '';
   if (tier === 'code') return `⚡ instant · ${detail || 'no model needed'}`;
   if (tier === 'cache') return `⚡ instant · remembered answer${suffix}`;
+  if (tier === 'cloud') return `☁️ ${detail}${suffix}`;
   return `🐾 on your Mac · ${model}${detail ? ` · ${detail}` : ''}${suffix}`;
 }
 

@@ -27,7 +27,7 @@ const DEMO = process.argv.includes('--demo') || process.env.LOON_DEMO === '1';
 const SELFTEST = process.argv.includes('--selftest');
 
 let settingsFile;
-let settings = { size: 'M', focus: false, privacy: false, judgmental: true, wakeWord: false, speakReplies: 'voiceOnly', projects: [], connectors: [], welcomed: false };
+let settings = { size: 'M', focus: false, privacy: false, judgmental: true, wakeWord: false, speakReplies: 'voiceOnly', projects: [], connectors: [], welcomed: false, cloudCli: 'off' };
 let catWin;
 let bubbleWin;
 let brain;
@@ -474,6 +474,7 @@ function registerIpc() {
   ipcMain.handle('settings-set', (_e, { key, value }) => {
     if (['focus', 'privacy', 'judgmental', 'wakeWord'].includes(key)) setToggle(key, Boolean(value));
     if (key === 'speakReplies') { settings.speakReplies = value ? 'voiceOnly' : 'never'; saveSettings(); }
+    if (key === 'cloudCli' && ['off', 'claude', 'codex'].includes(value)) { settings.cloudCli = value; saveSettings(); }
     if (key === 'project' && value?.path && fs.existsSync(value.path)) {
       const set = new Set(settings.projects || []);
       if (value.allowed) set.add(value.path);
@@ -483,6 +484,7 @@ function registerIpc() {
     }
     return settingsSnapshot();
   });
+  ipcMain.handle('cli-detect', () => require('./brain/cli-provider').detect());
   ipcMain.handle('connectors-discover', () => hub.discover());
   ipcMain.handle('connectors-add', (_e, found) => { hub.add(found); return settingsSnapshot(); });
   ipcMain.handle('connectors-remove', (_e, id) => { hub.remove(id); return settingsSnapshot(); });
