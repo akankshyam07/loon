@@ -14,7 +14,7 @@ permissions:
 
 concurrency:
   group: selftest-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false # a running e2e finishes; GitHub keeps only the newest pending run
 
 env:
   # Electron 44's npm package needs Node 22.12+.
