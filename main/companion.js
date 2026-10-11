@@ -299,8 +299,14 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
           }
           bubble('chunk', { id, chunk });
         },
+        // The self-check upgraded the answer: the bubble drops what it streamed and shows the new one.
+        onRestart: () => {
+          talking = false;
+          ui.cat('brain', { state: 'thinking' });
+          bubble('chunk', { id, chunk: '', restart: true });
+        },
       });
-      bubble('done', { id, ...result, model: brain.modelLabel(deeper), counts: resolver.counts, memoryUsed: resolver.lastMemory || [], canGoDeeper: !['code', 'cloud'].includes(result.tier) || task === 'define' });
+      bubble('done', { id, ...result, model: brain.modelLabel(deeper || result.smart),counts: resolver.counts, memoryUsed: resolver.lastMemory || [], canGoDeeper: !['code', 'cloud'].includes(result.tier) || task === 'define' });
       // History for "what did I look up about…": local only, redacted text, never in Privacy mode.
       if (memory && !settings.privacy && result.text) {
         const subject = packet?.text ? ` · ${packet.text.replace(/\s+/g, ' ').slice(0, 80)}` : '';

@@ -87,6 +87,11 @@ class Brain {
     return candidates.find((p) => p && fs.existsSync(p) && p !== this.localModelPath()) || null;
   }
 
+  // A separate, bigger local model the router can use (Ollama has no second slot).
+  hasSmart() {
+    return this.backend?.kind === 'llama' && Boolean(this.smartModelPath());
+  }
+
   async findOllamaModel() {
     try {
       const res = await fetch(`${OLLAMA}/api/tags`, { signal: AbortSignal.timeout(400) });

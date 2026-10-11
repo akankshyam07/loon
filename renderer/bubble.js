@@ -434,8 +434,13 @@ input.addEventListener('keydown', (e) => {
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') window.loon.closeBubble(); });
 $('close').addEventListener('click', () => window.loon.closeBubble());
 
-window.loon.onAskChunk(({ id, chunk }) => {
+window.loon.onAskChunk(({ id, chunk, restart }) => {
   if (current?.id !== id) return;
+  if (restart) {
+    current.raw = '';
+    current.el.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>';
+    return;
+  }
   current.raw += chunk;
   current.el.innerHTML = renderMarkdown(current.raw.trimStart());
   log.scrollTop = log.scrollHeight;

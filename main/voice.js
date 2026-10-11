@@ -275,7 +275,10 @@ function createVoiceController({ engine, ui, session, setToggle, settings }) {
       return;
     }
     if (!voiceTurn || settings.speakReplies === 'never') return;
-    if (type === 'chunk') {
+    if (type === 'chunk' && payload.restart) {
+      stopSpeaking();
+      Object.assign(voiceTurn, { spoken: 0, splitter: null, truncated: false });
+    } else if (type === 'chunk') {
       voiceTurn.splitter ??= createSentenceSplitter((sentence) => {
         if (voiceTurn.spoken >= 2) { voiceTurn.truncated = true; return; }
         const { text } = speakable(sentence, 1);

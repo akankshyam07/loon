@@ -1,6 +1,7 @@
 // Resolver ladder (DESIGN.md §2.10): try the cheapest tier that can answer, stop at the first hit.
-// Tiers per task: code (templates, WordNet, offline translator, TextRank) → cache (exact match) → local LLM.
-// Optional: "Go deeper" (and a failed local model) can use the user's own Claude/ChatGPT plan via the official CLI (§3.17).
+// Tiers per task: code (templates, WordNet, offline translator, TextRank) → cache (exact match) → model.
+// brain/router.js picks the model: fast local, smart local, or the user's own Claude/ChatGPT plan via the official CLI
+// when "Cloud via your plan" is on (§3.17). A weak answer gets one automatic upgrade.
 const fs = require('fs');
 const { ResponseCache } = require('./cache');
 const { TASKS, MAX_CONTEXT_CHARS, buildPrompt, memoryGroup } = require('./tasks');
@@ -13,6 +14,7 @@ const shopping = require('./shopping');
 const food = require('./food');
 const { redact } = require('./redact');
 const { SYSTEM_PROMPT } = require('./ai');
+const { estimate, pickTier, check } = require('./router');
 
 const PROMPT_VERSION = 'v2';
 const MOODS = ['happy', 'curious', 'judgy', 'sleepy', 'suspicious', 'focused', 'protective', 'confused'];
@@ -142,7 +144,7 @@ class Resolver {
 
   // Runs a task (brain/tasks.js) on a context packet, cheapest tier first.
   // onText streams answer text; returns { text, mood, tier, detail? }.
-  async run(taskId, packet, { onText, signal, firstInThread = true, deeper = false, question } = {}) {
+  async run(taskId, packet, { onText, onRestart = () => {}, signal, firstInThread = true, deeper = false, question } = {}) {
     const task = TASKS[taskId];
     if (!task) throw new Error(`Unknown task: ${taskId}`);
     const tiers = task.tiers || [];
@@ -237,6 +239,7 @@ class Resolver {
     const cacheable = firstInThread && !question && !privacy;
     // Errors cache by fingerprint so the same error with different paths/values reuses one answer.
     const identity = task.cacheByFingerprint ? fingerprint(packet.text || '').hash : normalize(prompt);
+    // Routed and upgraded answers share the plain key, so a question that needed a stronger tier is instant next time.
     const key = cacheable ? ResponseCache.key(taskId, identity, String(deeper), viaCloud ? `cli:${cloud}` : this.brain.modelId(), PROMPT_VERSION) : null;
     const hit = key && this.cache.get(key);
     if (hit) {
@@ -245,33 +248,76 @@ class Resolver {
       return { text: prefix + hit.text, mood: hit.mood, tier: 'cache', estimated: Boolean(task.estimated), replaceText: task.replaceable ? hit.text : undefined };
     }
 
+    // Router (§2.10): model tiers weakest first; "Go deeper" keeps its own rule (plan if on, else the smart model).
+    const ladder = ['fast', this.brain.hasSmart?.() && 'smart', cloud && 'cloud'].filter(Boolean);
+    const typed = taskId === 'ask' || Boolean(question);
+    const asked = typed ? question || packet.question : task.instruction(packet);
+    const route = deeper ? null : estimate({ taskId, request: asked, context: packet.text });
+    const maxTokens = deeper ? 900 : task.maxTokens;
+
     this.lastPrompt = prompt;
-    let text = '';
-    const parser = createMoodParser((piece) => { text += piece; onText(piece); });
-    const onChunk = (chunk) => parser.push(chunk);
-    // Redaction already ran on screen context (main/context.js); this pass also covers typed text and memory
-    // before anything leaves the Mac.
-    const askCloud = () => this.cli.ask(cloud, { system: SYSTEM_PROMPT, prompt: redact(prompt).text, onText: onChunk, signal });
-    let tier = viaCloud ? 'cloud' : 'local';
-    if (viaCloud) {
-      await askCloud();
-    } else {
+    let streamed = false;
+    const attempt = async (target) => {
+      let text = '';
+      const parser = createMoodParser((piece) => { streamed = true; text += piece; onText(piece); });
+      const onChunk = (chunk) => parser.push(chunk);
+      // Redaction already ran on screen context (main/context.js); this pass also covers typed text and memory
+      // before anything leaves the Mac.
+      if (target === 'cloud') await this.cli.ask(cloud, { system: SYSTEM_PROMPT, prompt: redact(prompt).text, onText: onChunk, signal });
+      else await this.brain.chat(prompt, { onText: onChunk, signal, maxTokens, smart: target === 'smart' });
+      return { text: text.trim(), mood: parser.finish(), target };
+    };
+    // Clears the streamed answer so a different one can take its place.
+    const restart = () => {
+      onRestart();
+      streamed = false;
+      if (prefix) onText(prefix);
+    };
+
+    let target = deeper ? (viaCloud ? 'cloud' : 'smart') : pickTier(route.level, ladder);
+    let note = route && target !== 'fast' ? `routed: ${route.level === 'hard' ? 'hard' : 'trickier'} question` : '';
+    let answer;
+    let fallback = false;
+    try {
+      answer = await attempt(target);
+    } catch (err) {
+      // A failed local model falls back to the plan; a routed (not chosen) plan call falls back to the Mac.
+      const other = target === 'cloud' ? !deeper && ladder[ladder.length - 2] : cloud && 'cloud';
+      if (!other || signal?.aborted || streamed) throw err;
+      console.warn(`[resolve] ${target} model failed, using ${other}:`, err.message);
+      fallback = true;
+      note = '';
+      target = other;
+      answer = await attempt(target);
+    }
+
+    // Self-check: a weak answer gets one automatic try on the next tier up. Never twice, never after a fallback.
+    const checkOpts = { request: asked, typed, level: route?.level, maxTokens: maxTokens || 400 };
+    let flags = deeper || fallback ? [] : check(answer.text, checkOpts);
+    const next = ladder[ladder.indexOf(answer.target) + 1];
+    if (flags.length && next && !signal?.aborted) {
+      const first = answer;
+      restart();
       try {
-        await this.brain.chat(prompt, { onText: onChunk, signal, maxTokens: deeper ? 900 : task.maxTokens, smart: deeper });
+        answer = await attempt(next);
+        note = `upgraded: ${flags[0].label}`;
+        flags = check(answer.text, checkOpts);
       } catch (err) {
-        if (!cloud || signal?.aborted || text) throw err;
-        console.warn('[resolve] local model failed, using your plan via CLI:', err.message);
-        tier = 'cloud';
-        await askCloud();
+        if (signal?.aborted) throw err;
+        console.warn('[resolve] upgrade failed, keeping the first answer:', err.message);
+        restart();
+        onText(first.text);
+        answer = first;
       }
     }
-    const mood = parser.finish();
-    text = text.trim();
+
+    const tier = answer.target === 'cloud' ? 'cloud' : 'local';
     this.count(tier);
-    // A fallback answer is not cached under the local model's key.
-    if (key && text && !signal?.aborted && (tier === 'local' || viaCloud)) this.cache.set(key, { text, mood });
-    const detail = tier === 'cloud' ? this.cli.label(cloud) : undefined;
-    return { text: prefix + text, mood, tier, detail, estimated: Boolean(task.estimated), replaceText: task.replaceable ? text : undefined };
+    // Fallback answers and answers that still look weak are not cached.
+    if (key && answer.text && !signal?.aborted && !fallback && !flags.length) this.cache.set(key, { text: answer.text, mood: answer.mood });
+    const detail = [tier === 'cloud' && this.cli.label(cloud), note].filter(Boolean).join(' · ') || undefined;
+    const { text, mood } = answer;
+    return { text: prefix + text, mood, tier, detail, smart: answer.target === 'smart', estimated: Boolean(task.estimated), replaceText: task.replaceable ? text : undefined };
   }
 }
 
