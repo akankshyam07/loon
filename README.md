@@ -1,4 +1,8 @@
 <p align="center">
+  <a href="https://github.com/akankshyam07/loon/actions/workflows/selftest.yml"><img src="https://github.com/akankshyam07/loon/actions/workflows/selftest.yml/badge.svg" alt="selftest"></a>
+</p>
+
+<p align="center">
   <img src="build/icon.png" width="180" alt="Loon, a small black cat with big green eyes and a moon pendant">
 </p>
 

@@ -1,6 +1,6 @@
 // End-to-end check of the running app: `npm run selftest`.
 // Drives the real windows with synthetic input and the real brain, prints PASS/FAIL per check.
-const { ipcMain, globalShortcut } = require('electron');
+const { ipcMain, globalShortcut, screen } = require('electron');
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -22,8 +22,14 @@ async function run(ctx) {
   };
   const cat = (js) => catWin.webContents.executeJavaScript(js);
   const bubble = (js) => bubbleWin.webContents.executeJavaScript(js);
-  const mouse = (type, x, y, extra = {}) => catWin.webContents.sendInputEvent({ type, x, y, button: 'left', clickCount: 1, ...extra });
+  // Synthetic input also moves main's virtual pointer, which stands in for the real mouse during the run.
+  const mouse = (type, x, y, extra = {}) => {
+    const b = catWin.getBounds();
+    ctx.setCursor({ x: b.x + x, y: b.y + y });
+    catWin.webContents.sendInputEvent({ type, x, y, button: 'left', clickCount: 1, ...extra });
+  };
   const homeBounds = catWin.getBounds();
+  const backHome = () => ctx.resetCatPosition(homeBounds);
   catWin.webContents.on('console-message', (event) => {
     if (event.level === 'error' || event.level === 'warning') console.log(`  [cat ${event.level}] ${event.message}`);
   });
@@ -47,7 +53,7 @@ async function run(ctx) {
   const head = await cat(`(() => { const r = document.querySelector('#headShape').getBoundingClientRect(); return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) }; })()`);
   check('cat renders', head.x > 0 && head.y > 0, `head at ${head.x},${head.y}`);
 
-  // Start from a known state (the real pointer may be resting over the window), then hover.
+  // Start from a known state, then hover.
   mouse('mouseMove', 3, 3);
   await wait(150);
   lastIgnore = null;
@@ -71,14 +77,18 @@ async function run(ctx) {
   await wait(1200); // endPet may start a moon-magic move; let it settle
   await waitFor(async () => (await cat('window.__loon.state')) === 'idle', 6000);
 
+  // Drag toward the middle of the screen so the move is never swallowed by the screen-edge clamp.
+  const workArea = screen.getDisplayMatching(homeBounds).workArea;
+  const dragDx = homeBounds.x + homeBounds.width / 2 > workArea.x + workArea.width / 2 ? -30 : 30;
   mouse('mouseDown', head.x, head.y);
   await wait(40);
-  mouse('mouseMove', head.x + 30, head.y + 5, { modifiers: ['leftButtonDown'] });
+  mouse('mouseMove', head.x + dragDx, head.y + 5, { modifiers: ['leftButtonDown'] });
   await wait(150);
-  mouse('mouseUp', head.x + 30, head.y + 5);
+  mouse('mouseUp', head.x + dragDx, head.y + 5);
   await wait(400);
-  check('dragging moves the window through main', dragStarted && dragEnded, `started ${dragStarted} · ended ${dragEnded} · state ${await cat('window.__loon.state')} · bounds ${JSON.stringify(catWin.getBounds())} vs ${JSON.stringify(homeBounds)}`);
-  catWin.setBounds(homeBounds);
+  const moved = Math.sign(catWin.getBounds().x - homeBounds.x) === Math.sign(dragDx);
+  check('dragging moves the window through main', dragStarted && dragEnded && moved, `started ${dragStarted} · ended ${dragEnded} · state ${await cat('window.__loon.state')} · bounds ${JSON.stringify(catWin.getBounds())} vs ${JSON.stringify(homeBounds)}`);
+  backHome(); // the drag also moved the cat's home; put both back
   await waitFor(async () => (await cat('window.__loon.state')) === 'idle', 3000);
 
   for (const move of ['moonMagic', 'edgePeek', 'pounce']) {
@@ -87,7 +97,7 @@ async function run(ctx) {
     const started = await waitFor(async () => (await cat('window.__loon.state')) === 'move', 1500, 50);
     const finished = await waitFor(async () => (await cat('window.__loon.state')) === 'idle', 9000);
     check(`cool move: ${move}`, started && finished, `started ${started} · finished ${finished} · state ${await cat('window.__loon.state')}`);
-    catWin.setBounds(homeBounds);
+    backHome();
     await wait(300);
   }
 
@@ -371,7 +381,7 @@ async function run(ctx) {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
 
-  catWin.setBounds(homeBounds);
+  backHome();
   if (!process.argv.includes('--no-browser')) {
     console.log('\n— browser companion —');
     await require('./selftest-browser').run(ctx, check);
