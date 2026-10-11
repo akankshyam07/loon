@@ -97,11 +97,14 @@ npm test          # fast unit tests, run these after every change
 npm run selftest  # drives the real app, real model and real extension end to end
 ```
 
+The end-to-end selftest runs on GitHub Actions (macOS); don't run it on a contributor's machine unless asked.
+See `.github/workflows/selftest.yml`; the log is uploaded as the `selftest-log` artifact.
+
 `npm run selftest` needs a downloaded model, and for the browser half, Chrome for Testing
 (`npx playwright-core install chromium`; without it those checks print SKIP). Before running it:
 
 - Quit any running Loon first (`pkill -f "node_modules/electron/dist"`). The extension bridge uses port **47631**, and a stale
   instance makes the selftest fail in confusing ways.
-- It opens real windows on screen; that's expected.
+- Its windows are invisible, ignore the real mouse and never take focus. Set `LOON_HIDDEN=0` to watch them.
 
 To build the macOS app: `npm run dist` → `dist/Loon-<version>-arm64.dmg` (unsigned).

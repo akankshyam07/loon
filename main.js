@@ -26,6 +26,15 @@ const EDGE_MARGIN = 12;
 const arg = (name) => process.argv.find((a) => a.startsWith(`--${name}=`))?.split('=').slice(1).join('=');
 const DEMO = process.argv.includes('--demo') || process.env.LOON_DEMO === '1';
 const SELFTEST = process.argv.includes('--selftest');
+// Hidden runs (the selftest by default; LOON_HIDDEN=0 shows it) draw invisibly, ignore the real mouse and never
+// take focus from the app the user is working in.
+const HIDDEN = process.env.LOON_HIDDEN === '1' || (SELFTEST && process.env.LOON_HIDDEN !== '0');
+const HIDDEN_WINDOW = HIDDEN ? { show: false, opacity: 0 } : {};
+if (SELFTEST) {
+  // Invisible or covered windows must keep painting and running timers, or capturePage and the checks stall.
+  app.commandLine.appendSwitch('disable-renderer-backgrounding');
+  app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
+}
 
 let settingsFile;
 let settings = { size: 'M', focus: false, privacy: false, judgmental: true, wakeWord: false, speakReplies: 'voiceOnly', projects: [], connectors: [], welcomed: false, cloudCli: 'off' };
@@ -49,6 +58,24 @@ let voiceEngine;
 const pendingPlays = new Map();
 const toBubbleRef = { current: null };
 let playId = 0;
+// The selftest drives the cat with synthetic input and moves this pointer itself; the real mouse must not steer
+// drags, pounces or click-through while it runs.
+let virtualCursor = { x: -100000, y: -100000 };
+const cursorPoint = () => (SELFTEST ? virtualCursor : screen.getCursorScreenPoint());
+let hiddenFocus = null; // in a hidden run, the window that would have focus
+function focusWindow(win) {
+  if (!HIDDEN) {
+    win.show();
+    return win.focus();
+  }
+  hiddenFocus = win;
+  win.showInactive();
+}
+const isFocused = (win) => (HIDDEN ? hiddenFocus === win && win.isVisible() : win.isFocused());
+// Real use forwards mouse moves so the page can tell when the cursor is over the cat; a hidden window never takes clicks.
+function setCatIgnore(ignore) {
+  catWin.setIgnoreMouseEvents(ignore || HIDDEN, SELFTEST ? {} : { forward: true });
+}
 // Swappable side effects so the selftest never opens a real browser tab or touches the clipboard.
 const hooks = {
   say: (text) => new Promise((resolve) => require('child_process').execFile('say', [text], () => resolve())),
@@ -107,13 +134,15 @@ function createCatWindow() {
     hasShadow: false,
     fullscreenable: false,
     focusable: false,
+    ...HIDDEN_WINDOW,
     // The selftest may run while the screen is locked; real use keeps Chromium's throttling for hidden windows.
     webPreferences: { preload: path.join(__dirname, 'renderer', 'preload.js'), backgroundThrottling: !SELFTEST },
   });
   catWin.setAlwaysOnTop(true, 'screen-saver');
   catWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   // Transparent pixels pass clicks through; the renderer turns this off while the cursor is over the cat.
-  catWin.setIgnoreMouseEvents(true, { forward: true });
+  setCatIgnore(true);
+  if (HIDDEN) catWin.showInactive();
   catWin.loadFile(path.join(__dirname, 'renderer', 'cat.html'), { query: { demo: DEMO ? '1' : '0' } });
   catWin.webContents.once('did-finish-load', () => { if (settings.focus) catWin.webContents.send('focus', { on: true }); });
   // settings.position is "home": only a user drag changes it (programmatic moves also fire 'moved').
@@ -133,8 +162,10 @@ function createBubbleWindow() {
     skipTaskbar: true,
     hasShadow: false,
     fullscreenable: false,
-    webPreferences: { preload: path.join(__dirname, 'renderer', 'preload.js') },
+    ...HIDDEN_WINDOW,
+    webPreferences: { preload: path.join(__dirname, 'renderer', 'preload.js'), backgroundThrottling: !SELFTEST },
   });
+  if (HIDDEN) bubbleWin.setIgnoreMouseEvents(true);
   bubbleWin.setAlwaysOnTop(true, 'screen-saver');
   bubbleWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   bubbleWin.loadFile(path.join(__dirname, 'renderer', 'bubble.html'));
@@ -181,9 +212,9 @@ function showBubble({ anchor = null, focus = true, pill = false } = {}) {
   placeBubble(bubblePill ? undefined : Math.max(bubbleWin.getBounds().height, 120));
   bubbleWin.setFocusable(focus);
   if (focus) {
-    bubbleWin.show();
-    bubbleWin.focus();
+    focusWindow(bubbleWin);
   } else {
+    if (hiddenFocus === bubbleWin) hiddenFocus = null;
     bubbleWin.showInactive();
   }
   bubbleWin.webContents.send('bubble-shown', { context: companion.context(), focus, pill: bubblePill });
@@ -261,7 +292,7 @@ function onNudgeClick() {
 // ⌥Space: with text selected in another app, that selection; otherwise a typed question (DESIGN.md §3.3).
 async function onAskHotkey() {
   if (bubbleWin.isVisible()) return hideBubble();
-  const cursor = screen.getCursorScreenPoint();
+  const cursor = cursorPoint();
   const anchor = { x: cursor.x, y: cursor.y, w: 1, h: 1 };
   try {
     const selection = await capture.captureSelection(clipboard);
@@ -354,7 +385,7 @@ let home = null; // where the user put the cat; tricks and hops walk back here
 function startCursorFeed() {
   setInterval(() => {
     if (!catWin || catWin.isDestroyed()) return;
-    const cursor = screen.getCursorScreenPoint();
+    const cursor = cursorPoint();
     if (lastCursor && cursor.x === lastCursor.x && cursor.y === lastCursor.y) return;
     lastCursor = cursor;
     const win = catWin.getBounds();
@@ -364,7 +395,7 @@ function startCursorFeed() {
     const inBody = cursor.x > win.x + win.width * 0.42 && cursor.x < win.x + win.width * 0.58 && cursor.y > win.y + win.height * 0.62 && cursor.y < win.y + win.height * 0.95;
     if (inBody !== catBodyOpen) {
       catBodyOpen = inBody;
-      if (inBody) catWin.setIgnoreMouseEvents(false);
+      if (inBody) setCatIgnore(false);
       else catWin.webContents.send('cursor-left-body');
     }
   }, 50);
@@ -435,14 +466,19 @@ function settingsSnapshot() {
 }
 
 function openSettings() {
-  if (settingsWin && !settingsWin.isDestroyed()) return settingsWin.focus();
+  if (settingsWin && !settingsWin.isDestroyed()) return focusWindow(settingsWin);
   settingsWin = new BrowserWindow({
     width: 520,
     height: 640,
     title: 'Loon Settings',
     backgroundColor: '#fbfaf5',
-    webPreferences: { preload: path.join(__dirname, 'renderer', 'preload.js') },
+    ...HIDDEN_WINDOW,
+    webPreferences: { preload: path.join(__dirname, 'renderer', 'preload.js'), backgroundThrottling: !SELFTEST },
   });
+  if (HIDDEN) {
+    settingsWin.setIgnoreMouseEvents(true);
+    settingsWin.showInactive();
+  }
   settingsWin.loadFile(path.join(__dirname, 'renderer', 'settings.html'));
   settingsWin.webContents.on('will-navigate', (e) => e.preventDefault());
   settingsWin.on('closed', () => { settingsWin = null; });
@@ -481,12 +517,12 @@ function showCatMenu() {
 
 function registerIpc() {
   ipcMain.handle('cat-svg', () => fs.readFileSync(path.join(__dirname, 'renderer', 'loon.svg'), 'utf8'));
-  ipcMain.on('set-ignore-mouse', (_e, ignore) => catWin.setIgnoreMouseEvents(ignore, { forward: true }));
+  ipcMain.on('set-ignore-mouse', (_e, ignore) => setCatIgnore(ignore));
   ipcMain.on('cat-menu', showCatMenu);
   ipcMain.on('open-bubble', openAskBubble);
   ipcMain.on('close-bubble', hideBubble);
   ipcMain.handle('animate-window', (_e, opts) => animateWindow(opts));
-  ipcMain.handle('window-info', () => ({ win: catWin.getBounds(), workArea: workAreaFor(catWin.getBounds()), cursor: screen.getCursorScreenPoint() }));
+  ipcMain.handle('window-info', () => ({ win: catWin.getBounds(), workArea: workAreaFor(catWin.getBounds()), cursor: cursorPoint() }));
 
   // Drag: main follows the global cursor so fast drags never lose the window.
   ipcMain.on('drag-start', (_e, { offsetX, offsetY }) => {
@@ -494,7 +530,7 @@ function registerIpc() {
     clearInterval(dragTimer);
     const size = catWin.getBounds();
     dragTimer = setInterval(() => {
-      const c = screen.getCursorScreenPoint();
+      const c = cursorPoint();
       const pos = clampToWorkArea(c.x - offsetX, c.y - offsetY, size);
       catWin.setPosition(pos.x, pos.y);
     }, 16);
@@ -542,7 +578,7 @@ function registerIpc() {
   });
   ipcMain.on('bubble-focus', () => {
     bubbleWin.setFocusable(true);
-    bubbleWin.focus();
+    focusWindow(bubbleWin);
   });
   ipcMain.on('confirm-action', (_e, { id, command }) => companion.confirm(command, toBubble, id));
   ipcMain.handle('save-note', (_e, entry) => companion.saveNote(entry));
@@ -663,7 +699,7 @@ app.whenReady().then(() => {
     ui: {
       showBubble,
       hideBubble,
-      bubbleFocused: () => bubbleWin.isFocused(),
+      bubbleFocused: () => isFocused(bubbleWin),
       cat: (channel, payload) => catWin.webContents.send(channel, payload),
       runInBubble: (task) => bubbleWin.webContents.send('bubble-run', { task }),
     },
@@ -739,9 +775,22 @@ app.whenReady().then(() => {
     }, 1800));
   }
   scheduleScreenshot();
-  if (process.argv.includes('--selftest')) {
+  if (SELFTEST) {
+    const startPosition = settings.position;
+    const selftestHooks = {
+      isFocused,
+      setCursor: (point) => { virtualCursor = point; },
+      // Puts the cat back where the run started, including the home it walks back to and the saved position.
+      resetCatPosition: (bounds) => {
+        stopWindowAnimation();
+        catWin.setBounds(bounds);
+        home = { x: bounds.x, y: bounds.y };
+        settings.position = startPosition;
+        saveSettings();
+      },
+    };
     catWin.webContents.once('did-finish-load', async () => {
-      const ok = await require('./test/selftest').run({ catWin, bubbleWin, bridge, companion, resolver, hooks, settings, openScreenshot, openDroppedFile, actions, notes, memory, setToggle, voice, voiceEngine, hub }).catch((err) => { console.error(err); return false; });
+      const ok = await require('./test/selftest').run({ catWin, bubbleWin, bridge, companion, resolver, hooks, settings, openScreenshot, openDroppedFile, actions, notes, memory, setToggle, voice, voiceEngine, hub, ...selftestHooks }).catch((err) => { console.error(err); return false; });
       app.exit(ok ? 0 : 1);
     });
   }

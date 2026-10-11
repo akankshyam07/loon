@@ -360,6 +360,22 @@
     }
     setIgnore(!overCat(e.clientX, e.clientY));
   });
+  // Capture can end without a pointerup (app switch, system gesture, a cancelled pointer). Without this the press
+  // stays open: main keeps gluing the window to the cursor and tricks, naps and clicks are refused until the next click.
+  P.cat.addEventListener('lostpointercapture', async () => {
+    clearTimeout(petTimer);
+    if (!press) return; // the normal case: pointerup already handled it
+    press = null;
+    if (dragging) {
+      dragging = false;
+      window.loon.dragEnd();
+      await squash();
+      setMood('neutral');
+    } else if (state === 'petted') {
+      endPet();
+    }
+    setIgnore(true);
+  });
 
   async function squash() {
     await Promise.all([tween(M, 'catSy', 0.87, 80), tween(M, 'catSx', 1.09, 80)]);

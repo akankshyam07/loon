@@ -1,0 +1,96 @@
+# Unit tests on every push and PR, and the end-to-end selftest (real Electron app, real local model, real
+# extension in Chrome for Testing) on a macOS Apple Silicon runner, so it never has to run on a contributor's laptop.
+# No secrets: the model comes from Hugging Face's public Qwen3 repo and everything else from npm.
+name: selftest
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: selftest-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Electron 44's npm package needs Node 22.12+.
+  NODE_VERSION: '22'
+  # What brain/ai.js picks on a runner's 7 GB of RAM (MODEL_CHOICES[0]).
+  MODEL_FILE: Qwen3-1.7B-Q8_0.gguf
+  MODEL_URL: https://huggingface.co/Qwen/Qwen3-1.7B-GGUF/resolve/main/Qwen3-1.7B-Q8_0.gguf
+
+jobs:
+  unit:
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  e2e:
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      CI: 'true'
+      LOON_SHOTS: ${{ github.workspace }}/selftest-shots
+      # Hosted macOS VMs have no usable GPU; run llama.cpp on the CPU.
+      NODE_LLAMA_CPP_GPU: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: Make sure Electron's binary is installed
+        run: test -x node_modules/electron/dist/Electron.app/Contents/MacOS/Electron || node node_modules/electron/install.js
+      - name: Install Chrome for Testing (the browser half of the selftest)
+        run: npx playwright-core install chromium
+
+      - name: Find Loon's data folder
+        run: echo "LOON_DATA=$HOME/Library/Application Support/loon" >> "$GITHUB_ENV"
+      - name: Cache the model and offline language data
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Application Support/loon/models
+            ~/Library/Application Support/loon/translation-models
+            ~/Library/Application Support/loon/ocr
+          key: loon-models-${{ env.MODEL_URL }}
+      - name: Download the model (cache miss only)
+        run: |
+          mkdir -p "$LOON_DATA/models"
+          if [ ! -s "$LOON_DATA/models/$MODEL_FILE" ]; then
+            curl -fL --retry 3 --retry-delay 5 -o "$LOON_DATA/models/$MODEL_FILE.part" "$MODEL_URL"
+            mv "$LOON_DATA/models/$MODEL_FILE.part" "$LOON_DATA/models/$MODEL_FILE"
+          fi
+          ls -lh "$LOON_DATA/models"
+      - name: Pin the model so a bigger runner doesn't look for a different one
+        run: |
+          printf '{ "modelPath": "%s" }\n' "$LOON_DATA/models/$MODEL_FILE" > "$LOON_DATA/settings.json"
+          cat "$LOON_DATA/settings.json"
+
+      - run: npm test
+      - name: End-to-end selftest
+        run: |
+          set -o pipefail
+          mkdir -p "$LOON_SHOTS"
+          npm run selftest 2>&1 | tee selftest.log
+      - name: Upload the selftest log and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: selftest-log
+          path: |
+            selftest.log
+            selftest-shots/
+          if-no-files-found: ignore

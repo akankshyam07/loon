@@ -122,7 +122,7 @@ async function run(ctx, check) {
     const shown = await waitFor(() => bubbleWin.isVisible(), 4000);
     await wait(300);
     const wordChips = await chips();
-    check('selecting a word shows chips without stealing focus', shown && wordChips.includes('define') && !bubbleWin.isFocused(), wordChips.join(','));
+    check('selecting a word shows chips without stealing focus', shown && wordChips.includes('define') && !ctx.isFocused(bubbleWin), wordChips.join(','));
     check('the cat perks up at the selection', ['curious', 'neutral'].includes(await cat('window.__loon.mood')));
 
     const defined = await clickChip('define', 10000);
