@@ -1,6 +1,8 @@
 // Optional "Cloud via your plan" (DESIGN.md §3.17): answers through the official Claude Code or Codex CLI that the user
 // installed and logged into themselves. Loon only spawns the binary (no shell) in an empty temp folder with every tool
 // turned off; it never reads, copies or stores the CLIs' logins or config.
+// Subscription only, never pay-per-use API billing: before each use Loon asks the CLI how it is signed in and refuses
+// anything but a Claude or ChatGPT plan login, and API-key environment variables are removed from the child process.
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -21,6 +23,17 @@ const CLIS = {
       '--tools', '', '--strict-mcp-config', '--setting-sources', 'project', '--disable-slash-commands', '--permission-mode', 'dontAsk', '--no-session-persistence',
       '--system-prompt', system],
     input: (system, prompt) => prompt,
+    authArgs: ['auth', 'status'],
+    // claude.ai = signed in with a Claude subscription; anything else (Console/API key, Bedrock, Vertex) bills per use.
+    onPlan: (out) => {
+      try {
+        const s = JSON.parse(out);
+        return s.loggedIn === true && s.authMethod === 'claude.ai' && s.apiProvider === 'firstParty';
+      } catch {
+        return false;
+      }
+    },
+    billingHint: 'Claude Code is signed in with API billing, and Loon only uses your Claude subscription. Run `claude`, type /login and pick "Claude account with subscription".',
   },
   codex: {
     label: 'ChatGPT (your plan, via Codex)',
@@ -32,8 +45,15 @@ const CLIS = {
       '--ephemeral', '-c', 'approval_policy="never"', '-c', 'features.shell_tool=false', '-c', 'features.unified_exec=false',
       '-c', 'web_search="disabled"', '-C', cwd, '-'],
     input: (system, prompt) => `${system}\n\n${prompt}`,
+    authArgs: ['login', 'status'],
+    onPlan: (out) => /logged in using chatgpt/i.test(out) && !/api key/i.test(out),
+    billingHint: 'Codex is signed in with an API key, and Loon only uses your ChatGPT plan. Run `codex logout`, then `codex login` and choose "Sign in with ChatGPT".',
   },
 };
+
+// Never handed to the CLIs: any of these would switch them to pay-per-use billing or another provider.
+const BILLING_ENV = ['ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_BASE_URL', 'CLAUDE_CODE_USE_BEDROCK', 'CLAUDE_CODE_USE_VERTEX',
+  'CLAUDE_CODE_USE_FOUNDRY', 'OPENAI_API_KEY', 'OPENAI_BASE_URL', 'CODEX_API_KEY', 'AZURE_OPENAI_API_KEY'];
 
 const LOGIN_ERROR = /not logged in|\/login|codex login|log ?in again|unauthori[sz]ed|authenticat|invalid api key|\b401\b|\b403\b|credential/i;
 
@@ -57,7 +77,27 @@ function findBinary(name) {
 
 // Child env: the user's own environment plus the wider PATH (an npm-installed codex needs `node` on it).
 function childEnv() {
-  return { ...process.env, PATH: searchPath().join(path.delimiter) };
+  const env = { ...process.env, PATH: searchPath().join(path.delimiter) };
+  for (const key of BILLING_ENV) delete env[key];
+  return env;
+}
+
+// Confirms the CLI is signed in with the user's plan. A pass is remembered for a few minutes; a failure never is.
+const PLAN_CHECK_MS = 5 * 60 * 1000;
+const planChecked = new Map();
+function checkPlan(which, bin) {
+  const cli = CLIS[which];
+  if (Date.now() - (planChecked.get(which) || 0) < PLAN_CHECK_MS) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    execFile(bin, cli.authArgs, { timeout: 15000, env: childEnv() }, (err, stdout, stderr) => {
+      const out = `${stdout || ''}\n${stderr || ''}`;
+      if (cli.onPlan(stdout || '') || (which === 'codex' && cli.onPlan(out))) {
+        planChecked.set(which, Date.now());
+        return resolve();
+      }
+      reject(new Error(/not logged in|logged out|loggedIn": false/i.test(out) ? cli.loginHint : cli.billingHint));
+    });
+  });
 }
 
 function version(bin) {
@@ -115,12 +155,18 @@ function friendlyError(which, message) {
   return new Error(`${which === 'claude' ? 'Claude Code' : 'Codex'} said: ${message.trim().slice(0, 300)}`);
 }
 
-// Streams the answer through onText; resolves with the full text.
-function ask(which, { system = '', prompt, onText = () => {}, signal, timeoutMs = 120000 } = {}) {
+// Streams the answer through onText; resolves with the full text. Refuses unless the CLI is on the user's plan.
+async function ask(which, options = {}) {
   const cli = CLIS[which];
-  if (!cli) return Promise.reject(new Error(`Unknown CLI: ${which}`));
+  if (!cli) throw new Error(`Unknown CLI: ${which}`);
   const bin = findBinary(which);
-  if (!bin) return Promise.reject(new Error(cli.missing));
+  if (!bin) throw new Error(cli.missing);
+  await checkPlan(which, bin);
+  return run(which, bin, options);
+}
+
+function run(which, bin, { system = '', prompt, onText = () => {}, signal, timeoutMs = 120000 } = {}) {
+  const cli = CLIS[which];
   if (signal?.aborted) return Promise.reject(new Error('Cancelled'));
 
   // A fresh empty folder each time: nothing for the CLI to read, and no project config or hooks to pick up.
@@ -174,4 +220,4 @@ function ask(which, { system = '', prompt, onText = () => {}, signal, timeoutMs 
   });
 }
 
-module.exports = { detect, ask, label, findBinary, CLIS };
+module.exports = { detect, ask, label, findBinary, CLIS, BILLING_ENV, resetPlanCheck: () => planChecked.clear() };

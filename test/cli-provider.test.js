@@ -16,6 +16,16 @@ fs.mkdirSync(bin);
 const FAKE = (which) => `#!${process.execPath}
 const fs = require('fs');
 if (process.argv[2] === '--version') { console.log('${which} 9.9.9-fake'); process.exit(0); }
+const auth = process.env.FAKE_AUTH || 'plan';
+if (process.argv[2] === 'auth' && process.argv[3] === 'status') {
+  console.log(JSON.stringify({ loggedIn: auth !== 'none', authMethod: auth === 'plan' ? 'claude.ai' : 'console', apiProvider: 'firstParty' }));
+  process.exit(0);
+}
+if (process.argv[2] === 'login' && process.argv[3] === 'status') {
+  console.error(auth === 'plan' ? 'Logged in using ChatGPT' : auth === 'api' ? 'Logged in using an API key - sk-…' : 'Not logged in');
+  process.exit(auth === 'none' ? 1 : 0);
+}
+if (process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY) { console.error('API key leaked into the CLI'); process.exit(3); }
 let input = '';
 process.stdin.on('data', (c) => { input += c; });
 process.stdin.on('end', () => {
@@ -140,4 +150,28 @@ test('resolver falls back to the CLI when the local model is unavailable', async
   assert.deepStrictEqual([result.tier, result.text], ['cloud', 'Codex answer.']);
   settings.privacy = true;
   await assert.rejects(resolver.ask('hello again', { onText: () => {} }), /No model available/);
+});
+
+test('never API billing: refuses CLIs signed in with an API key, and strips API keys from their environment', async () => {
+  process.env.FAKE_MODE = 'ok';
+  for (const which of ['claude', 'codex']) {
+    cli.resetPlanCheck();
+    process.env.FAKE_AUTH = 'api';
+    const before = calls().length;
+    await assert.rejects(cli.ask(which, { prompt: 'hi' }), /only uses your (Claude subscription|ChatGPT plan)/);
+    assert.strictEqual(calls().length, before, 'no prompt is sent when the login bills per use');
+    process.env.FAKE_AUTH = 'none';
+    await assert.rejects(cli.ask(which, { prompt: 'hi' }), /log/i);
+  }
+  cli.resetPlanCheck();
+  process.env.FAKE_AUTH = 'plan';
+  process.env.ANTHROPIC_API_KEY = 'sk-ant-fake';
+  process.env.OPENAI_API_KEY = 'sk-fake';
+  try {
+    assert.match(await cli.ask('claude', { prompt: 'hi' }), /Deep answer/);
+    assert.match(await cli.ask('codex', { prompt: 'hi' }), /Codex answer/);
+  } finally {
+    delete process.env.ANTHROPIC_API_KEY;
+    delete process.env.OPENAI_API_KEY;
+  }
 });
