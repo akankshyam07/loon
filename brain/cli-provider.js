@@ -18,7 +18,7 @@ const CLIS = {
     // Prompt goes in on stdin. --tools "" removes every built-in tool, --strict-mcp-config with no --mcp-config loads
     // no MCP servers, dontAsk denies anything that would need permission, and --system-prompt replaces the coding prompt.
     args: (system) => ['-p', '--output-format', 'stream-json', '--verbose', '--include-partial-messages',
-      '--tools', '', '--strict-mcp-config', '--permission-mode', 'dontAsk', '--no-session-persistence',
+      '--tools', '', '--strict-mcp-config', '--setting-sources', 'project', '--disable-slash-commands', '--permission-mode', 'dontAsk', '--no-session-persistence',
       '--system-prompt', system],
     input: (system, prompt) => prompt,
   },

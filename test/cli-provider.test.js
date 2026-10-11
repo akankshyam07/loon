@@ -64,6 +64,7 @@ test('claude runs with tools off, in an empty temp folder, no shell, and streams
   assert.strictEqual(call.args[0], '-p');
   assert.strictEqual(call.args[call.args.indexOf('--tools') + 1], '');
   assert.ok(call.args.includes('--strict-mcp-config'));
+  assert.ok(call.args.includes('--setting-sources') && call.args[call.args.indexOf('--setting-sources') + 1] === 'project'); // no user hooks or plugins leak in
   assert.strictEqual(call.args[call.args.indexOf('--permission-mode') + 1], 'dontAsk');
   assert.strictEqual(call.args[call.args.indexOf('--system-prompt') + 1], system); // arrived literally: no shell expansion
   assert.strictEqual(call.input, 'Explain "this" & that');
