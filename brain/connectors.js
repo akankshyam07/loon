@@ -87,7 +87,7 @@ function parseSpec(spec) {
   return ops;
 }
 
-// Which connector a request names: "career: …", "ask career intel to …", "… in career intelligence".
+// Which connector a request names: "career: …", "ask career board to …", "… in career board".
 function findConnector(text, connectors) {
   const lower = text.toLowerCase();
   let best = null;

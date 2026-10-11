@@ -7,8 +7,8 @@ test('OpenAPI → tools: discovery on localhost, keyword routing, fills, reads v
   const { server, port } = await app.start();
   try {
     const found = await c.discover([port, 1]);
-    assert.deepStrictEqual(found.map((f) => [f.name, f.operations]), [['Career Intel', 6]]);
-    const connector = { name: 'Career Intel', aliases: ['career'], baseUrl: `http://127.0.0.1:${port}` };
+    assert.deepStrictEqual(found.map((f) => [f.name, f.operations]), [['Career Board', 6]]);
+    const connector = { name: 'Career Board', aliases: ['career'], baseUrl: `http://127.0.0.1:${port}` };
     const ops = c.parseSpec((await c.fetchSpec(connector.baseUrl)).spec);
     const save = ops.find((o) => o.id === 'save_job_jobs_post');
     assert.deepStrictEqual(save.params.map((p) => [p.name, p.in, p.required]), [['url', 'body', true], ['title', 'body', true], ['company', 'body', false], ['notes', 'body', false]]);

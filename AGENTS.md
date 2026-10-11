@@ -68,7 +68,6 @@ All tests should pass (35 at the time of writing). They don't need the app, a mo
 |---|---|
 | `CLAUDE.md` | the product spec: **what** Loon is and how it should feel |
 | `DESIGN.md` | **how** it's built: decisions (§0), architecture (§1), the resolver ladder (§2.10), milestones (§8) |
-| `TODO-M1.md` … `TODO-M6.md` | what each milestone shipped, plus known leftovers |
 | `main.js`, `main/` | Electron main process: windows, the extension bridge, voice, actions, the hub |
 | `brain/` | plain-Node logic: intent routing, shopping/food/dev helpers, memory, notes, the local model |
 | `renderer/` | the cat (`cat.*`, `loon.svg`), the speech bubble (`bubble.*`) and Settings |

@@ -61,7 +61,7 @@ test('leetcode: companies per problem from local CSVs, recent ones first', () =>
 
 test('hub commands: catch-up and Shortcuts, with fuzzy Shortcut names', async () => {
   assert.deepStrictEqual(parseCommand('Where did I leave off?'), { action: 'briefing', project: null });
-  assert.deepStrictEqual(parseCommand('what was I working on in HackMIT'), { action: 'briefing', project: 'HackMIT' });
+  assert.deepStrictEqual(parseCommand('what was I working on in Moonshot'), { action: 'briefing', project: 'Moonshot' });
   assert.deepStrictEqual(parseCommand('run the new note shortcut'), { action: 'shortcut', name: 'new note' });
   const ran = [];
   const actions = new Actions({

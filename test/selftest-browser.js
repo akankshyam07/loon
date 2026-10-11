@@ -295,7 +295,7 @@ async function run(ctx, check) {
 
     // ---- Send this page to a connected local app ----
     const fakeApp = await require('./fixtures/openapi-app').start();
-    const connector = ctx.hub.add({ name: 'Career Intel', baseUrl: `http://127.0.0.1:${fakeApp.port}` });
+    const connector = ctx.hub.add({ name: 'Career Board', baseUrl: `http://127.0.0.1:${fakeApp.port}` });
     try {
       await ctx.hub.refresh();
       await page.goto(`${base}/article.html`);
@@ -308,7 +308,7 @@ async function run(ctx, check) {
       const prefilled = await bubble(`[...document.querySelectorAll('.confirm input')].map((i) => i.value).join(' | ')`);
       await bubble(`document.querySelector('.confirm .primary').click()`);
       const sent = await waitFor(() => fakeApp.jobs.some((j) => /article\.html/.test(j.url || '')), 5000);
-      check('"Send to Career Intel" offers the page, prefilled, and saves it after ✓', offered && /article\.html/.test(prefilled) && sent, prefilled.slice(0, 80));
+      check('"Send to Career Board" offers the page, prefilled, and saves it after ✓', offered && /article\.html/.test(prefilled) && sent, prefilled.slice(0, 80));
       await closeBubble();
     } finally {
       ctx.hub.remove(connector.id);

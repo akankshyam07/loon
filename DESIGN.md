@@ -7,9 +7,9 @@ If you come back after a break, read §0 and §8 first.
 
 ## Status (2026-10-04)
 
-All milestones (M1–M5 in §8, plus M6: personal agent hub and polish, in TODO-M6.md) are built and verified by `npm test` and `npm run selftest` (the real app, the real
-model, the real extension in Chrome for Testing, and a packaged-app run). Per-milestone details and leftovers:
-TODO-M1.md … TODO-M5.md. Deliberate deviations from this design:
+All milestones (M1–M5 in §8, plus M6: personal agent hub and polish) are built and verified by `npm test` and `npm run selftest` (the real app, the real
+model, the real extension in Chrome for Testing, and a packaged-app run). Open items are in the Roadmap section of README.md.
+Deliberate deviations from this design:
 
 - **Voice:** ⌥⇧V press-to-talk with automatic end of turn instead of hold-to-talk. Hold-to-talk needs uiohook plus
   Accessibility and Input Monitoring permissions.
