@@ -11,6 +11,7 @@ const capture = require('./main/capture');
 const { Actions } = require('./main/actions');
 const { Notes } = require('./brain/notes');
 const { Memory } = require('./brain/memory');
+const { Embedder } = require('./brain/embed');
 const { VoiceEngine, createVoiceController } = require('./main/voice');
 const { ConnectorHub } = require('./main/hub');
 
@@ -40,6 +41,7 @@ let translator;
 let actions;
 let notes;
 let memory;
+let embedder;
 let settingsWin = null;
 let voice;
 let hub;
@@ -427,6 +429,7 @@ function settingsSnapshot() {
     connected: bridge.clients.size > 0,
     counts: resolver.counts,
     memory: memory.all(),
+    embedder: embedder.status(),
     audit: actions.recent(20),
   };
 }
@@ -565,6 +568,15 @@ function registerIpc() {
   ipcMain.handle('connectors-remove', (_e, id) => { hub.remove(id); return settingsSnapshot(); });
   ipcMain.handle('memory-update', (_e, { id, text }) => { memory.update(id, text); return settingsSnapshot(); });
   ipcMain.handle('memory-delete', (_e, id) => { memory.remove(id); return settingsSnapshot(); });
+  // Optional embedding model for meaning-based memory and cache matches; downloaded only when the user asks.
+  ipcMain.handle('download-embedder', async () => {
+    try {
+      await embedder.downloadModel((progress) => settingsWin?.webContents.send('embedder-progress', progress));
+    } catch (err) {
+      console.warn('[embed] download failed:', err.message);
+    }
+    return settingsSnapshot();
+  });
   ipcMain.handle('memory-clear', () => { memory.clear(); memory.clearHistory(); resolver.cache.clear(); return settingsSnapshot(); });
   ipcMain.on('open-notes-folder', () => { fs.mkdirSync(notes.dir, { recursive: true }); shell.openPath(notes.dir); });
   ipcMain.on('copy-pairing-code', () => clipboard.writeText(settings.pairingCode));
@@ -620,7 +632,8 @@ app.whenReady().then(() => {
   brain = new Brain({ modelsDir: path.join(app.getPath('userData'), 'models'), settings });
   translator = new Translator({ cacheDir: path.join(app.getPath('userData'), 'translation-models') });
   notes = new Notes(settings.notesDir || path.join(app.getPath('documents'), 'Loon'));
-  memory = new Memory(path.join(app.getPath('userData'), 'memory.db'), { legacyJson: path.join(app.getPath('userData'), 'memory.json') });
+  embedder = new Embedder({ modelsDir: path.join(app.getPath('userData'), 'models'), brain });
+  memory = new Memory(path.join(app.getPath('userData'), 'memory.db'), { legacyJson: path.join(app.getPath('userData'), 'memory.json'), embedder });
   // Only folders the user ticked in Settings → Projects are ever read.
   const allowedProjects = () => (settings.projects || []).filter((p) => fs.existsSync(p));
   hub = new ConnectorHub({ settings, save: saveSettings });
@@ -631,6 +644,7 @@ app.whenReady().then(() => {
     skills: new Skills({ dataDir: app.getPath('userData'), brain, projects: allowedProjects }),
     memory,
     notes,
+    embedder,
     settings,
     cacheFile: path.join(app.getPath('userData'), 'cache.json'),
     countsFile: path.join(app.getPath('userData'), 'counts.json'),

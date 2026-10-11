@@ -53,6 +53,8 @@ contextBridge.exposeInMainWorld('loon', {
   updateMemory: (id, text) => ipcRenderer.invoke('memory-update', { id, text }),
   deleteMemory: (id) => ipcRenderer.invoke('memory-delete', id),
   clearMemory: () => ipcRenderer.invoke('memory-clear'),
+  downloadEmbedder: () => ipcRenderer.invoke('download-embedder'),
+  onEmbedderProgress: on('embedder-progress'),
   openNotesFolder: () => ipcRenderer.send('open-notes-folder'),
   copyPairingCode: () => ipcRenderer.send('copy-pairing-code'),
   onSettingsChanged: on('settings-changed'),

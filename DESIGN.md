@@ -227,9 +227,9 @@ Each task in `modes.js` lists which tiers can answer it, in order. `resolve()` t
 
 | Tier | What | Cost | Examples |
 |---|---|---|---|
-| **T0 cache** | exact-match cache: `sha256(task, mode, contentHash, model, promptVersion)` → response. Stored on disk with LRU eviction and a 7-day TTL | free, instant | same explanation of the same selection, same error fingerprint |
+| **T0 cache** | exact-match cache: `sha256(task, mode, contentHash, model, promptVersion)` → response. Stored on disk with LRU eviction and a 7-day TTL. With the optional embedding model, typed questions also match by meaning (see rules) | free, instant | same explanation of the same selection, same error fingerprint, "explain JS closures" after "what is a closure in JavaScript?" |
 | **T1 code/data** | deterministic code, bundled open data (WordNet, error table), and npm libraries | free, instant, exact | unit prices, DTO generation, dates, redaction, definitions |
-| **T2 open on-device models** | small task-specific open models: Tesseract OCR, Bergamot translation, Harper grammar, MiniLM embeddings, sherpa-onnx speech | free, fast, private | OCR, translation, grammar, search, voice |
+| **T2 open on-device models** | small task-specific open models: Tesseract OCR, Bergamot translation, Harper grammar, BGE-small embeddings (optional), sherpa-onnx speech | free, fast, private | OCR, translation, grammar, search, voice |
 | **T3 small local LLM** | llama.cpp through `node-llama-cpp`, an always-loaded ~4B Apache-2.0 model (e.g. Qwen 3.5 4B) | free, ~1–3s | explaining, summarizing, rewriting, extraction, classification |
 | **T3+ larger local LLM** | the same runtime, loading an ~8B model on demand for "Go deeper", code, and reasoning | free, slower, loaded when needed | explaining code, harder questions, research synthesis |
 | *T4 optional cloud* | *only if the user added their own API key* | *their bill* | *"Go deeper", when enabled* |
@@ -253,7 +253,13 @@ Each one slots into T2/T3 when enabled and available.
 
   Models are GGUF Q4 files, downloaded on first run with their size shown first.
 - **The local LLM is the default brain.** In this design, "LLM calls" are local and free, and minimizing them is about **speed, battery, and RAM**, not money. The ladder still applies: a template or cache answer is instant, while a 4B model takes a second or more.
-- **No semantic cache.** One person rarely asks the same thing in different words, and papers report 3–7% of semantic-cache hits are wrong answers. The exact-match cache has no false hits.
+- **A conservative semantic cache, only with the optional embedding model.** Papers report 3–7% wrong hits for semantic caches, and measurement agrees: BGE small scores "5 miles to km" vs "5 km to miles" 0.99 and "closure in JavaScript / in Python" 0.94. So the exact match always runs first, and a meaning match (`brain/cache.js`) needs all of:
+  - a **typed question**, on the thread's first turn, not an error-fingerprint task;
+  - the **same group**: task, screen-context text, recalled memory, "Go deeper", model and prompt version are hashed together, so an answer is never reused across different selected text or page content;
+  - **cosine ≥ 0.92** (paraphrases measured 0.92–0.97, different questions on the same topic 0.70–0.80);
+  - **no swapped words**: one question may only add or drop words relative to the other. A substituted word (JavaScript → Python, bad → good, 5 → 6), a negation on one side, or shared words reordered around a direction word ("to", "from", "than"…) means a different question.
+
+  Hits are labeled honestly: tier `cache`, "remembered a similar question". Vectors are stored as base64 float32 next to the entry. Without the model, the cache is exact-match only, as before.
 - **Capabilities are checked at startup,** e.g. Chrome's built-in AI needs Chrome ≥138, 22 GB free disk, and 16 GB RAM or a GPU with >4 GB VRAM. Unavailable tiers are skipped. The **"Local only"** setting never uses T4, so tasks that need it are shown as unavailable.
 - **The cache respects privacy.** It lives in `userData`, is cleared along with memory, and Privacy mode neither reads nor writes it.
 - **Savings are visible and measurable.** Settings shows a count per tier, e.g. "This week: 212 instant (no model) · 64 local 4B · 9 local 8B". This tells us where to add cheaper tiers next, and it's a good showcase stat.
@@ -514,8 +520,20 @@ site or app they belong to, and nothing is saved silently.
   the store in code. The answer's tier icon tooltip lists the memories that were used.
 - **UI:** a Memory tab to list, edit, delete, and "forget everything" (facts, history and cached answers). Privacy
   mode skips memory completely.
-- **Later:** optional embeddings (a small GGUF embedding model through node-llama-cpp) fused with BM25 for
-  "same meaning, different words" matches; a "Remember this?" chip when a typed message states a preference.
+- **Optional embeddings (hybrid recall):** Settings → Models offers "Smarter memory & cache" (BGE small en v1.5,
+  MIT, the official ggml-org Q8_0 GGUF, ~37 MB, 384 dimensions, ~4 ms per sentence on an M1 Pro), loaded lazily
+  through node-llama-cpp (`brain/embed.js`). Nothing downloads on its own. With it:
+  - facts get a `vec` BLOB (float32). Older databases get the column through `ALTER TABLE`; facts are embedded on
+    add and edit, and missing vectors are backfilled lazily, up to 32 per request;
+  - before recall, the request is embedded once (shared with the answer cache through a small LRU). Facts with
+    cosine ≥ 0.58 form a second ranked list, with the same scope and recency boosts. Related request/fact pairs
+    measured 0.60–0.75 and unrelated ones 0.42–0.53. The two lists are fused with Reciprocal Rank Fusion (k = 60),
+    so "I don't eat meat" is recalled for "what should I eat for dinner?" without any shared word. Profile,
+    categories and the 8-fact / 1,200-character budget are unchanged;
+  - without the model, or in Privacy mode, recall is exactly the BM25 path above.
+  The vector pass scans every fact: ~35 ms worst case at 5,000 facts, well under a millisecond at real sizes.
+  History search stays BM25-only for now.
+- **Later:** a "Remember this?" chip when a typed message states a preference.
 
 ### 3.13 Actions (Jarvis)
 
@@ -905,7 +923,7 @@ Held back until there's evidence it's needed:
 | Decision | Source |
 |---|---|
 | Static per-task routing; the user chooses escalation | FrugalGPT (arXiv 2305.05176): up to 98% cost cut; RouteLLM (2406.18665): >85% on MT Bench at 95% quality; Hybrid LLM (ICLR 2024): 40% fewer large-model calls; router fragility on new inputs (2504.07113) |
-| Exact cache, no semantic cache | GPT Semantic Cache (2411.05276): 68.8% hit rate but 3–7% wrong hits |
+| Exact cache first; semantic matches only under strict guards | GPT Semantic Cache (2411.05276): 68.8% hit rate but 3–7% wrong hits |
 | Output caps plus a brevity prompt | Concise CoT (2401.05618): 48.7% shorter, negligible accuracy loss (except math) |
 | Stable prompt prefix | Anthropic, OpenAI, and Gemini prompt-caching docs: cached input ≈0.1×, minimum lengths apply |
 | LLM writes a per-domain extractor once | arXiv 2506.21585: 96.5% accuracy, 95.8% fewer LLM calls |
