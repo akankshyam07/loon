@@ -8,6 +8,10 @@ function render(s) {
   const { code = 0, cache = 0, local = 0, cloud = 0 } = s.counts?.tiers || {};
   $('counts').textContent = `${code + cache} answers were instant (no model), ${local} used the model on your Mac${cloud ? `, ${cloud} used your plan` : ''}.`;
   $('notesDir').textContent = s.notesDir;
+  $('embedSize').textContent = `≈${s.embedder.sizeMb}`;
+  $('embedStatus').textContent = s.embedder.ready ? `${s.embedder.name} installed ✓` : 'Not installed. Everything works without it.';
+  $('downloadEmbedder').hidden = s.embedder.ready;
+  $('downloadEmbedder').disabled = Boolean(s.embedder.downloading);
   $('connectors').replaceChildren(...(s.connectorList.length ? s.connectorList : [null]).map((x) => {
     const li = document.createElement('li');
     if (!x) { li.className = 'muted'; li.textContent = 'No apps connected yet.'; return li; }
@@ -77,6 +81,16 @@ $('copyCode').addEventListener('click', () => { window.loon.copyPairingCode(); $
 $('openNotes').addEventListener('click', () => window.loon.openNotesFolder());
 $('clearMemory').addEventListener('click', async () => {
   if (confirm('Forget everything Loon remembers about you? This also clears your history and remembered answers.')) render(await window.loon.clearMemory());
+});
+$('downloadEmbedder').addEventListener('click', async () => {
+  $('downloadEmbedder').disabled = true;
+  $('embedStatus').textContent = 'Downloading…';
+  const s = await window.loon.downloadEmbedder();
+  render(s);
+  if (!s.embedder.ready) $('embedStatus').textContent = 'Download failed. Check your connection and try again.';
+});
+window.loon.onEmbedderProgress(({ downloaded, total }) => {
+  $('embedStatus').textContent = `Downloading… ${Math.round((downloaded / total) * 100)}%`;
 });
 $('discover').addEventListener('click', async () => {
   $('discover').textContent = 'Looking…';

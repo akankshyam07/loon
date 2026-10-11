@@ -3,10 +3,12 @@
 //   the rest are retrieved per request by BM25 over the request text, boosted by site/app scope, recency and use.
 // - episodes: a short local history of what was asked and answered (never on private pages or in Privacy mode),
 //   searchable with "what did I look up about…". Older than HISTORY_DAYS is dropped.
-// Storing and retrieving never calls a model, so memory works even when the model doesn't.
+// Storing and retrieving never calls a chat model, so memory works even when the model doesn't. With the optional
+// embedder (brain/embed.js), facts also carry a vector and recall fuses BM25 with meaning (Reciprocal Rank Fusion).
 const crypto = require('crypto');
 const fs = require('fs');
 const { DatabaseSync } = require('node:sqlite');
+const { cosine, toBytes, fromBytes } = require('./embed');
 
 const CATEGORY_RULES = [
   ['diet', /\b(vegetarian|vegan|pescatarian|allerg|gluten|dairy|lactose|keto|halal|kosher|protein|calorie|diet|eat|nuts?)\b/i],
@@ -32,6 +34,10 @@ const STOPWORDS = new Set('the and for are but not you your with this that what 
 const HISTORY_DAYS = 90;
 const DAY = 24 * 60 * 60 * 1000;
 const BUDGET_CHARS = 1200; // memory never crowds out the actual question
+// BGE small scores related request/fact pairs ~0.6-0.75 and unrelated ones ~0.4-0.5.
+const VECTOR_MIN = 0.58;
+const RRF_K = 60; // the usual Reciprocal Rank Fusion constant
+const BACKFILL = 32; // facts embedded per request until every old fact has a vector
 
 function categorize(text) {
   return CATEGORY_RULES.find(([, re]) => re.test(text))?.[0] || 'preference';
@@ -54,8 +60,10 @@ function scopeOf(packet = {}) {
 
 class Memory {
   // file: path to memory.db. legacyJson: the old memory.json, imported once and renamed.
-  constructor(file, { legacyJson = null, now = () => Date.now() } = {}) {
+  // embedder: optional (brain/embed.js); without it memory is BM25 only.
+  constructor(file, { legacyJson = null, now = () => Date.now(), embedder = null } = {}) {
     this.now = now;
+    this.embedder = embedder;
     this.open(file);
     if (legacyJson) this.importLegacy(legacyJson);
   }
@@ -87,7 +95,26 @@ class Memory {
       CREATE TRIGGER IF NOT EXISTS episodes_ad AFTER DELETE ON episodes BEGIN
         INSERT INTO episodes_fts(episodes_fts, rowid, title, text, scope) VALUES ('delete', old.id, old.title, old.text, old.scope); END;
     `);
+    // Databases from before embeddings get the column added in place; NULL means "not embedded yet".
+    if (!this.db.prepare('PRAGMA table_info(facts)').all().some((c) => c.name === 'vec')) this.db.exec('ALTER TABLE facts ADD COLUMN vec BLOB');
     this.db.prepare('DELETE FROM episodes WHERE at < ?').run(this.now() - HISTORY_DAYS * DAY);
+  }
+
+  // Stores a fact's vector in the background. The text check skips a vector made for text edited since.
+  embedFact(id, text) {
+    if (!this.embedder?.available()) return Promise.resolve();
+    return this.embedder.embed(text).then((vec) => {
+      if (vec) this.db.prepare('UPDATE facts SET vec = ? WHERE id = ? AND text = ?').run(toBytes(vec), id, text);
+    }).catch(() => {}); // database closed meanwhile: the fact is backfilled next time
+  }
+
+  // Called before recall: embeds the request (so recall can use it without waiting) and a few facts that have
+  // no vector yet. A no-op without the embedder.
+  async warm(query = '') {
+    if (!this.embedder?.available()) return;
+    if (query) await this.embedder.embed(query);
+    const missing = this.db.prepare('SELECT id, text FROM facts WHERE vec IS NULL LIMIT ?').all(BACKFILL);
+    for (const f of missing) await this.embedFact(f.id, f.text);
   }
 
   importLegacy(jsonFile) {
@@ -113,11 +140,13 @@ class Memory {
     const entry = { id: crypto.randomUUID(), text: clean, category: categorize(clean), scope, pinned: pinned ?? PROFILE.test(clean), source };
     this.db.prepare('INSERT INTO facts (id, text, category, scope, pinned, source, created) VALUES (?, ?, ?, ?, ?, ?, ?)')
       .run(entry.id, entry.text, entry.category, scope, entry.pinned ? 1 : 0, source, created);
+    this.embedFact(entry.id, entry.text);
     return entry;
   }
 
   update(id, text) {
-    this.db.prepare('UPDATE facts SET text = ?, category = ? WHERE id = ?').run(text.trim(), categorize(text), id);
+    this.db.prepare('UPDATE facts SET text = ?, category = ?, vec = NULL WHERE id = ?').run(text.trim(), categorize(text), id);
+    this.embedFact(id, text.trim());
   }
 
   pin(id, pinned) {
@@ -145,27 +174,46 @@ class Memory {
   }
 
   // The facts for one request, best first, within BUDGET_CHARS:
-  //   1. pinned profile facts, 2. facts whose words match the request (BM25), 3. the task's categories.
+  //   1. pinned profile facts, 2. facts that match the request, 3. the task's categories.
+  // Matches are BM25 over words, fused by rank (RRF) with vector similarity when the request was embedded (warm()).
   // Ranking boosts: same site/app scope ×2, used in the last week ×1.3; facts unused for 6 months sink.
   recall({ query = '', group = 'default', scope = '', limit = 8 } = {}) {
     const now = this.now();
     const picked = new Map();
     const take = (rows) => { for (const r of rows) if (!picked.has(r.id)) picked.set(r.id, r); };
     take(this.db.prepare('SELECT id, text FROM facts WHERE pinned = 1 ORDER BY created').all());
+    const boost = (r, s) => {
+      if (scope && r.scope === scope) s *= 2;
+      const last = Math.max(r.used, r.created);
+      if (now - last < 7 * DAY) s *= 1.3;
+      else if (now - last > 180 * DAY) s *= 0.5;
+      return s;
+    };
+    const lists = [];
     const match = ftsQuery(query);
     if (match) {
       const rows = this.db.prepare(`SELECT f.id, f.text, f.scope, f.used, f.created, bm25(facts_fts) AS rank
         FROM facts_fts JOIN facts f ON f.rowid = facts_fts.rowid WHERE facts_fts MATCH ? ORDER BY rank LIMIT 30`).all(match);
-      const score = (r) => {
-        let s = -r.rank; // bm25 is negative: more negative = better
-        if (scope && r.scope === scope) s *= 2;
-        const last = Math.max(r.used, r.created);
-        if (now - last < 7 * DAY) s *= 1.3;
-        else if (now - last > 180 * DAY) s *= 0.5;
-        return s;
-      };
-      take(rows.sort((a, b) => score(b) - score(a)));
+      lists.push(rows.map((r) => ({ r, s: boost(r, -r.rank) })).sort((a, b) => b.s - a.s).map((x) => x.r)); // bm25: more negative = better
     }
+    const queryVec = query && this.embedder?.cached?.(query);
+    if (queryVec) {
+      // Scans every embedded fact (~35 ms at 5,000 worst case); add an ANN index if memory grows that big.
+      const rows = this.db.prepare('SELECT id, text, scope, used, created, vec FROM facts WHERE vec IS NOT NULL').all()
+        .map((r) => ({ r, sim: cosine(queryVec, fromBytes(r.vec)) }))
+        .filter((x) => x.sim >= VECTOR_MIN);
+      lists.push(rows.map((x) => ({ r: x.r, s: boost(x.r, x.sim) })).sort((a, b) => b.s - a.s).slice(0, 30).map((x) => x.r));
+    }
+    // Reciprocal Rank Fusion: a fact high in either list ranks high; one with only a single list still counts.
+    const fused = new Map();
+    for (const list of lists) {
+      list.forEach((r, i) => {
+        const f = fused.get(r.id) || { r, s: 0 };
+        f.s += 1 / (RRF_K + i + 1);
+        fused.set(r.id, f);
+      });
+    }
+    take([...fused.values()].sort((a, b) => b.s - a.s).map((f) => f.r));
     const categories = TASK_CATEGORIES[group] || TASK_CATEGORIES.default;
     take(this.db.prepare(`SELECT id, text FROM facts WHERE category IN (${categories.map(() => '?').join(',')}) AND (scope = '' OR scope = ?)
       ORDER BY used DESC, created DESC`).all(...categories, scope));

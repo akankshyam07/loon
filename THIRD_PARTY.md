@@ -31,6 +31,7 @@ Models are downloaded at first use, not stored in this repository.
 | Model / data | Use | License |
 |---|---|---|
 | Qwen3 1.7B / 4B / 8B (official GGUF) | language model | Apache-2.0 |
+| BGE small en v1.5 (BAAI; Q8_0 GGUF by ggml-org, optional ~37 MB) | embeddings for memory recall and the answer cache | MIT |
 | Moonshine base (English, int8) | speech-to-text | MIT |
 | Silero VAD v5 | end-of-turn detection | MIT |
 | Kokoro-82M (ONNX, q8) | voice | Apache-2.0 |

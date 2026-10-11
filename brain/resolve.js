@@ -1,5 +1,5 @@
 // Resolver ladder (DESIGN.md §2.10): try the cheapest tier that can answer, stop at the first hit.
-// Tiers per task: code (templates, WordNet, offline translator, TextRank) → cache (exact match) → model.
+// Tiers per task: code (templates, WordNet, offline translator, TextRank) → cache (exact, then same meaning) → model.
 // brain/router.js picks the model: fast local, smart local, or the user's own Claude/ChatGPT plan via the official CLI
 // when "Cloud via your plan" is on (§3.17). A weak answer gets one automatic upgrade.
 const fs = require('fs');
@@ -107,7 +107,7 @@ function createMoodParser(onText) {
 const EMPTY_TIERS = () => ({ code: 0, cache: 0, local: 0 });
 
 class Resolver {
-  constructor({ brain, cacheFile, countsFile, translator = null, skills = null, memory = null, notes = null, settings = {}, cli = require('./cli-provider') }) {
+  constructor({ brain, cacheFile, countsFile, translator = null, skills = null, memory = null, notes = null, embedder = null, settings = {}, cli = require('./cli-provider') }) {
     this.brain = brain;
     this.cli = cli;
     this.memory = memory;
@@ -115,7 +115,7 @@ class Resolver {
     this.settings = settings;
     this.translator = translator;
     this.skills = skills;
-    this.cache = new ResponseCache(cacheFile);
+    this.cache = new ResponseCache(cacheFile, { embedder });
     this.countsFile = countsFile;
     this.counts = this.loadCounts();
     this.lastPrompt = null; // exactly what the model saw last, for the "[view]" footer and tests
@@ -151,6 +151,7 @@ class Resolver {
     // Privacy mode (§3.15): no memory in prompts, no cache reads or writes.
     const privacy = Boolean(this.settings.privacy);
     const request = question || packet.question || String(packet.text || '').slice(0, 500);
+    if (!privacy) await this.memory?.warm?.(request); // embeds the request so recall can match by meaning
     const memory = privacy || !this.memory ? [] : this.memory.forGroup(memoryGroup(taskId), request, scopeOf(packet));
     this.lastMemory = memory;
     let prefix = '';
@@ -240,12 +241,18 @@ class Resolver {
     // Errors cache by fingerprint so the same error with different paths/values reuses one answer.
     const identity = task.cacheByFingerprint ? fingerprint(packet.text || '').hash : normalize(prompt);
     // Routed and upgraded answers share the plain key, so a question that needed a stronger tier is instant next time.
-    const key = cacheable ? ResponseCache.key(taskId, identity, String(deeper), viaCloud ? `cli:${cloud}` : this.brain.modelId(), PROMPT_VERSION) : null;
-    const hit = key && this.cache.get(key);
+    const model = viaCloud ? `cli:${cloud}` : this.brain.modelId();
+    const key = cacheable ? ResponseCache.key(taskId, identity, String(deeper), model, PROMPT_VERSION) : null;
+    // A typed question may also match an earlier one with the same meaning, never across different context or memory.
+    const similar = key && packet.question && !task.cacheByFingerprint
+      ? { group: ResponseCache.key(taskId, packet.text || '', memory.join('\n'), String(deeper), model, PROMPT_VERSION), question: packet.question }
+      : null;
+    const exact = key && this.cache.get(key);
+    const hit = exact || (similar && await this.cache.findSimilar(similar));
     if (hit) {
       onText(hit.text);
       this.count('cache');
-      return { text: prefix + hit.text, mood: hit.mood, tier: 'cache', estimated: Boolean(task.estimated), replaceText: task.replaceable ? hit.text : undefined };
+      return { text: prefix + hit.text, mood: hit.mood, tier: 'cache', detail: exact ? undefined : 'remembered a similar question', estimated: Boolean(task.estimated), replaceText: task.replaceable ? hit.text : undefined };
     }
 
     // Router (§2.10): model tiers weakest first; "Go deeper" keeps its own rule (plan if on, else the smart model).
@@ -314,7 +321,7 @@ class Resolver {
     const tier = answer.target === 'cloud' ? 'cloud' : 'local';
     this.count(tier);
     // Fallback answers and answers that still look weak are not cached.
-    if (key && answer.text && !signal?.aborted && !fallback && !flags.length) this.cache.set(key, { text: answer.text, mood: answer.mood });
+    if (key && answer.text && !signal?.aborted && !fallback && !flags.length) this.cache.set(key, { text: answer.text, mood: answer.mood }, similar);
     const detail = [tier === 'cloud' && this.cli.label(cloud), note].filter(Boolean).join(' · ') || undefined;
     const { text, mood } = answer;
     return { text: prefix + text, mood, tier, detail, smart: answer.target === 'smart', estimated: Boolean(task.estimated), replaceText: task.replaceable ? text : undefined };
