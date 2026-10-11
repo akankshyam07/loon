@@ -10,6 +10,13 @@ const { jsonToDto, fixGrammar } = require('./devtools');
 const { redact } = require('./redact');
 const { makeQuiz } = require('./quiz');
 
+// The model's only structured output: llama.cpp is held to this schema by a grammar, so the reply always parses.
+const EXTRACTOR_SCHEMA = {
+  type: 'object',
+  properties: { item: { type: 'string' }, name: { type: 'string' }, price: { type: 'string' } },
+  required: ['item', 'name', 'price'],
+};
+
 class Skills {
   constructor({ dataDir, brain, projects = () => [] }) {
     this.brain = brain;
@@ -62,7 +69,7 @@ class Skills {
       JSON.stringify(outline, null, 0),
     ].join('\n');
     let reply = '';
-    await this.brain.chat(prompt, { onText: (t) => { reply += t; }, maxTokens: 200 });
+    await this.brain.chat(prompt, { onText: (t) => { reply += t; }, maxTokens: 200, jsonSchema: EXTRACTOR_SCHEMA });
     this.brain.resetThread();
     const match = reply.match(/\{[\s\S]*?\}/);
     if (!match) return null;

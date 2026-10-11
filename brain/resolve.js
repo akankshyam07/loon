@@ -3,6 +3,7 @@
 // brain/router.js picks the model: fast local, smart local, or the user's own Claude/ChatGPT plan via the official CLI
 // when "Cloud via your plan" is on (§3.17). A weak answer gets one automatic upgrade.
 const fs = require('fs');
+const path = require('path');
 const { ResponseCache } = require('./cache');
 const { TASKS, MAX_CONTEXT_CHARS, buildPrompt, memoryGroup } = require('./tasks');
 const { define } = require('./define');
@@ -14,7 +15,7 @@ const shopping = require('./shopping');
 const food = require('./food');
 const { redact } = require('./redact');
 const { SYSTEM_PROMPT } = require('./ai');
-const { estimate, pickTier, check } = require('./router');
+const { estimate, pickTier, check, thinkingFor, EscalationLog } = require('./router');
 
 const PROMPT_VERSION = 'v2';
 const MOODS = ['happy', 'curious', 'judgy', 'sleepy', 'suspicious', 'focused', 'protective', 'confused'];
@@ -104,6 +105,9 @@ function createMoodParser(onText) {
   };
 }
 
+// Qwen3 thinking must never reach the bubble or the cache, whatever the runtime streamed.
+const stripThink = (text) => String(text || '').replace(/<think>[\s\S]*?(<\/think>|$)/g, '');
+
 const EMPTY_TIERS = () => ({ code: 0, cache: 0, local: 0 });
 
 class Resolver {
@@ -116,6 +120,7 @@ class Resolver {
     this.translator = translator;
     this.skills = skills;
     this.cache = new ResponseCache(cacheFile, { embedder });
+    this.escalations = new EscalationLog(path.join(path.dirname(cacheFile), 'escalations.json'), { embedder });
     this.countsFile = countsFile;
     this.counts = this.loadCounts();
     this.lastPrompt = null; // exactly what the model saw last, for the "[view]" footer and tests
@@ -260,19 +265,23 @@ class Resolver {
     const typed = taskId === 'ask' || Boolean(question);
     const asked = typed ? question || packet.question : task.instruction(packet);
     const route = deeper ? null : estimate({ taskId, request: asked, context: packet.text });
+    // kNN escalation memory: typed questions only (a chip's instruction alone says nothing), never in Privacy mode.
+    const learn = typed && !privacy;
     const maxTokens = deeper ? 900 : task.maxTokens;
 
     this.lastPrompt = prompt;
     let streamed = false;
+    const thinking = thinkingFor({ taskId, route });
     const attempt = async (target) => {
       let text = '';
+      let confidence = null;
       const parser = createMoodParser((piece) => { streamed = true; text += piece; onText(piece); });
       const onChunk = (chunk) => parser.push(chunk);
       // Redaction already ran on screen context (main/context.js); this pass also covers typed text and memory
       // before anything leaves the Mac.
       if (target === 'cloud') await this.cli.ask(cloud, { system: SYSTEM_PROMPT, prompt: redact(prompt).text, onText: onChunk, signal });
-      else await this.brain.chat(prompt, { onText: onChunk, signal, maxTokens, smart: target === 'smart' });
-      return { text: text.trim(), mood: parser.finish(), target };
+      else await this.brain.chat(prompt, { onText: onChunk, signal, maxTokens, smart: target === 'smart', thinking, onConfidence: (c) => { confidence = c; } });
+      return { text: stripThink(text).trim(), mood: parser.finish(), target, confidence };
     };
     // Clears the streamed answer so a different one can take its place.
     const restart = () => {
@@ -283,6 +292,12 @@ class Resolver {
 
     let target = deeper ? (viaCloud ? 'cloud' : 'smart') : pickTier(route.level, ladder);
     let note = route && target !== 'fast' ? `routed: ${route.level === 'hard' ? 'hard' : 'trickier'} question` : '';
+    const stronger = ladder[ladder.indexOf(target) + 1];
+    const preRouted = Boolean(route && stronger && learn && await this.escalations.likelyHard(asked));
+    if (preRouted) {
+      target = stronger;
+      note = 'routed: similar questions needed a stronger model';
+    }
     let answer;
     let fallback = false;
     try {
@@ -299,16 +314,17 @@ class Resolver {
     }
 
     // Self-check: a weak answer gets one automatic try on the next tier up. Never twice, never after a fallback.
-    const checkOpts = { request: asked, typed, level: route?.level, maxTokens: maxTokens || 400 };
-    let flags = deeper || fallback ? [] : check(answer.text, checkOpts);
     const next = ladder[ladder.indexOf(answer.target) + 1];
-    if (flags.length && next && !signal?.aborted) {
+    const checkOpts = { request: asked, typed, level: route?.level, maxTokens: maxTokens || 400, taskId };
+    let flags = deeper || fallback ? [] : check(answer.text, { ...checkOpts, confidence: answer.confidence });
+    const upgrading = Boolean(flags.length && next && !signal?.aborted);
+    if (upgrading) {
       const first = answer;
       restart();
       try {
         answer = await attempt(next);
         note = `upgraded: ${flags[0].label}`;
-        flags = check(answer.text, checkOpts);
+        flags = check(answer.text, { ...checkOpts, confidence: answer.confidence });
       } catch (err) {
         if (signal?.aborted) throw err;
         console.warn('[resolve] upgrade failed, keeping the first answer:', err.message);
@@ -320,6 +336,9 @@ class Resolver {
 
     const tier = answer.target === 'cloud' ? 'cloud' : 'local';
     this.count(tier);
+    // "Go deeper" and a self-check upgrade both mean this question wanted a stronger tier. A pre-routed answer says
+    // nothing about the weaker tier, so it leaves the log as it was.
+    if (learn && !preRouted && !fallback && !signal?.aborted) this.escalations.record(asked, deeper || upgrading).catch(() => {});
     // Fallback answers and answers that still look weak are not cached.
     if (key && answer.text && !signal?.aborted && !fallback && !flags.length) this.cache.set(key, { text: answer.text, mood: answer.mood }, similar);
     const detail = [tier === 'cloud' && this.cli.label(cloud), note].filter(Boolean).join(' · ') || undefined;

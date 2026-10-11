@@ -3,7 +3,11 @@ const assert = require('node:assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { estimate, pickTier, check } = require('../brain/router');
+const { estimate, pickTier, check, confidenceStats, thinkingFor, EscalationLog } = require('../brain/router');
+const { buildPrompt } = require('../brain/tasks');
+const { answerConfidence } = require('../brain/ai');
+const { Skills } = require('../brain/skills');
+const { normalizeVector } = require('../brain/embed');
 const { Resolver } = require('../brain/resolve');
 
 test('router: difficulty levels on representative requests', () => {
@@ -58,20 +62,26 @@ test('self-check flags weak answers and passes good ones', () => {
 });
 
 // Fake local brain: answers come from a queue per slot, so tests control what each tier says.
-function setup({ fast = [], smart = [], cloud = [], hasSmart = true, settings = {} } = {}) {
+function setup({ fast = [], smart = [], cloud = [], hasSmart = true, settings = {}, embedder = null } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-router-'));
   const calls = [];
-  const reply = (queue, onText) => {
+  const options = [];
+  // A queue item is the answer text, an Error, or { text, confidence } for a local answer with token confidence.
+  const reply = (queue, onText, onConfidence) => {
     const next = queue.length > 1 ? queue.shift() : queue[0];
     if (next instanceof Error) throw next;
-    onText(next);
+    if (typeof next === 'object') {
+      onText(next.text);
+      onConfidence?.(next.confidence);
+    } else onText(next);
   };
   const brain = {
     modelId: () => 'fake',
     hasSmart: () => hasSmart,
-    chat: async (_p, { onText, smart: useSmart }) => {
+    chat: async (_p, { onText, smart: useSmart, onConfidence, ...rest }) => {
       calls.push(useSmart ? 'smart' : 'fast');
-      reply(useSmart ? smart : fast, onText);
+      options.push(rest);
+      reply(useSmart ? smart : fast, onText, onConfidence);
     },
   };
   const cli = {
@@ -79,8 +89,8 @@ function setup({ fast = [], smart = [], cloud = [], hasSmart = true, settings = 
     label: () => 'Claude (your plan)',
     prompts: [],
   };
-  const resolver = new Resolver({ brain, cli, settings: { privacy: false, cloudCli: 'off', ...settings }, cacheFile: path.join(dir, 'c.json'), countsFile: path.join(dir, 'n.json') });
-  return { resolver, calls, cli };
+  const resolver = new Resolver({ brain, cli, embedder, settings: { privacy: false, cloudCli: 'off', ...settings }, cacheFile: path.join(dir, 'c.json'), countsFile: path.join(dir, 'n.json') });
+  return { resolver, calls, cli, options };
 }
 
 const run = (resolver, question, opts = {}) => {
@@ -160,4 +170,127 @@ test('resolver self-check: escalates to the plan, keeps the first answer if the 
   };
   await run(aborting.resolver, 'Why do cats knead blankets?', { signal: controller.signal });
   assert.deepStrictEqual(aborting.calls, ['fast']);
+});
+
+test('prompt layout: the same task shares its leading bytes, volatile memory and context come last', () => {
+  const a = buildPrompt('explain', { source: 'selection', text: 'Mitochondria make ATP.' }, { memory: ['I like short answers'] });
+  const b = buildPrompt('explain', { source: 'selection', url: 'https://x.test/a', text: 'Photosynthesis needs light.' }, { memory: [] });
+  const fixed = 'Explain this in plain language.\n\n<context source="selection"';
+  assert.ok(a.startsWith(fixed) && b.startsWith(fixed), `${a}\n---\n${b}`);
+  assert.match(a, /<\/context>\n\nAbout the user[\s\S]*I like short answers$/);
+  assert.ok(!/\d{1,2}:\d{2}|20\d\d-\d\d/.test(a)); // no time or date anywhere in the prompt
+  assert.strictEqual(buildPrompt('ask', { source: 'typed', question: 'hi?' }, { memory: ['m'] }), 'hi?\n\nAbout the user (they chose to share this; use it only when relevant):\n- m');
+});
+
+test('token confidence: stats, per-task thresholds, rewrites never escalate on it, absent means skipped', () => {
+  assert.strictEqual(confidenceStats([0.9, 0.8]), null); // too few tokens
+  const sure = confidenceStats(Array(20).fill(0.97));
+  const shaky = confidenceStats([...Array(10).fill(0.3), ...Array(10).fill(0.9)]);
+  assert.ok(sure.meanLogProb > -0.05 && sure.lowShare === 0 && sure.tokens === 20);
+  assert.ok(shaky.meanLogProb < -0.6 && shaky.lowShare === 0.5);
+  const answer = 'Paris has been the capital of France for centuries.';
+  const ids = (opts) => check(answer, { request: 'What is the capital of France?', ...opts }).map((f) => f.id);
+  assert.deepStrictEqual(ids({ confidence: sure }), []);
+  assert.deepStrictEqual(ids({ confidence: shaky }), ['confidence']);
+  assert.deepStrictEqual(ids({ confidence: null }), []); // Ollama, cloud, fakes: no signal, no flag
+  assert.deepStrictEqual(ids({ confidence: shaky, taskId: 'rewrite' }), []);
+  assert.deepStrictEqual(ids({ confidence: shaky, taskId: 'professional' }), []);
+  const medium = { meanLogProb: -0.7, lowShare: 0.2, tokens: 30 };
+  assert.deepStrictEqual([ids({ confidence: medium, taskId: 'ask' }), ids({ confidence: medium, taskId: 'explain' })], [['confidence'], []]);
+
+  // The answer's tokens are the tail of what was generated: the <think> block and the end token are left out.
+  const model = { tokenize: (t) => t.split(' '), isEogToken: (t) => t === 'eog' };
+  const recorded = [{ token: '<think>', p: 1 }, { token: '</think>', p: 1 }, ...Array(10).fill({ token: 'w', p: 0.4 }), { token: 'eog', p: 1 }];
+  assert.strictEqual(answerConfidence(model, recorded, `[mood:happy] ${Array(10).fill('w').join(' ')}`).lowShare, 1);
+  assert.strictEqual(answerConfidence(model, [], 'anything at all'), null);
+});
+
+test('resolver: a shaky local answer is upgraded once; a shaky rewrite is not', async () => {
+  const shaky = { meanLogProb: -1.2, lowShare: 0.4, tokens: 40 };
+  const { resolver, calls } = setup({ fast: [{ text: '[mood:happy] The third book is The Shadow Heart, from 1992.', confidence: shaky }], smart: [GOOD] });
+  const r = await run(resolver, 'Name the third book in the Wheel of Time series.');
+  assert.deepStrictEqual([calls, r.detail], [['fast', 'smart'], 'upgraded: the model was unsure of its first answer']);
+
+  const rw = setup({ fast: [{ text: '[mood:happy] We should have left earlier.', confidence: shaky }], smart: [GOOD] });
+  await rw.resolver.run('rewrite', { source: 'selection', text: 'we should of went earlier' }, { onText: () => {} });
+  assert.deepStrictEqual(rw.calls, ['fast']);
+});
+
+test('thinking: only hard, comparison and debugging routes think; <think> never reaches the answer', async () => {
+  const route = (taskId, request) => thinkingFor({ taskId, route: estimate({ taskId, request }) });
+  assert.strictEqual(route('ask', 'What is the capital of France?'), false);
+  assert.strictEqual(route('rewrite', 'Rewrite this to be clearer.'), false);
+  assert.strictEqual(route('ask', 'Compare Postgres and MySQL for a small app'), true);
+  assert.strictEqual(route('ask', HARD), true);
+  assert.strictEqual(route('find_bug', 'Point out likely bugs.'), true);
+  assert.strictEqual(thinkingFor({ taskId: 'ask', route: null }), false); // "Go deeper" keeps its own rule
+
+  const { resolver, options } = setup({ fast: ['<think>The user wants a city.</think>[mood:happy] Paris.'], smart: ['[mood:focused] <think>weigh it</think>Postgres, for its features.'] });
+  const r1 = await run(resolver, 'What is the capital of France?');
+  const r2 = await run(resolver, 'Compare Postgres and MySQL for a small app');
+  assert.deepStrictEqual([r1.text, r2.text], ['Paris.', 'Postgres, for its features.']);
+  assert.deepStrictEqual(options.map((o) => o.thinking), [false, true]);
+  assert.ok(!r1.events.join('').includes('think'));
+});
+
+test('structured output: the site extractor asks for grammar-constrained JSON', async () => {
+  const seen = [];
+  const brain = {
+    chat: async (_prompt, { onText, jsonSchema }) => { seen.push(jsonSchema); onText('{"item": ".card", "name": ".title", "price": ".price"}'); },
+    resetThread: () => {},
+  };
+  const skills = new Skills({ dataDir: fs.mkdtempSync(path.join(os.tmpdir(), 'loon-skills-')), brain });
+  const { parseHTML } = require('linkedom');
+  const { document } = parseHTML(`<html><body>${['A', 'B', 'C'].map((n, i) => `<div class="card"><h2 class="title">Tea ${n}</h2><span class="price">$${i + 3}.99</span></div>`).join('')}</body></html>`);
+  const extractor = await skills.generateExtractor(document);
+  assert.deepStrictEqual([seen[0].type, seen[0].required], ['object', ['item', 'name', 'price']]);
+  assert.deepStrictEqual(extractor, { item: '.card', name: '.title', price: '.price' });
+});
+
+// Fake embedder: a strong dimension per topic word plus a weak hashed bag of the other words, so questions about the
+// same topic score ~0.83-0.9 (neighbours, not the same question) and different topics score near 0.
+function topicEmbedder(available = true) {
+  const topics = ['monad', 'kubernetes', 'paris', 'cat'];
+  return {
+    available: () => available,
+    cached: () => null,
+    async embed(text) {
+      if (!available) return null;
+      const vec = new Float32Array(topics.length + 64);
+      for (const word of text.toLowerCase().match(/[a-z]+/g) || []) {
+        const topic = topics.indexOf(word);
+        if (topic >= 0) vec[topic] = 1;
+        else vec[topics.length + ([...word].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) >>> 0, 7) % 64)] += 0.25;
+      }
+      return normalizeVector(vec);
+    },
+  };
+}
+
+test('kNN escalation memory: questions like ones that escalated start one tier up; no embedder, no effect', async () => {
+  const unsure = "[mood:confused] I'm not sure.";
+  const fine = '[mood:happy] A monad wraps a value and chains computations on it.';
+  const { resolver, calls } = setup({ fast: [unsure, unsure, fine], smart: [GOOD], embedder: topicEmbedder() });
+  const followUp = { firstInThread: false }; // keeps the answer cache out of the way
+  await run(resolver, 'What is a monad?', followUp);
+  await run(resolver, 'Explain a monad simply', followUp);
+  assert.deepStrictEqual(calls, ['fast', 'smart', 'fast', 'smart']); // both escalated through the self-check
+  const r = await run(resolver, 'How does a monad work in Haskell?', followUp);
+  assert.deepStrictEqual([calls.slice(4), r.detail], [['smart'], 'routed: similar questions needed a stronger model']);
+  calls.length = 0;
+  await run(resolver, 'Where is Paris?', followUp); // unrelated: stays fast
+  assert.deepStrictEqual(calls, ['fast']);
+
+  const log = new EscalationLog(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'loon-knn-')), 'e.json'), { embedder: topicEmbedder() });
+  await log.record('What is a monad?', false);
+  await log.record('What is a monad?', true); // "Go deeper" on the same question replaces its entry
+  await log.record('Explain a monad simply', true);
+  assert.deepStrictEqual([log.entries.length, await log.likelyHard('monad laws?')], [2, true]);
+  assert.strictEqual(new EscalationLog(log.file, { embedder: topicEmbedder() }).entries.length, 2); // persisted
+  log.clear();
+  assert.strictEqual(await log.likelyHard('monad laws?'), false);
+
+  const off = new EscalationLog(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'loon-knn-')), 'e.json'), { embedder: topicEmbedder(false) });
+  await off.record('What is a monad?', true);
+  assert.deepStrictEqual([off.entries.length, await off.likelyHard('What is a monad?')], [0, false]);
 });

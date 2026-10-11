@@ -577,7 +577,7 @@ function registerIpc() {
     }
     return settingsSnapshot();
   });
-  ipcMain.handle('memory-clear', () => { memory.clear(); memory.clearHistory(); resolver.cache.clear(); return settingsSnapshot(); });
+  ipcMain.handle('memory-clear', () => { memory.clear(); memory.clearHistory(); resolver.cache.clear(); resolver.escalations.clear(); return settingsSnapshot(); });
   ipcMain.on('open-notes-folder', () => { fs.mkdirSync(notes.dir, { recursive: true }); shell.openPath(notes.dir); });
   ipcMain.on('copy-pairing-code', () => clipboard.writeText(settings.pairingCode));
   ipcMain.on('open-settings', openSettings);

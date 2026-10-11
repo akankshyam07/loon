@@ -3,6 +3,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { confidenceStats } = require('./router');
 
 const SYSTEM_PROMPT = [
   "You are Loon, a small black cat with bright green eyes who lives on the user's desktop and helps them.",
@@ -29,6 +30,20 @@ function recommendedModel() {
 
 const SMART_IDLE_MS = 5 * 60 * 1000;
 
+// Qwen3 model card sampling. Non-thinking by default; never greedy (the card warns it loops).
+const SAMPLING = { temperature: 0.7, topP: 0.8, topK: 20 };
+const THINKING_SAMPLING = { temperature: 0.6, topP: 0.95, topK: 20 };
+const THOUGHT_BUDGET = 512; // tokens of thinking before llama.cpp closes the <think> block
+
+// The answer's own tokens: the last N recorded, N being the visible answer's token count (minus the mood tag).
+// Drops the empty or budgeted <think> block and end-of-generation tokens before it.
+function answerConfidence(model, recorded, text) {
+  const answer = String(text || '').replace(/^\s*\[mood:[^\]]*\]\s*/i, '').trim();
+  if (!answer || !recorded.length) return null;
+  const n = model.tokenize(answer).length;
+  return confidenceStats(recorded.filter((r) => !model.isEogToken(r.token)).slice(-n).map((r) => r.p));
+}
+
 // One loaded llama.cpp model with its context and chat session.
 class Slot {
   constructor(brain, modelPath) {
@@ -47,10 +62,35 @@ class Slot {
       this.model = await this.brain.llama.loadModel({ modelPath: this.modelPath });
       this.name = this.model.fileInfo?.metadata?.general?.name || null;
       this.context = await this.model.createContext({ contextSize: { max: 8192 } });
-      this.session = new LlamaChatSession({ contextSequence: this.context.getSequence(), systemPrompt: SYSTEM_PROMPT });
+      const sequence = this.context.getSequence();
+      this.recordConfidence(sequence);
+      // One sequence per model is the warm cache: the system prompt is the same for every mode and task, so llama.cpp
+      // reuses its KV prefix on every request (measured: 2.5 s → ~0.1 s to first token on Qwen3 4B).
+      this.session = new LlamaChatSession({ contextSequence: sequence, systemPrompt: SYSTEM_PROMPT });
       return this.session;
     })().finally(() => { this.loading = null; });
     return this.loading;
+  }
+
+  // LlamaChatSession.prompt() doesn't expose token probabilities, so the sequence's evaluate() is swapped for the
+  // library's own evaluateWithMetadata({ confidence: true }) loop (the same body as evaluate()), recording each
+  // picked token's probability while `this.recording` is set.
+  recordConfidence(sequence) {
+    const slot = this;
+    sequence.evaluate = async function* evaluate(tokens, options = {}) {
+      const iterator = this.evaluateWithMetadata(tokens, { confidence: true }, options);
+      let input;
+      try {
+        while (true) {
+          const { value, done } = await iterator.next(input);
+          if (done) return;
+          slot.recording?.push({ token: value.token, p: value.confidence });
+          input = yield value.token;
+        }
+      } finally {
+        await iterator.return();
+      }
+    };
   }
 
   async unload() {
@@ -189,33 +229,49 @@ class Brain {
     this.ollamaHistory = [];
   }
 
-  async chat(text, { onText, signal, maxTokens = 400, smart = false }) {
+  // thinking: let Qwen3 think first (hard/compare/debug routes). jsonSchema: constrain the reply to that schema.
+  // onConfidence(stats) gets the answer's token confidence when the runtime provides it (llama.cpp, not Ollama).
+  async chat(text, { onText, signal, maxTokens = 400, smart = false, thinking = false, jsonSchema = null, onConfidence = null }) {
     if (!this.backend) await this.status();
     if (!this.backend) throw new Error('No model available');
     if (this.backend.kind === 'llama') {
-      const session = await (await this.slot(smart)).ensure();
-      return session.prompt(text, {
-        maxTokens,
-        signal,
-        stopOnAbortSignal: true,
-        budgets: { thoughtTokens: 0 },
-        onTextChunk: onText,
-      });
+      const slot = await this.slot(smart);
+      const session = await slot.ensure();
+      const grammar = jsonSchema ? await this.llama.createGrammarForJsonSchema(jsonSchema) : undefined;
+      slot.recording = [];
+      try {
+        const reply = await session.prompt(text, {
+          ...(thinking ? THINKING_SAMPLING : SAMPLING),
+          maxTokens: maxTokens + (thinking ? THOUGHT_BUDGET : 0),
+          signal,
+          stopOnAbortSignal: true,
+          budgets: { thoughtTokens: thinking ? THOUGHT_BUDGET : 0 },
+          grammar,
+          onTextChunk: onText,
+        });
+        const stats = onConfidence && answerConfidence(slot.model, slot.recording, reply);
+        if (stats) onConfidence(stats);
+        return reply;
+      } finally {
+        slot.recording = null;
+      }
     }
-    return this.chatOllama(text, { onText, signal });
+    return this.chatOllama(text, { onText, signal, thinking, jsonSchema });
   }
 
-  async chatOllama(text, { onText, signal }) {
+  async chatOllama(text, { onText, signal, thinking = false, jsonSchema = null }) {
     this.ollamaHistory ??= [];
     this.ollamaHistory.push({ role: 'user', content: text });
+    const sampling = thinking ? THINKING_SAMPLING : SAMPLING;
     const res = await fetch(`${OLLAMA}/api/chat`, {
       method: 'POST',
       signal,
       body: JSON.stringify({
         model: this.backend.model,
         stream: true,
-        think: false,
-        options: { num_predict: 400 },
+        think: Boolean(thinking), // Ollama returns thinking in a separate field, never in content
+        ...(jsonSchema && { format: jsonSchema }),
+        options: { num_predict: 400, temperature: sampling.temperature, top_p: sampling.topP, top_k: sampling.topK },
         messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...this.ollamaHistory],
       }),
     });
@@ -237,4 +293,4 @@ class Brain {
   }
 }
 
-module.exports = { Brain, recommendedModel, SYSTEM_PROMPT, MODEL_CHOICES };
+module.exports = { Brain, recommendedModel, answerConfidence, SYSTEM_PROMPT, MODEL_CHOICES };

@@ -119,7 +119,6 @@ function contextBlock(packet, text) {
   return `<context ${attrs}>\n${text}\n</context>`;
 }
 
-// Full user message for a task on a packet: instruction first, then the (already redacted) context.
 // Which memory categories a task may use (brain/memory.js TASK_CATEGORIES).
 function memoryGroup(taskId) {
   if (/^food_/.test(taskId)) return 'food';
@@ -129,14 +128,15 @@ function memoryGroup(taskId) {
   return 'default';
 }
 
+// Fixed parts first, volatile parts last (instruction → context → memory), so consecutive requests share the longest
+// possible token prefix after the system prompt and llama.cpp reuses its KV cache for it. No timestamps anywhere.
 function buildPrompt(taskId, packet, { deeper = false, question, memory = [] } = {}) {
   const task = TASKS[taskId];
   const instruction = taskId === 'ask' || question ? question || packet.question : task.instruction(packet);
   const text = task.contextText ? task.contextText(packet) : packet.text;
   const depth = deeper ? '\nGo deeper than usual: give a thorough, well-structured answer.' : '';
-  const about = memory.length ? `About the user (they chose to share this; use it only when relevant):\n${memory.map((m) => `- ${m}`).join('\n')}\n\n` : '';
-  if (!text) return about + instruction + depth;
-  return `${about}${instruction}${depth}\n\n${contextBlock(packet, text)}`;
+  const about = memory.length ? `About the user (they chose to share this; use it only when relevant):\n${memory.map((m) => `- ${m}`).join('\n')}` : '';
+  return [instruction + depth, text && contextBlock(packet, text), about].filter(Boolean).join('\n\n');
 }
 
 // Hand-off (§3.17): the same prompt, formatted for pasting into Claude / ChatGPT / Gemini.
