@@ -31,8 +31,28 @@
     "wordpos": "^2.1.0",
     "ws": "^8.22.0"
   },
-  "description": "A free, open-source AI black cat that lives on your desktop.",
+  "description": "A free, open-source, local-first AI black cat that lives on your Mac's screen and helps you explain, compare, write and act.",
   "license": "MIT",
+  "author": "Akankshya (https://github.com/akankshyam07)",
+  "homepage": "https://github.com/akankshyam07/loon#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/akankshyam07/loon.git"
+  },
+  "bugs": {
+    "url": "https://github.com/akankshyam07/loon/issues"
+  },
+  "keywords": [
+    "electron",
+    "chrome-extension",
+    "desktop-pet",
+    "ai-assistant",
+    "local-first",
+    "privacy",
+    "llama.cpp",
+    "offline",
+    "macos"
+  ],
   "build": {
     "appId": "dev.loon.desktop",
     "productName": "Loon",

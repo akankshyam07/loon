@@ -267,10 +267,12 @@ async function run(ctx) {
 
     // ---- M6: projects, Leetcode, Shortcuts (read-only reads of real repos; the Shortcut run is stubbed) ----
     const savedProjects = ctx.settings.projects;
-    // In the packaged app __dirname is inside app.asar (not a git repo), so fall back to the source checkout.
-    const loonDir = fs.existsSync(path.join(__dirname, '..', '.git')) ? path.join(__dirname, '..') : path.join(os.homedir(), 'Desktop', 'Loon');
-    const leetcodeDir = path.join(os.homedir(), 'Desktop', 'Leetcode');
-    ctx.settings.projects = [loonDir, ...(fs.existsSync(leetcodeDir) ? [leetcodeDir] : [])];
+    // In the packaged app __dirname is inside app.asar (not a git repo), so fall back to LOON_SOURCE_DIR or the cwd.
+    const loonDir = [path.join(__dirname, '..'), process.env.LOON_SOURCE_DIR, process.cwd()]
+      .find((d) => d && fs.existsSync(path.join(d, '.git'))) || path.join(__dirname, '..');
+    // Optional: point LOON_LEETCODE_DIR at a local Leetcode company-list repo to run that check.
+    const leetcodeDir = process.env.LOON_LEETCODE_DIR || '';
+    ctx.settings.projects = [loonDir, ...(leetcodeDir && fs.existsSync(leetcodeDir) ? [leetcodeDir] : [])];
     try {
       const before = resolver.counts.tiers.local || 0;
       await typeInBubble('what was I working on in loon');
@@ -278,7 +280,7 @@ async function run(ctx) {
       check('"what was I working on in loon" gives a briefing from git and TODOs, no model', briefed && (resolver.counts.tiers.local || 0) === before);
       await bubble('window.loon.closeBubble()');
 
-      if (fs.existsSync(leetcodeDir)) {
+      if (leetcodeDir && fs.existsSync(leetcodeDir)) {
         const lc = await resolver.run('leetcode_companies', { source: 'page', url: 'https://leetcode.com/problems/two-sum/description/' }, { onText: () => {} });
         check('Leetcode: which companies ask this, from the local repo', /asked at \*\*\d+\*\* companies/.test(lc.text) && lc.tier === 'code', lc.text.split('\n')[0]);
       }
@@ -309,7 +311,7 @@ async function run(ctx) {
 
     // ---- M6: a connected local app (a fake FastAPI-style app, never the user's real projects) ----
     const fakeApp = await require('./fixtures/openapi-app').start();
-    const connector = ctx.hub.add({ name: 'Career Intel', baseUrl: `http://127.0.0.1:${fakeApp.port}` });
+    const connector = ctx.hub.add({ name: 'Career Board', baseUrl: `http://127.0.0.1:${fakeApp.port}` });
     try {
       await ctx.hub.refresh();
       await typeInBubble('career: search python jobs');

@@ -4,7 +4,7 @@ const http = require('http');
 
 const SPEC = {
   openapi: '3.1.0',
-  info: { title: 'Career Intel', version: '0.1.0' },
+  info: { title: 'Career Board', version: '0.1.0' },
   paths: {
     '/jobs': {
       get: { operationId: 'list_jobs_jobs_get', summary: 'List saved jobs', tags: ['jobs'] },

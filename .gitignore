@@ -6,3 +6,4 @@ out/
 models/
 *.gguf
 .env
+*.code-workspace
