@@ -203,6 +203,7 @@ class Actions {
           return { ok: true, message: formatDay({ events, reminders }), markdown: true };
         }
         case 'recall':
+          if (command.about) return { ok: true, message: require('../brain/graph').formatAbout(this.memory.about(command.about), command.about), markdown: true };
           return { ok: true, message: command.facts ? formatFacts(this.memory.all()) : formatHistory(this.memory.searchEpisodes(command.query), command.query), markdown: true };
         case 'focus':
           message = this.onFocus(command.minutes);

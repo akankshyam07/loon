@@ -15,6 +15,7 @@ const { Embedder } = require('./brain/embed');
 const { VoiceEngine, createVoiceController } = require('./main/voice');
 const { ConnectorHub } = require('./main/hub');
 const { createAgentRunner } = require('./main/agent');
+const { PERSONAL_DEFAULTS, cleanPersonal, profileSummary } = require('./brain/personal');
 
 // Cat height in px per size preset; the window adds room around it for sparkles and hops.
 const SIZES = { S: 120, M: 160, L: 210 };
@@ -38,7 +39,7 @@ if (SELFTEST) {
 }
 
 let settingsFile;
-let settings = { size: 'M', focus: false, privacy: false, judgmental: true, wakeWord: false, speakReplies: 'voiceOnly', projects: [], connectors: [], welcomed: false, cloudCli: 'off' };
+let settings = { size: 'M', focus: false, privacy: false, judgmental: true, wakeWord: false, speakReplies: 'voiceOnly', projects: [], connectors: [], welcomed: false, cloudCli: 'off', personal: { ...PERSONAL_DEFAULTS }, dismissedSuggestions: [] };
 let catWin;
 let bubbleWin;
 let brain;
@@ -462,6 +463,8 @@ function settingsSnapshot() {
     connected: bridge.clients.size > 0,
     counts: resolver.counts,
     memory: memory.all(),
+    personal: cleanPersonal(settings.personal),
+    profile: profileSummary(memory.all(), settings.personal),
     embedder: embedder.status(),
     audit: actions.recent(20),
   };
@@ -565,7 +568,7 @@ function registerIpc() {
   // Bubble ↔ companion. Every answer streams back as ask-chunk / ask-done / ask-error.
   const toBubble = (type, payload) => {
     voice.observe(type, payload);
-    const channel = { chunk: 'ask-chunk', done: 'ask-done', error: 'ask-error', context: 'bubble-context', sensitive: 'bubble-sensitive', confirm: 'bubble-confirm', 'action-done': 'bubble-action', choices: 'bubble-choices', agent: 'bubble-agent' }[type];
+    const channel = { chunk: 'ask-chunk', done: 'ask-done', error: 'ask-error', context: 'bubble-context', sensitive: 'bubble-sensitive', confirm: 'bubble-confirm', 'action-done': 'bubble-action', choices: 'bubble-choices', agent: 'bubble-agent', suggest: 'bubble-suggest' }[type];
     bubbleWin.webContents.send(channel, payload);
   };
   toBubbleRef.current = toBubble;
@@ -585,6 +588,7 @@ function registerIpc() {
   ipcMain.on('confirm-action', (_e, { id, command }) => companion.confirm(command, toBubble, id));
   ipcMain.on('agent-decision', (_e, decision) => agentRunner.decide(decision || {}));
   ipcMain.handle('save-note', (_e, entry) => companion.saveNote(entry));
+  ipcMain.on('dismiss-suggestion', (_e, text) => { if (typeof text === 'string') companion.dismissSuggestion(text.slice(0, 200)); });
   // Only reveals files a Loon file search just returned (they exist on disk); never arbitrary paths from a page.
   ipcMain.on('reveal', (_e, file) => { if (typeof file === 'string' && path.isAbsolute(file) && fs.existsSync(file)) shell.showItemInFolder(file); });
   ipcMain.handle('settings-get', () => settingsSnapshot());
@@ -592,6 +596,8 @@ function registerIpc() {
     if (['focus', 'privacy', 'judgmental', 'wakeWord'].includes(key)) setToggle(key, Boolean(value));
     if (key === 'speakReplies') { settings.speakReplies = value ? 'voiceOnly' : 'never'; saveSettings(); }
     if (key === 'cloudCli' && ['off', 'claude', 'codex'].includes(value)) { settings.cloudCli = value; saveSettings(); }
+    // Custom instructions and reply style: validated and length-capped in brain/personal.js.
+    if (key === 'personal' && value && typeof value === 'object') { settings.personal = cleanPersonal({ ...settings.personal, ...value }); saveSettings(); }
     if (key === 'project' && value?.path && fs.existsSync(value.path)) {
       const set = new Set(settings.projects || []);
       if (value.allowed) set.add(value.path);
@@ -607,6 +613,11 @@ function registerIpc() {
   ipcMain.handle('connectors-remove', (_e, id) => { hub.remove(id); return settingsSnapshot(); });
   ipcMain.handle('memory-update', (_e, { id, text }) => { memory.update(id, text); return settingsSnapshot(); });
   ipcMain.handle('memory-delete', (_e, id) => { memory.remove(id); return settingsSnapshot(); });
+  ipcMain.handle('memory-pin', (_e, { id, pinned }) => { memory.pin(id, pinned); return settingsSnapshot(); });
+  // Loon's brain (Settings): the graph, one node's facts, forgetting a node (its facts stay).
+  ipcMain.handle('memory-graph', () => memory.graph());
+  ipcMain.handle('memory-node-facts', (_e, id) => memory.nodeFacts(String(id)));
+  ipcMain.handle('memory-node-delete', (_e, id) => { memory.removeNode(String(id)); return memory.graph(); });
   // Optional embedding model for meaning-based memory and cache matches; downloaded only when the user asks.
   ipcMain.handle('download-embedder', async () => {
     try {
@@ -672,11 +683,23 @@ app.whenReady().then(() => {
   translator = new Translator({ cacheDir: path.join(app.getPath('userData'), 'translation-models') });
   notes = new Notes(settings.notesDir || path.join(app.getPath('documents'), 'Loon'));
   embedder = new Embedder({ modelsDir: path.join(app.getPath('userData'), 'models'), brain });
-  memory = new Memory(path.join(app.getPath('userData'), 'memory.db'), { legacyJson: path.join(app.getPath('userData'), 'memory.json'), embedder });
+  let projectNames = null; // names only, so the brain graph recognizes "working on Loon"; folders aren't read
+  memory = new Memory(path.join(app.getPath('userData'), 'memory.db'), {
+    legacyJson: path.join(app.getPath('userData'), 'memory.json'),
+    embedder,
+    projectNames: () => (projectNames ??= require('./brain/projects').discover().map((p) => p.name)),
+  });
   // Only folders the user ticked in Settings → Projects are ever read.
   const allowedProjects = () => (settings.projects || []).filter((p) => fs.existsSync(p));
   hub = new ConnectorHub({ settings, save: saveSettings });
   actions = new Actions({ auditFile: path.join(app.getPath('userData'), 'audit.jsonl'), notes, memory, hub, projects: allowedProjects, onFocus: startFocus, openExternal: (url) => hooks.openExternal(url) });
+  // Tidy memory at most once a day: merges duplicate facts only, logged as a count (no content).
+  if (!settings.privacy && !SELFTEST && settings.lastTidy !== new Date().toDateString()) {
+    settings.lastTidy = new Date().toDateString();
+    saveSettings();
+    const merged = memory.consolidate();
+    if (merged) actions.audit({ action: 'tidy-memory', ok: true, merged });
+  }
   resolver = new Resolver({
     brain,
     translator,
@@ -715,6 +738,7 @@ app.whenReady().then(() => {
     actions,
     notes,
     settings,
+    saveSettings: () => { saveSettings(); settingsWin?.webContents.send('settings-changed', settingsSnapshot()); },
     ui: {
       showBubble,
       hideBubble,

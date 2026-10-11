@@ -41,6 +41,30 @@ function render(s) {
     li.append(label);
     return li;
   }));
+  const p = s.personal;
+  for (const field of document.querySelectorAll('[data-personal]')) {
+    if (document.activeElement !== field) field.value = p[field.dataset.personal] || '';
+  }
+  for (const radio of document.querySelectorAll('[name=length], [name=tone]')) radio.checked = radio.value === p[radio.name];
+  $('emoji').checked = p.emoji;
+  countChars();
+  $('profile').replaceChildren(...(s.profile.length ? s.profile : [null]).map((line) => {
+    const li = document.createElement('li');
+    if (!line) { li.className = 'muted'; li.textContent = 'Nothing yet. Tell Loon your name, or fill in "About you" above.'; return li; }
+    if (line.source === 'setting') {
+      li.className = 'from-setting';
+      li.textContent = line.text;
+      li.title = 'From "About you & replies" above';
+      return li;
+    }
+    const input = Object.assign(document.createElement('input'), { value: line.text });
+    input.setAttribute('aria-label', 'Edit this line');
+    input.addEventListener('change', async () => render(await window.loon.updateMemory(line.id, input.value)));
+    const unpin = Object.assign(document.createElement('button'), { textContent: 'Unpin', title: 'Keep the memory, drop it from this summary' });
+    unpin.addEventListener('click', async () => render(await window.loon.pinMemory(line.id, false)));
+    li.append(input, unpin);
+    return li;
+  }));
   $('memory').replaceChildren(...(s.memory.length ? s.memory : [null]).map((m) => {
     const li = document.createElement('li');
     if (!m) {
@@ -50,9 +74,9 @@ function render(s) {
     }
     const tag = Object.assign(document.createElement('span'), { className: 'tag', textContent: m.category });
     const input = Object.assign(document.createElement('input'), { value: m.text });
-    input.addEventListener('change', async () => render(await window.loon.updateMemory(m.id, input.value)));
+    input.addEventListener('change', async () => { render(await window.loon.updateMemory(m.id, input.value)); window.loonBrain?.refresh(); });
     const del = Object.assign(document.createElement('button'), { textContent: 'Delete' });
-    del.addEventListener('click', async () => render(await window.loon.deleteMemory(m.id)));
+    del.addEventListener('click', async () => { render(await window.loon.deleteMemory(m.id)); window.loonBrain?.refresh(); });
     li.append(tag, input, del);
     return li;
   }));
@@ -62,6 +86,23 @@ function render(s) {
     return li;
   }));
 }
+
+function countChars() {
+  for (const span of document.querySelectorAll('[data-count]')) {
+    const field = $(span.dataset.count);
+    span.textContent = field.value.length > field.maxLength * 0.8 ? `${field.value.length}/${field.maxLength}` : '';
+  }
+}
+const savePersonal = async (patch) => render(await window.loon.setSetting('personal', patch));
+for (const field of document.querySelectorAll('[data-personal]')) {
+  field.addEventListener('input', countChars);
+  field.addEventListener('change', () => savePersonal({ [field.dataset.personal]: field.value }));
+}
+for (const radio of document.querySelectorAll('[name=length], [name=tone]')) {
+  radio.addEventListener('change', () => savePersonal({ [radio.name]: radio.value }));
+}
+$('emoji').addEventListener('change', () => savePersonal({ emoji: $('emoji').checked }));
+window.loonSettings = { render: (s) => render(s) };
 
 for (const box of document.querySelectorAll('[data-key]')) {
   box.addEventListener('change', async () => render(await window.loon.setSetting(box.dataset.key, box.checked)));
@@ -80,7 +121,9 @@ window.loon.detectCli().then((found) => {
 $('copyCode').addEventListener('click', () => { window.loon.copyPairingCode(); $('copyCode').textContent = 'Copied ✓'; });
 $('openNotes').addEventListener('click', () => window.loon.openNotesFolder());
 $('clearMemory').addEventListener('click', async () => {
-  if (confirm('Forget everything Loon remembers about you? This also clears your history and remembered answers.')) render(await window.loon.clearMemory());
+  if (!confirm('Forget everything Loon remembers about you? This also clears your history and remembered answers.')) return;
+  render(await window.loon.clearMemory());
+  window.loonBrain?.refresh();
 });
 $('downloadEmbedder').addEventListener('click', async () => {
   $('downloadEmbedder').disabled = true;

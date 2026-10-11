@@ -19,6 +19,42 @@
     <label class="toggle"><input type="checkbox" data-key="judgmental" /> <span><b>Judgmental</b> A little sass about overpriced things and heavy food.</span></label>
   </section>
 
+  <section id="personal">
+    <h2>About you &amp; replies</h2>
+    <p class="muted">Loon reads these before every answer. They stay on this Mac. Privacy mode leaves out "About you".</p>
+    <label class="field"><b>About you</b>
+      <textarea id="about" data-personal="about" maxlength="600" rows="3" placeholder="I'm a CS student who likes short, concrete examples. I'm vegetarian."></textarea>
+      <span class="count" data-count="about"></span></label>
+    <label class="field"><b>How Loon should reply</b>
+      <textarea id="style" data-personal="style" maxlength="600" rows="2" placeholder="Bullet points for steps. Explain jargon. Skip the pep talk."></textarea>
+      <span class="count" data-count="style"></span></label>
+    <div class="segments">
+      <span><b>Length</b></span>
+      <div role="radiogroup" aria-label="Reply length">
+        <label><input type="radio" name="length" value="short" /><span>Short</span></label>
+        <label><input type="radio" name="length" value="normal" /><span>Normal</span></label>
+        <label><input type="radio" name="length" value="detailed" /><span>Detailed</span></label>
+      </div>
+    </div>
+    <div class="segments">
+      <span><b>Tone</b></span>
+      <div role="radiogroup" aria-label="Tone">
+        <label><input type="radio" name="tone" value="playful" /><span>Playful</span></label>
+        <label><input type="radio" name="tone" value="plain" /><span>Plain</span></label>
+        <label><input type="radio" name="tone" value="formal" /><span>Formal</span></label>
+      </div>
+    </div>
+    <label class="toggle"><input type="checkbox" id="emoji" /> <span><b>Emoji</b> A few emoji in answers when they fit.</span></label>
+    <label class="field inline"><b>Reply language</b> <input id="language" data-personal="language" maxlength="30" placeholder="Same as my question" /></label>
+    <p class="muted">You can also just tell Loon: "shorter please", "less emoji", "be more formal".</p>
+  </section>
+
+  <section>
+    <h2>What Loon knows about you</h2>
+    <p class="muted">Built from your pinned memories and the settings above. Edit a line, or unpin it to drop it from this summary.</p>
+    <ul id="profile"></ul>
+  </section>
+
   <section>
     <h2>Cloud via your plan</h2>
     <p class="muted">Optional, off by default. "Go deeper" (and a missing local model) can use the Claude or ChatGPT plan you already have, through the official CLI you installed and logged into yourself. Loon runs it with no tools, in an empty folder, and redacts secrets first. Privacy mode always turns this off. Follow your provider's terms; this is for personal use.</p>
@@ -76,6 +112,24 @@
   </section>
 
   <section>
+    <h2>Loon's brain</h2>
+    <p class="muted">The people, projects, places and tools in your memories, and how they connect. Loon follows these links to recall related things. Hover for names, click to see and edit the memories behind a dot, drag to move, scroll to zoom.</p>
+    <div id="brainDomains" class="domains" aria-label="Show or hide domains"></div>
+    <div class="brain-wrap">
+      <canvas id="brain" role="img" aria-label="Memory graph"></canvas>
+      <p id="brainEmpty" class="muted" hidden>Nothing here yet. Things you ask Loon to remember show up as dots.</p>
+    </div>
+    <input id="brainFind" list="brainNodes" placeholder="Find…" aria-label="Find a node" />
+    <datalist id="brainNodes"></datalist>
+    <div id="brainPanel" hidden>
+      <div class="row"><b id="brainTitle"></b><button id="brainClose" aria-label="Close">×</button></div>
+      <p id="brainMeta" class="muted"></p>
+      <ul id="brainFacts"></ul>
+      <button id="brainForget" class="danger">Forget this node</button>
+    </div>
+  </section>
+
+  <section>
     <h2>Models</h2>
     <p class="muted"><b>Smarter memory &amp; cache</b> (<span id="embedSize">≈37</span> MB, optional). A tiny open model (BGE small, MIT) that runs on this Mac, so Loon recalls memories and reuses answers that mean the same thing in different words.</p>
     <p id="embedStatus" class="mono"></p>
@@ -88,5 +142,6 @@
     <ul id="audit"></ul>
   </section>
   <script src="settings.js"></script>
+  <script src="brain.js"></script>
 </body>
 </html>

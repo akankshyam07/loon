@@ -249,7 +249,7 @@ Each one slots into T2/T3 when enabled and available.
 - **Deterministic self-check, one automatic upgrade.** After a model answer, plain code flags it as weak when it is empty, too short for the question, opens with a hedge or refusal ("I'm not sure", "as an AI"), just repeats the question, skips the list or code that was asked for, was cut off at the token limit, or is in a different script than a typed question. A flagged answer is retried **once** on the next tier up (larger local, then the plan); never twice, never to the cloud in Privacy mode, never after cancel. The bubble gets a `restart` chunk, clears the weak text and streams the new answer in its place; if the upgrade fails, the first answer comes back. Labels say what happened ("on your Mac · Qwen3 8B · upgraded: first answer looked unsure", "Claude (your plan) · routed: hard question").
 - **Token confidence is one more self-check flag** (local llama.cpp answers only). `LlamaChatSession.prompt()` doesn't expose probabilities, so `brain/ai.js` swaps the sequence's `evaluate()` for the library's own `evaluateWithMetadata(tokens, { confidence: true })` loop and records each picked token's probability. The answer's tail (minus the `<think>` block, the mood tag and end tokens) gives a mean log-prob and the share of tokens below p = 0.5, and the answer is flagged when they cross per-task limits (stricter for factual tasks). Rewrites, tone changes, translation and other open-ended writing never escalate on confidence alone. Ollama, the plan and test fakes give no signal, so the flag is skipped. The probabilities are measured after the top-k/top-p cut, so they run high: on Qwen3 4B, ordinary answers sat at −0.05 to −0.19 whether they were right, hedged or confidently wrong. The limits (−0.6 / −0.8) only catch visibly shaky generations until they are calibrated from logged cases.
 - **Thinking only where it pays.** Qwen3 runs in non-thinking mode by default (`budgets.thoughtTokens: 0`, temp 0.7 / top-p 0.8 / top-k 20, as the model card recommends; never greedy). Hard routes, comparisons and debugging tasks (find bug, likely fix, explain error) think first, with a 512-token thought budget and temp 0.6 / top-p 0.95 / top-k 20. Measured: about 270 thought tokens and roughly 6 s before the first visible word. `<think>` content never reaches the bubble or the cache.
-- **Stable prompt prefix.** The system prompt is one fixed string for every mode and task, and comes first. The user message puts the fixed instruction first, then the screen context, then recalled memory, with no timestamps anywhere. One warm context sequence per loaded model then reuses its KV prefix on every request: time to first token went from 2.5 s on the first request to about 0.1 s after it. Separate sequences per mode would multiply KV memory for no gain, because the prefix is the same across modes.
+- **Stable prompt prefix.** The system prompt is one fixed string for every mode and task, and comes first. The user message puts the user's preferences block first (§3.12.1, changes only with Settings), then the fixed instruction, then the screen context, then recalled memory, with no timestamps anywhere. One warm context sequence per loaded model then reuses its KV prefix on every request: time to first token went from 2.5 s on the first request to about 0.1 s after it. Separate sequences per mode would multiply KV memory for no gain, because the prefix is the same across modes.
 - **Structured output is grammar-constrained.** The only model output that gets parsed (the one-time shopping site extractor, §3.6) runs with `llama.createGrammarForJsonSchema()`, or Ollama's `format`, so it always parses. Reasoning answers stay free text. Intent routing is plain code, so it needs no grammar.
 - **kNN escalation memory** (only with the optional embedding model). Every typed question answered by a model is logged as a BGE-small vector, together with whether it needed a stronger tier: a self-check upgrade or a "Go deeper" tap (which flips the earlier entry for the same question). Privacy mode logs nothing. When at least 2 of a new question's ≤5 nearest past questions with cosine ≥ 0.8 exist and most of them escalated, the question starts one tier up ("routed: similar questions needed a stronger model"). Pre-routed answers aren't logged, so the log doesn't reinforce itself. The log lives in `escalations.json` and is cleared along with memory.
 - **Upgrades are learned for free.** A routed or upgraded answer that passes the self-check is cached under the request's normal key, so the same question is instant next time. Answers that still look weak, and fallback answers, are not cached.
@@ -541,7 +541,54 @@ site or app they belong to, and nothing is saved silently.
   - without the model, or in Privacy mode, recall is exactly the BM25 path above.
   The vector pass scans every fact: ~35 ms worst case at 5,000 facts, well under a millisecond at real sizes.
   History search stays BM25-only for now.
-- **Later:** a "Remember this?" chip when a typed message states a preference.
+- **Brain graph** (`brain/graph.js`, same `memory.db`): `nodes {id, label, kind, domain, subdomain, created, used,
+  uses}`, `edges {src, dst, relation, weight, created}` and `fact_nodes {fact_id, node_id, relation}`. Kinds: person,
+  project, site, topic, preference, place, tool, org. Domains (one constant, `DOMAINS`): work, study, shopping, food,
+  code, personal, health, travel.
+  - **Extraction is plain rules, run when a fact is added or edited** (older databases are linked once on open):
+    typed phrases ("work at X", "internship at X" → org; "working on X" and local project names from
+    `brain/projects.js` → project; "my boss Priya", "my mom" → person; "live in", "trip to" → place; course codes),
+    a list of languages and frameworks (subdomain = language family: Spring Boot → Java), hostnames (domain from a
+    site table), diet/allergen/cuisine/fitness words and product categories, then runs of capitalized words. "I
+    prefer/love/hate X" gives a typed edge to X, or a preference node when X names nothing known. The fact's domain
+    is a keyword score plus its entities' domains.
+  - **Edges:** `related` between every pair of entities in one fact (weight = facts shared), and typed edges from a
+    single "You" node ("works at", "prefers", "lives in", "boss"…). Deleting or editing a fact takes its weight back
+    and drops nodes no fact links to.
+  - **Recall** adds a third ranked list to the RRF fusion: nodes whose label words all appear in the request are
+    seeds (score 1), the walk goes two hops (×0.5 × w/(w+1) per hop, never through "You", which would connect
+    everything), and each fact scores the sum of its linked nodes, with the same scope/recency boosts. Facts in the
+    same domain as the task or site (`domainForTask`: food chips, shopping chips, code chips, amazon.com…) get ×1.5
+    in every list. So "what should I review for Acme" recalls "Spring Boot annotations confuse me" through
+    Acme → Spring Boot. Profile, categories and the 8-fact / 1,200-character budget are unchanged.
+  - **"What do you know about X"** answers in code from the node, its neighbors and its facts (text search when no
+    node matches).
+  - **Settings → Loon's brain:** a canvas graph with a hand-written force layout (O(n²) repulsion, capped at the
+    500 most used nodes and 1,500 strongest edges), nodes colored by domain and sized by use, domain chips that
+    double as legend and filter, hover labels, drag, pan and zoom, and a panel with the node's facts (edit, delete)
+    and "Forget this node" (its facts stay).
+  - Not built: model-proposed links ("smarter brain links"), episodes in the graph.
+- **Tidy memory:** at launch, at most once a day and never in Privacy mode, facts in the same scope with the same
+  normalized text (or cosine ≥ 0.95 between stored vectors) are merged: the newest wording stays and inherits the
+  pin and use counts. Nothing else is deleted; the audit log gets `{action: 'tidy-memory', merged: n}` only.
+
+#### 3.12.1 Personalization
+
+- **Custom instructions** (Settings → About you & replies): "About you" and "How Loon should reply" (600 characters
+  each), reply length (short / normal / detailed), tone (playful / plain / formal), emoji on/off and a reply
+  language, validated in `brain/personal.js`. They become one "User preferences" block at the start of the user
+  message, right after the fixed system prompt. It changes only when Settings change, so the system prompt stays
+  byte-identical and the KV prefix is still shared; at defaults the block is empty. Length also scales the token cap
+  (×0.6 / ×1.6) and the number of WordNet senses (1 / 4 / 6). Privacy mode drops "About you" and keeps the style.
+- **What Loon knows about you:** pinned facts plus the instructions, assembled in a fixed order. Fact lines can be
+  edited or unpinned in place.
+- **"Remember this?"**: after answering a typed message, plain patterns look for a stated fact in it ("I'm
+  vegetarian", "I prefer…", "I hate…", "my name is…", "I work at…", "call me…"), skipping questions, hypotheticals
+  and negations. A chip asks "Remember that you're vegetarian? ✓ ✗": ✓ runs the normal remember action, ✗ stores
+  the normalized text so it's never asked again. Never in Privacy mode, never saved without ✓.
+- **Feedback:** whole messages like "shorter please", "too long", "more detail", "less emoji", "be more formal",
+  "reply in Spanish" change the reply style in code before any model, and the answer is just "Got it, shorter from
+  now on. Change it in Settings."
 
 ### 3.13 Actions (Jarvis)
 
