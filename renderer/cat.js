@@ -329,6 +329,7 @@
     if (e.button !== 0) return;
     P.cat.setPointerCapture(e.pointerId);
     press = { cx: e.clientX, cy: e.clientY };
+    clearTimeout(homeTimer); // the user has the cat now; walk home later, if at all
     petTimer = setTimeout(startPet, 320);
   });
   P.cat.addEventListener('pointermove', (e) => {
@@ -458,6 +459,7 @@
   function comeHome(delay = 0) {
     clearTimeout(homeTimer);
     homeTimer = setTimeout(async () => {
+      if (await window.loon.atHome()) return;
       if (state !== 'idle' || bubbleOpen || dragging || press) return comeHome(4000);
       state = 'move';
       try {

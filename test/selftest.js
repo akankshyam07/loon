@@ -77,7 +77,7 @@ async function run(ctx) {
   await wait(150);
   mouse('mouseUp', head.x + 30, head.y + 5);
   await wait(400);
-  check('dragging moves the window through main', dragStarted && dragEnded);
+  check('dragging moves the window through main', dragStarted && dragEnded, `started ${dragStarted} · ended ${dragEnded} · state ${await cat('window.__loon.state')} · bounds ${JSON.stringify(catWin.getBounds())} vs ${JSON.stringify(homeBounds)}`);
   catWin.setBounds(homeBounds);
   await waitFor(async () => (await cat('window.__loon.state')) === 'idle', 3000);
 
@@ -86,7 +86,7 @@ async function run(ctx) {
     catWin.webContents.send('debug', { move });
     const started = await waitFor(async () => (await cat('window.__loon.state')) === 'move', 1500, 50);
     const finished = await waitFor(async () => (await cat('window.__loon.state')) === 'idle', 9000);
-    check(`cool move: ${move}`, started && finished, `started ${started} · finished ${finished}`);
+    check(`cool move: ${move}`, started && finished, `started ${started} · finished ${finished} · state ${await cat('window.__loon.state')}`);
     catWin.setBounds(homeBounds);
     await wait(300);
   }
@@ -98,7 +98,7 @@ async function run(ctx) {
   await wait(60);
   mouse('mouseUp', head.x, head.y + 40);
   const awake = await waitFor(async () => (await cat('window.__loon.state')) === 'idle', 3000);
-  check('nap: loaf pose, click wakes', napping && pose === 'loaf' && awake);
+  check('nap: loaf pose, click wakes', napping && pose === 'loaf' && awake, `napping ${napping} · pose ${pose} · awake ${awake}`);
   await waitFor(() => !bubbleWin.isVisible(), 500);
 
   check('⌥Space hotkey is registered', globalShortcut.isRegistered('Alt+Space'));
