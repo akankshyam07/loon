@@ -6,6 +6,7 @@ const { classifySelection } = require('../extension/lib/classify');
 const { selectionPacket, pagePacket } = require('./context');
 const { scopeOf } = require('../brain/memory');
 const { parseCommand, describe, normalizeSpoken } = require('../brain/commands');
+const { isAgentGoal } = require('../brain/agent');
 const connectorsLib = require('../brain/connectors');
 const { ConnectorHub } = require('./hub');
 
@@ -27,7 +28,7 @@ const domainOf = (url) => {
 };
 const chip = (id) => ({ id, label: TASKS[id].label });
 
-function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, settings, hub, memory = null }) {
+function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, settings, hub, memory = null, agent = null }) {
   const session = { mode: 'ask', packet: null, threadStarted: false, lastTask: null, pendingTask: null };
   let activePage = null; // latest page report from the focused, visible tab
   let active = null; // { controller, id }
@@ -208,8 +209,13 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
     return true;
   }
 
-  async function command(id, question, bubble) {
+  async function command(id, question, bubble, signal) {
     if (await connectorRequest(id, question, bubble)) return true;
+    // "click…", "fill…", "open X and …": step-by-step with a confirm card per change (§3.13.1).
+    if (agent && isAgentGoal(question)) {
+      await agent.run(id, question, bubble, signal);
+      return true;
+    }
     // normalizeSpoken: voice transcripts say "at five"; typed text is unaffected unless it spells numbers out.
     const parsed = parseCommand(normalizeSpoken(question));
     if (!parsed) return false;
@@ -249,7 +255,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
     const controller = new AbortController();
     active = { controller, id };
     try {
-      if (!task && question && session.mode !== 'selection' && session.mode !== 'app' && (await command(id, question, bubble))) return;
+      if (!task && question && session.mode !== 'selection' && session.mode !== 'app' && (await command(id, question, bubble, controller.signal))) return;
       if (task?.startsWith('send:')) {
         const connector = hub?.get(task.slice(5));
         const ops = connector ? await hub.ops(connector) : [];

@@ -21,6 +21,20 @@ function appleDate(name, d) {
   ].join('\n');
 }
 
+// ["File", "New", "Note"] → menu item "Note" of menu "New" of menu item "New" of menu "File" of menu bar item "File" of menu bar 1
+function menuRef(items) {
+  let ref = `menu "${q(items[0])}" of menu bar item "${q(items[0])}" of menu bar 1`;
+  for (const item of items.slice(1, -1)) ref = `menu "${q(item)}" of menu item "${q(item)}" of ${ref}`;
+  return `menu item "${q(items.at(-1))}" of ${ref}`;
+}
+
+// macOS permission errors, turned into where to fix them.
+function permissionHint(message) {
+  if (/assistive|accessibility|-1719|-25211|1002\b/i.test(message)) return ' Loon needs Accessibility: System Settings → Privacy & Security → Accessibility → Loon.';
+  if (/not allowed|1743|authoriz/i.test(message)) return ' macOS needs permission: System Settings → Privacy & Security → Automation → Loon.';
+  return '';
+}
+
 const realExecutors = {
   async reminder({ title, when }) {
     const lines = [];
@@ -49,6 +63,23 @@ const realExecutors = {
     }
     await run('open', ['-a', target]);
     return `Opened ${target}.`;
+  },
+  async activate({ app }) {
+    await run('osascript', ['-e', `tell application "${q(app)}" to activate`]);
+    return `${app} is in front.`;
+  },
+  // Clicks a menu item by its path, e.g. ["File", "New Note"], through System Events (needs Accessibility).
+  async menu({ app, path: items }) {
+    if (!app || !Array.isArray(items) || items.length < 2) throw new Error('A menu path needs an app, a menu and an item');
+    await run('osascript', ['-e', `tell application "${q(app)}" to activate\ndelay 0.3\ntell application "System Events" to tell process "${q(app)}" to click ${menuRef(items)}`]);
+    return `Clicked ${items.join(' › ')}.`;
+  },
+  // Types into whatever app is in front. Password managers and the login window are refused.
+  async keys({ text }) {
+    const front = await run('osascript', ['-e', 'tell application "System Events" to get name of first process whose frontmost is true']);
+    if (/1password|keychain|lastpass|bitwarden|dashlane|loginwindow|securityagent/i.test(front)) throw new Error(`I don't type into ${front}`);
+    await run('osascript', ['-e', `tell application "System Events" to keystroke "${q(text)}"`]);
+    return `Typed into ${front}.`;
   },
   async shortcuts() {
     const out = await run('shortcuts', ['list']);
@@ -190,8 +221,7 @@ class Actions {
       return { ok: true, message, results };
     } catch (err) {
       this.audit({ action: command.action, ok: false, error: err.message.slice(0, 200) });
-      const hint = /not allowed|1743|authoriz/i.test(err.message) ? ' macOS needs permission: System Settings → Privacy & Security → Automation → Loon.' : '';
-      return { ok: false, message: `That didn't work: ${err.message}.${hint}` };
+      return { ok: false, message: `That didn't work: ${err.message}.${permissionHint(err.message)}` };
     }
   }
 }
@@ -240,4 +270,4 @@ function formatHistory(episodes, query, now = Date.now()) {
   return lines.join('\n');
 }
 
-module.exports = { Actions, appleDate, formatDay, formatHistory };
+module.exports = { Actions, appleDate, formatDay, formatHistory, menuRef, permissionHint };

@@ -3,6 +3,7 @@
 (() => {
   const { classifySelection } = globalThis.LoonClassify;
   const { detectPage } = globalThis.LoonPageKind;
+  const agent = globalThis.LoonAgentDom.createAgentDom(document, window);
   const MIN_CHARS = 2;
   const MAX_CHARS = 20000;
   const send = (message) => chrome.runtime.sendMessage(message).catch(() => {});
@@ -162,6 +163,20 @@
       reply({ ok: true });
     } else if (message.type === 'replace') {
       reply(replaceSelection(message.text));
+    } else if (message.type.startsWith('agent-')) {
+      // Acting for the user (§3.13.1): re-checked on every request, because a page can turn sensitive after it loads.
+      page = detectPage(document, location);
+      if (page.sensitive) {
+        agent.clear();
+        return reply({ sensitive: true, reason: page.reason, error: `Private page (${page.reason}): I won't act here` });
+      }
+      if (message.type === 'agent-list') reply({ url: location.href, title: document.title, kind: page.kind, elements: agent.list() });
+      else if (message.type === 'agent-highlight') reply({ ok: agent.highlight(message.id, message.label) });
+      else if (message.type === 'agent-clear') reply({ ok: (agent.clear(), true) });
+      else if (message.type === 'agent-act') {
+        agent.act(message).then(reply, (err) => reply({ ok: false, error: err.message }));
+        return true; // async reply
+      }
     } else if (message.type === 'report-page') {
       page = detectPage(document, location);
       reportPage();

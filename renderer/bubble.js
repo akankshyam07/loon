@@ -363,6 +363,90 @@ window.loon.onBubbleChoices(({ id, prompt, options }) => {
   current.el.replaceChildren(box);
 });
 
+// "Do it for me" (§3.13.1): a step log, one card per change (✓ Do it / ⏭ Skip / ✕ Stop), and a ✕ that stops the task.
+const STEP_ICONS = { done: '✓', auto: '⚡', read: '👀', skipped: '⏭', refused: '🔒', error: '⚠', info: '🐾' };
+let agentPanel = null; // { id, steps, slot }
+
+function agentButton(label, className, onClick) {
+  const b = Object.assign(document.createElement('button'), { className, textContent: label });
+  b.addEventListener('click', onClick);
+  return b;
+}
+
+function agentCard(msg) {
+  const box = document.createElement('div');
+  box.className = 'confirm';
+  box.append(Object.assign(document.createElement('div'), { className: 'confirm-title', textContent: msg.title }));
+  const answer = (decision, facts) => {
+    box.replaceWith(Object.assign(document.createElement('div'), { className: 'note', textContent: decision === 'stop' ? 'Stopping…' : '' }));
+    window.loon.agentDecision(msg.stepId, decision, facts);
+  };
+  if (msg.kind === 'facts') {
+    const boxes = msg.facts.map((fact) => {
+      const row = document.createElement('label');
+      row.className = 'fact';
+      const check = Object.assign(document.createElement('input'), { type: 'checkbox' });
+      row.append(check, document.createTextNode(` ${fact}`));
+      box.append(row);
+      return check;
+    });
+    box.append(Object.assign(document.createElement('div'), { className: 'muted', textContent: 'Only ticked items are used, only for this task. Never passwords or card details.' }));
+    const buttons = document.createElement('div');
+    buttons.className = 'confirm-buttons';
+    buttons.append(
+      agentButton('✓ Continue', 'primary', () => answer('do', boxes.flatMap((c, i) => (c.checked ? [i] : [])))),
+      agentButton('✕ Stop', 'secondary', () => answer('stop')),
+    );
+    box.append(buttons);
+    return box;
+  }
+  if (msg.target) box.append(Object.assign(document.createElement('div'), { className: 'muted', textContent: `On the page: ${msg.target}${msg.site ? ` · ${msg.site}` : ''}` }));
+  if (msg.reason) box.append(Object.assign(document.createElement('div'), { className: 'muted', textContent: `Why: ${msg.reason}` }));
+  if (msg.risky) box.append(Object.assign(document.createElement('div'), { className: 'risky', textContent: 'This one spends, sends or deletes something, so it always needs your click.' }));
+  const buttons = document.createElement('div');
+  buttons.className = 'confirm-buttons';
+  buttons.append(
+    agentButton('✓ Do it', 'primary', () => answer('do')),
+    agentButton('⏭ Skip', 'secondary', () => answer('skip')),
+    agentButton('✕ Stop', 'secondary', () => answer('stop')),
+  );
+  box.append(buttons);
+  if (msg.canAllowRest) box.append(agentButton(`Allow the rest of this task on ${msg.site}`, 'linkish', () => answer('allow')));
+  return box;
+}
+
+window.loon.onBubbleAgent((msg) => {
+  if (msg.type === 'start') {
+    if (current?.id !== msg.id) return;
+    const panel = document.createElement('div');
+    panel.className = 'agent';
+    const head = document.createElement('div');
+    head.className = 'agent-head';
+    head.append(Object.assign(document.createElement('span'), { textContent: '🐾 On it, step by step' }), agentButton('✕', 'agent-stop', () => window.loon.cancelAsk()));
+    head.lastChild.title = 'Stop (Esc)';
+    agentPanel = { id: msg.id, steps: Object.assign(document.createElement('ol'), { className: 'agent-steps' }), slot: document.createElement('div') };
+    panel.append(head, agentPanel.steps, agentPanel.slot);
+    current.el.replaceChildren(panel);
+  } else if (!agentPanel || agentPanel.id !== msg.id) {
+    return;
+  } else if (msg.type === 'log') {
+    agentPanel.slot.replaceChildren();
+    const li = Object.assign(document.createElement('li'), { textContent: `${STEP_ICONS[msg.kind] || '·'} ${msg.text}` });
+    li.className = msg.kind;
+    agentPanel.steps.append(li);
+  } else if (msg.type === 'confirm') {
+    agentPanel.slot.replaceChildren(agentCard(msg));
+    if (!focused) { focused = true; window.loon.focusBubble(); }
+  } else if (msg.type === 'end') {
+    agentPanel.slot.replaceChildren(Object.assign(document.createElement('div'), { className: msg.ok ? 'note' : 'a error', textContent: msg.message }));
+    agentPanel.slot.closest('.agent')?.querySelector('.agent-stop')?.remove();
+    agentPanel = null;
+    if (current?.id === msg.id) current = null;
+    autosize();
+  }
+  log.scrollTop = log.scrollHeight;
+});
+
 window.loon.onBubbleAction(({ id, ok, message, results, markdown }) => {
   const note = Object.assign(document.createElement('div'), { className: ok ? (markdown ? 'a' : 'note') : 'a error' });
   if (markdown) note.innerHTML = renderMarkdown(message);
@@ -479,6 +563,7 @@ window.loon.onBubbleShown(({ context: next, focus, pill } = {}) => {
   log.replaceChildren();
   current = null;
   lastTask = null;
+  agentPanel = null;
   renderContext(next);
   refreshStatus();
 });
@@ -507,6 +592,7 @@ window.loon.onBubbleRun(({ task }) => {
 window.loon.onBubbleHidden(() => {
   log.replaceChildren();
   current = null;
+  agentPanel = null;
   input.value = '';
   autosize();
 });

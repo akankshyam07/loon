@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Agent fixture</title></head>
+<body>
+  <main>
+    <h1>Tea shop</h1>
+    <form id="search" action="javascript:void 0">
+      <label for="q">Search teas</label>
+      <input id="q" name="q" type="search">
+      <button type="submit">Go</button>
+    </form>
+    <p id="out">nothing yet</p>
+    <button id="add" onclick="document.getElementById('out').textContent = 'added ' + document.getElementById('size').value">Add to cart</button>
+    <label>Size <select id="size"><option value="s">Small</option><option value="l">Large</option></select></label>
+    <a href="/checkout">Proceed to checkout</a>
+    <div id="notes" contenteditable="true" aria-label="Gift note"></div>
+    <form id="pay">
+      <input name="cardnumber" autocomplete="cc-number" placeholder="Card number">
+      <input name="code" autocomplete="one-time-code" aria-label="Code">
+      <input id="pin" name="pin" aria-label="PIN">
+      <button type="submit">Place order</button>
+    </form>
+    <button hidden>Hidden button</button>
+  </main>
+  <script>
+    document.getElementById('search').addEventListener('submit', () => { document.getElementById('out').textContent = 'searched ' + document.getElementById('q').value; });
+  </script>
+</body>
+</html>

@@ -43,6 +43,8 @@ contextBridge.exposeInMainWorld('loon', {
   onBubbleConfirm: on('bubble-confirm'),
   onBubbleAction: on('bubble-action'),
   onBubbleChoices: on('bubble-choices'),
+  onBubbleAgent: on('bubble-agent'),
+  agentDecision: (stepId, decision, facts = []) => ipcRenderer.send('agent-decision', { stepId, decision, facts }),
   discoverConnectors: () => ipcRenderer.invoke('connectors-discover'),
   addConnector: (found) => ipcRenderer.invoke('connectors-add', found),
   removeConnector: (id) => ipcRenderer.invoke('connectors-remove', id),
