@@ -14,6 +14,7 @@ const { Memory } = require('./brain/memory');
 const { Embedder } = require('./brain/embed');
 const { VoiceEngine, createVoiceController } = require('./main/voice');
 const { ConnectorHub } = require('./main/hub');
+const { createAgentRunner } = require('./main/agent');
 
 // Cat height in px per size preset; the window adds room around it for sparkles and hops.
 const SIZES = { S: 120, M: 160, L: 210 };
@@ -46,6 +47,7 @@ let settingsWin = null;
 let voice;
 let hub;
 let voiceEngine;
+let agentRunner;
 const pendingPlays = new Map();
 const toBubbleRef = { current: null };
 let playId = 0;
@@ -527,7 +529,7 @@ function registerIpc() {
   // Bubble ↔ companion. Every answer streams back as ask-chunk / ask-done / ask-error.
   const toBubble = (type, payload) => {
     voice.observe(type, payload);
-    const channel = { chunk: 'ask-chunk', done: 'ask-done', error: 'ask-error', context: 'bubble-context', sensitive: 'bubble-sensitive', confirm: 'bubble-confirm', 'action-done': 'bubble-action', choices: 'bubble-choices' }[type];
+    const channel = { chunk: 'ask-chunk', done: 'ask-done', error: 'ask-error', context: 'bubble-context', sensitive: 'bubble-sensitive', confirm: 'bubble-confirm', 'action-done': 'bubble-action', choices: 'bubble-choices', agent: 'bubble-agent' }[type];
     bubbleWin.webContents.send(channel, payload);
   };
   toBubbleRef.current = toBubble;
@@ -545,6 +547,7 @@ function registerIpc() {
     bubbleWin.focus();
   });
   ipcMain.on('confirm-action', (_e, { id, command }) => companion.confirm(command, toBubble, id));
+  ipcMain.on('agent-decision', (_e, decision) => agentRunner.decide(decision || {}));
   ipcMain.handle('save-note', (_e, entry) => companion.saveNote(entry));
   // Only reveals files a Loon file search just returned (they exist on disk); never arbitrary paths from a page.
   ipcMain.on('reveal', (_e, file) => { if (typeof file === 'string' && path.isAbsolute(file) && fs.existsSync(file)) shell.showItemInFolder(file); });
@@ -650,7 +653,23 @@ app.whenReady().then(() => {
     countsFile: path.join(app.getPath('userData'), 'counts.json'),
   });
   bridge = new Bridge({ pairingCode: settings.pairingCode });
+  // While Loon acts for the user: busy paws on the cat, and Esc anywhere stops the task.
+  agentRunner = createAgentRunner({
+    bridge,
+    actions,
+    brain,
+    settings,
+    memory,
+    ui: {
+      busy: (on, ok) => {
+        catWin.webContents.send('brain', on ? { state: 'acting' } : { state: 'done', mood: ok ? 'happy' : 'confused' });
+        if (on) globalShortcut.register('Escape', () => companion.cancel());
+        else globalShortcut.unregister('Escape');
+      },
+    },
+  });
   companion = createCompanion({
+    agent: agentRunner,
     memory,
     bridge,
     resolver,

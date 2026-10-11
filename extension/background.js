@@ -51,9 +51,39 @@ async function reportActiveTab() {
   if (tab?.id) chrome.tabs.sendMessage(tab.id, { type: 'report-page' }).catch(() => {});
 }
 
+// Tabs Loon opened for a "do it for me" task; besides these it only acts in the tab the user is looking at.
+const agentTabs = new Set();
+chrome.tabs.onRemoved.addListener((id) => agentTabs.delete(id));
+
+async function onAgentMessage(message) {
+  if (message.type === 'agent-open') {
+    if (!/^https?:\/\//i.test(message.url || '')) return { error: 'Only web links can be opened' };
+    const tab = await chrome.tabs.create({ url: message.url, active: true });
+    agentTabs.add(tab.id);
+    return { ok: true, tabId: tab.id };
+  }
+  if (message.type === 'agent-end') {
+    for (const id of agentTabs) chrome.tabs.sendMessage(id, { type: 'agent-clear' }).catch(() => {});
+    agentTabs.clear();
+    message = { ...message, type: 'agent-clear' };
+  }
+  const active = await activeTab();
+  const tabId = message.tabId || active?.id;
+  if (!tabId) return { error: 'No browser tab is open' };
+  if (tabId !== active?.id && !agentTabs.has(tabId)) return { error: 'That is not the tab you are looking at. Switch back to it and ask again' };
+  try {
+    return { ...(await chrome.tabs.sendMessage(tabId, message)), tabId };
+  } catch (err) {
+    // A click that navigates tears down the page before it can answer: that is the click working.
+    if (message.type === 'agent-act' && ['click', 'enter', 'back'].includes(message.op) && /closed|receiving end/i.test(err.message)) return { ok: true, navigated: true, tabId };
+    return { error: `The page did not answer (${err.message}). Try reloading it.` };
+  }
+}
+
 // Requests from the app, answered with { replyTo }.
 async function onAppMessage(message) {
   if (message.type === 'pong' || !message.requestId) return;
+  if (message.type.startsWith('agent-')) return send({ ...(await onAgentMessage(message)), replyTo: message.requestId });
   const tabId = message.tabId || (await activeTab())?.id;
   let reply;
   try {

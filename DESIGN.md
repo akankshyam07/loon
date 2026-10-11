@@ -571,6 +571,26 @@ site or app they belong to, and nothing is saved silently.
 
 - The **Automation** permission prompt (Reminders, Calendar) appears the first time each action is used.
 
+#### 3.13.1 Loon does it for you (step-by-step agent)
+
+"click Sign up", "search youtube for lofi and play the first video", "open Notes and make a new note saying X", "fill this form with my info", "add these 3 items to my cart". `isAgentGoal` (`brain/agent.js`) routes these narrow phrasings to the agent before the ordinary command parser; questions stay questions.
+
+- **Loop:** observe → choose ONE step → check in code → confirm → execute → observe again, at most 12 steps, ending on done/fail/Stop.
+- **Planner, cheapest first:** fast paths in plain code cover common goals (open a site or app, search a known site, play/click the first result, click a button by its text, type into a labelled field, choose a dropdown option, scroll, back, a new note/document via the app's menu, run a Shortcut). The fast path's targets are resolved against the observed page; if a target isn't there, the local model takes over. The model gets the goal, the page's element list (inside `<context>`, as untrusted data) and the step history, and must answer with one JSON step held to a grammar (`STEP_SCHEMA`). With "Cloud via your plan" on and Privacy mode off, a local answer that doesn't fit the page gets one second try from the CLI: redacted prompt only, no tools.
+- **Browser (extension, DOM-based):** `extension/lib/agent-dom.js` lists actionable elements (role, visible text/label/aria, short stable id, bounding box, href, empty/filled, dropdown options) and performs click / type (React-safe value setter, or `insertText` for contenteditable) / select / Enter (submits the form) / scroll / back / read; the app opens URLs in a new tab through the service worker. The element gets a green outline and a 🐾 label before each action and while its card is shown.
+- **macOS:** open app, activate, click a menu item by path (`["File", "New Note"]`, System Events), type into the front app (System Events keystroke), run a Shortcut. Missing Accessibility permission comes back as "System Settings → Privacy & Security → Accessibility → Loon". Clicking arbitrary screen coordinates is deliberately not offered (later work).
+
+Safety rules (enforced in code, not by the model):
+- **Every step that changes something gets a card**: what, on which element (highlighted on the page), why; ✓ Do it · ⏭ Skip · ✕ Stop. Reading and scrolling run without a card but appear in the step log.
+- **"Allow the rest of this task on <site>"** auto-approves only later clicks, typing (into ordinary fields), dropdown choices and Enter on that same site. Opening links, going back, app/menu/keystroke steps, other sites and private fields always ask again.
+- **Buy / place order / pay / checkout / delete / remove / send / transfer / confirm purchase / subscribe** (button text, label, the form's submit button for Enter, or a link path like `/checkout`) always need their own click, even after "allow the rest".
+- **Never typed, no override:** password, `cc-*`, `one-time-code`, and fields whose name/label says card number, CVV, PIN, SSN, verification code and the like; any text that redaction (§4.2) flags as a card, key or secret. Password-manager apps and the login window are refused for keystrokes.
+- **Private pages** (§4.1) end the task; the content script re-checks on every request.
+- **Only the tab the user is looking at**, or a tab Loon opened for this task; the service worker refuses anything else.
+- **Personal details** come only from the request itself or from memory facts the user ticks in a card at the start of the task. Never passwords or payment data.
+- **Stop anytime:** Esc (a global shortcut only while a task runs), the ✕ in the bubble, or closing the bubble. The cat shows busy paws while acting.
+- **Audit:** one `audit.jsonl` line per executed step: op, site, ok, whether it ran without a card, risky, source (fast/model), and character count of typed text, never the text.
+
 ### 3.14 Proactive nudges
 
 - **When:** pageKind is shopping, menu, or code error, or the page is dense text (Flesch-Kincaid grade >12, or average sentence >25 words, with >300 words — thresholds to be tuned); the page isn't sensitive; Focus mode is off.

@@ -9,7 +9,7 @@
   "content_scripts": [
     {
       "matches": ["http://*/*", "https://*/*"],
-      "js": ["lib/classify.js", "lib/page-kind.js", "content.js"],
+      "js": ["lib/classify.js", "lib/page-kind.js", "lib/agent-dom.js", "content.js"],
       "run_at": "document_idle"
     }
   ],

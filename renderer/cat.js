@@ -58,7 +58,7 @@
   const FX = { blink: 0, twitchL: 0, twitchR: 0 };
   const SPEED = { lookX: 16, lookY: 16, pupil: 10, lidL: 14, lidR: 14, happy: 12 };
 
-  let state = 'idle'; // idle | petted | napping | eating | thinking | talking | move
+  let state = 'idle'; // idle | petted | napping | eating | thinking | talking | acting | move
   let pose = 'sit';
   let mood = 'neutral';
   let moodTilt = 0;
@@ -179,7 +179,7 @@
     T.headRot = moodTilt + idleTilt + (lookOverride ? 0 : gaze.rot);
     T.headY = poseHeadY;
     T.bodySy = poseBodySy;
-    if (state === 'thinking') T.glow = 0.55 + 0.35 * Math.sin(now / 260);
+    if (state === 'thinking' || state === 'acting') T.glow = 0.55 + 0.35 * Math.sin(now / (state === 'acting' ? 160 : 260));
 
     const k = (speed) => 1 - Math.exp((-dt / 1000) * speed);
     for (const key in T) S[key] += (T[key] - S[key]) * k(SPEED[key] || 9);
@@ -668,6 +668,14 @@
       lookOverride = { x: 2.5, y: -4.5 };
       setMood('focused');
       tailStyle = { amp: 10, period: 900 };
+    } else if (brainState === 'acting') {
+      // Busy paws: Loon is doing something for the user; focused eyes, quick tail, pendant pulsing until it's done.
+      if (state === 'napping') wakeUp();
+      stopTalking();
+      state = 'acting';
+      lookOverride = { x: -3, y: 1.5 };
+      setMood('focused');
+      tailStyle = { amp: 12, period: 600 };
     } else if (brainState === 'talking') {
       state = 'talking';
       thought.hidden = true;
@@ -696,7 +704,7 @@
       lookOverride = { x: -4.5, y: -3.5 };
       setMood('curious');
     } else {
-      if (state === 'thinking' || state === 'talking') onBrain({ state: 'done', mood: 'neutral' });
+      if (state === 'thinking' || state === 'talking' || state === 'acting') onBrain({ state: 'done', mood: 'neutral' });
       lookOverride = null;
       setMood('neutral');
       if (focusMode) setTimeout(applyFocusLook, 1500);
