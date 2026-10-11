@@ -5,10 +5,14 @@
 //   searchable with "what did I look up about…". Older than HISTORY_DAYS is dropped.
 // Storing and retrieving never calls a chat model, so memory works even when the model doesn't. With the optional
 // embedder (brain/embed.js), facts also carry a vector and recall fuses BM25 with meaning (Reciprocal Rank Fusion).
+// - nodes/edges: the brain graph (brain/graph.js). Entities found in each fact by plain rules become nodes, facts
+//   link to them (fact_nodes), and recall walks 1–2 hops from what the request mentions as a third ranked list.
 const crypto = require('crypto');
 const fs = require('fs');
 const { DatabaseSync } = require('node:sqlite');
 const { cosine, toBytes, fromBytes } = require('./embed');
+const graph = require('./graph');
+const { normalizeFact } = require('./personal');
 
 const CATEGORY_RULES = [
   ['diet', /\b(vegetarian|vegan|pescatarian|allerg|gluten|dairy|lactose|keto|halal|kosher|protein|calorie|diet|eat|nuts?)\b/i],
@@ -38,6 +42,9 @@ const BUDGET_CHARS = 1200; // memory never crowds out the actual question
 const VECTOR_MIN = 0.58;
 const RRF_K = 60; // the usual Reciprocal Rank Fusion constant
 const BACKFILL = 32; // facts embedded per request until every old fact has a vector
+const HOP_DECAY = 0.5; // a neighbor counts half as much as the node it was reached from, times its edge strength
+const DOMAIN_BOOST = 1.5; // facts from the same area of life as the task or site
+const DUPLICATE_MIN = 0.95; // cosine at which two facts say the same thing (consolidation)
 
 function categorize(text) {
   return CATEGORY_RULES.find(([, re]) => re.test(text))?.[0] || 'preference';
@@ -61,9 +68,11 @@ function scopeOf(packet = {}) {
 class Memory {
   // file: path to memory.db. legacyJson: the old memory.json, imported once and renamed.
   // embedder: optional (brain/embed.js); without it memory is BM25 only.
-  constructor(file, { legacyJson = null, now = () => Date.now(), embedder = null } = {}) {
+  // projectNames: local project names (brain/projects.js discover) the graph should recognize in facts.
+  constructor(file, { legacyJson = null, now = () => Date.now(), embedder = null, projectNames = () => [] } = {}) {
     this.now = now;
     this.embedder = embedder;
+    this.projectNames = projectNames;
     this.open(file);
     if (legacyJson) this.importLegacy(legacyJson);
   }
@@ -94,10 +103,24 @@ class Memory {
         INSERT INTO episodes_fts(rowid, title, text, scope) VALUES (new.id, new.title, new.text, new.scope); END;
       CREATE TRIGGER IF NOT EXISTS episodes_ad AFTER DELETE ON episodes BEGIN
         INSERT INTO episodes_fts(episodes_fts, rowid, title, text, scope) VALUES ('delete', old.id, old.title, old.text, old.scope); END;
+      CREATE TABLE IF NOT EXISTS nodes (
+        id TEXT PRIMARY KEY, label TEXT NOT NULL, kind TEXT NOT NULL, domain TEXT NOT NULL, subdomain TEXT NOT NULL DEFAULT '',
+        created INTEGER NOT NULL, used INTEGER NOT NULL DEFAULT 0, uses INTEGER NOT NULL DEFAULT 0);
+      CREATE TABLE IF NOT EXISTS edges (
+        src TEXT NOT NULL, dst TEXT NOT NULL, relation TEXT NOT NULL, weight REAL NOT NULL DEFAULT 1, created INTEGER NOT NULL,
+        PRIMARY KEY (src, dst, relation));
+      CREATE INDEX IF NOT EXISTS edges_dst ON edges(dst);
+      CREATE TABLE IF NOT EXISTS fact_nodes (
+        fact_id TEXT NOT NULL, node_id TEXT NOT NULL, relation TEXT NOT NULL DEFAULT '', PRIMARY KEY (fact_id, node_id));
+      CREATE INDEX IF NOT EXISTS fact_nodes_node ON fact_nodes(node_id);
     `);
-    // Databases from before embeddings get the column added in place; NULL means "not embedded yet".
-    if (!this.db.prepare('PRAGMA table_info(facts)').all().some((c) => c.name === 'vec')) this.db.exec('ALTER TABLE facts ADD COLUMN vec BLOB');
+    // Older databases get new columns in place: vec NULL means "not embedded yet", linked 0 "not in the graph yet".
+    const columns = this.db.prepare('PRAGMA table_info(facts)').all().map((c) => c.name);
+    if (!columns.includes('vec')) this.db.exec('ALTER TABLE facts ADD COLUMN vec BLOB');
+    if (!columns.includes('linked')) this.db.exec('ALTER TABLE facts ADD COLUMN linked INTEGER NOT NULL DEFAULT 0');
+    this.db.prepare(`INSERT OR IGNORE INTO nodes (id, label, kind, domain, subdomain, created) VALUES (?, 'You', 'person', 'personal', 'you', ?)`).run(graph.ME, this.now());
     this.db.prepare('DELETE FROM episodes WHERE at < ?').run(this.now() - HISTORY_DAYS * DAY);
+    for (const f of this.db.prepare('SELECT id, text FROM facts WHERE linked = 0').all()) this.linkFact(f.id, f.text);
   }
 
   // Stores a fact's vector in the background. The text check skips a vector made for text edited since.
@@ -136,16 +159,18 @@ class Memory {
 
   add(text, source = 'user', { scope = '', pinned = null, created = this.now() } = {}) {
     const clean = text.trim();
-    this.db.prepare('DELETE FROM facts WHERE lower(text) = lower(?)').run(clean);
+    for (const old of this.db.prepare('SELECT id FROM facts WHERE lower(text) = lower(?)').all(clean)) this.remove(old.id);
     const entry = { id: crypto.randomUUID(), text: clean, category: categorize(clean), scope, pinned: pinned ?? PROFILE.test(clean), source };
     this.db.prepare('INSERT INTO facts (id, text, category, scope, pinned, source, created) VALUES (?, ?, ?, ?, ?, ?, ?)')
       .run(entry.id, entry.text, entry.category, scope, entry.pinned ? 1 : 0, source, created);
+    this.linkFact(entry.id, entry.text);
     this.embedFact(entry.id, entry.text);
     return entry;
   }
 
   update(id, text) {
     this.db.prepare('UPDATE facts SET text = ?, category = ?, vec = NULL WHERE id = ?').run(text.trim(), categorize(text), id);
+    this.linkFact(id, text.trim());
     this.embedFact(id, text.trim());
   }
 
@@ -154,6 +179,7 @@ class Memory {
   }
 
   remove(id) {
+    this.unlinkFact(id);
     this.db.prepare('DELETE FROM facts WHERE id = ?').run(id);
   }
 
@@ -170,20 +196,178 @@ class Memory {
   }
 
   clear() {
-    this.db.exec('DELETE FROM facts');
+    this.db.exec(`DELETE FROM facts; DELETE FROM fact_nodes; DELETE FROM edges; DELETE FROM nodes WHERE id != '${graph.ME}'`);
+  }
+
+  // Merges facts that say the same thing (same normalized text, or cosine ≥ 0.95 when both have vectors) within the
+  // same scope. The newest wording survives and inherits pin and use counts; nothing else is touched. No model call:
+  // only vectors already stored are compared. Returns how many facts were merged away.
+  // ponytail: O(n²) vector comparison, fine to a few thousand facts; bucket by FTS terms first if memory grows past that.
+  consolidate() {
+    const facts = this.db.prepare('SELECT id, text, scope, pinned, created, used, uses, vec FROM facts ORDER BY created DESC, rowid DESC').all()
+      .map((f) => ({ ...f, key: normalizeFact(f.text), v: fromBytes(f.vec) }));
+    const gone = new Set();
+    for (const keep of facts) {
+      if (gone.has(keep.id)) continue;
+      const dupes = facts.filter((f) => f !== keep && !gone.has(f.id) && f.scope === keep.scope
+        && (f.key === keep.key || (keep.v && f.v && cosine(keep.v, f.v) >= DUPLICATE_MIN)));
+      if (!dupes.length) continue;
+      const all = [keep, ...dupes];
+      this.db.prepare('UPDATE facts SET pinned = ?, used = ?, uses = ? WHERE id = ?')
+        .run(all.some((f) => f.pinned) ? 1 : 0, Math.max(...all.map((f) => f.used)), all.reduce((n, f) => n + f.uses, 0), keep.id);
+      for (const f of dupes) {
+        gone.add(f.id);
+        this.remove(f.id);
+      }
+    }
+    return gone.size;
+  }
+
+  // ---------- graph ----------
+  // Puts a fact's entities in the graph: a node each, co-occurrence edges between them ('related', weight = number
+  // of facts they share) and typed edges from the user ("works at", "prefers"). Relinking replaces the old links.
+  linkFact(id, text) {
+    this.unlinkFact(id);
+    const now = this.now();
+    let projects = [];
+    try {
+      projects = this.projectNames() || [];
+    } catch { /* projects folder unreadable: no project names */ }
+    const addNode = this.db.prepare('INSERT INTO nodes (id, label, kind, domain, subdomain, created) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO NOTHING');
+    const link = this.db.prepare('INSERT OR IGNORE INTO fact_nodes (fact_id, node_id, relation) VALUES (?, ?, ?)');
+    const bump = this.db.prepare('INSERT INTO edges (src, dst, relation, weight, created) VALUES (?, ?, ?, 1, ?) ON CONFLICT(src, dst, relation) DO UPDATE SET weight = weight + 1');
+    const ids = [];
+    for (const e of graph.extract(text, { projects }).entities) {
+      const nodeId = e.label.toLowerCase();
+      if (nodeId === graph.ME || ids.includes(nodeId)) continue;
+      addNode.run(nodeId, e.label, e.kind, e.domain, e.subdomain, now);
+      link.run(id, nodeId, e.relation || '');
+      if (e.relation) bump.run(graph.ME, nodeId, e.relation, now);
+      ids.push(nodeId);
+    }
+    ids.sort();
+    for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) bump.run(ids[i], ids[j], 'related', now);
+    this.db.prepare('UPDATE facts SET linked = 1 WHERE id = ?').run(id);
+  }
+
+  unlinkFact(id) {
+    const rows = this.db.prepare('SELECT node_id, relation FROM fact_nodes WHERE fact_id = ?').all(id);
+    if (!rows.length) return;
+    const drop = this.db.prepare('UPDATE edges SET weight = weight - 1 WHERE src = ? AND dst = ? AND relation = ?');
+    for (const r of rows) if (r.relation) drop.run(graph.ME, r.node_id, r.relation);
+    const ids = rows.map((r) => r.node_id).sort();
+    for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) drop.run(ids[i], ids[j], 'related');
+    this.db.prepare('DELETE FROM fact_nodes WHERE fact_id = ?').run(id);
+    this.db.exec(`DELETE FROM edges WHERE weight <= 0;
+      DELETE FROM nodes WHERE id != '${graph.ME}' AND id NOT IN (SELECT node_id FROM fact_nodes)`);
+  }
+
+  // Nodes whose label words all appear in the text ("what should I study for Acme" → Acme). Never the user node.
+  mentioned(text) {
+    const words = new Set(graph.words(text));
+    if (!words.size) return [];
+    return this.db.prepare('SELECT id, label FROM nodes WHERE id != ?').all(graph.ME).filter((n) => {
+      const label = graph.words(n.label);
+      return label.length && label.every((w) => words.has(w));
+    });
+  }
+
+  // Walks up to two hops out from the mentioned nodes (never through the user node, which would link everything)
+  // and scores each fact by the nodes it's linked to: 1 per mentioned node, then ×0.5 × edge strength per hop.
+  graphFacts(query) {
+    const seeds = this.mentioned(query);
+    if (!seeds.length) return [];
+    const score = new Map(seeds.map((n) => [n.id, 1]));
+    const neighbors = this.db.prepare('SELECT src, dst, weight FROM edges WHERE (src = ? OR dst = ?) AND src != ? AND dst != ?');
+    let frontier = seeds.map((n) => n.id);
+    for (let hop = 0; hop < 2 && frontier.length; hop++) {
+      const next = [];
+      for (const id of frontier) {
+        for (const e of neighbors.all(id, id, graph.ME, graph.ME)) {
+          const other = e.src === id ? e.dst : e.src;
+          const s = score.get(id) * HOP_DECAY * (e.weight / (e.weight + 1));
+          if (s <= (score.get(other) || 0)) continue;
+          if (!score.has(other)) next.push(other);
+          score.set(other, s);
+        }
+      }
+      frontier = next.slice(0, 50);
+    }
+    const facts = new Map();
+    const linked = this.db.prepare('SELECT f.id, f.text, f.scope, f.used, f.created FROM fact_nodes fn JOIN facts f ON f.id = fn.fact_id WHERE fn.node_id = ?');
+    for (const [id, s] of score) {
+      for (const r of linked.all(id)) {
+        const f = facts.get(r.id) || { ...r, s: 0 };
+        f.s += s;
+        facts.set(r.id, f);
+      }
+    }
+    const touch = this.db.prepare('UPDATE nodes SET used = ?, uses = uses + 1 WHERE id = ?');
+    for (const n of seeds) touch.run(this.now(), n.id);
+    return [...facts.values()];
+  }
+
+  // For Settings → Loon's brain: the most used nodes (the user node always) and the strongest edges between them.
+  graph({ limit = 500, edgeLimit = 1500 } = {}) {
+    const nodes = this.db.prepare(`SELECT n.id, n.label, n.kind, n.domain, n.subdomain, n.uses, count(fn.fact_id) AS facts
+      FROM nodes n LEFT JOIN fact_nodes fn ON fn.node_id = n.id GROUP BY n.id ORDER BY n.id = ? DESC, n.uses + count(fn.fact_id) DESC LIMIT ?`).all(graph.ME, limit);
+    const ids = new Set(nodes.map((n) => n.id));
+    const edges = this.db.prepare('SELECT src, dst, relation, weight FROM edges ORDER BY weight DESC').all()
+      .filter((e) => ids.has(e.src) && ids.has(e.dst)).slice(0, edgeLimit);
+    return { nodes, edges, domains: graph.DOMAINS };
+  }
+
+  nodeFacts(nodeId) {
+    const node = this.db.prepare('SELECT id, label, kind, domain, subdomain, uses FROM nodes WHERE id = ?').get(nodeId);
+    if (!node) return null;
+    const facts = nodeId === graph.ME
+      ? this.db.prepare(`SELECT DISTINCT f.id, f.text, f.created FROM fact_nodes fn JOIN facts f ON f.id = fn.fact_id WHERE fn.relation != '' ORDER BY f.created`).all()
+      : this.db.prepare('SELECT f.id, f.text, fn.relation FROM fact_nodes fn JOIN facts f ON f.id = fn.fact_id WHERE fn.node_id = ? ORDER BY f.created').all(nodeId);
+    return { node, facts };
+  }
+
+  // Forgets a node and its links. The facts themselves stay (they're deleted one by one); the node comes back only
+  // if one of its facts is edited and still mentions it.
+  removeNode(nodeId) {
+    if (nodeId === graph.ME) return;
+    this.db.prepare('DELETE FROM edges WHERE src = ? OR dst = ?').run(nodeId, nodeId);
+    this.db.prepare('DELETE FROM fact_nodes WHERE node_id = ?').run(nodeId);
+    this.db.prepare('DELETE FROM nodes WHERE id = ?').run(nodeId);
+  }
+
+  // "what do you know about Acme": the best matching node with its neighbors and facts, or the facts that mention
+  // those words when no node matches. graph.formatAbout turns it into an answer.
+  about(text) {
+    const want = String(text).toLowerCase().replace(/^(?:the|my)\s+/, '').trim();
+    const count = this.db.prepare('SELECT count(*) AS n FROM fact_nodes WHERE node_id = ?');
+    const exact = this.db.prepare('SELECT id, label FROM nodes WHERE id = ? AND id != ?').get(want, graph.ME);
+    const best = exact || this.mentioned(want).sort((a, b) => count.get(b.id).n - count.get(a.id).n)[0];
+    if (!best) {
+      const match = ftsQuery(want);
+      const facts = match ? this.db.prepare('SELECT f.text FROM facts_fts JOIN facts f ON f.rowid = facts_fts.rowid WHERE facts_fts MATCH ? ORDER BY bm25(facts_fts) LIMIT 8').all(match) : [];
+      return { node: null, neighbors: [], facts: facts.map((r) => r.text) };
+    }
+    this.db.prepare('UPDATE nodes SET used = ?, uses = uses + 1 WHERE id = ?').run(this.now(), best.id);
+    const { node, facts } = this.nodeFacts(best.id);
+    const neighbors = this.db.prepare(`SELECT n.id, n.label, e.relation FROM edges e JOIN nodes n ON n.id = (CASE WHEN e.src = ? THEN e.dst ELSE e.src END)
+      WHERE e.src = ? OR e.dst = ? ORDER BY e.weight DESC LIMIT 9`).all(best.id, best.id, best.id);
+    return { node, neighbors, facts: facts.slice(0, 8).map((f) => f.text) };
   }
 
   // The facts for one request, best first, within BUDGET_CHARS:
   //   1. pinned profile facts, 2. facts that match the request, 3. the task's categories.
   // Matches are BM25 over words, fused by rank (RRF) with vector similarity when the request was embedded (warm()).
   // Ranking boosts: same site/app scope ×2, used in the last week ×1.3; facts unused for 6 months sink.
-  recall({ query = '', group = 'default', scope = '', limit = 8 } = {}) {
+  // A third ranked list comes from the graph walk (graphFacts); domain (graph.domainForTask) boosts facts from the
+  // same area of life ×1.5.
+  recall({ query = '', group = 'default', scope = '', domain = '', limit = 8 } = {}) {
     const now = this.now();
     const picked = new Map();
     const take = (rows) => { for (const r of rows) if (!picked.has(r.id)) picked.set(r.id, r); };
     take(this.db.prepare('SELECT id, text FROM facts WHERE pinned = 1 ORDER BY created').all());
     const boost = (r, s) => {
       if (scope && r.scope === scope) s *= 2;
+      if (domain && graph.domainOf(r.text) === domain) s *= DOMAIN_BOOST;
       const last = Math.max(r.used, r.created);
       if (now - last < 7 * DAY) s *= 1.3;
       else if (now - last > 180 * DAY) s *= 0.5;
@@ -204,6 +388,8 @@ class Memory {
         .filter((x) => x.sim >= VECTOR_MIN);
       lists.push(rows.map((x) => ({ r: x.r, s: boost(x.r, x.sim) })).sort((a, b) => b.s - a.s).slice(0, 30).map((x) => x.r));
     }
+    const walked = query ? this.graphFacts(query) : [];
+    if (walked.length) lists.push(walked.map((r) => ({ r, s: boost(r, r.s) })).sort((a, b) => b.s - a.s).slice(0, 30).map((x) => x.r));
     // Reciprocal Rank Fusion: a fact high in either list ranks high; one with only a single list still counts.
     const fused = new Map();
     for (const list of lists) {
@@ -230,8 +416,8 @@ class Memory {
     return out;
   }
 
-  forGroup(group, query = '', scope = '') {
-    return this.recall({ group, query, scope }).map((r) => r.text);
+  forGroup(group, query = '', scope = '', domain = '') {
+    return this.recall({ group, query, scope, domain }).map((r) => r.text);
   }
 
   // ---------- episodes (history) ----------

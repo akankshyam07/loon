@@ -6,6 +6,7 @@ const { classifySelection } = require('../extension/lib/classify');
 const { selectionPacket, pagePacket } = require('./context');
 const { scopeOf } = require('../brain/memory');
 const { parseCommand, describe, normalizeSpoken } = require('../brain/commands');
+const { cleanPersonal, parseFeedback, suggestMemory, secondPerson, normalizeFact } = require('../brain/personal');
 const connectorsLib = require('../brain/connectors');
 const { ConnectorHub } = require('./hub');
 
@@ -27,7 +28,8 @@ const domainOf = (url) => {
 };
 const chip = (id) => ({ id, label: TASKS[id].label });
 
-function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, settings, hub, memory = null }) {
+// saveSettings: called after feedback like "shorter please" changes the reply style.
+function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, settings, hub, memory = null, saveSettings = () => {} }) {
   const session = { mode: 'ask', packet: null, threadStarted: false, lastTask: null, pendingTask: null };
   let activePage = null; // latest page report from the focused, visible tab
   let active = null; // { controller, id }
@@ -244,11 +246,36 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
     return notes.save({ title: question, text, url: packet?.url });
   }
 
+  // "Remember this?" (§3.12.1): a stated preference in a typed message becomes a ✓/✗ chip after the answer. Never
+  // saved without ✓; ✗ means don't ask about that text again. Nothing in Privacy mode.
+  function memorySuggestion(question) {
+    if (!memory || settings.privacy) return null;
+    const fact = suggestMemory(question);
+    if (!fact) return null;
+    const key = normalizeFact(fact);
+    if ((settings.dismissedSuggestions || []).includes(key) || memory.all().some((f) => normalizeFact(f.text) === key)) return null;
+    return { text: fact, label: `Remember that ${secondPerson(fact)}?` };
+  }
+
+  function dismissSuggestion(text) {
+    settings.dismissedSuggestions = [...(settings.dismissedSuggestions || []), normalizeFact(text)].slice(-200);
+    saveSettings();
+  }
+
   async function run({ id, task, deeper = false, question }, bubble) {
     active?.controller.abort();
     const controller = new AbortController();
     active = { controller, id };
     try {
+      // Feedback about replies ("too long", "less emoji") changes the reply style in code, before any model.
+      const feedback = !task && question && parseFeedback(question, settings.personal);
+      if (feedback) {
+        settings.personal = cleanPersonal({ ...settings.personal, ...feedback.patch });
+        saveSettings();
+        bubble('action-done', { id, ok: true, message: feedback.note });
+        ui.cat('brain', { state: 'done', mood: 'happy' });
+        return;
+      }
       if (!task && question && session.mode !== 'selection' && session.mode !== 'app' && (await command(id, question, bubble))) return;
       if (task?.startsWith('send:')) {
         const connector = hub?.get(task.slice(5));
@@ -312,6 +339,8 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
         const subject = packet?.text ? ` · ${packet.text.replace(/\s+/g, ' ').slice(0, 80)}` : '';
         memory.logEpisode({ kind: effectiveTask, title: question || `${TASKS[effectiveTask]?.label || effectiveTask}${subject}`, text: result.text.slice(0, 300), scope: scopeOf(packet || {}) });
       }
+      const suggestion = !task && question && memorySuggestion(question);
+      if (suggestion) bubble('suggest', { id, ...suggestion });
       ui.cat('brain', { state: 'done', mood: result.mood });
     } catch (err) {
       if (controller.signal.aborted) return;
@@ -378,7 +407,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
   }
 
   return {
-    onBridgeMessage, run, lookAnyway, handoff, replace, openAsk, fromCapture, showNotice, context, cancel, onNudgeClick, onNudgeIgnored, confirm, saveNote,
+    onBridgeMessage, run, lookAnyway, dismissSuggestion, handoff, replace, openAsk, fromCapture, showNotice, context, cancel, onNudgeClick, onNudgeIgnored, confirm, saveNote,
     isBusy: () => Boolean(active),
     session,
     get activePage() { return activePage; },

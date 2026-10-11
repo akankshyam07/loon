@@ -171,3 +171,6 @@ body.pill #paw:hover { transform: scale(1.06); }
   body.pill #paw { background: #232838; color: #ece9e2; box-shadow: 0 3px 12px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.08); }
   .menu-list button:hover { background: #2c3242; }
 }
+.suggest { display: flex; align-items: center; gap: 6px; margin-top: 6px; padding: 6px 8px; border-radius: 10px; background: var(--sage-soft); font-size: 12.5px; }
+.suggest span { flex: 1; }
+.suggest .chip { padding: 2px 9px; }

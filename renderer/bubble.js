@@ -363,6 +363,23 @@ window.loon.onBubbleChoices(({ id, prompt, options }) => {
   current.el.replaceChildren(box);
 });
 
+// "Remember this?" after an answer: ✓ saves through the normal remember action, ✗ means don't ask again for it.
+window.loon.onBubbleSuggest(({ id, text, label }) => {
+  const row = document.createElement('div');
+  row.className = 'suggest';
+  row.append(Object.assign(document.createElement('span'), { textContent: `🐾 ${label}` }));
+  const yes = Object.assign(document.createElement('button'), { className: 'chip', textContent: '✓', title: 'Remember this' });
+  const no = Object.assign(document.createElement('button'), { className: 'chip', textContent: '✗', title: "Don't remember, and don't ask again" });
+  yes.addEventListener('click', () => { row.remove(); window.loon.confirmAction(id, { action: 'remember', text }); });
+  no.addEventListener('click', () => {
+    window.loon.dismissSuggestion(text);
+    row.replaceWith(Object.assign(document.createElement('div'), { className: 'note', textContent: "Okay, I won't ask about that again." }));
+  });
+  row.append(yes, no);
+  log.append(row);
+  log.scrollTop = log.scrollHeight;
+});
+
 window.loon.onBubbleAction(({ id, ok, message, results, markdown }) => {
   const note = Object.assign(document.createElement('div'), { className: ok ? (markdown ? 'a' : 'note') : 'a error' });
   if (markdown) note.innerHTML = renderMarkdown(message);

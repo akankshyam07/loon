@@ -8,6 +8,8 @@ const { ResponseCache } = require('./cache');
 const { TASKS, MAX_CONTEXT_CHARS, buildPrompt, memoryGroup } = require('./tasks');
 const { define } = require('./define');
 const { scopeOf } = require('./memory');
+const { domainForTask } = require('./graph');
+const { cleanPersonal, instructionsBlock, maxTokensFor, sensesFor } = require('./personal');
 const { keySentences, trimForModel } = require('./textrank');
 const { languageName } = require('./translate');
 const { fingerprint } = require('./errors');
@@ -157,8 +159,13 @@ class Resolver {
     const privacy = Boolean(this.settings.privacy);
     const request = question || packet.question || String(packet.text || '').slice(0, 500);
     if (!privacy) await this.memory?.warm?.(request); // embeds the request so recall can match by meaning
-    const memory = privacy || !this.memory ? [] : this.memory.forGroup(memoryGroup(taskId), request, scopeOf(packet));
+    const scope = scopeOf(packet);
+    const memory = privacy || !this.memory ? [] : this.memory.forGroup(memoryGroup(taskId), request, scope, domainForTask(taskId, scope));
     this.lastMemory = memory;
+    // Custom instructions and reply style (Settings): a fixed block right after the system prompt; length also sets
+    // the token cap and how many dictionary senses a definition shows.
+    const personal = cleanPersonal(this.settings.personal);
+    const instructions = instructionsBlock(personal, { privacy });
     let prefix = '';
 
     if (taskId === 'ask' && !packet.text) {
@@ -172,7 +179,7 @@ class Resolver {
     }
 
     if (!deeper && !question && tiers.includes('define')) {
-      const text = await define(packet.text);
+      const text = await define(packet.text, { maxSenses: sensesFor(personal.length) });
       if (text) {
         onText(text);
         this.count('code');
@@ -240,7 +247,7 @@ class Resolver {
     // "Cloud via your plan" is opt-in and Privacy mode always turns it off.
     const cloud = !privacy && ['claude', 'codex'].includes(this.settings.cloudCli) ? this.settings.cloudCli : null;
     const viaCloud = Boolean(cloud && deeper);
-    const prompt = buildPrompt(taskId, { ...packet, text: packet.text && trimForModel(packet.text, MAX_CONTEXT_CHARS) }, { deeper, question, memory });
+    const prompt = buildPrompt(taskId, { ...packet, text: packet.text && trimForModel(packet.text, MAX_CONTEXT_CHARS) }, { deeper, question, memory, instructions });
     // Follow-ups depend on the conversation so far, so only a thread's first turn is cacheable.
     const cacheable = firstInThread && !question && !privacy;
     // Errors cache by fingerprint so the same error with different paths/values reuses one answer.
@@ -250,7 +257,7 @@ class Resolver {
     const key = cacheable ? ResponseCache.key(taskId, identity, String(deeper), model, PROMPT_VERSION) : null;
     // A typed question may also match an earlier one with the same meaning, never across different context or memory.
     const similar = key && packet.question && !task.cacheByFingerprint
-      ? { group: ResponseCache.key(taskId, packet.text || '', memory.join('\n'), String(deeper), model, PROMPT_VERSION), question: packet.question }
+      ? { group: ResponseCache.key(taskId, packet.text || '', memory.join('\n'), String(deeper), model, PROMPT_VERSION, ...(instructions ? [instructions] : [])), question: packet.question }
       : null;
     const exact = key && this.cache.get(key);
     const hit = exact || (similar && await this.cache.findSimilar(similar));
@@ -267,7 +274,7 @@ class Resolver {
     const route = deeper ? null : estimate({ taskId, request: asked, context: packet.text });
     // kNN escalation memory: typed questions only (a chip's instruction alone says nothing), never in Privacy mode.
     const learn = typed && !privacy;
-    const maxTokens = deeper ? 900 : task.maxTokens;
+    const maxTokens = deeper ? 900 : maxTokensFor(task.maxTokens, personal.length);
 
     this.lastPrompt = prompt;
     let streamed = false;
