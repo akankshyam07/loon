@@ -7,3 +7,4 @@ models/
 *.gguf
 .env
 *.code-workspace
+.claude/

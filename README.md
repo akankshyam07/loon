@@ -48,8 +48,9 @@ and then it does something cool: moon magic, a pounce, peeking over the edge of 
 
 **💬 Explain and selection help**
 - **Ask anything.** Click the cat or press **⌥Space**. Answers stream from a model running on your Mac.
-- **Highlight help in Chrome.** Select text and chips appear: Define (instant, WordNet), Translate (offline,
-  Bergamot), Explain, Simplify, Summarize, Rewrite, Go deeper.
+- **Highlight help in Chrome.** Select a word and its definition appears instantly (WordNet); select foreign text
+  and it's translated offline (Bergamot); select a stack trace and it's explained. Anything else gets a small paw
+  you can click for Explain, Simplify, Summarize, Rewrite and more, so selecting text never throws a card at you.
 - **⌥Space in any app.** Get the same help with text selected outside the browser.
 - **Explain this page.** Key sentences highlighted right on the page, then a summary, notes or a checklist.
 - **Screenshots.** Press **⌥⇧S**, pick a region, and Loon reads it (Tesseract OCR).
@@ -75,7 +76,13 @@ and then it does something cool: moon magic, a pounce, peeking over the edge of 
   Shortcuts). Each becomes a confirm card, and nothing happens until you click ✓.
 - Notes are plain markdown in `~/Documents/Loon`. "What have I found?" sums up your saved notes, and "Quiz me" turns
   them into flashcards.
-- **Memory you control.** "Remember that I'm vegetarian" and menu picks respect it. Edit or delete memories any time.
+- **"What's my day?"** Today's Calendar events and due Reminders (read-only), plus "focus for 25 minutes" (the cat
+  naps and stays quiet until the timer ends) and a gentle stretch nudge after an hour of non-stop work.
+- **Memory you control.** "Remember that I'm vegetarian" and menu picks respect it. Memories live in one local
+  SQLite file with full-text search: each request pulls only the few that match (about 4 ms even at 5,000 facts),
+  boosted for the site you're on. "What did I look up about X?" searches your last 90 days of questions, and
+  "what do you know about me?" lists everything. No model is involved in storing or finding memories, nothing is
+  saved without your OK, and Privacy mode turns it all off.
 - **Your local apps.** Connect apps running on your Mac that publish an OpenAPI description (FastAPI does by
   default), then ask them things in plain words. Reads run directly; anything that changes data asks first.
 - **Moods.** Focus (the cat naps, no pop-ups), Privacy (no memory), and Judgmental (sass about prices and heavy food:
@@ -220,7 +227,8 @@ is plain CommonJS with no build step: Electron for the cat, a Manifest V3 Chrome
 - True hold-to-talk for voice, alongside the current press-to-talk.
 - A lighter, always-on "Hey Loon" wake word model.
 - Drafting email replies from the bubble.
-- A morning briefing of your day, notes and reminders.
+- Meaning-based memory search (a small local embedding model) alongside full-text search.
+- A "Remember this?" suggestion when you mention a preference.
 - "Watch this page" alerts, for prices and changes.
 - Spaced repetition for "Quiz me" flashcards.
 - Even lower idle CPU for the cat's animations.
