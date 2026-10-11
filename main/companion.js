@@ -325,6 +325,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
         firstInThread,
         deeper,
         question: packet?.text ? question : undefined,
+        sensitive: session.mode === 'sensitive' || Boolean(activePage?.sensitive), // no cloud tier on private pages
         onText: (chunk) => {
           if (!talking) {
             talking = true;
