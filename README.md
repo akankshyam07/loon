@@ -20,6 +20,8 @@
   <img src="docs/loon.gif" width="260" alt="Loon follows the cursor with its eyes, squints happily while being petted, thinks with a little thought bubble, and does moon magic with sparkles">
 </p>
 
+<p align="center"><a href="https://akankshyam07.github.io/loon/"><b>✧ Visit the Loon website ✧</b></a></p>
+
 <p align="center"><i>"Private page detected. I'll look away unless you ask." — Loon</i></p>
 
 Loon is a personal AI familiar: a little black cat with bright green eyes who sits in the corner of your screen, blinks
