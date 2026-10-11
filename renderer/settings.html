@@ -9,7 +9,7 @@
 <body>
   <header>
     <svg class="face" viewBox="0 0 24 22" aria-hidden="true"><path d="M3 9 2 1.5 8.5 5.5h7L22 1.5 21 9c1 1.5 1.5 3 1.5 4.5C22.5 18.5 17.8 21 12 21S1.5 18.5 1.5 13.5C1.5 12 2 10.5 3 9Z" fill="#1c1a20"/><circle cx="8.2" cy="12.5" r="2.4" fill="#8fdc5a"/><circle cx="15.8" cy="12.5" r="2.4" fill="#8fdc5a"/><circle cx="8.4" cy="12.7" r="1.2" fill="#0a0c08"/><circle cx="16" cy="12.7" r="1.2" fill="#0a0c08"/></svg>
-    <div><h1>Loon</h1><p class="muted">Everything here stays on this Mac.</p></div>
+    <div><h1>Loon</h1><p class="muted">Everything stays on this Mac unless you turn on Cloud via your plan.</p></div>
   </header>
 
   <section>
@@ -17,6 +17,17 @@
     <label class="toggle"><input type="checkbox" data-key="focus" /> <span><b>Focus mode</b> The cat naps; no hints or pop-up chips. ⌥Space and clicking still work.</span></label>
     <label class="toggle"><input type="checkbox" data-key="privacy" /> <span><b>Privacy mode</b> No memory used, nothing remembered, no answer cache.</span></label>
     <label class="toggle"><input type="checkbox" data-key="judgmental" /> <span><b>Judgmental</b> A little sass about overpriced things and heavy food.</span></label>
+  </section>
+
+  <section>
+    <h2>Cloud via your plan</h2>
+    <p class="muted">Optional, off by default. "Go deeper" (and a missing local model) can use the Claude or ChatGPT plan you already have, through the official CLI you installed and logged into yourself. Loon runs it with no tools, in an empty folder, and redacts secrets first. Privacy mode always turns this off. Follow your provider's terms; this is for personal use.</p>
+    <div id="cloud" role="radiogroup" aria-label="Cloud via your plan">
+      <label class="choice"><input type="radio" name="cloudCli" value="off" /> <span><b>Off</b> Everything stays on this Mac.</span></label>
+      <label class="choice"><input type="radio" name="cloudCli" value="claude" /> <span><b>Claude Code</b> <span class="mono" data-status="claude">checking…</span></span></label>
+      <label class="choice"><input type="radio" name="cloudCli" value="codex" /> <span><b>Codex (ChatGPT)</b> <span class="mono" data-status="codex">checking…</span></span></label>
+    </div>
+    <p id="cloudNote" class="muted" hidden>Paused while Privacy mode is on.</p>
   </section>
 
   <section>

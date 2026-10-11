@@ -93,7 +93,11 @@ and then it does something cool: moon magic, a pounce, peeking over the edge of 
   confirm, "stop" to interrupt. An optional "Hey Loon" wake word lives in Settings (off by default).
 - Speech recognition (Moonshine), voice detection (Silero) and the voice itself (Kokoro) all run on your Mac.
 
-<!-- CLOUD-PLAN BLURB -->
+**☁️ Use your Claude or ChatGPT plan (optional)**
+- Want bigger-brain answers for "Go deeper" without paying for an API? In Settings → *Cloud via your plan*, pick
+  Claude Code or Codex. Loon runs the official `claude` / `codex` CLI that you installed and signed into yourself,
+  with every tool switched off, in an empty folder, after redacting secrets. Loon never touches your login. Off by
+  default, always off in Privacy mode. Follow your provider's terms; it's meant for your own personal use.
 
 ## Quick start
 
@@ -178,7 +182,7 @@ flowchart LR
       cache["1. Cache"] --> code["2. Code and open data<br/>unit prices, WordNet, error table"]
       code --> small["3. Small on-device models<br/>translation, OCR, grammar"]
       small --> llm["4. Local LLM<br/>Qwen3 via llama.cpp or Ollama"]
-      llm -.-> cloud["5. Optional cloud<br/>off by default"]
+      llm -.-> cloud["5. Your Claude / ChatGPT plan<br/>via official CLI, opt-in"]
     end
     ladder --> actions["Confirm cards<br/>and action log"]
   end

@@ -66,6 +66,7 @@ function tierLabel({ tier, model, detail, estimated }) {
   const suffix = estimated ? ' · estimated' : '';
   if (tier === 'code') return `⚡ instant · ${detail || 'no model needed'}`;
   if (tier === 'cache') return `⚡ instant · remembered answer${suffix}`;
+  if (tier === 'cloud') return `☁️ ${detail}${suffix}`;
   return `🐾 on your Mac · ${model}${detail ? ` · ${detail}` : ''}${suffix}`;
 }
 
@@ -234,7 +235,7 @@ function answerActions({ canGoDeeper, replaceText, text, question, quiz, tier, m
   row.append(menu);
 
   if (estimated) row.append(Object.assign(document.createElement('span'), { className: 'estimated', textContent: 'estimated' }));
-  const icon = Object.assign(document.createElement('span'), { className: 'tier-icon', textContent: tier === 'local' ? '🐾' : '⚡' });
+  const icon = Object.assign(document.createElement('span'), { className: 'tier-icon', textContent: tier === 'local' ? '🐾' : tier === 'cloud' ? '☁️' : '⚡' });
   icon.title = tierLabel({ tier, model, detail, estimated }) + (memoryUsed.length ? `\nRemembered: ${memoryUsed.join('; ')}` : '');
   row.append(icon, list);
   return row;

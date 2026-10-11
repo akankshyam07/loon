@@ -1,5 +1,6 @@
 // Resolver ladder (DESIGN.md §2.10): try the cheapest tier that can answer, stop at the first hit.
 // Tiers per task: code (templates, WordNet, offline translator, TextRank) → cache (exact match) → local LLM.
+// Optional: "Go deeper" (and a failed local model) can use the user's own Claude/ChatGPT plan via the official CLI (§3.17).
 const fs = require('fs');
 const { ResponseCache } = require('./cache');
 const { TASKS, MAX_CONTEXT_CHARS, buildPrompt, memoryGroup } = require('./tasks');
@@ -10,6 +11,8 @@ const { languageName } = require('./translate');
 const { fingerprint } = require('./errors');
 const shopping = require('./shopping');
 const food = require('./food');
+const { redact } = require('./redact');
+const { SYSTEM_PROMPT } = require('./ai');
 
 const PROMPT_VERSION = 'v2';
 const MOODS = ['happy', 'curious', 'judgy', 'sleepy', 'suspicious', 'focused', 'protective', 'confused'];
@@ -41,7 +44,7 @@ const CODE_ANSWERS = [
   },
   {
     match: /^(who|what) are you\??$/,
-    answer: () => ({ mood: 'happy', text: "I'm Loon, a small black cat who lives on your screen. I run entirely on your Mac, so nothing you ask leaves it." }),
+    answer: () => ({ mood: 'happy', text: "I'm Loon, a small black cat who lives on your screen. I run on your Mac, and nothing you ask leaves it unless you switch on Cloud via your plan in Settings." }),
   },
 ];
 
@@ -102,8 +105,9 @@ function createMoodParser(onText) {
 const EMPTY_TIERS = () => ({ code: 0, cache: 0, local: 0 });
 
 class Resolver {
-  constructor({ brain, cacheFile, countsFile, translator = null, skills = null, memory = null, notes = null, settings = {} }) {
+  constructor({ brain, cacheFile, countsFile, translator = null, skills = null, memory = null, notes = null, settings = {}, cli = require('./cli-provider') }) {
     this.brain = brain;
+    this.cli = cli;
     this.memory = memory;
     this.notes = notes;
     this.settings = settings;
@@ -225,12 +229,15 @@ class Resolver {
       }
     }
 
+    // "Cloud via your plan" is opt-in and Privacy mode always turns it off.
+    const cloud = !privacy && ['claude', 'codex'].includes(this.settings.cloudCli) ? this.settings.cloudCli : null;
+    const viaCloud = Boolean(cloud && deeper);
     const prompt = buildPrompt(taskId, { ...packet, text: packet.text && trimForModel(packet.text, MAX_CONTEXT_CHARS) }, { deeper, question, memory });
     // Follow-ups depend on the conversation so far, so only a thread's first turn is cacheable.
     const cacheable = firstInThread && !question && !privacy;
     // Errors cache by fingerprint so the same error with different paths/values reuses one answer.
     const identity = task.cacheByFingerprint ? fingerprint(packet.text || '').hash : normalize(prompt);
-    const key = cacheable ? ResponseCache.key(taskId, identity, String(deeper), this.brain.modelId(), PROMPT_VERSION) : null;
+    const key = cacheable ? ResponseCache.key(taskId, identity, String(deeper), viaCloud ? `cli:${cloud}` : this.brain.modelId(), PROMPT_VERSION) : null;
     const hit = key && this.cache.get(key);
     if (hit) {
       onText(hit.text);
@@ -241,12 +248,30 @@ class Resolver {
     this.lastPrompt = prompt;
     let text = '';
     const parser = createMoodParser((piece) => { text += piece; onText(piece); });
-    await this.brain.chat(prompt, { onText: (chunk) => parser.push(chunk), signal, maxTokens: deeper ? 900 : task.maxTokens, smart: deeper });
+    const onChunk = (chunk) => parser.push(chunk);
+    // Redaction already ran on screen context (main/context.js); this pass also covers typed text and memory
+    // before anything leaves the Mac.
+    const askCloud = () => this.cli.ask(cloud, { system: SYSTEM_PROMPT, prompt: redact(prompt).text, onText: onChunk, signal });
+    let tier = viaCloud ? 'cloud' : 'local';
+    if (viaCloud) {
+      await askCloud();
+    } else {
+      try {
+        await this.brain.chat(prompt, { onText: onChunk, signal, maxTokens: deeper ? 900 : task.maxTokens, smart: deeper });
+      } catch (err) {
+        if (!cloud || signal?.aborted || text) throw err;
+        console.warn('[resolve] local model failed, using your plan via CLI:', err.message);
+        tier = 'cloud';
+        await askCloud();
+      }
+    }
     const mood = parser.finish();
     text = text.trim();
-    this.count('local');
-    if (key && text && !signal?.aborted) this.cache.set(key, { text, mood });
-    return { text: prefix + text, mood, tier: 'local', estimated: Boolean(task.estimated), replaceText: task.replaceable ? text : undefined };
+    this.count(tier);
+    // A fallback answer is not cached under the local model's key.
+    if (key && text && !signal?.aborted && (tier === 'local' || viaCloud)) this.cache.set(key, { text, mood });
+    const detail = tier === 'cloud' ? this.cli.label(cloud) : undefined;
+    return { text: prefix + text, mood, tier, detail, estimated: Boolean(task.estimated), replaceText: task.replaceable ? text : undefined };
   }
 }
 

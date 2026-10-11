@@ -49,6 +49,7 @@ contextBridge.exposeInMainWorld('loon', {
   // settings window
   getSettings: () => ipcRenderer.invoke('settings-get'),
   setSetting: (key, value) => ipcRenderer.invoke('settings-set', { key, value }),
+  detectCli: () => ipcRenderer.invoke('cli-detect'),
   updateMemory: (id, text) => ipcRenderer.invoke('memory-update', { id, text }),
   deleteMemory: (id) => ipcRenderer.invoke('memory-delete', id),
   clearMemory: () => ipcRenderer.invoke('memory-clear'),

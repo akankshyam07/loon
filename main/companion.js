@@ -300,7 +300,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
           bubble('chunk', { id, chunk });
         },
       });
-      bubble('done', { id, ...result, model: brain.modelLabel(deeper), counts: resolver.counts, memoryUsed: resolver.lastMemory || [], canGoDeeper: result.tier !== 'code' || task === 'define' });
+      bubble('done', { id, ...result, model: brain.modelLabel(deeper), counts: resolver.counts, memoryUsed: resolver.lastMemory || [], canGoDeeper: !['code', 'cloud'].includes(result.tier) || task === 'define' });
       // History for "what did I look up about…": local only, redacted text, never in Privacy mode.
       if (memory && !settings.privacy && result.text) {
         const subject = packet?.text ? ` · ${packet.text.replace(/\s+/g, ' ').slice(0, 80)}` : '';
