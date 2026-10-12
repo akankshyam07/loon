@@ -23,6 +23,7 @@ const SIZES = { S: 120, M: 160, L: 210 };
 const CAT_ASPECT = 240 / 256; // loon.svg viewBox
 const WINDOW_PAD_X = 1.55;
 const WINDOW_PAD_Y = 1.45;
+const DUO_WIDTH = 1.45; // duo mode and cameos: room for the second cat beside the helper
 const BUBBLE_WIDTH = 360;
 const EDGE_MARGIN = 12;
 
@@ -40,7 +41,7 @@ if (SELFTEST) {
 }
 
 let settingsFile;
-let settings = { size: 'M', catStyle: 'pixel', companion: 'luna', costume: 'none', seasonalCostumes: false, retroSounds: false, focus: false, privacy: false, judgmental: true, wakeWord: false, speakReplies: 'voiceOnly', projects: [], connectors: [], welcomed: false, cloudCli: 'off', personal: { ...PERSONAL_DEFAULTS }, dismissedSuggestions: [] };
+let settings = { size: 'M', catStyle: 'pixel', companion: 'luna', costume: 'none', seasonalCostumes: false, retroSounds: false, cameos: true, duo: false, focus: false, privacy: false, judgmental: true, wakeWord: false, speakReplies: 'voiceOnly', projects: [], connectors: [], welcomed: false, cloudCli: 'off', personal: { ...PERSONAL_DEFAULTS }, dismissedSuggestions: [] };
 let catWin;
 let bubbleWin;
 let brain;
@@ -105,9 +106,11 @@ function saveSettings() {
   fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2));
 }
 
+let catWide = false; // a cameo asked for room for a moment
 function catWindowSize() {
   const catH = SIZES[settings.size] || SIZES.M;
-  return { width: Math.round(catH * CAT_ASPECT * WINDOW_PAD_X), height: Math.round(catH * WINDOW_PAD_Y) };
+  const wide = settings.duo || catWide ? DUO_WIDTH : 1;
+  return { width: Math.round(catH * CAT_ASPECT * WINDOW_PAD_X * wide), height: Math.round(catH * WINDOW_PAD_Y) };
 }
 
 // Accepts window bounds ({width, height}) and selection anchors from the extension ({w, h}).
@@ -434,17 +437,27 @@ function animateWindow({ dx = 0, dy = 0, duration = 400, arc = 0 }) {
   });
 }
 
+// Resizes the cat window around the cat's feet. `remember`: a lasting change (size, duo) that becomes the new home;
+// otherwise (a cameo) home just follows the width change so the cat doesn't think it wandered off.
+function fitCatWindow(remember) {
+  const bounds = catWin.getBounds();
+  const next = catWindowSize();
+  if (next.width === bounds.width && next.height === bounds.height) return;
+  const pos = clampToWorkArea(bounds.x + (bounds.width - next.width) / 2, bounds.y + bounds.height - next.height, next);
+  catWin.setBounds({ ...pos, ...next });
+  if (remember) {
+    home = { x: pos.x, y: pos.y };
+    settings.position = catWin.getBounds();
+    saveSettings();
+  } else if (home) {
+    home = { x: home.x + (bounds.width - next.width) / 2, y: home.y + bounds.height - next.height };
+  }
+}
+
 function setSize(size) {
   settings.size = size;
   saveSettings();
-  const bounds = catWin.getBounds();
-  const next = catWindowSize();
-  // keep the cat's feet where they were
-  const pos = clampToWorkArea(bounds.x + (bounds.width - next.width) / 2, bounds.y + bounds.height - next.height, next);
-  catWin.setBounds({ ...pos, ...next });
-  home = { x: pos.x, y: pos.y };
-  settings.position = catWin.getBounds();
-  saveSettings();
+  fitCatWindow(true);
 }
 
 // Behavior toggles (§3.15). The resolver and companion read `settings` live, so no restart is needed.
@@ -459,8 +472,8 @@ function setToggle(key, value) {
 
 const pixelSprites = require('./renderer/pixel-sprites');
 function catLook() {
-  const { catStyle, companion, costume, seasonalCostumes, retroSounds } = settings;
-  return { catStyle, companion, costume, seasonalCostumes, retroSounds };
+  const { catStyle, companion, costume, seasonalCostumes, retroSounds, cameos, duo } = settings;
+  return { catStyle, companion, costume, seasonalCostumes, retroSounds, cameos, duo };
 }
 
 function settingsSnapshot() {
@@ -543,6 +556,12 @@ function registerIpc() {
   ipcMain.on('open-bubble', openAskBubble);
   ipcMain.on('close-bubble', hideBubble);
   ipcMain.handle('animate-window', (_e, opts) => animateWindow(opts));
+  ipcMain.handle('cat-wide', (_e, on) => {
+    catWide = Boolean(on);
+    if (dragTimer) return; // never resize under a drag; drag-end catches up
+    stopWindowAnimation();
+    fitCatWindow(false);
+  });
   ipcMain.handle('window-info', () => ({ win: catWin.getBounds(), workArea: workAreaFor(catWin.getBounds()), cursor: cursorPoint() }));
 
   // Drag: main follows the global cursor so fast drags never lose the window.
@@ -559,6 +578,7 @@ function registerIpc() {
   ipcMain.on('drag-end', () => {
     clearInterval(dragTimer);
     dragTimer = null;
+    fitCatWindow(false);
     settings.position = catWin.getBounds();
     home = { x: settings.position.x, y: settings.position.y };
     saveSettings();
@@ -611,10 +631,11 @@ function registerIpc() {
   ipcMain.handle('cat-look', () => catLook());
   ipcMain.handle('settings-set', (_e, { key, value }) => {
     // How the cat looks (§5.0.2): validated against the sprite tables, then pushed to the cat window live.
-    const lookOk = { catStyle: ['pixel', 'classic'].includes(value), companion: typeof value === 'string' && Object.hasOwn(pixelSprites.CHARACTERS, value), costume: typeof value === 'string' && Object.hasOwn(pixelSprites.COSTUMES, value), seasonalCostumes: typeof value === 'boolean', retroSounds: typeof value === 'boolean' };
+    const lookOk = { catStyle: ['pixel', 'classic'].includes(value), companion: typeof value === 'string' && Object.hasOwn(pixelSprites.CHARACTERS, value), costume: typeof value === 'string' && Object.hasOwn(pixelSprites.COSTUMES, value), seasonalCostumes: typeof value === 'boolean', retroSounds: typeof value === 'boolean', cameos: typeof value === 'boolean', duo: typeof value === 'boolean' };
     if (lookOk[key]) {
       settings[key] = value;
       saveSettings();
+      if (key === 'duo' && catWin) fitCatWindow(true);
       catWin?.webContents.send('cat-look', catLook());
     }
     if (['focus', 'privacy', 'judgmental', 'wakeWord'].includes(key)) setToggle(key, Boolean(value));

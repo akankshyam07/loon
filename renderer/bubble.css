@@ -191,3 +191,7 @@ body.pill #paw:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 v
   button.primary, button.secondary, .chip, #send { transition: none; }
   button.primary:hover:not(:disabled), button.secondary:hover:not(:disabled), .chip:hover:not(:disabled), #send:hover:not(:disabled) { transform: none; }
 }
+/* the companion's aside (persona flavor), visibly not part of the answer */
+.flavor { margin: 6px 0 0; font-size: 12px; font-style: italic; color: var(--muted); }
+.flavor::before { content: '🐾 '; font-style: normal; }
+#greeting { margin: 2px 2px 8px; }

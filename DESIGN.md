@@ -907,8 +907,8 @@ In v1, Moon magic, Cursor pounce, and Edge peek are the cheapest to build and th
 - **Companions.** A character is a palette plus marking masks that only recolor fur, so every frame works for every
   cat. **Luna**: black, bright green eyes, dark nose, pink inner ears and collar, yellow moon pendant. **Soju**: white,
   a dark patch over the viewer's-left eye running into that ear, a thin streak at the other ear, olive eyes, a pink nose
-  with one black freckle on the viewer's left, gray tail, blue collar. One companion at a time for now; the renderer
-  takes the character per draw, so a duo mode only needs a second canvas and its own state.
+  with one black freckle on the viewer's left, a black tail like his patch, blue collar. The renderer
+  takes the character per draw; duo mode and cameos (§5.0.3) draw both cats into one window-wide grid.
 - **Costumes** (Settings → Wardrobe, live previews): strawberry, frog and bee hoods, witch, Santa and party hats,
   graduation cap, bow tie, sunglasses, bread loaf. Each has three anchors (front head, side view, back of head) so it is
   worn on every frame: sitting, loaf, stretch, pounce, walk, run and the tail-chase spin. *Seasonal costumes* (off by
@@ -923,6 +923,42 @@ In v1, Moon magic, Cursor pounce, and Edge peek are the cheapest to build and th
   blips made with WebAudio.
 - The kawaii UI (bubble, Settings, site) shares one look: pastel tokens, 2–3px dark outlines, 4px offset shadows,
   rounded body text, and the bundled Press Start 2P font (OFL) for small headings and badges only.
+
+### 5.0.3 Personalities, cameos and duo mode (decided 2026-10-12)
+
+- **Flavor only.** Personality never touches answer content, cost or latency: nothing persona-related reaches the
+  resolver or a prompt (`test/persona.test.js` checks the answer text and the resolver call are identical for both cats,
+  cameos on or off). Lines appear *around* answers: a small 🐾 aside under the answer in the bubble (`flavor`, kept out
+  of copy, speech and memory), the greeting in an empty bubble, and a tiny balloon over a cat's head in the cat window.
+- **One module, both sides.** `renderer/persona.js` (UMD) holds the lines (greeting, pet, selection, file drop, error,
+  privacy look-away, shopping verdict quips, nudge wording, cameo calls), the idle-routine weights and the cameo rules.
+  `main/companion.js` uses it for the greeting, cameo triggers and the shopping quip (only with *Judgmental* on); the
+  cat window uses it for reactions, nudge wording and which idle move to pick.
+- **Luna** (big sister: sassy, smart, sweet) grooms, judges and loafs more: `fancyGroom` (lick, lick, paw over the ear),
+  `judgeStare` (slow half-lid plus tail flicks), `perfectLoaf`. **Soju** (little brother, younger and more kitten-like:
+  goofy, hungry, clumsy) eats, zooms, trips and sprawls more: `eatBowl` (a pixel food bowl), `sprawlNap` (belly-up; a
+  click wakes him), `trip` and `bonk` (walks into the screen edge; dizzy stars), `clumsyChase` (pounce, then a tumble),
+  `playNap` (zoomies, then asleep mid-play). Faces keep the locked design; the new acts only move the whole head
+  (`headX/headY`), so costumes anchor on them too (tested).
+- **Cameos** (Settings, on by default). Luna + a food task, a menu page, or a snack/break nudge: she says a sassy line,
+  Soju runs in, munches from his bowl, says his line (also shown as the answer's aside) and waddles off. Soju + a brainy
+  task (`explain_error`, `find_bug`, `likely_fix`, `fact_check`, `page_summary`): he calls Luna, she does her
+  glowing-pendant think and leaves. Never on sensitive pages. The cat window widens for the visit (`cat-wide` IPC, the
+  helper stays put) and the helper keeps its live state; only the guest is scripted (`cameoScene`).
+- **Duo mode** (Settings → *Bring the other cat along*, off by default). The window is 1.45× wider; Luna always stands
+  left of Soju (`GAP` = 24 sprite px), the chosen companion helps, the other idles (own blinks, glances at the helper,
+  covers its eyes on private pages, naps with the helper and in Focus mode). Clicking the other cat just makes it happy.
+  Idle scenes (`DUO_SCENES`, 6–10 beats each): Luna grooms Soju (he squirms, falls over, headbutts back), Soju licks
+  the air next to Luna, Soju pounces her tail and gets one swat, zoomies around her ending in a trip, a dust-cloud
+  wrestle Luna wins, a cuddle nap (Soju belly-up, Luna loafed beside). A heart pose plays after a task that went well.
+- **Never during an answer.** `renderer/duo.js` schedules scenes every 1.5–4 minutes only when the cats are free (idle,
+  no bubble, no drag or press, not private, not Focus, no cameo or move) and aborts the current scene on the spot when
+  the user clicks, drags, asks, selects, drops a file, talks, or a nudge or privacy change arrives; the helper is back
+  to its live state on the next frame. Scenes step at their own pace and repaint only when the frame changes; the
+  paused (locked) loop interrupts them.
+- **One canvas.** The pixel canvas spans the whole window; `composeScene` stamps each cat (and props: bowl, hearts,
+  dust, z's) into one grid with an `owner` map, so colors and hit-testing stay per cat and transparent pixels still pass
+  clicks through. The site's "Luna & Soju together" strip plays the same scenes from the same file.
 
 ---
 

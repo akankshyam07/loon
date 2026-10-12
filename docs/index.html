@@ -142,6 +142,11 @@ h2 { font-size: clamp(17px, 3vw, 24px); line-height: 1.5; margin: 0 0 10px; }
 .closet { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; margin-top: 26px; }
 .closet figure { margin: 0; text-align: center; font-size: 13px; font-weight: 700; color: var(--muted); }
 .closet canvas { display: block; width: 80px; height: 98px; image-rendering: pixelated; margin: 0 auto 4px; padding: 6px; border: 3px solid var(--border); border-radius: 14px; background: var(--card); box-shadow: var(--shadow); box-sizing: content-box; }
+.together-title { font-size: 14px; margin: 46px 0 8px; }
+.together { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 22px; }
+.together figure { margin: 0; padding: 14px 14px 12px; text-align: center; }
+.together canvas { display: block; width: 100%; max-width: 256px; aspect-ratio: 64 / 39; margin: 0 auto 8px; image-rendering: pixelated; }
+.together figcaption { font-size: 14.5px; font-weight: 700; color: var(--muted); }
 .checks { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; text-align: left; }
 .checks li { padding-left: 34px; position: relative; }
 .checks li::before { content: "♥"; position: absolute; left: 0; top: -1px; width: 24px; height: 24px; display: grid; place-items: center; font-size: 13px; background: var(--pink-soft); border: 2px solid var(--border); border-radius: 7px; color: var(--pink); }
@@ -273,6 +278,9 @@ footer .px { font-size: 11px; color: var(--ink); }
         <div><h3>Soju</h3><p>The little brother. White fluff, a dark patch over one eye, yellow-green eyes and a pink nose with his signature freckle. Goofy, always hungry, a little clumsy and completely adorable.</p></div></div>
     </div>
     <div class="closet" id="closet"></div>
+    <h3 class="px together-title">Luna &amp; Soju together ♡</h3>
+    <p class="sub">Turn on <b>Bring the other cat along</b> and both cats share your screen: the one you picked helps, the other hangs out. When you're idle they get up to things. Click or ask and they stop right away and get back to work.</p>
+    <div class="together" id="together"></div>
   </div>
 </section>
 
@@ -362,6 +370,36 @@ function draw() {
 }
 draw();
 if (!still) setInterval(() => { tick++; draw(); }, 250);
+
+// Duo scenes from the app (the same beats renderer/cat.js plays), each looping with a pause between runs.
+const TOGETHER = [
+  ['groomSoju', 'c-lav', 'Luna grooms Soju. He did not ask for this.'],
+  ['tailPounce', 'c-mint', 'Soju vs. the tail. One swat, case closed.'],
+  ['cuddleNap', 'c-pink', 'Nap time: one loaf, one belly-up.'],
+];
+const together = document.getElementById('together');
+for (const [name, color, caption] of TOGETHER) {
+  const fig = document.createElement('figure');
+  fig.className = `card ${color}`;
+  const canvas = document.createElement('canvas');
+  canvas.width = 64 * 4;
+  canvas.height = P.ROWS * 4;
+  canvas.setAttribute('role', 'img');
+  canvas.setAttribute('aria-label', `Pixel Luna and Soju: ${caption}`);
+  fig.append(canvas, Object.assign(document.createElement('figcaption'), { textContent: caption }));
+  together.append(fig);
+  const scene = P.DUO_SCENES[name];
+  const beat = (i, now) => P.drawScene(canvas.getContext('2d'), P.composeScene({ width: 64, ...P.sceneLayers(scene.steps[i], 4, { now }) }), 4, { rim: RIM });
+  if (still) { beat(Math.min(2, scene.steps.length - 1), 0); continue; }
+  let i = 0;
+  const play = () => {
+    beat(i, i * 200);
+    const ms = scene.steps[i].ms ?? scene.ms;
+    i = (i + 1) % scene.steps.length;
+    setTimeout(play, i === 0 ? ms + 1800 : ms);
+  };
+  setTimeout(play, TOGETHER.findIndex((t) => t[0] === name) * 700);
+}
 
 // Typed speech bubble with real Loon lines.
 const LINES = [

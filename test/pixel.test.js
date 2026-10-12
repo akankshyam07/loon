@@ -91,6 +91,33 @@ test('the site uses the same sprites as the app', () => {
   assert.strictEqual(read('docs/pixel-sprites.js'), read('renderer/pixel-sprites.js'), 'copy renderer/pixel-sprites.js to docs/');
 });
 
+test('character animations exist per cat, and costumes ride on the head in every new frame (sprawl, bowl, groom)', () => {
+  assert.deepStrictEqual(Object.keys(PX.CHARACTERS.soju.animations).sort(), ['bonk', 'eatBowl', 'sprawlNap', 'trip']);
+  assert.deepStrictEqual(Object.keys(PX.CHARACTERS.luna.animations).sort(), ['fancyGroom', 'judgeStare', 'perfectLoaf']);
+  const scenes = Object.values(PX.DUO_SCENES).flatMap((s) => s.steps).flatMap((step) => ['luna', 'soju'].filter((id) => step[id]).map((id) => [id, step[id]]));
+  const frames = ['luna', 'soju'].flatMap((id) => Object.values(PX.CHARACTERS[id].animations).flatMap((a) => a.frames.map((v) => [id, v]))).concat(scenes);
+  for (const [costumeId, costume] of Object.entries(PX.COSTUMES).filter(([, c]) => c)) {
+    for (const [id, view] of frames) {
+      const frame = PX.pickFrame({ ...view, costume: costumeId }, id);
+      const head = frame.layers.find((l) => l.map === PX.MAPS.HEAD);
+      const worn = frame.layers.find((l) => l.costume);
+      assert.ok(worn, `${costumeId} missing on ${id} ${JSON.stringify(view)}`);
+      if (!head) continue; // side view: the side anchor
+      const [ax, ay, map] = costume.front;
+      assert.deepStrictEqual([worn.x - head.x, worn.y], [ax, Math.min(head.y + ay, PX.H - map.length)], `${costumeId} off the head on ${id} ${JSON.stringify(view)}`);
+    }
+  }
+  // The locked face stays locked on the new poses: the eyes sit on the same pixels relative to the head.
+  const faceAt = (view, id) => {
+    const frame = PX.pickFrame(view, id);
+    const head = frame.layers.find((l) => l.map === PX.MAPS.HEAD);
+    return frame.layers.filter((l) => Object.values(PX.MAPS.EYES).includes(l.map)).map((l) => [l.x - head.x, l.y - head.y]);
+  };
+  for (const view of [{ act: 'sprawl' }, { act: 'eat' }, { act: 'lick' }, { act: 'fancyGroom', step: 3 }]) {
+    assert.deepStrictEqual(faceAt(view, 'soju'), faceAt({}, 'soju'), JSON.stringify(view));
+  }
+});
+
 test('only Luna wears the moon pendant; Soju keeps just his collar, even during moon magic', () => {
   const PX = require('../renderer/pixel-sprites.js');
   for (const glow of [0, 1]) {

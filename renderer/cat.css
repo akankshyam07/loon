@@ -132,6 +132,7 @@ html, body {
 /* ---- pixel skin (DESIGN.md §5.0.2): sprite on a canvas, retro pops, stepped (frame-by-frame) effects ---- */
 @font-face { font-family: 'Press Start 2P'; src: url('fonts/PressStart2P-Regular.ttf') format('truetype'); font-display: block; }
 #pixelCat { position: absolute; bottom: 0; image-rendering: pixelated; }
+body.pixel #catBox { pointer-events: none; } /* the hidden SVG keeps its box; clicks go to the canvas under it */
 #pixelCat[hidden] { display: none; }
 .sparkle.px { animation-timing-function: steps(6, end); }
 .sparkle.px svg { filter: drop-shadow(1px 1px 0 #2b1d24); }
@@ -152,7 +153,18 @@ body.pixel #thought::after { content: ''; position: absolute; left: 10px; bottom
 body.pixel #thought span { border-radius: 0; background: #8e6bd1; animation-timing-function: steps(2, end); }
 body.pixel #nudge { border-radius: 4px; border: 2px solid #2b1d24; font: 11px/22px 'Press Start 2P', monospace; color: #2b2238; box-shadow: 2px 2px 0 #2b1d24; animation-timing-function: steps(2, end); }
 body.pixel #mic { border-radius: 4px; box-shadow: 0 0 0 2px #2b1d24, 2px 2px 0 2px #2b1d24; }
+/* persona lines: a tiny balloon over one cat's head (never answer text) */
+#say {
+  position: absolute; z-index: 3; max-width: min(220px, calc(100% - 8px)); padding: 5px 7px; transform: translate(-50%, -100%);
+  font: 700 11px/1.3 ui-rounded, 'SF Pro Rounded', system-ui, sans-serif; color: #2b2238; text-align: center;
+  background: #fffdf8; border: 2px solid #2b1d24; border-radius: 8px; box-shadow: 2px 2px 0 #2b1d24; pointer-events: none;
+  animation: say-in 0.3s steps(3, end);
+}
+#say[hidden] { display: none; }
+body.pixel #say { border-radius: 2px; }
+@keyframes say-in { from { translate: 0 4px; opacity: 0; } to { translate: 0 0; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
+  #say { animation: none; }
   .pop { animation-timing-function: steps(1, end); }
   body.pixel #nudge, body.pixel #thought span { animation: none; }
 }

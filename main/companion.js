@@ -10,6 +10,7 @@ const { isAgentGoal } = require('../brain/agent');
 const { cleanPersonal, parseFeedback, suggestMemory, secondPerson, normalizeFact } = require('../brain/personal');
 const connectorsLib = require('../brain/connectors');
 const { ConnectorHub } = require('./hub');
+const persona = require('../renderer/persona');
 
 const HANDOFF_URLS = {
   claude: 'https://claude.ai/new',
@@ -86,13 +87,14 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
       redactions: 0,
       placeholder: 'Ask me anything, or "remind me to…"',
       privacy: Boolean(settings.privacy),
+      greeting: session.greeting, // the companion's hello in an empty bubble (flavor, not an answer)
     };
   }
 
   function startSession(mode, packet) {
     active?.controller.abort();
     brain.resetThread();
-    Object.assign(session, { mode, packet, threadStarted: false, lastTask: null, pendingTask: null });
+    Object.assign(session, { mode, packet, threadStarted: false, lastTask: null, pendingTask: null, greeting: persona.line(settings.companion, 'greeting') });
   }
 
   // ---------- extension events ----------
@@ -319,13 +321,19 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
       session.threadStarted = true;
       if (!question) session.lastTask = effectiveTask;
       ui.cat('brain', { state: 'thinking' });
+      const sensitive = session.mode === 'sensitive' || Boolean(activePage?.sensitive);
+      // Personality (§5.0.3) is flavor around the answer: a cameo in the cat window and a short line shown beside the
+      // answer. It never reaches the resolver or the prompt, so the answer, its cost and its speed are the same.
+      const cameo = persona.cameoFor({ companion: settings.companion, task: effectiveTask, pageKind: packet?.source === 'page' ? activePage?.kind : null, sensitive, enabled: settings.cameos !== false });
+      if (cameo) ui.cat('cameo', cameo);
+      const flavor = cameo ? cameo.line : persona.flavorFor({ companion: settings.companion, task: effectiveTask, judgmental: settings.judgmental });
       let talking = false;
       const result = await resolver.run(effectiveTask, packet || { source: 'typed', question }, {
         signal: controller.signal,
         firstInThread,
         deeper,
         question: packet?.text ? question : undefined,
-        sensitive: session.mode === 'sensitive' || Boolean(activePage?.sensitive), // no cloud tier on private pages
+        sensitive, // no cloud tier on private pages
         onText: (chunk) => {
           if (!talking) {
             talking = true;
@@ -340,7 +348,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
           bubble('chunk', { id, chunk: '', restart: true });
         },
       });
-      bubble('done', { id, ...result, model: brain.modelLabel(deeper || result.smart),counts: resolver.counts, memoryUsed: resolver.lastMemory || [], canGoDeeper: !['code', 'cloud'].includes(result.tier) || task === 'define' });
+      bubble('done', { id, ...result, model: brain.modelLabel(deeper || result.smart),counts: resolver.counts, memoryUsed: resolver.lastMemory || [], canGoDeeper: !['code', 'cloud'].includes(result.tier) || task === 'define', ...(flavor ? { flavor } : {}) });
       // History for "what did I look up about…": local only, redacted text, never in Privacy mode.
       if (memory && !settings.privacy && result.text) {
         const subject = packet?.text ? ` · ${packet.text.replace(/\s+/g, ' ').slice(0, 80)}` : '';
