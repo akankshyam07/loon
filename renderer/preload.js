@@ -15,6 +15,8 @@ contextBridge.exposeInMainWorld('loon', {
   onSelection: on('selection'),
   onPrivacy: on('privacy'),
   onNudge: on('nudge'),
+  onCameo: on('cameo'),
+  catWide: (on) => ipcRenderer.invoke('cat-wide', Boolean(on)),
   nudgeClick: () => ipcRenderer.send('nudge-click'),
   nudgeIgnored: (kind) => ipcRenderer.send('nudge-ignored', kind),
   setIgnoreMouse: (ignore) => ipcRenderer.send('set-ignore-mouse', ignore),

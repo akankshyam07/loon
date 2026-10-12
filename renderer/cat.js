@@ -38,13 +38,21 @@
   // ---------- pixel skin ----------
   // The SVG stays loaded (hidden) so switching styles in Settings is instant and nothing below needs two code paths.
   const PX = window.LoonPixel;
+  const PERSONA = window.LoonPersona;
+  // One canvas spans the whole window so a second cat (duo mode, cameos) can stand beside the helper.
   const canvas = Object.assign(document.createElement('canvas'), { id: 'pixelCat' });
-  catBox.append(canvas);
+  stage.insertBefore(canvas, catBox);
   const pen = canvas.getContext('2d');
-  let look = { catStyle: 'pixel', companion: 'luna', costume: 'none', seasonalCostumes: false, retroSounds: false, ...(await window.loon.catLook()) };
+  let look = { catStyle: 'pixel', companion: 'luna', costume: 'none', seasonalCostumes: false, retroSounds: false, cameos: true, duo: false, ...(await window.loon.catLook()) };
   const pixel = () => look.catStyle !== 'classic';
   let cell = 1; // CSS px per sprite pixel: an integer, so the art stays crisp at S/M/L
-  let grid = null; // the frame on screen; also the hit mask
+  let scene = null; // the frame on screen ({ grid, owner }); also the hit mask, per cat
+  let hostCol = 0; // sprite column of the helper's 32×32 art in the window-wide grid
+  let sceneW = PX.W;
+  let canvasLeft = 0;
+  let hostOverride = null; // view patch for character moves (Soju's bowl, Luna's fancy groom…)
+  let sceneStep = null; // current beat of an idle duo scene
+  let cameo = null; // { guest, step, controller } while the other cat pops in
   let lastKey = '';
   let travel = null; // walk | run | leap while the window moves
   let facing = 1;
@@ -63,11 +71,16 @@
     box = { left: (stage.clientWidth - catW) / 2, top: stage.clientHeight - catH, width: catW, height: catH };
     Object.assign(catBox.style, { width: `${catW}px`, height: `${catH}px`, marginLeft: `${-catW / 2}px` });
     cell = Math.max(1, Math.floor(catH / PX.ROWS));
+    // the helper sits exactly where it always did; whole sprite columns fill the rest of the window on both sides
+    const hostLeft = box.left + (catW - PX.W * cell) / 2;
+    hostCol = Math.floor(hostLeft / cell);
+    sceneW = hostCol + PX.W + Math.floor((stage.clientWidth - hostLeft - PX.W * cell) / cell);
+    canvasLeft = hostLeft - hostCol * cell;
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = PX.W * cell * dpr;
+    canvas.width = sceneW * cell * dpr;
     canvas.height = PX.ROWS * cell * dpr;
     pen.imageSmoothingEnabled = false;
-    Object.assign(canvas.style, { width: `${PX.W * cell}px`, height: `${PX.ROWS * cell}px`, left: `${(catW - PX.W * cell) / 2}px` });
+    Object.assign(canvas.style, { width: `${sceneW * cell}px`, height: `${PX.ROWS * cell}px`, left: `${canvasLeft}px` });
     lastKey = '';
   }
   window.addEventListener('resize', layout);
@@ -179,6 +192,7 @@
   function nextDelay(now) {
     if (paused) return 1000;
     if (tweens.size > 0 || state !== 'idle') return 33;
+    if (sceneStep || cameo || hostOverride) return 66; // duo scenes and cameos step at their own pace; repaint only on change
     if (fidget) return 100;
     if (bubbleOpen || now - lastCursorMove < 800) return 66; // eyes following the cursor
     return now - lastCursorMove > 2 * MIN ? 500 : 200;
@@ -188,7 +202,7 @@
     if (!paused) frame(now);
     setTimeout(loop, nextDelay(now));
   }
-  window.loon.onPower(({ paused: p }) => { paused = p; });
+  window.loon.onPower(({ paused: p }) => { paused = p; if (p) interruptDuo(); });
 
   function frame(now) {
     const dt = Math.min(now - lastFrame, 200);
@@ -249,38 +263,86 @@
     if (look.costume && look.costume !== 'none') return look.costume;
     return (look.seasonalCostumes && PX.seasonalCostume()) || 'none';
   }
+  // The other cat, idling beside the helper in duo mode: its own blinks, glances at the helper, naps when the
+  // helper naps or Focus mode is on, covers its eyes on private pages, and walks along when the window moves.
+  const side = { blinkUntil: 0, happyUntil: 0, glance: false };
+  function sidekickView(now) {
+    if (focusMode || state === 'napping') return { now: now + 700, pose: 'loaf', state: 'napping', mood: 'asleep', lidL: 1, lidR: 1, costume: wornCostume() };
+    if (privacy) return { now: now + 700, pose: 'pawsUp', mood: 'protective', costume: wornCostume() };
+    const toHost = look.companion === 'luna' ? -6 : 6;
+    const happy = now < side.happyUntil;
+    const lid = now < side.blinkUntil ? 1 : 0.08;
+    return {
+      now: now + 700, tailPeriod: 4200, travel, facing, costume: wornCostume(), lidL: lid, lidR: lid, happy: happy ? 1 : 0, mood: happy ? 'happy' : 'neutral',
+      look: side.glance ? { x: toHost, y: 0 } : { x: S.lookX, y: S.lookY },
+    };
+  }
+  setInterval(() => {
+    const now = performance.now();
+    if (Math.random() < 0.5) side.blinkUntil = now + 300;
+    side.glance = Math.random() < 0.3;
+  }, 3200);
+  const lunaColumn = () => hostCol - (look.companion === 'luna' ? 0 : PX.GAP);
+  const otherCat = () => PERSONA.other(look.companion);
+
   function drawPixel(now) {
-    const next = PX.compose(PX.pickFrame({
+    const hostView = {
       now, state, pose, mood, move: currentMove, look: { x: S.lookX, y: S.lookY },
       lidL: Math.max(S.lidL, FX.blink), lidR: Math.max(S.lidR, FX.blink), happy: S.happy, mouth: mouthKind,
       twitchL: FX.twitchL, twitchR: FX.twitchR, glow: S.glow, tailPeriod: tailStyle.period, travel, facing,
-      spin: M.catRot, sy: M.catSy, bodyRot: M.bodyRot, privacy, dragging, fileOver, fidget, costume: wornCostume(),
-    }, look.companion));
+      spin: M.catRot, sy: M.catSy, bodyRot: M.bodyRot, privacy, dragging, fileOver, fidget, costume: wornCostume(), ...hostOverride,
+    };
     // whole-sprite moves snap to the pixel grid: stepped, never sub-pixel
-    const dx = Math.round((M.catX * scale) / cell) * cell;
-    const dy = Math.round((M.catY * scale) / cell) * cell;
-    const key = `${look.companion}|${dx}|${dy}|${next.join('')}`;
+    const live = { [look.companion]: { view: hostView, dx: Math.round((M.catX * scale) / cell), dy: Math.round((M.catY * scale) / cell) } };
+    if (look.duo) live[otherCat()] = { view: sidekickView(now) };
+    const step = cameo?.step || sceneStep || {};
+    const costume = wornCostume();
+    const next = PX.composeScene({ width: sceneW, ...PX.sceneLayers(step, lunaColumn(), { now, costumes: { luna: costume, soju: costume }, live }) });
+    const key = `${look.companion}|${next.grid.join('')}`;
     if (key === lastKey) return;
     lastKey = key;
-    grid = next;
-    canvas.style.transform = `translate(${dx}px, ${dy}px)`;
-    PX.drawGrid(pen, grid, PX.colorsFor(look.companion), canvas.width / PX.W, { rim: RIM });
+    scene = next;
+    PX.drawScene(pen, scene, canvas.width / sceneW, { rim: RIM });
   }
-  // Transparent sprite pixels are not the cat: clicks there go to the app behind.
-  function opaqueAt(x, y) {
-    if (!grid || !pixel()) return false;
+  // Transparent sprite pixels are not the cat: clicks there go to the app behind. whoAt says which cat it was.
+  function cellAt(x, y) {
     const r = canvas.getBoundingClientRect();
-    const c = grid[Math.floor((y - r.top) / cell)]?.[Math.floor((x - r.left) / cell)];
+    return [Math.floor((y - r.top) / cell), Math.floor((x - r.left) / cell)];
+  }
+  function opaqueAt(x, y) {
+    if (!scene || !pixel()) return false;
+    const [row, col] = cellAt(x, y);
+    const c = scene.grid[row]?.[col];
     return Boolean(c) && c !== '.' && c !== 'z';
   }
+  function whoAt(x, y) {
+    if (!scene || !pixel()) return look.companion;
+    const [row, col] = cellAt(x, y);
+    return scene.owner[row]?.[col] || look.companion;
+  }
   function applyLook(next) {
+    const wasDuo = look.duo;
     look = { ...look, ...next };
+    if (look.duo && !wasDuo) duo.start();
+    if (!look.duo && wasDuo) { duo.stop(); sceneStep = null; }
     document.body.classList.toggle('pixel', pixel());
     catBox.querySelector('svg').style.visibility = pixel() ? 'hidden' : ''; // hidden, not removed: #headShape keeps its box
     canvas.hidden = !pixel();
     lastKey = '';
     if (!paused) frame(performance.now());
   }
+  // ---------- duo mode (§5.0.3): idle-only scenes; any interaction stops them on the spot ----------
+  const duo = window.LoonDuo.createDuoScheduler({
+    canStart: () => look.duo && pixel() && !paused && state === 'idle' && !bubbleOpen && !dragging && !press && !privacy && !focusMode && !cameo && !fidget && !hostOverride,
+    pick: () => PX.IDLE_SCENES[Math.floor(Math.random() * PX.IDLE_SCENES.length)],
+    play: (name, signal) => window.LoonDuo.runScene(PX.DUO_SCENES[name], { signal, onStep: (step) => { sceneStep = step; } }).finally(() => { if (!cameo) sceneStep = null; }),
+    gap: DEMO ? [8_000, 15_000] : [90_000, 240_000],
+  });
+  function interruptDuo() {
+    if (duo.interrupt() || sceneStep) { sceneStep = null; lastKey = ''; }
+  }
+  if (look.duo) duo.start();
+
   window.loon.onCatLook(applyLook);
   applyLook({});
   loop();
@@ -330,7 +392,7 @@
 
   (function scheduleTilt() {
     setTimeout(() => {
-      if (state === 'idle' && !bubbleOpen && pixel() && Math.random() < 0.4) {
+      if (state === 'idle' && !bubbleOpen && !sceneStep && pixel() && Math.random() < (PERSONA.PERSONAS[look.companion]?.groomChance ?? 0.4)) {
         fidget = 'groom'; // the pixel cat has no head tilt; it grooms a paw instead
         setTimeout(() => { fidget = null; }, 1900);
       } else if (state === 'idle' && !bubbleOpen) {
@@ -418,6 +480,33 @@
     blip(text === '!' ? [988, 1319] : [659, 523]);
   }
 
+  // A tiny speech balloon over one cat's head for persona lines (reactions, nudges, cameos). Flavor only: it never
+  // carries answer text. A reaction repeats at most every 20 s so it stays charming.
+  const sayBox = $('#say');
+  const saidAt = {};
+  let sayTimer = null;
+  function say(text, who = look.companion, { event = null, ms = 2600 } = {}) {
+    if (!text) return;
+    const now = performance.now();
+    if (event) {
+      if (now - (saidAt[event] || -1e9) < 20_000) return;
+      saidAt[event] = now;
+    }
+    const at = cameo?.step || sceneStep || {};
+    const col = lunaColumn() + (who === 'luna' ? at.lx ?? 0 : at.sx ?? PX.GAP) + PX.W / 2;
+    sayBox.textContent = text;
+    sayBox.hidden = false;
+    Object.assign(sayBox.style, { left: '0px', width: '' }); // measure at full width, then pin that width and place
+    sayBox.style.width = `${Math.ceil(sayBox.getBoundingClientRect().width) + 1}px`; // rounding down would re-wrap it
+    const half = sayBox.offsetWidth / 2;
+    const x = Math.min(Math.max(canvasLeft + col * cell, half + 4), stage.clientWidth - half - 4);
+    Object.assign(sayBox.style, { left: `${x}px`, top: `${Math.max(sayBox.offsetHeight + 2, stage.clientHeight - (PX.ROWS - PX.TOP - 1) * cell)}px` });
+    thought.style.visibility = 'hidden'; // the line stands in for the thinking dots while it shows
+    clearTimeout(sayTimer);
+    sayTimer = setTimeout(() => { sayBox.hidden = true; thought.style.visibility = ''; }, ms);
+  }
+  const sayLine = (event, who = look.companion, opts = {}) => say(PERSONA.line(who, event), who, { event: event.split('.')[0], ...opts });
+
   // ---------- interaction: click-through, drag, pet, click ----------
   let ignoring = true;
   const setIgnore = (ignore) => {
@@ -444,7 +533,8 @@
   onCat('pointerdown', (e) => {
     if (e.button !== 0 || (pixel() && !opaqueAt(e.clientX, e.clientY))) return;
     e.currentTarget.setPointerCapture(e.pointerId);
-    press = { cx: e.clientX, cy: e.clientY };
+    interruptDuo();
+    press = { cx: e.clientX, cy: e.clientY, who: whoAt(e.clientX, e.clientY) };
     clearTimeout(homeTimer); // the user has the cat now; walk home later, if at all
     petTimer = setTimeout(startPet, 320);
   });
@@ -453,6 +543,7 @@
     if (Math.hypot(e.clientX - press.cx, e.clientY - press.cy) > 9) { // trackpad jitter on a click is not a drag
       clearTimeout(petTimer);
       dragging = true;
+      cameo?.controller.abort();
       window.loon.dragStart(press.cx, press.cy);
       setMood('wide');
       pop('!');
@@ -472,6 +563,8 @@
       setMood('neutral');
     } else if (state === 'petted') {
       endPet();
+    } else if (wasPress.who !== look.companion) {
+      sidekickPet(wasPress.who);
     } else {
       onCatClick();
     }
@@ -499,7 +592,15 @@
     await Promise.all([tween(M, 'catSy', 1, 240, easeOutBack), tween(M, 'catSx', 1, 240, easeOutBack)]);
   }
 
+  // The other cat in duo mode is not the helper: a click just makes it happy.
+  function sidekickPet(who) {
+    side.happyUntil = performance.now() + 1500;
+    blip([659, 988]);
+    sayLine('pet', who);
+  }
+
   function onCatClick() {
+    if (wakeMove) return wakeMove(); // Soju dozing belly-up wakes on a click
     if (state === 'napping') return wakeUp();
     if (state === 'move' || state === 'eating') return;
     window.loon.openBubble();
@@ -507,8 +608,9 @@
 
   let petSparkles = null;
   function startPet() {
-    if (!press || state !== 'idle') return;
+    if (!press || state !== 'idle' || press.who !== look.companion) return;
     state = 'petted';
+    sayLine('pet');
     setMood('happy');
     idleTilt = 7;
     tailStyle = { amp: 3, period: 4200 };
@@ -597,7 +699,7 @@
     clearTimeout(homeTimer);
     homeTimer = setTimeout(async () => {
       if (await window.loon.atHome()) return;
-      if (state !== 'idle' || bubbleOpen || dragging || press) return comeHome(4000);
+      if (state !== 'idle' || bubbleOpen || dragging || press || cameo) return comeHome(4000);
       state = 'move';
       try {
         const startX = (await window.loon.windowInfo()).win.x;
@@ -701,17 +803,122 @@
     await wait(600);
   }
 
+  // ---------- character moves (pixel skin): frames come from hostOverride, a view patch over the live state ----------
+  const frames = async (list, ms) => { for (const patch of list) { hostOverride = patch; await wait(ms); } };
+  // Luna: a fancy groom (lick the paw, lick again, wipe over the ear, pleased).
+  async function fancyGroom() {
+    await frames([0, 1, 0, 1, 2, 2, 3].map((step) => ({ act: 'fancyGroom', step })), 330);
+    await wait(500);
+  }
+  // Luna: a slow half-lid stare right at you, then a tail flick or two.
+  async function judgeStare() {
+    lookOverride = { x: 0, y: 0 };
+    await wait(400);
+    setMood('judgy');
+    await frames([0, 0, 2, 1, 0, 2, 0].map((tailFrame) => ({ tailFrame })), 420);
+    await wait(700);
+  }
+  // Luna: the perfect loaf. Smug half-lids, one slow blink, one happy squint.
+  async function perfectLoaf() {
+    setPose('loaf');
+    await frames([{ lidL: 0.5, lidR: 0.5 }, { lidL: 1, lidR: 1 }, { lidL: 0.5, lidR: 0.5 }, { mood: 'happy', happy: 1 }].map((p) => ({ pose: 'loaf', ...p })), 1300);
+  }
+  // Soju: the food bowl appears and he dives in.
+  async function eatBowl() {
+    setMood('happy');
+    for (let i = 0; i < 10; i++) {
+      hostOverride = i % 2 ? { act: 'eat', headDrop: 3, lidL: 1, lidR: 1 } : { act: 'eat', headDrop: 2, mouth: 'open', happy: 1 };
+      if (i % 2 === 0) blip([392]);
+      await wait(220);
+    }
+    hostOverride = { act: 'eat', headDrop: 1, mood: 'happy', happy: 1 };
+    sparklesAround(110, 100, 3);
+    await wait(900);
+  }
+  // Soju: a belly-up sprawl nap. A click (or anything that needs him) wakes him.
+  let wakeMove = null;
+  async function sprawlNap(length = rand(7000, 14000)) {
+    hostOverride = { act: 'sprawl', mood: 'sleepy', lidL: 0.62, lidR: 0.62 };
+    await wait(700);
+    hostOverride = { act: 'sprawl', state: 'napping', mood: 'asleep', lidL: 1, lidR: 1 };
+    const z = setInterval(zzz, 1800);
+    zzz();
+    await new Promise((resolve) => { wakeMove = resolve; setTimeout(resolve, length); });
+    wakeMove = null;
+    clearInterval(z);
+    hostOverride = { act: 'sprawl', mood: 'sleepy', lidL: 0.62, lidR: 0.62 };
+    await wait(400);
+  }
+  // Soju falls over: crumples, lands belly-up with dizzy stars, then sits up like nothing happened.
+  async function tumble(dir = facing) {
+    await frames([{ travel: 'walk', facing: dir, legs: 1, crumple: 2 }, { travel: 'walk', facing: dir, legs: 2, crumple: 4 }], 120);
+    blip([330, 220]);
+    await frames([{ act: 'sprawl', mood: 'wide', dizzy: true }, { act: 'sprawl', lidL: 1, lidR: 1, dizzy: true }], 750);
+    await frames([{ dizzy: true, lidL: 0.5, lidR: 0.5 }, { mood: 'happy', happy: 1 }], 500);
+  }
+  async function trip() {
+    const { win, workArea } = await window.loon.windowInfo();
+    const dir = win.x + win.width + 60 > workArea.x + workArea.width ? -1 : 1;
+    facing = dir;
+    travel = 'walk';
+    await window.loon.animateWindow({ dx: dir * 50, duration: 520 });
+    travel = null;
+    await tumble(dir);
+    comeHome(rand(8000, 15000));
+  }
+  // Soju walks to the nearer screen edge and bonks his nose on it.
+  async function bonk() {
+    const { win, workArea } = await window.loon.windowInfo();
+    const toRight = workArea.x + workArea.width - (win.x + win.width);
+    const toLeft = win.x - workArea.x;
+    const dir = toRight <= toLeft ? 1 : -1;
+    const dist = Math.min(toRight, toLeft);
+    if (dist > 700) return trip();
+    facing = dir;
+    travel = 'walk';
+    if (dist > 2) await window.loon.animateWindow({ dx: dir * dist, duration: Math.max(300, dist * 4) });
+    const gapCells = dir > 0 ? sceneW - hostCol - PX.W : hostCol; // the window is at the edge; walk the last bit
+    await tween(M, 'catX', (dir * gapCells * cell) / scale, 260, (t) => t);
+    travel = null;
+    hostOverride = { travel: 'walk', facing: dir, legs: 2, act: 'bonk', crumple: 1 };
+    blip([196]);
+    await wait(320);
+    await frames([{ mood: 'wide', dizzy: true }, { lidL: 1, lidR: 1, dizzy: true }, { dizzy: true }], 600);
+    hostOverride = null;
+    await tween(M, 'catX', 0, 300);
+    comeHome(rand(8000, 15000));
+  }
+  // Soju chases the cursor, lands badly.
+  async function clumsyChase() {
+    await pounce();
+    await tumble();
+  }
+  // Soju zooms around, then falls asleep mid-play.
+  async function playNap() {
+    await zoomies();
+    await sprawlNap(rand(5000, 9000));
+  }
+  const CHARACTER_MOVES = { fancyGroom, judgeStare, perfectLoaf, eatBowl, sprawlNap, trip, bonk, clumsyChase, playNap };
+
   const MOVES = { moonMagic, pounce, edgePeek, stretch, tailChase, knockItOff, zoomies };
+  // 'random' picks by the companion's personality (renderer/persona.js): Luna grooms, judges and loafs more; Soju
+  // eats, zooms, trips and sprawls more. Character moves are pixel-only.
+  const availableMoves = () => [...Object.keys(MOVES), 'hop', ...(pixel() ? Object.keys(CHARACTER_MOVES) : [])];
   async function doMove(name) {
-    if (state !== 'idle' || bubbleOpen || dragging || privacy || focusMode) return;
-    if (name === 'random') name = Object.keys(MOVES)[Math.floor(Math.random() * Object.keys(MOVES).length)];
+    if (state !== 'idle' || bubbleOpen || dragging || privacy || focusMode || cameo) return;
+    if (name === 'random') name = PERSONA.pickMove(look.companion, availableMoves()) || 'hop';
+    interruptDuo();
     state = 'move';
-    currentMove = MOVES[name] ? name : 'hop';
+    const run = MOVES[name] || (pixel() && CHARACTER_MOVES[name]);
+    currentMove = run ? name : 'hop';
     try {
-      await (MOVES[name] || hopAround)();
+      await (run || hopAround)();
     } finally {
       currentMove = null;
       travel = null;
+      hostOverride = null;
+      wakeMove = null;
+      M.catX = 0;
       M.catY = 0;
       M.catRot = 0;
       M.bodyRot = 0;
@@ -750,6 +957,7 @@
       lookOverride = { x: -6, y: 0 };
       setMood('curious');
       setTimeout(() => { if (lookOverride && state === 'idle') { lookOverride = null; setMood('neutral'); } }, 2500);
+      maybeCameo({ nudge: 'snack' });
     }
     later(showFish, TIMING.eat);
   }
@@ -776,7 +984,7 @@
   let napEnd = null;
   function startNap() {
     if (focusMode) return later(startNap, TIMING.nap);
-    if (state !== 'idle' || bubbleOpen) return later(startNap, [DEMO ? 10_000 : MIN, DEMO ? 15_000 : 2 * MIN]);
+    if (state !== 'idle' || bubbleOpen || sceneStep || cameo) return later(startNap, [DEMO ? 10_000 : MIN, DEMO ? 15_000 : 2 * MIN]);
     state = 'napping';
     setPose('loaf');
     setMood('asleep');
@@ -811,6 +1019,7 @@
     thought.hidden = true;
   }
   function onBrain({ state: brainState, mood: answerMood }) {
+    if (['thinking', 'acting', 'talking'].includes(brainState)) { interruptDuo(); wakeMove?.(); }
     if (brainState === 'thinking') {
       if (state === 'napping') wakeUp();
       state = 'thinking';
@@ -842,7 +1051,8 @@
       tailStyle = IDLE_TAIL;
       state = 'idle';
       const finalMood = brainState === 'error' ? 'confused' : answerMood || 'happy';
-      if (brainState === 'error') pop('?');
+      if (brainState === 'error') { pop('?'); sayLine('error'); }
+      if (finalMood === 'happy' && brainState !== 'error' && look.duo) duo.queue('heart'); // once the bubble is closed
       setMood(finalMood);
       setTimeout(() => { if (mood === finalMood && state === 'idle') setMood(bubbleOpen ? 'curious' : 'neutral'); }, brainState === 'error' ? 4000 : 7000);
     }
@@ -852,6 +1062,8 @@
   window.loon.onBubble(({ open }) => {
     bubbleOpen = open;
     if (open) {
+      interruptDuo();
+      wakeMove?.();
       if (state === 'napping') wakeUp();
       if (focusMode) setPose('sit');
       lookOverride = { x: -4.5, y: -3.5 };
@@ -869,7 +1081,9 @@
   window.loon.onPrivacy(({ on }) => {
     if (on === privacy) return;
     privacy = on;
+    if (on) { interruptDuo(); cameo?.controller.abort(); }
     if (state === 'napping') return;
+    if (on) sayLine('privacy');
     setPose(on ? 'pawsUp' : 'sit');
     setMood(on ? 'protective' : 'neutral');
     if (on) hideNudge(false);
@@ -878,6 +1092,8 @@
   // Ears perk, eyes go to the selection, and a far-away selection is worth a hop (DESIGN.md §3.2).
   window.loon.onSelection(async ({ anchor }) => {
     if (state !== 'idle' || privacy || !anchor) return;
+    interruptDuo();
+    sayLine('selection');
     const { win } = await window.loon.windowInfo();
     const dx = anchor.x + anchor.w / 2 - (win.x + win.width / 2);
     const dy = anchor.y - win.y;
@@ -917,7 +1133,10 @@
   }
   window.loon.onNudge(({ kind }) => {
     if (privacy || focusMode || state !== 'idle' || bubbleOpen) return;
+    interruptDuo();
     nudgeKind = kind;
+    const wording = PERSONA.line(look.companion, `nudge.${kind}`);
+    if (wording) { nudgeButton.title = wording; nudgeButton.setAttribute('aria-label', wording); }
     const p = toStage(160, 22);
     Object.assign(nudgeButton.style, { left: `${p.x}px`, top: `${p.y}px` });
     nudgeButton.hidden = false;
@@ -925,8 +1144,41 @@
     setMood('curious');
     setTimeout(() => { if (mood === 'curious' && state === 'idle' && !bubbleOpen) setMood('neutral'); }, 1500);
     nudgeTimer = setTimeout(() => hideNudge(true), 8000);
+    // A menu page or a break with Luna: she calls Soju in for a snack. Otherwise the cat says its nudge line.
+    if (maybeCameo({ nudge: kind })) return;
+    say(wording, look.companion, { event: 'nudge' });
     if (kind === 'break') doMove('stretch'); // show, don't tell
   });
+
+  // ---------- cameos (§5.0.3): the other cat pops in, does its bit, and leaves. Visual and flavor only. ----------
+  function maybeCameo({ nudge }) {
+    const plan = PERSONA.cameoFor({ companion: look.companion, nudge, sensitive: privacy, enabled: look.cameos !== false });
+    if (plan) playCameo(plan);
+    return Boolean(plan);
+  }
+  async function playCameo({ guest, call, line }) {
+    if (cameo || privacy || !pixel()) return say(call, look.companion);
+    interruptDuo();
+    const controller = new AbortController();
+    cameo = { guest, step: null, controller };
+    const widened = !look.duo;
+    try {
+      if (widened) await window.loon.catWide(true); // room beside the helper; it stays where it is
+      await window.LoonDuo.runScene(PX.cameoScene(guest, { present: look.duo }), {
+        signal: controller.signal,
+        onStep: (step) => {
+          cameo.step = step;
+          if (step.say === 'call') say(call, look.companion, { ms: 2200 });
+          if (step.say === 'guest') say(line, guest, { ms: 2400 });
+        },
+      });
+    } finally {
+      cameo = null;
+      lastKey = '';
+      if (widened && !look.duo) await window.loon.catWide(false);
+    }
+  }
+  window.loon.onCameo((plan) => { if (plan?.guest && plan.guest !== look.companion) playCameo(plan); });
   nudgeButton.addEventListener('click', () => {
     hideNudge(false);
     window.loon.nudgeClick();
@@ -943,6 +1195,7 @@
     focusMode = on;
     clearInterval(focusZzz);
     if (on) {
+      interruptDuo();
       hideNudge(false);
       applyFocusLook();
       focusZzz = setInterval(() => { if (focusMode && state === 'idle' && !bubbleOpen) zzz(); }, 6000);
@@ -957,6 +1210,7 @@
   document.addEventListener('dragover', (e) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'copy';
+    interruptDuo();
     if (state === 'idle' && mood !== 'wide') {
       setMood('wide');
       T.earL = T.earR = -10;
@@ -972,6 +1226,7 @@
     if (!file) return;
     setMood('happy');
     sparklesAround(110, 120, 4);
+    sayLine('fileDrop');
     window.loon.dropFile(file);
   });
   // main opened the body area for a possible drag; hand click-through back once the cursor leaves it
@@ -1046,6 +1301,7 @@
     micBadge.hidden = voiceState !== 'listening' && voiceState !== 'wake';
     micBadge.classList.toggle('passive', voiceState === 'wake'); // mic open for "Hey Loon", not yet in a turn
     if (voiceState === 'listening') {
+      interruptDuo();
       if (state === 'napping') wakeUp();
       const p = toStage(160, 18);
       Object.assign(micBadge.style, { left: `${p.x}px`, top: `${p.y}px` });
@@ -1075,6 +1331,8 @@
     if (cmd.brain) onBrain(cmd.brain);
     if (cmd.sparkle) sparklesAround(110, 90, 6);
     if (cmd.catLook) applyLook(cmd.catLook);
+    if (cmd.cameo) playCameo(cmd.cameo);
+    if (cmd.duoScene && PX.DUO_SCENES[cmd.duoScene]) duo.queue(cmd.duoScene, 0);
   });
 
   // read-only view for test/selftest.js
@@ -1082,6 +1340,7 @@
     get state() { return state; }, get pose() { return pose; }, get mood() { return mood; },
     get privacy() { return privacy; }, get nudge() { return !nudgeButton.hidden; }, get focus() { return focusMode; },
     get listening() { return !micBadge.hidden; }, get played() { return playedCount; },
+    get duoScene() { return duo.playing; }, get cameo() { return cameo?.guest || null; },
   };
 
   setPose('sit');

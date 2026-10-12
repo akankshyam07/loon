@@ -144,6 +144,8 @@ function renderEmpty() {
   const empty = !log.children.length && !(context.chips || []).length && context.mode === 'ask' && !context.notice;
   $('empty').hidden = !empty;
   if (!empty) return;
+  $('greeting').hidden = !context.greeting;
+  $('greeting').textContent = context.greeting || '';
   const ideas = ['What can you do?', 'Where did I leave off?', 'Remind me to stretch in 30 minutes'];
   $('suggestions').replaceChildren(...ideas.map((text) => {
     const b = Object.assign(document.createElement('button'), { className: 'chip', textContent: text });
@@ -550,6 +552,8 @@ window.loon.onAskDone(({ id, text, ...meta }) => {
   if (current?.id !== id) return;
   current.el.innerHTML = renderMarkdown(text || current.raw.trim() || '…');
   if (meta.quiz) current.el.append(quizCard(meta.quiz));
+  // the companion's little aside, kept apart from the answer (copy, speech and memory use only the answer)
+  if (meta.flavor) current.el.append(Object.assign(document.createElement('p'), { className: 'flavor', textContent: meta.flavor }));
   current.el.append(answerActions({ ...meta, text: text || current.raw, question: current.question }));
   current = null;
   autosize();

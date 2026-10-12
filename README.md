@@ -38,7 +38,10 @@ The cat is a retro pixel sprite by default, animated frame by frame like a '90s 
 - **Luna**, the big sister: black fur, very green eyes, a moon pendant. A bit sassy, very smart, secretly sweet.
 - **Soju**, the little brother: white with an eye patch and a freckled pink nose. Goofy, always hungry, adorable.
 
-Personality only changes how they act and react, never how good the answers are. Dress them up from the Wardrobe
+Personality only changes how they act and react, never how good the answers are: Luna grooms, judges and loafs;
+Soju eats, sprawls belly-up, trips and bonks into the screen edge. With **Cameos** on, Luna calls Soju in when there's
+food to judge and Soju fetches Luna for the brainy stuff. **Bring the other cat along** puts both on screen; they groom,
+wrestle and nap together while you're idle and stop the moment you click or ask. Dress them up from the Wardrobe
 (strawberry, frog and bee hoods, witch, Santa and party hats, a grad cap, a bow tie, sunglasses, a bread loaf), or
 switch back to the smooth Classic style in Settings.
 
