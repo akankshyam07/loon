@@ -37,6 +37,29 @@
       guest: ['soju', 'guest', 0],
       teachDone: ['luna', 'pet', 2],
     },
+    // The spoken lines. `from` points at the persona.js line it speaks (balloon text = that line; `say` is how the TTS
+    // should pronounce it). Lines without `from` are the reel's own: Soju copying his big sister, slightly wrong.
+    voice: [
+      { id: 'greet', who: 'luna', from: ['luna', 'greeting', 0] },
+      { id: 'what', who: 'luna', from: ['luna', 'selection', 0] },
+      { id: 'opinions', who: 'luna', from: ['luna', 'nudge.shopping'] },
+      { id: 'darling', who: 'luna', from: ['luna', 'shopping', 1] },
+      { id: 'dept', who: 'luna', from: ['luna', 'call', 0], say: "This is Soju's department." },
+      { id: 'food', who: 'soju', from: ['soju', 'guest', 0] },
+      { id: 'purr', who: 'soju', from: ['soju', 'pet', 0], say: 'Purrr! More!' },
+      { id: 'acceptable', who: 'luna', from: ['luna', 'pet', 1], say: 'Mmm. Acceptable.' },
+      { id: 'acceptabubble', who: 'soju', text: 'Mrrr! Acceptabubble!', say: 'Mmm! Acceptabubble!' },
+      { id: 'byeLuna', who: 'luna', text: 'Bye bye!', say: 'Bye bye!' },
+      { id: 'byeSoju', who: 'soju', text: 'Bye bye bye bye!', say: 'Bye bye bye bye!' },
+    ],
+    // persona: renderer/persona.js (window.LoonPersona or require) → [{ id, who, text, say }]
+    voiceLines(persona) {
+      return content.voice.map((v) => {
+        const value = v.from && v.from[1].split('.').reduce((node, key) => node && node[key], persona.PERSONAS[v.from[0]].lines);
+        const text = v.from ? (typeof value === 'string' ? value : value[v.from[2]]) : v.text;
+        return { id: v.id, who: v.who, text, say: v.say || text };
+      });
+    },
     teach: {
       question: 'how do I save this as a PNG?',
       steps: ['Pick PNG as the format', 'Click Export… to save it'],

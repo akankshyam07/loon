@@ -132,7 +132,9 @@ h2 { font-size: clamp(17px, 3vw, 24px); line-height: 1.5; margin: 0 0 10px; }
 .tv { position: relative; padding: 12px; background: var(--lav-soft); }
 .tv video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 10; border: 3px solid var(--border); border-radius: 12px; background: #fff7f1; }
 .tv .play { position: absolute; left: 50%; top: 86%; transform: translate(-50%, -50%); padding: 14px 20px; font: 13px "Press Start 2P", monospace; color: #2b2238; background: var(--pink); border: 3px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); cursor: pointer; }
-.tv .play[hidden] { display: none; }
+.tv .play[hidden], .tv .sound[hidden] { display: none; }
+.tv .sound { position: absolute; right: 26px; bottom: 26px; padding: 9px 12px; font: 10px "Press Start 2P", monospace; color: #2b2238; background: var(--sun); border: 3px solid var(--border); border-radius: 10px; box-shadow: 3px 3px 0 var(--border); cursor: pointer; }
+@media (max-width: 600px) { .tv .sound { right: 18px; bottom: 18px; padding: 5px 7px; font-size: 7px; border-width: 2px; } }
 .tv-note { margin: 14px 0 0; text-align: center; font-size: 14.5px; color: var(--muted); }
 
 /* ---------- brain ladder ---------- */
@@ -242,8 +244,9 @@ footer .px { font-size: 11px; color: var(--ink); }
     <div class="card tv">
       <video id="demoVideo" muted loop playsinline preload="none" poster="demo-poster.png" width="1600" height="1000" aria-label="Loon demo: an instant definition, a price-per-unit verdict, a menu pick with Soju's cameo, step-by-step pointing on screen, and Luna and Soju dressing up"></video>
       <button class="play" id="demoPlay" hidden>▶ Play demo</button>
+      <button class="sound" id="demoSound" hidden aria-pressed="false">🔊 tap for sound</button>
     </div>
-    <p class="tv-note">A staged demo made from Loon's real sprites, lines and answers. <a href="demo.mp4">Open the mp4</a></p>
+    <p class="tv-note">A staged demo made from Loon's real sprites, lines and answers, with an original chiptune. <a href="demo.mp4">Open the mp4</a></p>
   </div>
 </section>
 
@@ -523,6 +526,16 @@ if (still || !('IntersectionObserver' in window)) {
   }, { rootMargin: '200px' }).observe(video);
   playBtn.addEventListener('click', () => { video.controls = true; playBtn.hidden = true; video.play().catch(() => {}); });
 }
+// It plays muted; one tap turns the cats' voices and the music on (and off again).
+const soundBtn = document.getElementById('demoSound');
+video.addEventListener('playing', () => { if (!video.controls) soundBtn.hidden = false; });
+soundBtn.addEventListener('click', () => {
+  video.muted = !video.muted;
+  if (!video.muted && video.ended) video.currentTime = 0;
+  soundBtn.textContent = video.muted ? '🔊 tap for sound' : '🔇 mute';
+  soundBtn.setAttribute('aria-pressed', String(!video.muted));
+  video.play().catch(() => {});
+});
 
 // Theme toggle, remembered per visitor.
 const root = document.documentElement;

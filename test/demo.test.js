@@ -19,6 +19,12 @@ test('demo persona lines exist in renderer/persona.js', () => {
     const value = event.split('.').reduce((node, key) => node?.[key], persona.PERSONAS[who].lines);
     assert.ok(typeof value === 'string' || value?.[index], `${who} ${event} ${index}`);
   }
+  // spoken lines marked `from` say exactly that persona line; the rest are the reel's own (Soju copying Luna)
+  for (const line of demo.voiceLines(persona)) {
+    const spec = demo.voice.find((v) => v.id === line.id);
+    assert.ok(line.text && line.say, line.id);
+    if (spec.from) assert.strictEqual(spec.from[0], spec.who, line.id);
+  }
   const cameo = persona.cameoFor({ companion: 'luna', task: 'food_lightest', rand: () => 0 });
   assert.deepStrictEqual([cameo.guest, cameo.call, cameo.line], ['soju', persona.PERSONAS.luna.lines.call[0], persona.PERSONAS.soju.lines.guest[0]]);
 });

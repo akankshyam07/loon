@@ -12,16 +12,16 @@ canvas { image-rendering: pixelated; }
 
 #viewport { position: relative; width: 1600px; height: 1000px; overflow: hidden; background: var(--bg); }
 #desk { position: absolute; inset: 0; overflow: hidden; }
-#world { position: absolute; left: 0; top: 0; width: 1280px; height: 800px; transform-origin: 0 0; overflow: hidden; }
+#world { position: absolute; left: 0; top: 0; width: 1280px; height: 800px; transform-origin: 0 0; }
 
 /* ---------- desktop ---------- */
 .wallpaper {
-  position: absolute; inset: 0;
+  position: absolute; inset: -500px; /* runs past the screen so the duo close-up can center the cats */
   background-color: #f7e9fb;
   background-image: radial-gradient(rgba(255, 255, 255, .75) 2px, transparent 2px), linear-gradient(160deg, #ffe3ef 0%, #efe4ff 48%, #dcf6ec 100%);
   background-size: 22px 22px, 100% 100%;
 }
-#clouds { position: absolute; inset: 0; width: 1280px; height: 800px; }
+#clouds { position: absolute; left: 500px; top: 500px; width: 1280px; height: 800px; }
 .menubar {
   position: absolute; left: 0; right: 0; top: 0; height: 26px; display: flex; align-items: center; gap: 18px; padding: 0 14px;
   font-size: 13px; background: rgba(255, 253, 251, .78); border-bottom: 2px solid rgba(43, 34, 56, .12); z-index: 2;
@@ -168,4 +168,10 @@ canvas { image-rendering: pixelated; }
 .logo.small { font-size: 64px; text-shadow: 5px 5px 0 var(--ink); margin-top: 14px; }
 .tagline { position: relative; margin-top: 28px; font-size: 34px; font-weight: 800; color: var(--ink); }
 #endCats { position: relative; width: 640px; height: 390px; }
+#fx { position: absolute; left: 0; top: 0; width: 1600px; height: 1000px; z-index: 40; display: none; }
+.balloon.big { z-index: 2; max-width: none; padding: 9px 14px; font-size: 24px; border-width: 3px; box-shadow: 4px 4px 0 #2b1d24; }
+#titleSay { left: 1010px; top: 300px; }
+#endSayLuna { left: 600px; top: 270px; }
+#endSaySoju { left: 1010px; top: 270px; }
+#end { transform-origin: 50% 50%; }
 .url-pill { margin-top: 22px; padding: 12px 24px; font: 18px/1 'Press Start 2P', monospace; background: var(--sun-soft); border: 4px solid var(--ink); border-radius: 14px; box-shadow: 5px 5px 0 var(--ink); }

@@ -2,6 +2,7 @@
 // demo/render.js can screenshot any frame in any order and get the same picture. Times are seconds.
 (async () => {
   const PX = window.LoonPixel;
+  const RIM = 'rgba(255, 240, 250, 0.28)';
   const PERSONA = window.LoonPersona;
   const C = window.LoonDemoContent;
   const $ = (s) => document.querySelector(s);
@@ -207,7 +208,7 @@
   // Cats: one canvas holds Luna and (in cameos and duo scenes) Soju. Columns are sprite pixels, 4 screen px each.
   const CELL = 4;
   const LUNA_COL = 4;
-  const CATS_W = 72;
+  const CATS_W = 100;
   const catsCanvas = $('#cats');
   catsCanvas.width = CATS_W;
   catsCanvas.height = PX.ROWS;
@@ -299,8 +300,8 @@
   const DONE_BTN = overlayButton(2);
 
   // ---------- the storyboard ----------
-  const T = { article: 3.2, shop: 10.0, menu: 17.2, teach: 25.4, duo: 33.0, end: 41.0 };
-  const DURATION = 45.0;
+  const T = { article: 3.2, shop: 10.0, menu: 17.2, teach: 25.4, duo: 33.0, end: 42.6 };
+  const DURATION = 47.0;
   const t = T;
   const fit = (r, pad = 30) => {
     const z = clamp(Math.min(W / (r.w + pad * 2), H / (r.h + pad * 2)), 1, 3);
@@ -313,7 +314,8 @@
   };
   const FULL = { x: W / 2, y: H / 2, z: 1 };
   const TIP_BOX = () => ({ x: tipAnchor.x - 262, y: tipAnchor.y + 16, w: 250, h: 30 });
-  const CAM_DUO = { x: 1130, y: 690, z: 2.4 };
+  const CAM_DUO_IN = { x: 1110, y: 676, z: 2.3 };
+  const CAM_DUO = { x: 1140, y: 694, z: 3.0 }; // past the screen edge: the wallpaper runs on, so the cats can be centered
   const CAMERA = []; // filled in below, once the cursor targets are measured
   const pt = (r, dx = 0.5, dy = 0.5) => ({ x: r.x + r.w * dx, y: r.y + r.h * dy });
   const CAT_PT = { x: LUNA_X + 17 * CELL, y: 712 };
@@ -335,11 +337,11 @@
   const CAM_TEACH = fit({ x: 300, y: 70, w: 980, h: 420 }, 0);
   CAMERA.push(
     [0, FULL], [t.article + 2.3, FULL], [t.article + 3.1, CAM_SEL], [t.article + 3.8, CAM_SEL], [t.article + 4.6, CAM_CARD],
-    [t.shop - 0.5, CAM_CARD], [t.shop + 0.2, FULL],
-    [t.shop + 2.0, FULL], [t.shop + 2.9, CAM_SHOP], [t.menu - 0.5, CAM_SHOP], [t.menu + 0.2, FULL],
-    [t.menu + 1.4, FULL], [t.menu + 2.2, CAM_FOOD], [t.teach - 0.4, CAM_FOOD], [t.teach + 0.1, FULL],
+    [t.shop - 0.001, CAM_CARD], [t.shop, FULL], // scene changes happen under a transition, so the camera can jump
+    [t.shop + 2.0, FULL], [t.shop + 2.9, CAM_SHOP], [t.menu - 0.001, CAM_SHOP], [t.menu, FULL],
+    [t.menu + 1.4, FULL], [t.menu + 2.2, CAM_FOOD], [t.teach - 0.001, CAM_FOOD], [t.teach, FULL],
     [t.teach + 0.9, FULL], [t.teach + 1.6, CAM_TEACH_ASK], [t.teach + 3.6, CAM_TEACH_ASK], [t.teach + 4.3, CAM_TEACH],
-    [t.duo - 0.3, CAM_TEACH], [t.duo + 0.5, CAM_DUO],
+    [t.duo - 0.001, CAM_TEACH], [t.duo, CAM_DUO_IN], [t.duo + 1.1, CAM_DUO],
   );
   const wordStart = { x: WORD.x - 1, y: WORD.y + WORD.h * 0.55 };
   const wordEnd = { x: WORD.x + WORD.w + 1, y: WORD.y + WORD.h * 0.55 };
@@ -347,7 +349,7 @@
   const CURSOR = [
     [t.article + 0.3, { x: 330, y: 640 }], [t.article + 1.3, { x: 700, y: 330 }], [t.article + 2.2, { x: 420, y: 470 }],
     ...hold(t.article + 2.8, t.article + 2.95, wordStart), [t.article + 3.45, wordEnd], [t.article + 3.9, { x: wordEnd.x + 34, y: WORD.y - 24 }],
-    ...hold(t.article + 5.0, t.shop - 0.3, tipAnchor),
+    ...hold(t.article + 5.0, t.shop, tipAnchor),
     [t.shop + 0.2, { x: 520, y: 260 }], [t.shop + 0.9, pt(TILES[0], 0.5, 0.35)], [t.shop + 1.5, pt(TILES[2], 0.5, 0.35)],
     ...hold(t.shop + 2.2, t.shop + 2.3, CAT_PT), ...hold(t.shop + 2.85, t.shop + 3.05, shopChip), ...hold(t.shop + 3.8, t.menu, { x: 690, y: 610 }),
     [t.menu + 0.3, { x: 560, y: 300 }], [t.menu + 0.9, pt(DISHES[1], 0.4, 0.5)],
@@ -361,28 +363,23 @@
   const IBEAM_AT = [[t.article + 2.3, t.article + 3.9]];
   const CURSOR_HIDDEN = [[0, t.article + 0.3], [t.duo, DURATION + 1]];
 
-  const SEL = { start: t.article + 2.95, end: t.article + 3.45, clear: t.shop - 0.2 };
-  const CARD_DEF = { at: t.article + 3.6, out: t.shop - 0.3 };
-  const TIP = { at: t.article + 5.4, out: t.shop - 0.3 };
-  const SHOP = { chips: t.shop + 2.4, typing: t.shop + 3.0, answer: t.shop + 3.15, out: t.menu - 0.3 };
-  const FOOD = { chips: t.menu + 1.6, cameo: t.menu + 2.2, answer: t.menu + 2.3, out: t.teach - 0.3 };
+  const SEL = { start: t.article + 2.95, end: t.article + 3.45, clear: t.shop };
+  const CARD_DEF = { at: t.article + 3.6, out: t.shop };
+  const TIP = { at: t.article + 5.4, out: t.shop };
+  const SHOP = { chips: t.shop + 2.4, typing: t.shop + 3.0, answer: t.shop + 3.15, out: t.menu };
+  const FOOD = { chips: t.menu + 1.6, cameo: t.menu + 2.2, answer: t.menu + 2.3, out: t.teach };
   const TEACH = { app: t.teach, keys: t.teach + 0.5, open: t.teach + 1.0, type: t.teach + 1.6, send: t.teach + 2.9, step1: t.teach + 3.9, png: t.teach + 4.95, step2: t.teach + 5.55, saved: t.teach + 6.15, done: t.teach + 6.75, out: t.duo };
   const CAMEO = PX.cameoScene('soju');
-  const BLINKS = [1.1, 2.5, 5.1, 9.2, 12.0, 16.6, 19.0, 24.9, 27.4, 31.0, 39.3];
+  const BLINKS = [1.1, 2.5, 5.1, 9.2, 12.0, 16.6, 19.0, 24.9, 27.4, 31.0, 38.6];
 
   const CAPTIONS = [
-    [t.article + 0.6, t.shop - 0.3, '1', 'Highlight a word, get it instantly'],
-    [t.shop + 0.5, t.menu - 0.3, '2', 'Shopping Cat: real price per unit'],
-    [t.menu + 0.5, t.teach - 0.3, '3', "Food Cat: Soju's department"],
-    [t.teach + 0.5, t.duo - 0.3, '4', 'Teach me on my screen'],
-    [t.duo + 0.5, t.end - 0.2, '5', 'Two cats, one tiny wardrobe'],
+    [t.article + 0.6, t.shop - 0.4, '1', 'Highlight a word, get it instantly'],
+    [t.shop + 0.5, t.menu - 0.4, '2', 'Shopping Cat: real price per unit'],
+    [t.menu + 0.5, t.teach - 0.4, '3', "Food Cat: Soju's department"],
+    [t.teach + 0.5, t.duo - 0.4, '4', 'Teach me on my screen'],
+    [t.duo + 0.5, t.end - 0.1, '5', 'Two cats, one tiny wardrobe'],
   ];
-  const BALLOONS = [
-    [t.article + 3.55, t.article + 5.6, 'luna', line(C.lines.selection)],
-    [t.shop + 0.5, t.shop + 2.1, 'luna', line(C.lines.shopNudge)],
-    [FOOD.cameo, FOOD.cameo + 2.2, 'luna', CAMEO && line(C.lines.call)],
-    [t.teach + 7.1, t.duo - 0.1, 'luna', line(C.lines.teachDone)],
-  ];
+  let BALLOONS = []; // [from, to, who, text], filled in once the voice cues are timed
 
   // ---------- the cats ----------
   const cursorAt = (tt) => track(CURSOR, tt);
@@ -412,11 +409,12 @@
     if (within(tt, TEACH.keys + 0.3, TEACH.keys + 0.55)) Object.assign(v, { twitchL: 14, twitchR: 14 });
     if (within(tt, TEACH.send, TEACH.step1)) Object.assign(v, animFrame('think', tt - TEACH.send, 'luna', true), { now: spriteNow(tt) });
     if (within(tt, TEACH.done, t.duo)) Object.assign(v, { mood: 'happy', happy: 1 });
+    if (speaking('luna', tt)) v.mouth = 'open';
     for (const c of CLICKS.slice(0, 1).concat(CLICKS[2])) if (within(tt, c, c + 0.35)) Object.assign(v, { mood: 'happy', happy: 1 });
     return v;
   }
 
-  const DUO_ENTER = Array.from({ length: 5 }, (_, i) => ({ luna: { look: { x: 6, y: 0 } }, soju: { travel: 'run', facing: -1, legs: i % 4 }, sx: PX.GAP + 40 - i * 8, ms: 90 }));
+  const DUO_ENTER = Array.from({ length: 8 }, (_, i) => ({ luna: { look: { x: 6, y: 0 } }, soju: { travel: 'run', facing: -1, legs: i % 4 }, sx: PX.GAP + 64 - i * 8, ms: 90 }));
   const NAP = PX.DUO_SCENES.cuddleNap.steps.slice(0, 4).map((s) => ({ ...s, ms: 450 }));
   const DRESS = [
     { luna: { mood: 'wide' }, soju: { mood: 'wide' }, ms: 300, dress: true },
@@ -428,22 +426,59 @@
   const DRESS_AT = t.duo + DUO_STEPS.slice(0, DUO_STEPS.indexOf(DRESS[0])).reduce((sum, s) => sum + s.ms / 1000, 0);
   const COSTUMES = { luna: 'witch', soju: 'strawberry' };
 
+  // ---------- voices: when each line starts (render.js passes clip lengths and mouth tracks in window.DEMO_VOICES) ----------
+  const VOICE_LINES = C.voiceLines(PERSONA);
+  const clip = (id) => (window.DEMO_VOICES || {})[id] || { duration: 1.4, mouth: [1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0] };
+  const stepStart = (steps, pick, defaultMs = 250) => {
+    let acc = 0;
+    for (const st of steps) { if (pick(st)) return acc; acc += (st.ms ?? defaultMs) / 1000; }
+    return acc;
+  };
+  const VOICE_AT = {
+    greet: 0.6,
+    what: SEL.end + 0.1,
+    opinions: t.shop + 0.55,
+    darling: SHOP.answer + 0.6,
+    dept: FOOD.cameo + 0.05,
+    food: FOOD.cameo + stepStart(CAMEO.steps, (st) => st.say === 'guest'),
+    purr: t.duo + stepStart(DUO_STEPS, (st) => st.soju?.happy && st.soju?.bodyRot) + 0.05,
+    acceptable: DRESS_AT + 0.35,
+    byeLuna: t.end + 1.2,
+  };
+  VOICE_AT.acceptabubble = VOICE_AT.acceptable + clip('acceptable').duration + 0.12; // Soju copies his sister, a bit wrong
+  VOICE_AT.byeSoju = VOICE_AT.byeLuna + clip('byeLuna').duration + 0.1;
+  function speaking(who, tt) {
+    for (const l of VOICE_LINES) {
+      if (l.who !== who) continue;
+      const at = VOICE_AT[l.id];
+      const { duration, mouth } = clip(l.id);
+      if (within(tt, at, at + duration)) return mouth[Math.floor((tt - at) * 12)] === 1;
+    }
+    return false;
+  }
+  const SCREEN_LINES = ['greet', 'byeLuna', 'byeSoju']; // said on the title and end cards, not on the desktop
+  BALLOONS = [
+    ...VOICE_LINES.filter((l) => !SCREEN_LINES.includes(l.id)).map((l) => [VOICE_AT[l.id], VOICE_AT[l.id] + Math.max(1.5, clip(l.id).duration + 0.45), l.who, l.text]),
+    [t.teach + 7.1, t.duo - 0.2, 'luna', line(C.lines.teachDone)],
+  ].sort((a, b) => a[0] - b[0]);
+  const screenBalloon = (id) => { const l = VOICE_LINES.find((x) => x.id === id); return [VOICE_AT[id], VOICE_AT[id] + clip(id).duration + 0.5, l.text]; };
+
+  const talk = (scene, tt) => ({ ...scene, cats: scene.cats.map((c) => (speaking(c.id, tt) ? { ...c, view: { ...c.view, mouth: 'open' } } : c)) });
   function catsAt(tt) {
     const now = spriteNow(tt);
     if (tt >= t.duo) {
       const step = beatAt(DUO_STEPS, tt - t.duo) || DRESS[DRESS.length - 1];
       const lid = blinkLid(tt);
       const live = { luna: { view: { now, lidL: lid, lidR: lid } } };
-      return { step, ...PX.sceneLayers(step, LUNA_COL, { now, costumes: step.dress ? COSTUMES : {}, live }) };
+      return { step, ...talk(PX.sceneLayers(step, LUNA_COL, { now, costumes: step.dress ? COSTUMES : {}, live }), tt) };
     }
     const live = { luna: { view: lunaView(tt) } };
     if (tt >= FOOD.cameo) {
       const step = beatAt(CAMEO.steps, tt - FOOD.cameo);
-      if (step) return { step, ...PX.sceneLayers(step, LUNA_COL, { now, live }) };
+      if (step) return { step, ...talk(PX.sceneLayers(step, LUNA_COL, { now, live }), tt) };
     }
     return { step: {}, cats: [{ id: 'luna', view: live.luna.view, x: LUNA_COL }], props: [] };
   }
-  const RIM = 'rgba(255, 240, 250, 0.28)';
   function drawCats(tt) {
     const { cats, props, step } = catsAt(tt);
     PX.drawScene(catsCanvas.getContext('2d'), PX.composeScene({ width: CATS_W, cats, props }), 1, { rim: RIM });
@@ -491,24 +526,100 @@
   }
 
   // ---------- seek ----------
+  // ---------- 90s transitions, drawn on a 160×100 grid and stepped at 12 fps ----------
+  const HALF = 4 / 12; // four steps to cover, four to reveal
+  const TRANSITIONS = [
+    { at: t.article, kind: 'dissolve', colors: ['#ffd6e7', '#ffc2da'] },
+    { at: t.shop, kind: 'wipe', colors: ['#d9ccff', '#c4b2ff'] },
+    { at: t.menu, kind: 'iris' },
+    { at: t.teach, kind: 'dissolve', colors: ['#d4f5e5', '#b5ecd2'] },
+    { at: t.duo, kind: 'iris' },
+  ];
+  const fx = $('#fx');
+  fx.width = 160;
+  fx.height = 100;
+  const fxCtx = fx.getContext('2d');
+  const fxImage = fxCtx.createImageData(160, 100);
+  const fxPixels = new Uint32Array(fxImage.data.buffer);
+  const rgba = (hex) => { const n = parseInt(hex.slice(1), 16); return ((255 << 24) | ((n & 255) << 16) | (((n >> 8) & 255) << 8) | (n >> 16)) >>> 0; };
+  seed = 42;
+  const DISSOLVE_RANK = (() => {
+    const order = Array.from({ length: 32 * 20 }, (_, i) => i);
+    for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+    const rank = new Array(order.length);
+    order.forEach((cell, i) => { rank[cell] = i / order.length; });
+    return rank;
+  })();
+  const INK = rgba('#2b2238');
+  const STAR = [[0, -1], [-1, 0], [0, 0], [1, 0], [0, 1]];
+  function drawTransition(tt) {
+    const tr = TRANSITIONS.find((x) => tt >= x.at - HALF && tt < x.at + HALF);
+    fx.style.display = tr ? 'block' : 'none';
+    if (!tr) return;
+    const q = Math.min(7, Math.floor((tt - (tr.at - HALF)) * 12 + 1e-6)); // 0..3 cover, 4..7 reveal
+    const covering = q < 4;
+    const amount = covering ? (q + 1) / 4 : (q - 3) / 4; // how far the cover (or the reveal) has got
+    fxPixels.fill(0);
+    const put = (x, y, c) => { if (x >= 0 && x < 160 && y >= 0 && y < 100) fxPixels[y * 160 + x] = c; };
+    if (tr.kind === 'dissolve') {
+      const [a, b] = tr.colors.map(rgba);
+      for (let y = 0; y < 100; y++) for (let x = 0; x < 160; x++) {
+        const r = DISSOLVE_RANK[Math.floor(y / 5) * 32 + Math.floor(x / 5)];
+        if (covering ? r < amount : r >= amount) put(x, y, (Math.floor(x / 5) + Math.floor(y / 5)) % 2 ? a : b);
+      }
+    } else if (tr.kind === 'wipe') {
+      // a stepped curtain sweeps across with a jagged pixel edge and sparkles riding on it
+      const [a, b] = tr.colors.map(rgba);
+      const edge = amount * 176 - 8;
+      const jag = (y) => (Math.floor(y / 4) % 3) * 3;
+      for (let y = 0; y < 100; y++) for (let x = 0; x < 160; x++) {
+        if (covering ? x < edge - jag(y) : x > edge - jag(y)) put(x, y, Math.floor(y / 4) % 2 ? a : b);
+      }
+      [8, 30, 52, 74, 94].forEach((y, i) => {
+        const c = rgba(['#ffffff', '#ffd166', '#ff8fb8'][(i + q) % 3]);
+        for (const [dx, dy] of STAR) put(Math.round(edge - jag(y)) + (covering ? 2 : -2) + dx, y + dy, c);
+      });
+    } else {
+      // iris: a blocky circle closes on Luna, a heart blinks, and it opens on her again
+      const cx = (camNow.tx + (LUNA_X + 16 * CELL) * camNow.s) / 10;
+      const cy = (camNow.ty + (CATS.y + 20 * CELL) * camNow.s) / 10;
+      const radius = (covering ? 1 - amount : amount) * 190;
+      for (let y = 0; y < 100; y++) for (let x = 0; x < 160; x++) if (Math.hypot(x + 0.5 - cx, y + 0.5 - cy) > radius) put(x, y, INK);
+      if (q === 3) {
+        const colors = { h: rgba('#ff8fb8'), w: rgba('#ffffff'), O: rgba('#ff8fb8') };
+        PX.MAPS.HEART.forEach((row, j) => [...row].forEach((ch, i) => { if (colors[ch] && ch !== 'O') put(Math.round(cx) - 3 + i, Math.round(cy) - 4 + j, colors[ch]); }));
+      }
+    }
+    fxCtx.putImageData(fxImage, 0, 0);
+  }
+  function placeScreenBalloon(el, [a, b, text], tt) {
+    el.hidden = !within(tt, a, b);
+    if (el.hidden) return;
+    el.textContent = text;
+    const p = stepped(prog(tt, a, a + 0.3), 3);
+    Object.assign(el.style, { opacity: String(p), translate: `0 ${6 - 6 * p}px` });
+  }
+
+  let camNow = { tx: 0, ty: 0, s: 1.25 };
   function seek(tt) {
     // camera
     const cam = track(CAMERA, tt);
     const s = 1.25 * cam.z;
-    const tx = clamp(800 - cam.x * s, 1600 - W * s, 0);
-    const ty = clamp(500 - cam.y * s, 1000 - H * s, 0);
+    const free = tt >= t.duo && tt < t.end;
+    const tx = free ? 800 - cam.x * s : clamp(800 - cam.x * s, 1600 - W * s, 0);
+    const ty = free ? 500 - cam.y * s : clamp(500 - cam.y * s, 1000 - H * s, 0);
+    camNow = { tx, ty, s };
     world.style.transform = `translate(${tx.toFixed(2)}px, ${ty.toFixed(2)}px) scale(${s.toFixed(4)})`;
 
     // title (iris opens onto the desktop) and end card (iris closes into it)
     const title = $('#title');
-    title.style.display = tt < t.article + 0.5 ? 'flex' : 'none';
-    const iris = prog(tt, t.article - 0.3, t.article + 0.5);
-    $('#desk').style.clipPath = tt < t.article + 0.5 ? `circle(${Math.round(stepped(iris, 10) * 1000)}px at 800px 500px)` : 'none';
-    $('#desk').style.zIndex = tt < t.article + 0.5 ? '29' : '';
-    if (tt < t.article + 0.5) {
+    title.style.display = tt < t.article ? 'flex' : 'none';
+    if (tt < t.article) {
       const lid = blinkLid(tt);
-      const view = within(tt, 1.7, 2.4) ? { now: spriteNow(tt), mood: 'happy', happy: 1 } : { now: spriteNow(tt), lidL: lid, lidR: lid, tailPeriod: 2000, look: tt > 2.8 ? { x: 5, y: 3 } : { x: 0, y: 0 } };
+      const view = within(tt, 2.45, 3.0) ? { now: spriteNow(tt), mood: 'happy', happy: 1 } : { now: spriteNow(tt), lidL: lid, lidR: lid, tailPeriod: 2000, look: tt > 0.6 && tt < 2.4 ? { x: 2, y: 2 } : { x: 0, y: 0 } };
+      if (speaking('luna', tt)) view.mouth = 'open';
       drawSprite(titleCat, view, 'luna');
+      placeScreenBalloon($('#titleSay'), screenBalloon('greet'), tt);
       $('#title .logo').style.transform = `scale(${popScale(tt, 0.3)})`;
       tagline.textContent = TAGLINE.slice(0, Math.max(0, Math.floor((tt - 0.9) / 0.03)));
       tagline.style.minHeight = '1.5em';
@@ -516,7 +627,8 @@
     const endOn = tt >= t.end;
     const end = $('#end');
     end.style.display = endOn ? 'flex' : 'none';
-    end.style.clipPath = `circle(${Math.round(stepped(prog(tt, t.end, t.end + 0.6), 10) * 1500)}px at 1150px 900px)`;
+    const pop = popScale(tt, t.end, 0.4);
+    Object.assign(end.style, { transform: `scale(${pop})`, borderRadius: pop < 1 ? '40px' : '0', boxShadow: pop < 1 ? '10px 10px 0 #2b2238' : 'none', outline: pop < 1 ? '6px solid #2b2238' : 'none' });
     if (endOn) {
       const heart = PX.DUO_SCENES.heart.steps;
       const lt = tt - t.end - 0.5;
@@ -526,13 +638,15 @@
       if (within(lt, blinkAt, blinkAt + 0.2)) step = { ...step, luna: { lidL: 1, lidR: 1 }, soju: { lidL: 1, lidR: 1 } };
       endCats.width = 64;
       endCats.height = PX.ROWS;
-      PX.drawScene(endCats.getContext('2d'), PX.composeScene({ width: 64, ...PX.sceneLayers(step, 4, { now: spriteNow(tt) }) }), 1, { rim: RIM });
+      PX.drawScene(endCats.getContext('2d'), PX.composeScene({ width: 64, ...talk(PX.sceneLayers(step, 4, { now: spriteNow(tt) }), tt) }), 1, { rim: RIM });
+      placeScreenBalloon($('#endSayLuna'), screenBalloon('byeLuna'), tt);
+      placeScreenBalloon($('#endSaySoju'), screenBalloon('byeSoju'), tt);
       $('#end .logo').style.transform = `scale(${popScale(tt, t.end + 0.7)})`;
       $('#end .tagline').style.opacity = tt > t.end + 1.0 ? '1' : '0';
       $('#end .url-pill').style.transform = `scale(${popScale(tt, t.end + 1.3)})`;
     }
-    titleSparks.forEach((sp) => twinkle(sp, tt, tt < t.article + 0.5));
-    endSparks.forEach((sp) => twinkle(sp, tt, endOn && tt > t.end + 0.6));
+    titleSparks.forEach((sp) => twinkle(sp, tt, tt < t.article));
+    endSparks.forEach((sp) => twinkle(sp, tt, endOn && tt > t.end + 0.5));
 
     // windows and pages
     const editorOn = tt >= TEACH.app && tt < TEACH.out;
@@ -554,20 +668,11 @@
     segs[0].classList.toggle('on', tt < TEACH.png);
     segs[1].classList.toggle('on', tt >= TEACH.png);
     $('#exportBtn').classList.toggle('down', within(tt, TEACH.saved, TEACH.saved + 0.12));
-    $('#toast').style.opacity = within(tt, TEACH.saved + 0.1, TEACH.out - 0.3) ? '1' : '0';
+    $('#toast').style.opacity = within(tt, TEACH.saved + 0.1, TEACH.out) ? '1' : '0';
 
     // cats and their balloon
     const step = drawCats(tt);
-    let balloon = BALLOONS.find(([a, b]) => within(tt, a, b));
-    if (tt >= FOOD.cameo && tt < t.teach) {
-      // the cameo's own beats say when the lines show (renderer/cat.js does the same)
-      const steps = CAMEO.steps;
-      let acc = FOOD.cameo;
-      for (const st of steps) {
-        if (st.say === 'guest' && within(tt, acc, acc + 2.4)) balloon = [0, 0, 'soju', line(C.lines.guest)];
-        acc += (st.ms ?? 250) / 1000;
-      }
-    }
+    const balloon = [...BALLOONS].reverse().find(([a, b]) => within(tt, a, b));
     sayEl.hidden = !balloon;
     if (balloon) {
       const [a, , who, text] = balloon;
@@ -576,7 +681,7 @@
       const half = sayEl.offsetWidth / 2;
       const x = clamp(CATS.x + col * CELL, half + 4, W - half - 4);
       const p = stepped(prog(tt, a || tt, (a || tt) + 0.3), 3);
-      Object.assign(sayEl.style, { left: `${x}px`, top: `${CATS.y + (PX.TOP + 1) * CELL - 2}px`, opacity: a ? String(p) : '1', translate: a ? `0 ${4 - 4 * p}px` : '0 0' });
+      Object.assign(sayEl.style, { left: `${x}px`, top: `${CATS.y + (PX.TOP + 1) * CELL - 2 - (step.dress ? 26 : 0)}px`, opacity: a ? String(p) : '1', translate: a ? `0 ${4 - 4 * p}px` : '0 0' });
     }
     dressSparks.forEach((sp, i) => {
       const lt = tt - DRESS_AT + 0.25 - i * 0.04;
@@ -656,6 +761,8 @@
       Object.assign(ring.style, { left: `${cur.x - r}px`, top: `${cur.y - r}px`, width: `${r * 2}px`, height: `${r * 2}px`, opacity: String(1 - Math.floor((tt - click) / 0.1) * 0.3) });
     }
 
+    drawTransition(tt);
+
     // CSS animations from the real stylesheets (bubble rise, overlay pop/blink/nudge) follow the timeline too
     for (const a of document.getAnimations()) {
       const host = a.effect?.target?.closest?.('[data-at]');
@@ -663,7 +770,22 @@
     }
   }
 
-  window.DEMO = { seek, DURATION, FPS: 30, T };
+  // ---------- sound cues for demo/music.js ----------
+  const SFX = [
+    ...TRANSITIONS.map((tr) => ({ t: tr.at - HALF, kind: 'sparkle' })), { t: t.end, kind: 'sparkle' }, { t: DRESS_AT, kind: 'sparkle' },
+    ...[0.3, CARD_DEF.at, SHOP.chips, SHOP.answer, FOOD.chips, TEACH.open, TEACH.step1, TEACH.step2, t.end + 0.7].map((at) => ({ t: at, kind: 'pop' })),
+    ...CLICKS.map((at) => ({ t: at, kind: 'click' })), { t: TEACH.keys + 0.42, kind: 'click' },
+    ...CAMEO.steps.reduce((acc, st) => {
+      if (st.soju?.act === 'eat' && st.soju.mouth === 'open') acc.list.push({ t: FOOD.cameo + acc.at, kind: 'munch' });
+      acc.at += (st.ms ?? 250) / 1000;
+      return acc;
+    }, { at: 0, list: [] }).list,
+    { t: t.end + 0.5 + 0.6, kind: 'heart' },
+  ].sort((a, b) => a.t - b.t);
+  const cues = { sfx: SFX, voice: VOICE_LINES.map((l) => ({ t: VOICE_AT[l.id], id: l.id })) };
+
+  window.DEMO = { seek, DURATION, FPS: 30, T, cues };
+
   seek(0);
   window.stageReady = true;
 })();

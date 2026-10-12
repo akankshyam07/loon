@@ -22,7 +22,7 @@
 
 <p align="center">
   <img src="docs/demo.gif" width="720" alt="Demo: Luna defines a highlighted word instantly, Soju runs in to eat while Loon picks the lightest dishes on a menu, Loon points at PNG and Export on screen step by step, and the two cats get dressed up in a witch hat and a strawberry hood"><br>
-  <a href="docs/demo.mp4"><b>▶ Watch the full demo (mp4, 45 s)</b></a>
+  <a href="docs/demo.mp4"><b>▶ Watch the full demo (with sound)</b></a>
 </p>
 
 <p align="center"><a href="https://akankshyam07.github.io/loon/"><b>✧ Visit the Loon website ✧</b></a></p>
@@ -318,7 +318,8 @@ things. A few house rules (more in [AGENTS.md](AGENTS.md)):
 ## License
 
 [MIT](LICENSE) for Loon's own code. Packaged builds include eSpeak NG (GPL-3.0) through the voice, so a distributed
-`.dmg` follows GPL-3.0 as a whole; [THIRD_PARTY.md](THIRD_PARTY.md) has the details.
+`.dmg` follows GPL-3.0 as a whole; [THIRD_PARTY.md](THIRD_PARTY.md) has the details. The demo video's chiptune and
+sound effects are original (synthesized by `demo/music.js`) and MIT too; its voices come from Kokoro.
 
 ## Credits
 
