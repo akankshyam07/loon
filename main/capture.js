@@ -66,15 +66,44 @@ async function screenshotRegion() {
 }
 
 let workerPromise = null;
-async function ocr(file, cacheDir) {
+function worker(cacheDir) {
   workerPromise ??= (async () => {
     const { createWorker } = require('tesseract.js');
     fs.mkdirSync(cacheDir, { recursive: true });
     return createWorker('eng', 1, { cachePath: cacheDir });
   })();
-  const worker = await workerPromise;
-  const { data } = await worker.recognize(file);
+  return workerPromise;
+}
+
+async function ocr(file, cacheDir) {
+  const { data } = await (await worker(cacheDir)).recognize(file);
   return data.text.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
-module.exports = { captureSelection, screenshotRegion, ocr, AccessibilityError, frontmostApp };
+// Word boxes too ("Teach me on my screen", brain/teach.js ocrElements): `image` is a path or PNG bytes.
+async function ocrBoxes(image, cacheDir) {
+  const { data } = await (await worker(cacheDir)).recognize(image, {}, { blocks: true });
+  return data;
+}
+
+// Every display as PNG bytes in memory at its native resolution (never written to disk), via Electron's
+// desktopCapturer (Screen Recording permission). → [{ display: { id, bounds, scaleFactor }, png, width, height }]
+async function grabDisplays(desktopCapturer, screen) {
+  const displays = screen.getAllDisplays();
+  const max = displays.reduce((m, d) => ({ width: Math.max(m.width, Math.round(d.bounds.width * d.scaleFactor)), height: Math.max(m.height, Math.round(d.bounds.height * d.scaleFactor)) }), { width: 1, height: 1 });
+  const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: max });
+  return displays.map((display) => {
+    const source = sources.find((s) => String(s.display_id) === String(display.id)) || (displays.length === 1 ? sources[0] : null);
+    if (!source || source.thumbnail.isEmpty()) return null;
+    const { width, height } = source.thumbnail.getSize();
+    return { display: { id: display.id, bounds: display.bounds, scaleFactor: display.scaleFactor }, png: source.thumbnail.toPNG(), width, height };
+  }).filter(Boolean);
+}
+
+// Titles of the windows on screen, so a password manager or a bank in another app makes Loon look away.
+async function windowNames(desktopCapturer) {
+  const sources = await desktopCapturer.getSources({ types: ['window'], thumbnailSize: { width: 0, height: 0 } });
+  return sources.map((s) => s.name).filter(Boolean);
+}
+
+module.exports = { captureSelection, screenshotRegion, ocr, ocrBoxes, grabDisplays, windowNames, AccessibilityError, frontmostApp };

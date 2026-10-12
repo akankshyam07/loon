@@ -1,0 +1,88 @@
+/* Teach overlay: the bubble's kawaii pixel look (renderer/bubble.css tokens), drawn over the user's screen. */
+@font-face { font-family: 'Press Start 2P'; src: url('fonts/PressStart2P-Regular.ttf') format('truetype'); font-display: block; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --paper: #fffdfb; --ink: #2b2238; --muted: #6c6082; --line: #2b2238;
+  --pink: #ff8fb8; --pink-soft: #ffe0ec; --lav: #b9a4ff; --lav-soft: #eee7ff; --mint: #6fd6a8; --mint-soft: #ddf7ea;
+  --sun: #ffd166; --sun-soft: #fff1c9; --focus: #8e6bd1;
+  --hl: var(--pink); --hl-wash: rgba(255, 143, 184, 0.13); --dim: var(--lav);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #241f33; --ink: #f6eefc; --muted: #c0b4d4; --line: #0b0910;
+    --pink-soft: #4a2a3d; --lav-soft: #322a4d; --mint-soft: #1f3d33; --sun-soft: #4a3d1f; --focus: #c3b2ff;
+    --hl-wash: rgba(255, 143, 184, 0.16);
+  }
+}
+
+html, body { width: 100%; height: 100%; background: transparent; overflow: hidden; }
+body { font: 13.5px/1.4 ui-rounded, 'SF Pro Rounded', -apple-system, BlinkMacSystemFont, system-ui, sans-serif; color: var(--ink); user-select: none; cursor: default; }
+#layer { position: fixed; inset: 0; pointer-events: none; }
+
+/* ---------- targets ---------- */
+.target {
+  position: absolute; border: 4px solid var(--hl); border-radius: 12px; background: var(--hl-wash);
+  box-shadow: 0 0 0 3px var(--line), inset 0 0 0 2px var(--line);
+}
+.target.later { --hl: var(--dim); background: transparent; opacity: 0.75; border-style: dashed; }
+.target.kind-arrow { background: transparent; border-width: 3px; border-style: dashed; }
+.underline {
+  position: absolute; height: 7px; border: 2px solid var(--line); border-radius: 3px;
+  background: repeating-linear-gradient(90deg, var(--hl) 0 8px, var(--sun) 8px 16px);
+}
+.underline.later { opacity: 0.6; }
+
+/* ---------- numbered step badges ---------- */
+.badge {
+  position: absolute; width: 28px; height: 28px; display: grid; place-items: center;
+  font: 11px/1 'Press Start 2P', monospace; color: var(--line); padding-left: 1px;
+  background: var(--sun); border: 3px solid var(--line); border-radius: 9px; box-shadow: 2px 2px 0 var(--line);
+}
+.badge.later { background: var(--lav-soft); color: var(--muted); }
+
+/* ---------- label cards ---------- */
+.card {
+  position: absolute; background: var(--paper); border: 3px solid var(--line); border-radius: 14px; box-shadow: 4px 4px 0 var(--line);
+  padding: 11px 14px 11px 48px; color: var(--ink);
+}
+.card .n {
+  position: absolute; left: 10px; top: 10px; width: 26px; height: 26px; display: grid; place-items: center;
+  font: 10px/1 'Press Start 2P', monospace; color: var(--line); padding-left: 1px;
+  background: var(--pink); border: 2px solid var(--line); border-radius: 8px;
+}
+.card.solo { padding-left: 14px; }
+.card .say { display: block; font-weight: 600; letter-spacing: 0.1px; overflow-wrap: anywhere; }
+.card kbd {
+  display: inline-block; min-width: 26px; padding: 3px 6px; margin: 0 2px; text-align: center;
+  font: 12px/1 'Press Start 2P', monospace; background: var(--sun-soft); border: 2px solid var(--line); border-radius: 6px; box-shadow: 0 2px 0 var(--line);
+}
+.controls { display: flex; align-items: center; gap: 8px; margin-top: 8px; pointer-events: auto; }
+.controls .count { font: 9px/1 'Press Start 2P', monospace; color: var(--muted); margin-right: auto; }
+.controls button {
+  font: 600 12.5px/1 ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: var(--ink); cursor: pointer;
+  padding: 6px 11px; border: 2px solid var(--line); border-radius: 999px; background: var(--mint-soft); box-shadow: 2px 2px 0 var(--line);
+}
+.controls button:hover { background: var(--mint); }
+.controls button:active { transform: translate(2px, 2px); box-shadow: none; }
+.controls button:focus-visible, .close:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.close {
+  position: absolute; right: -11px; top: -11px; width: 22px; height: 22px; pointer-events: auto; cursor: pointer;
+  font: 13px/1 ui-rounded, system-ui, sans-serif; color: var(--ink);
+  background: var(--paper); border: 2px solid var(--line); border-radius: 7px; box-shadow: 2px 2px 0 var(--line);
+}
+.close:hover { background: var(--pink-soft); }
+
+/* ---------- pixel arrows and the pointing cat (canvas, crisp pixels) ---------- */
+canvas { position: absolute; image-rendering: pixelated; }
+canvas.arrow.now { animation: nudge 0.8s steps(2) infinite; }
+@keyframes nudge { 50% { transform: translate(var(--nx, 0px), var(--ny, 0px)); } }
+
+/* ---------- 90s stepped motion: pop in, blink in, fade out ---------- */
+.pop { animation: pop 0.36s steps(4) both; }
+@keyframes pop { 0% { transform: scale(0.4); opacity: 0; } 60% { transform: scale(1.08); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+.blink { animation: blink 0.3s steps(3) both; }
+@keyframes blink { 0% { opacity: 0; } 33% { opacity: 1; } 66% { opacity: 0.3; } 100% { opacity: 1; } }
+body.bye #layer { animation: bye 0.32s steps(4) both; }
+@keyframes bye { to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .pop, .blink, canvas.arrow.now, body.bye #layer { animation: none; } }

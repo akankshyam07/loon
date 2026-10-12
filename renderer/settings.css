@@ -42,6 +42,7 @@ h3 { font: 9px/1.6 'Press Start 2P', monospace; margin: 14px 0 8px; color: var(-
 
 /* toggle switch built on the checkbox, so it stays a real, accessible checkbox */
 .toggle { display: flex; gap: 12px; align-items: flex-start; margin: 10px 0; cursor: pointer; }
+.toggle[hidden] { display: none; }
 .toggle span { display: grid; gap: 1px; }
 .toggle b { font-weight: 700; }
 .toggle input { appearance: none; flex: none; width: 40px; height: 24px; margin: 0; border: 2px solid var(--line); border-radius: 999px; background: var(--soft-line); position: relative; cursor: pointer; transition: background 0.12s steps(2); }

@@ -49,7 +49,7 @@ Hand these to the human with clear instructions. You can't do them for them:
   this repo's `extension/` folder. Then right-click the cat → **Pair browser…**, copy the code, click the Loon
   extension icon in Chrome and paste it.
 - **macOS permissions**, granted in System Settings → Privacy & Security only when a feature first asks:
-  Accessibility (⌥Space on selected text in any app), Screen Recording (⌥⇧S screenshots), Microphone (⌥⇧V voice).
+  Accessibility (⌥Space on selected text in any app), Screen Recording (⌥⇧S screenshots, ⌥⇧T "teach me on screen"), Microphone (⌥⇧V voice).
   Nothing else needs them.
 
 ### 4. Confirm it works
@@ -58,7 +58,7 @@ Hand these to the human with clear instructions. You can't do them for them:
 npm test
 ```
 
-All tests should pass (135 at the time of writing). They don't need the app, a model or Chrome.
+All tests should pass (157 at the time of writing). They don't need the app, a model or Chrome.
 
 ## Working on the code
 
@@ -70,7 +70,7 @@ All tests should pass (135 at the time of writing). They don't need the app, a m
 | `DESIGN.md` | **how** it's built: decisions (§0), architecture (§1), the resolver ladder (§2.10), milestones (§8) |
 | `main.js`, `main/` | Electron main process: windows, the extension bridge, voice, actions, the hub |
 | `brain/` | plain-Node logic: intent routing, shopping/food/dev helpers, memory, notes, the local model |
-| `renderer/` | the cat (`cat.*`, `loon.svg`), the speech bubble (`bubble.*`) and Settings |
+| `renderer/` | the cat (`cat.*`, `loon.svg`), the speech bubble (`bubble.*`), the "teach me on screen" overlay (`overlay.*`) and Settings |
 | `extension/` | the Chrome extension (Manifest V3) |
 | `test/` | `*.test.js` unit tests (node:test) and the end-to-end selftests |
 | `THIRD_PARTY.md` | licenses of everything Loon uses |

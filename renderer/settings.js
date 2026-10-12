@@ -146,7 +146,18 @@ function renderSmarter(s) {
   $('apiKeyStatus').textContent = hint ? `saved · ends in …${hint.last4}` : provider === 'custom' ? 'no key (fine for a local server)' : 'no key saved';
   $('apiRemove').hidden = !hint;
   $('apiMsg').textContent = s.apiError || '';
+  $('teachScreenshots').checked = Boolean(s.teachScreenshots);
+  $('teachScreenshots').closest('label').hidden = !['codex', 'api'].includes(mode);
 }
+// Pictures can't be redacted, so switching this on explains that first and needs an OK (§3.18.4).
+$('teachScreenshots').addEventListener('change', async (e) => {
+  const on = e.target.checked;
+  if (on && !confirm('Send screenshots for teaching?\n\nWhen you ask Loon to explain your screen, the picture of your screen goes to your ChatGPT plan (Codex) or your API provider. Text is redacted before it leaves this Mac, but pictures can\'t be: anything visible goes along.\n\nLoon never sends one in Privacy mode, while a password manager, bank or private page is open, or without you asking. You can switch this off any time.')) {
+    e.target.checked = false;
+    return;
+  }
+  render(await window.loon.setSetting('teachScreenshots', on));
+});
 const saveApiConfig = async (changes = {}) => {
   const current = { provider: $('apiProvider').value, baseUrl: $('apiBase').value, normal: $('apiNormal').value, hard: $('apiHard').value };
   render(await window.loon.setSetting('api', { ...current, ...changes }));

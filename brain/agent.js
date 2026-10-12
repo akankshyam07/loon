@@ -13,6 +13,8 @@ const GRANTABLE = new Set(['click', 'type', 'select', 'enter']);
 const OPS = ['click', 'type', 'select', 'enter', 'scroll', 'back', 'open_url', 'read', 'open_app', 'menu', 'keys', 'shortcut', 'done', 'fail'];
 // Buttons that spend money, delete, or send something always need their own click, whatever was allowed before.
 const RISKY = /\b(buy|purchase|place (?:your |my |the )?order|order now|pay|payment|checkout|check out|delete|remove|send|transfer|confirm (?:purchase|order|payment)|submit (?:order|payment)|(?:un)?subscribe|donate|withdraw)\b/i;
+// Apps Loon never acts in (and "Teach me on my screen" never looks at, brain/teach.js).
+const SENSITIVE_APP = /\b(1password|keychain|lastpass|bitwarden|dashlane|wallet|banking)\b/i;
 
 const SITES = {
   youtube: { search: 'https://www.youtube.com/results?search_query=', result: /\/watch\?v=/ },
@@ -195,7 +197,7 @@ function refusal(step, el, page) {
   if (['type', 'enter'].includes(step.op) && el?.sensitive) return { hard: false, message: `I never type into a ${el.sensitive}` };
   if (['type', 'keys'].includes(step.op) && redact(String(step.text || '')).count) return { hard: false, message: 'That looks like a password, card number or secret, and I never type those' };
   if (step.op === 'open_url' && !/^https?:\/\//i.test(step.url || '')) return { hard: false, message: 'I only open web links' };
-  if (['open_app', 'menu', 'keys'].includes(step.op) && /\b(1password|keychain|lastpass|bitwarden|dashlane|wallet|banking)\b/i.test(step.app || '')) {
+  if (['open_app', 'menu', 'keys'].includes(step.op) && SENSITIVE_APP.test(step.app || '')) {
     return { hard: true, message: `I don't act inside ${step.app}` };
   }
   return null;
@@ -409,5 +411,5 @@ async function runAgent({ goal, env, planner = null, confirm, onLog = () => {}, 
 
 module.exports = {
   isAgentGoal, fastPlan, findElement, resolveStep, isRisky, refusal, needsConfirm, canGrant, describeStep,
-  plannerPrompt, parseStep, modelPlanner, runAgent, siteOf, STEP_SCHEMA, PLANNER_SYSTEM, MAX_STEPS, MAC_OPS,
+  plannerPrompt, parseStep, modelPlanner, runAgent, siteOf, STEP_SCHEMA, PLANNER_SYSTEM, MAX_STEPS, MAC_OPS, SENSITIVE_APP,
 };

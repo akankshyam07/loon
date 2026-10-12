@@ -815,6 +815,37 @@ For people who prefer paying per request. It is the fourth option in Settings �
 - **Keys:** encrypted with Electron `safeStorage` (Keychain-backed) into `api-keys.json` in userData, separate from settings.json, one per provider. Only the main process decrypts them. Settings shows "saved · ends in …abcd", plus Save, Test (lists models, so nothing is generated or billed) and Remove. Keys never appear in logs, the action log, error messages or cache keys; error text is scrubbed of the key and run through redaction.
 - **Safety:** redaction (§4.2) runs on the whole prompt before it is sent; 401/403, 429 and 5xx map to plain messages; the bubble's cancel and a timeout abort the request.
 
+### 3.18 Teach me on my screen
+
+Loon points at things on the user's real screen to explain or guide, including following a video tutorial. It only **annotates**: it never clicks, types or moves anything (acting is §3.13.1, with its confirm cards). Plain code does the grounding; a model, when one is needed at all, only picks element ids and writes the words (§0).
+
+#### 3.18.1 Triggers
+
+- **⌥⇧T** (the same key clears the callouts) and the cat menu's **Teach me on screen…** open the bubble in Teach mode: "Show me on screen" and, when a paired Chrome tab is in front, "Follow the video". Anything typed or spoken there is a teach request.
+- **Typed or spoken anywhere** (voice transcripts take the typed path), matched narrowly by `teachIntent` (`brain/teach.js`) so ordinary questions stay questions: "where is the Export button?", "point at…", "show me where…", "where do I click to…", "show me how to…", "how do I … here", "explain what I'm looking at", "teach me this", "follow along".
+- **"Show me on screen" chip** next to screenshot (⌥⇧S) and selection answers.
+- While callouts are up, "next" and "done" in the bubble, the overlay's Next / ✕, Esc (a global shortcut only while something is drawn) and a click on the cat.
+
+#### 3.18.2 Pipeline (`main/teach.js`, `brain/teach.js`)
+
+1. **Gate** (every capture, including each Next of a follow-along): only on an explicit request; refused when the front app or any on-screen window title is a password manager, Keychain, a bank or the like (`SENSITIVE_APP` shared with the agent, plus window-title words), or the extension reports a private page (§4.1).
+2. **Look:** hide the overlay, capture every display in memory at native resolution (Electron `desktopCapturer`, the existing Screen Recording permission; nothing is written to disk), then **Tesseract word boxes** (`recognize(…, { blocks: true })`). Words are grouped per line and split where the gap is wider than the text is tall, so a menu bar becomes one element per item while a sentence stays one element. Boxes become screen points (image px ÷ scale factor + display origin). Loon's own windows are cut out.
+3. **Browser content:** when Chrome is in front and paired, the extension's element list (the agent's actionable elements plus headings and labels, in view only) replaces OCR inside the viewport. CSS boxes become screen points with `window.screenX/Y`, the toolbar height (outer minus inner height × zoom) and page zoom (`devicePixelRatio ÷ display scale`).
+4. **Ground in code first:** "where is X" / "File > Export" / a "how" goal that literally names a control → fuzzy text match (exact → any case → a run of words inside a longer label, with the box narrowed to those words → OCR typos for words of 5+ letters). A match is drawn with no model call.
+5. **Otherwise a model**, router-picked like answers: the user's plan (Claude Code / Codex) or own API key when "Smarter answers" is on and Privacy mode is off; else the local model held to `TEACH_SCHEMA` by a llama.cpp grammar; a failed cloud call falls back to local. Input: the question and a numbered, redacted element list (`t12 "Export…" @62,4`, positions as percentages) inside `<context>`. Output: `{steps:[{say, target, kind: box|arrow|underline}]}`, at most 6. Steps naming an id that isn't in the list are dropped, never guessed; `""` is a general point with no box.
+6. **Draw** (`renderer/overlay.{html,js,css}`): one transparent, click-through, always-on-top window per display at the display's bounds (Retina-sharp; CSS pixels are points). Boxes, underlines, chunky 8-direction pixel arrows, numbered badges, speech-bubble cards in the bubble's kawaii pixel style (light and dark), a small pixel Luna/Soju with a paw out, stepped 90s pop-in. `renderer/overlay-layout.js` places each card right/below/left/above its target, keeps it on screen and off the other cards and targets, and splits annotations across displays. The window ignores the mouse (`setIgnoreMouseEvents(true, {forward: true})`) except while the pointer is over the card's ✕ / Next. One-shot explanations fade after ~16 s; step-by-step waits for Next.
+
+#### 3.18.3 Video follow-along
+
+The content script keeps the last ~30 s of captions in the page's memory only (YouTube's `.ytp-caption-segment`, or showing `<track>` cues), keeping just the new words of each rolling sample; it is sent only on a follow-along request, and a selection (e.g. a transcript line) wins over it. `parseInstructions` turns caption text into steps in code: "click / choose / select / go to / open X", "X > Y" paths, "select X from the Y menu", "click File, then Export" (verbless continuations), "press command shift P" → ⇧⌘P, "type …"; chatter like "which will open the dialog" is ignored. Each step is looked for on the user's other windows (the browser window is cut out), captured again on every Next because the next menu item only exists after the previous click; a step not visible yet says so. Captions with no instruction fall back to an explanation pointed at the screen.
+
+#### 3.18.4 Privacy and vision
+
+- Screenshots and OCR text live in memory for one request and are dropped; the bubble thread keeps only the step text. No history episode, no cache. The audit line is metadata only: mode, element and step counts, source (ocr / ocr+dom / captions), which model tier, whether an image was sent, refusals.
+- Screen text is redacted (§4.2) before any cloud call, as in every prompt.
+- **Pixels can't be redacted**, so the default path never sends them: OCR + a text model. "Send screenshots to your plan/API for teaching" (Settings → Smarter answers, off by default, with a confirm dialog that says exactly this) lets "explain my screen" attach a ≤1600 px PNG to Codex (`codex exec --image`, written into the CLI's empty temp folder, deleted with it, plan-only guard unchanged) or to the API key route (Anthropic / OpenAI / Gemini / OpenAI-compatible image parts). Never with Claude Code (it reads images only through tools, which stay off), never in Privacy mode, never past the gate above. The model still answers with ids from the same list.
+- **Local vision later:** `brain/vision.js` holds the hook. The plan is a Qwen3-VL GGUF through llama.cpp's multimodal support, downloaded only when asked and loaded on demand like the smart model, implementing `describe({ image, prompt })` with the same JSON contract. Until it exists, explain mode is OCR + text model.
+
 ---
 
 ## 4. Privacy and safety
@@ -848,7 +879,7 @@ Detected as in §2.4. The cat covers its eyes or turns around and shows a lock i
 | settings, memory, compare basket | `app.getPath('userData')/*.json` |
 | audit log | `userData/audit.jsonl`: metadata (time, provider, source, character count, action) — **no content** |
 | notes | `~/Documents/Loon/` |
-| screenshots | temp folder, deleted when the bubble closes |
+| screenshots | ⌥⇧S regions: temp folder, deleted when the bubble closes. "Teach me on my screen" captures: memory only, never written (§3.18.4) |
 
 The extension socket listens on `127.0.0.1` only, requires a pairing token, and checks the extension's origin.
 

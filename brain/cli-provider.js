@@ -44,9 +44,13 @@ const CLIS = {
     missing: "Codex isn't installed. Install the Codex CLI, run `codex login` once, then try again.",
     // Read-only sandbox, never ask for approval, shell and web search turned off, nothing saved to disk.
     // codex exec has no system-prompt flag, so Loon's instructions go at the top of the prompt.
-    args: (_system, cwd, { model, effort } = {}) => ['exec', '--json', '--color', 'never', '--sandbox', 'read-only', '--skip-git-repo-check',
+    // `--image` attaches a teach screenshot (only when the user turned that on, brain/vision.js); the file sits in the
+    // empty temp folder and is deleted with it.
+    args: (_system, cwd, { model, effort, image } = {}) => ['exec', '--json', '--color', 'never', '--sandbox', 'read-only', '--skip-git-repo-check',
       '--ephemeral', '-c', 'approval_policy="never"', '-c', 'features.shell_tool=false', '-c', 'features.unified_exec=false',
-      '-c', 'web_search="disabled"', ...(model ? ['-m', model] : []), ...(effort ? ['-c', `model_reasoning_effort="${effort}"`] : []), '-C', cwd, '-'],
+      '-c', 'web_search="disabled"', ...(model ? ['-m', model] : []), ...(effort ? ['-c', `model_reasoning_effort="${effort}"`] : []),
+      ...(image ? [`--image=${image}`] : []), '-C', cwd, '-'],
+    images: true,
     input: (system, prompt) => `${system}\n\n${prompt}`,
     authArgs: ['login', 'status'],
     onPlan: (out) => /logged in using chatgpt/i.test(out) && !/api key/i.test(out),
@@ -204,10 +208,15 @@ function poolKey(which, bin, system, flags) {
 
 // Spawns a CLI (no shell) in a fresh empty folder: nothing to read, no project config or hooks. Whatever it prints
 // before a question is attached is buffered.
-function spawnProc(which, bin, system, flags) {
+function spawnProc(which, bin, system, flags, image = null) {
   const cli = CLIS[which];
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-cli-'));
-  const child = spawn(bin, cli.args(system, cwd, flags), { cwd, env: childEnv(), stdio: ['pipe', 'pipe', 'pipe'] });
+  let imageFile = null;
+  if (image) {
+    imageFile = path.join(cwd, 'screen.png');
+    fs.writeFileSync(imageFile, image, { mode: 0o600 });
+  }
+  const child = spawn(bin, cli.args(system, cwd, { ...flags, image: imageFile }), { cwd, env: childEnv(), stdio: ['pipe', 'pipe', 'pipe'] });
   const proc = { which, child, cwd, model: flags.model, early: [], stderr: '', exited: false, code: null, error: null, on: null, idle: null };
   const cleanup = () => fs.rmSync(cwd, { recursive: true, force: true });
   proc.kill = () => {
@@ -271,9 +280,12 @@ function shutdown() {
 
 // Streams the answer through onText; resolves with the full text. Refuses unless the CLI is on the user's plan.
 // `level` ('medium' | 'hard') picks model and effort; `warm: true` keeps a replacement process ready afterwards.
+// `image` (PNG bytes) goes only to a CLI that takes pictures as input (Codex); Claude Code reads images only through
+// its tools, which stay off.
 async function ask(which, options = {}) {
   const cli = CLIS[which];
   if (!cli) throw new Error(`Unknown CLI: ${which}`);
+  if (options.image && !cli.images) throw new Error(`${which === 'claude' ? 'Claude Code' : which} can't look at screenshots with its tools off.`);
   const bin = findBinary(which);
   if (!bin) throw new Error(cli.missing);
   try {
@@ -285,7 +297,7 @@ async function ask(which, options = {}) {
   if (options.signal?.aborted) throw new Error('Cancelled');
   const system = options.system || '';
   const flags = flagsFor(which, options);
-  const ready = take(poolKey(which, bin, system, flags));
+  const ready = options.image ? null : take(poolKey(which, bin, system, flags));
   if (options.warm) setImmediate(() => warm(which, { system, level: options.level, models: options.models }));
   if (ready) {
     try {
@@ -296,7 +308,7 @@ async function ask(which, options = {}) {
       console.warn(`[cli] warm ${which} process failed (${err.message}); starting a fresh one`);
     }
   }
-  return run(spawnProc(which, bin, system, flags), options);
+  return run(spawnProc(which, bin, system, flags, options.image), options);
 }
 
 function run(proc, { system = '', prompt, onText = () => {}, signal, timeoutMs = 120000 } = {}) {

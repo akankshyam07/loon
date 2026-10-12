@@ -44,6 +44,7 @@ const CODE_ANSWERS = [
         '- **"Remind me to… at 5"**, "add … Friday 3pm", "open Spotify", "find my resume"',
         '- **"Where did I leave off?"** on projects you allow in Settings',
         '- **⌥⇧S** read a screenshot · **⌥⇧V** talk to me · **drop a file** on me',
+        '- **⌥⇧T** or **"where is the … button?"**: I point at it on your screen, and follow along with video tutorials',
         '- **"Remember that…"** so I get to know you (Settings to edit)',
       ].join('\n'),
     }),

@@ -54,6 +54,11 @@ contextBridge.exposeInMainWorld('loon', {
   discoverConnectors: () => ipcRenderer.invoke('connectors-discover'),
   addConnector: (found) => ipcRenderer.invoke('connectors-add', found),
   removeConnector: (id) => ipcRenderer.invoke('connectors-remove', id),
+  // teach overlay (one per display)
+  onOverlay: on('overlay'),
+  onOverlayFade: on('overlay-fade'),
+  overlayAction: (kind) => ipcRenderer.send('overlay-action', kind === 'next' ? 'next' : 'close'),
+  overlayMouse: (over) => ipcRenderer.send('overlay-mouse', Boolean(over)),
   // settings window
   getSettings: () => ipcRenderer.invoke('settings-get'),
   setSetting: (key, value) => ipcRenderer.invoke('settings-set', { key, value }),

@@ -3,6 +3,7 @@
 // only used when the user picks it in Settings, and never a silent fallback for the plan route.
 // Keys live only in the main process, encrypted with Electron safeStorage (macOS Keychain) in their own file.
 // They never reach a renderer, a log line, an error message or a cache key.
+// `image` (PNG bytes, base64 here) is only ever a teach screenshot the user opted into sending (brain/vision.js).
 const fs = require('fs');
 const { redact } = require('./redact');
 
@@ -11,10 +12,13 @@ const PROVIDERS = {
     name: 'Anthropic',
     baseUrl: 'https://api.anthropic.com',
     models: { normal: 'claude-haiku-5-5', hard: 'claude-sonnet-5-5' },
-    request: ({ baseUrl, key, model, system, prompt, maxTokens }) => ({
+    request: ({ baseUrl, key, model, system, prompt, maxTokens, image }) => ({
       url: `${baseUrl}/v1/messages`,
       headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' },
-      body: { model, max_tokens: maxTokens, system, stream: true, messages: [{ role: 'user', content: prompt }] },
+      body: {
+        model, max_tokens: maxTokens, system, stream: true,
+        messages: [{ role: 'user', content: image ? [{ type: 'image', source: { type: 'base64', media_type: 'image/png', data: image } }, { type: 'text', text: prompt }] : prompt }],
+      },
     }),
     // content_block_delta carries the text; an `error` event can arrive mid-stream (e.g. overloaded).
     parse: (event) => {
@@ -29,10 +33,13 @@ const PROVIDERS = {
     baseUrl: 'https://api.openai.com/v1',
     models: { normal: 'gpt-6-luna', hard: 'gpt-6-astra' },
     // Responses API: current OpenAI models are documented there first.
-    request: ({ baseUrl, key, model, system, prompt, maxTokens }) => ({
+    request: ({ baseUrl, key, model, system, prompt, maxTokens, image }) => ({
       url: `${baseUrl}/responses`,
       headers: { authorization: `Bearer ${key}` },
-      body: { model, instructions: system, input: prompt, max_output_tokens: maxTokens, stream: true, store: false },
+      body: {
+        model, instructions: system, max_output_tokens: maxTokens, stream: true, store: false,
+        input: image ? [{ role: 'user', content: [{ type: 'input_text', text: prompt }, { type: 'input_image', image_url: `data:image/png;base64,${image}` }] }] : prompt,
+      },
     }),
     parse: (event) => {
       if (event.type === 'response.output_text.delta') return event.delta || '';
@@ -46,12 +53,12 @@ const PROVIDERS = {
     name: 'Gemini',
     baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
     models: { normal: 'gemini-3.5-flash-lite', hard: 'gemini-3.8-flash' }, // both on the Gemini API free tier
-    request: ({ baseUrl, key, model, system, prompt, maxTokens }) => ({
+    request: ({ baseUrl, key, model, system, prompt, maxTokens, image }) => ({
       url: `${baseUrl}/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`,
       headers: { 'x-goog-api-key': key },
       body: {
         systemInstruction: { parts: [{ text: system }] },
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        contents: [{ role: 'user', parts: [...(image ? [{ inline_data: { mime_type: 'image/png', data: image } }] : []), { text: prompt }] }],
         generationConfig: { maxOutputTokens: maxTokens },
       },
     }),
@@ -66,10 +73,13 @@ const PROVIDERS = {
     name: 'Custom endpoint',
     baseUrl: '',
     models: { normal: '', hard: '' },
-    request: ({ baseUrl, key, model, system, prompt, maxTokens }) => ({
+    request: ({ baseUrl, key, model, system, prompt, maxTokens, image }) => ({
       url: `${baseUrl}/chat/completions`,
       headers: key ? { authorization: `Bearer ${key}` } : {},
-      body: { model, max_tokens: maxTokens, stream: true, messages: [{ role: 'system', content: system }, { role: 'user', content: prompt }] },
+      body: {
+        model, max_tokens: maxTokens, stream: true,
+        messages: [{ role: 'system', content: system }, { role: 'user', content: image ? [{ type: 'text', text: prompt }, { type: 'image_url', image_url: { url: `data:image/png;base64,${image}` } }] : prompt }],
+      },
     }),
     parse: (event) => {
       if (event.error) throw new Error(event.error.message || String(event.error));
@@ -161,14 +171,14 @@ async function* sseEvents(body) {
 }
 
 // Streams the answer through onText; resolves with the full text.
-async function ask({ provider, key, baseUrl, model, system = '', prompt, onText = () => {}, signal, timeoutMs = 120000, maxTokens = 2048 } = {}) {
+async function ask({ provider, key, baseUrl, model, system = '', prompt, image = null, onText = () => {}, signal, timeoutMs = 120000, maxTokens = 2048 } = {}) {
   const p = PROVIDERS[provider];
   if (!p) throw new Error(`Unknown provider: ${provider}`);
   if (!key && provider !== 'custom') throw new Error(`Add your ${p.name} API key in Settings → Smarter answers first.`);
   if (!model) throw new Error('Add a model name in Settings → Smarter answers first.');
   const base = checkBaseUrl(baseUrl || p.baseUrl || '');
   // Same rule as the plan route: the whole prompt (typed text, memory, context) is redacted before it leaves the Mac.
-  const request = p.request({ baseUrl: base, key, model, system, prompt: redact(prompt).text, maxTokens });
+  const request = p.request({ baseUrl: base, key, model, system, prompt: redact(prompt).text, maxTokens, image: image ? Buffer.from(image).toString('base64') : null });
   const { res, timeout } = await send(p.name, request, { signal, timeoutMs, key });
   let text = '';
   try {

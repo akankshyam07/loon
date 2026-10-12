@@ -144,6 +144,60 @@
     return { ok };
   }
 
+  // ---- "Teach me on my screen" (DESIGN.md §3.18) ----
+  // Where the viewport is on screen, so the app can turn element boxes into screen points.
+  const windowFrame = () => ({ screenX: window.screenX, screenY: window.screenY, outerWidth: window.outerWidth, outerHeight: window.outerHeight, innerWidth: window.innerWidth, innerHeight: window.innerHeight, dpr: window.devicePixelRatio });
+
+  // What is on screen in this tab: the clickable elements plus headings and labels, in view only, with boxes.
+  function teachList() {
+    const items = agent.list({ limit: 80 }).filter((e) => e.inView);
+    let n = 0;
+    for (const el of document.querySelectorAll('h1, h2, h3, [role="heading"], label, th, legend')) {
+      if (n >= 25) break;
+      const r = el.getBoundingClientRect();
+      const text = (el.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 80);
+      if (!text || r.width < 2 || r.bottom < 0 || r.top > window.innerHeight || r.right < 0 || r.left > window.innerWidth) continue;
+      items.push({ id: `h${++n}`, role: 'heading', text, label: '', box: { x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height) }, inView: true });
+    }
+    return { url: location.href, title: document.title, elements: items, frame: windowFrame() };
+  }
+
+  // Tutorial captions: YouTube draws them as .ytp-caption-segment, other players show <track> cues. The last ~30 s are
+  // kept in this page's memory only (never stored, never sent) until the user asks Loon to follow along.
+  const CAPTION_MS = 30000;
+  let captionLog = []; // [{ t, text }]: only the new words of each sample, so rolling captions aren't repeated
+  let currentCaption = '';
+  function readCaptions() {
+    const yt = [...document.querySelectorAll('.ytp-caption-segment')].map((s) => s.textContent).join(' ');
+    let text = yt;
+    if (!text.trim()) {
+      for (const track of document.querySelector('video')?.textTracks || []) {
+        if (track.mode === 'showing') text += [...(track.activeCues || [])].map((c) => c.text).join(' ');
+      }
+    }
+    return text.replace(/\s+/g, ' ').trim();
+  }
+  function sampleCaptions() {
+    const text = readCaptions();
+    if (!text || text === currentCaption) return;
+    const recent = captionLog.map((c) => c.text).join(' ');
+    // Rolling captions repeat what was already on screen; keep only the part that is new.
+    let overlap = Math.min(text.length, recent.length);
+    while (overlap > 0 && !recent.endsWith(text.slice(0, overlap))) overlap--;
+    const fresh = text.slice(overlap).trim();
+    currentCaption = text;
+    const now = Date.now();
+    if (fresh) captionLog.push({ t: now, text: fresh });
+    captionLog = captionLog.filter((c) => now - c.t < CAPTION_MS);
+  }
+  setInterval(() => { if (document.visibilityState === 'visible' && !page.sensitive && document.querySelector('video')) sampleCaptions(); }, 1000);
+
+  function captions() {
+    sampleCaptions();
+    const selection = String(window.getSelection?.() || '').trim().slice(0, 2000);
+    return { url: location.href, title: document.title, current: currentCaption, recent: captionLog.map((c) => c.text).join(' '), selection, frame: windowFrame() };
+  }
+
   function pageOutline() {
     const labels = [...document.querySelectorAll('h1, h2, h3, label, button, [role="button"], input[type="submit"]')]
       .map((el) => (el.innerText || el.value || el.getAttribute('aria-label') || '').trim())
@@ -173,6 +227,8 @@
       if (message.type === 'agent-list') reply({ url: location.href, title: document.title, kind: page.kind, elements: agent.list() });
       else if (message.type === 'agent-highlight') reply({ ok: agent.highlight(message.id, message.label) });
       else if (message.type === 'agent-clear') reply({ ok: (agent.clear(), true) });
+      else if (message.type === 'agent-teach') reply(teachList());
+      else if (message.type === 'agent-captions') reply(captions());
       else if (message.type === 'agent-act') {
         agent.act(message).then(reply, (err) => reply({ ok: false, error: err.message }));
         return true; // async reply
