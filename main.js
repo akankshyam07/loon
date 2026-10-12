@@ -1,4 +1,4 @@
-const { app, BrowserWindow, screen, ipcMain, globalShortcut, Menu, powerMonitor, clipboard, shell, nativeImage, systemPreferences, session, safeStorage } = require('electron');
+const { app, BrowserWindow, screen, ipcMain, globalShortcut, Menu, powerMonitor, clipboard, shell, nativeImage, systemPreferences, session, safeStorage, desktopCapturer } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const { Brain, SYSTEM_PROMPT } = require('./brain/ai');
@@ -18,6 +18,8 @@ const { ConnectorHub } = require('./main/hub');
 const { createAgentRunner } = require('./main/agent');
 const { PERSONAL_DEFAULTS, cleanPersonal, profileSummary } = require('./brain/personal');
 const apiProvider = require('./brain/api-provider');
+const { createTeacher, createOverlay } = require('./main/teach');
+const { splitByDisplay } = require('./renderer/overlay-layout');
 
 // Cat height in px per size preset; the window adds room around it for sparkles and hops.
 const SIZES = { S: 120, M: 160, L: 210 };
@@ -42,7 +44,7 @@ if (SELFTEST) {
 }
 
 let settingsFile;
-let settings = { size: 'M', catStyle: 'pixel', companion: 'luna', costume: 'none', seasonalCostumes: false, retroSounds: false, cameos: true, duo: false, focus: false, privacy: false, judgmental: true, wakeWord: false, speakReplies: 'voiceOnly', projects: [], connectors: [], welcomed: false, cloudCli: 'off', answerWith: 'plan', quickTake: false, planModels: {}, personal: { ...PERSONAL_DEFAULTS }, dismissedSuggestions: [] };
+let settings = { size: 'M', catStyle: 'pixel', companion: 'luna', costume: 'none', seasonalCostumes: false, retroSounds: false, cameos: true, duo: false, focus: false, privacy: false, judgmental: true, wakeWord: false, speakReplies: 'voiceOnly', projects: [], connectors: [], welcomed: false, cloudCli: 'off', answerWith: 'plan', quickTake: false, teachScreenshots: false, planModels: {}, personal: { ...PERSONAL_DEFAULTS }, dismissedSuggestions: [] };
 let catWin;
 let bubbleWin;
 let brain;
@@ -62,6 +64,8 @@ let voice;
 let hub;
 let voiceEngine;
 let agentRunner;
+let teacher; // "Teach me on my screen" (main/teach.js)
+let overlay; // its click-through windows, one per display
 const pendingPlays = new Map();
 const toBubbleRef = { current: null };
 let playId = 0;
@@ -349,6 +353,41 @@ async function onVoiceHotkey() {
   voice.start('hotkey');
 }
 
+// ⌥⇧T: "Teach me on my screen" (DESIGN.md §3.18). Callouts up: the same key clears them.
+function onTeachHotkey() {
+  if (overlay.visible()) return teacher.done();
+  companion.openTeach();
+  showBubble();
+}
+
+// The overlay's Next / ✕, Esc, or its timeout. Next may capture again (follow-along), so failures are only logged.
+function onOverlayAction(kind) {
+  if (kind !== 'next') return teacher.done();
+  return Promise.resolve(teacher.next()).catch((err) => console.warn('[teach]', err.message));
+}
+
+// Capture, OCR and window facts for the teacher; screenshots stay in memory and are dropped after each request.
+function teachScreen() {
+  const rect = (w) => { const b = w.getBounds(); return { x: b.x, y: b.y, w: b.width, h: b.height }; };
+  return {
+    async grab() {
+      if (process.platform === 'darwin' && ['denied', 'restricted'].includes(systemPreferences.getMediaAccessStatus('screen'))) return [];
+      return capture.grabDisplays(desktopCapturer, screen);
+    },
+    ocr: (png) => capture.ocrBoxes(png, path.join(app.getPath('userData'), 'ocr')),
+    frontApp: () => capture.frontmostApp(),
+    windowNames: () => capture.windowNames(desktopCapturer),
+    ownWindows: () => [catWin, bubbleWin, settingsWin].filter((w) => w && !w.isDestroyed() && w.isVisible()).map(rect),
+    displays: () => screen.getAllDisplays().map((d) => ({ id: d.id, bounds: d.bounds, scaleFactor: d.scaleFactor })),
+    cursorDisplayId: () => screen.getDisplayNearestPoint(cursorPoint()).id,
+    // Only for a cloud route the user allowed to see screenshots: at most 1600 px wide.
+    downscale: (png) => {
+      const image = nativeImage.createFromBuffer(png);
+      return (image.getSize().width > 1600 ? image.resize({ width: 1600 }) : image).toPNG();
+    },
+  };
+}
+
 // ⌥⇧S: macOS's region picker → OCR on this Mac → the usual chips.
 async function onScreenshotHotkey() {
   const file = await capture.screenshotRegion();
@@ -531,6 +570,7 @@ function showCatMenu() {
   Menu.buildFromTemplate([
     { label: 'Ask Loon…', accelerator: 'Alt+Space', click: openAskBubble },
     { label: 'Explain a screenshot…', accelerator: 'Alt+Shift+S', click: onScreenshotHotkey },
+    { label: 'Teach me on screen…', accelerator: 'Alt+Shift+T', click: onTeachHotkey },
     voiceEngine.modelsReady()
       ? { label: voice.listening ? 'Stop listening' : 'Talk to Loon', accelerator: 'Alt+Shift+V', click: () => voice.start('menu') }
       : { label: 'Set up voice (download ~240 MB)…', click: setUpVoice },
@@ -565,7 +605,10 @@ function registerIpc() {
     setCatIgnore(ignore);
   });
   ipcMain.on('cat-menu', showCatMenu);
-  ipcMain.on('open-bubble', openAskBubble);
+  // Clicking the cat while callouts are up clears them first.
+  ipcMain.on('open-bubble', () => (overlay?.visible() ? teacher.done() : openAskBubble()));
+  ipcMain.on('overlay-action', (_e, kind) => onOverlayAction(kind));
+  ipcMain.on('overlay-mouse', (e, over) => overlay.setMouse(e.sender, Boolean(over)));
   ipcMain.on('close-bubble', hideBubble);
   ipcMain.handle('animate-window', (_e, opts) => animateWindow(opts));
   ipcMain.handle('cat-wide', (_e, on) => {
@@ -655,6 +698,7 @@ function registerIpc() {
     if (key === 'cloudCli' && ['off', 'claude', 'codex', 'api'].includes(value)) { settings.cloudCli = value; saveSettings(); warmPlan(); }
     if (key === 'answerWith' && ['plan', 'mac'].includes(value)) { settings.answerWith = value; saveSettings(); warmPlan(); }
     if (key === 'quickTake' && typeof value === 'boolean') { settings.quickTake = value; saveSettings(); }
+    if (key === 'teachScreenshots' && typeof value === 'boolean') { settings.teachScreenshots = value; saveSettings(); }
     // One model name per CLI and difficulty; '' = Loon's default. Names that could read as a flag are refused.
     if (key === 'planModel' && ['claude', 'codex'].includes(value?.which) && ['medium', 'hard'].includes(value?.level)) {
       const model = String(value.model || '').trim();
@@ -818,8 +862,31 @@ app.whenReady().then(() => {
       },
     },
   });
+  overlay = createOverlay({
+    BrowserWindow,
+    screen,
+    globalShortcut,
+    splitByDisplay,
+    cursorPoint,
+    hidden: HIDDEN,
+    preload: path.join(__dirname, 'renderer', 'preload.js'),
+    file: path.join(__dirname, 'renderer', 'overlay.html'),
+    onAction: onOverlayAction,
+  });
+  teacher = createTeacher({
+    settings,
+    screen: teachScreen(),
+    overlay,
+    bridge,
+    brain,
+    cli: cliProvider,
+    api: { route: (s) => apiProvider.route(s, apiKeys) },
+    activePage: () => companion?.activePage,
+    audit: (entry) => actions.audit(entry),
+  });
   companion = createCompanion({
     agent: agentRunner,
+    teacher,
     memory,
     bridge,
     resolver,
@@ -940,6 +1007,7 @@ app.whenReady().then(() => {
   if (!globalShortcut.register('Alt+Space', onAskHotkey)) console.warn('Loon: ⌥Space is taken by another app; open the bubble by clicking the cat.');
   if (!globalShortcut.register('Alt+Shift+S', onScreenshotHotkey)) console.warn('Loon: ⌥⇧S is taken by another app.');
   if (!globalShortcut.register('Alt+Shift+V', onVoiceHotkey)) console.warn('Loon: ⌥⇧V is taken by another app.');
+  if (!globalShortcut.register('Alt+Shift+T', onTeachHotkey)) console.warn('Loon: ⌥⇧T is taken by another app; use "Teach me on screen" in the cat menu.');
 });
 
 app.on('will-quit', () => {

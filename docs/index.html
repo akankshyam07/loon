@@ -113,6 +113,20 @@ h2 { font-size: clamp(17px, 3vw, 24px); line-height: 1.5; margin: 0 0 10px; }
 .c-pink { background: var(--pink-soft); } .c-lav { background: var(--lav-soft); } .c-mint { background: var(--mint-soft); } .c-sun { background: var(--sun-soft); }
 .feat { transition: transform .15s; }
 .feat:hover { transform: rotate(-1deg) translateY(-3px); }
+/* "Teach me on my screen": a wide card with a tiny mock screen and the overlay's callout style */
+.teach { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: center; }
+@media (min-width: 820px) { .teach { grid-column: span 2; } }
+@media (max-width: 819px) { .teach { grid-template-columns: 1fr; } }
+.teach-demo { position: relative; height: 178px; border: 3px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--bg); }
+.teach-demo .menubar { display: flex; gap: 14px; padding: 5px 10px; font-size: 12px; font-weight: 700; border-bottom: 2px solid var(--border); background: var(--card); }
+.teach-demo .btns { display: flex; gap: 8px; padding: 14px 10px 0; justify-content: flex-end; }
+.teach-demo .btns span { font-size: 12px; padding: 3px 9px; border: 2px solid var(--muted); border-radius: 7px; background: var(--card); }
+.teach-demo .target { position: relative; outline: 3px solid var(--pink); outline-offset: 3px; box-shadow: 0 0 0 6px var(--border); border-radius: 6px; }
+.teach-demo .badge { position: absolute; left: -16px; top: -16px; width: 22px; height: 22px; display: grid; place-items: center; font-size: 9px; color: #2b2238; background: var(--sun); border: 3px solid var(--border); border-radius: 7px; }
+.teach-demo svg { position: absolute; right: 70px; top: 63px; width: 32px; height: 32px; }
+.teach-demo .say { position: absolute; right: 100px; top: 92px; max-width: 190px; padding: 8px 11px; font-size: 13px; font-weight: 700; line-height: 1.35; background: var(--card); border: 3px solid var(--border); border-radius: 12px; box-shadow: 3px 3px 0 var(--border); }
+.teach-demo .say i { font-style: normal; display: inline-grid; place-items: center; width: 18px; height: 18px; margin-right: 6px; font-size: 8px; background: var(--pink); border: 2px solid var(--border); border-radius: 6px; color: #2b2238; vertical-align: 1px; }
+.teach-demo .say small { display: block; margin-top: 4px; font-size: 11px; color: var(--muted); }
 
 /* ---------- brain ladder ---------- */
 .ladder { display: grid; gap: 14px; counter-reset: step; }
@@ -226,6 +240,15 @@ footer .px { font-size: 11px; color: var(--ink); }
       <div class="card feat"><div class="icon c-pink">👩‍💻</div><h3>Developer Cat</h3><p>Errors explained from a curated table, JSON into Java or TypeScript types, and "where did I leave off?" project briefings.</p></div>
       <div class="card feat"><div class="icon c-mint">🧠</div><h3>A brain that connects things</h3><p>Memories become a little graph of people, projects, sites and topics, grouped into domains. Ask about one thing and Loon follows the links. Explore it in Settings.</p></div>
       <div class="card feat"><div class="icon c-pink">🐾</div><h3>Does it for you</h3><p>"Search YouTube for lofi and play the first one." Loon clicks, types and scrolls step by step, asking first for every change. Never passwords or payments. Esc stops it.</p></div>
+      <div class="card feat teach">
+        <div><div class="icon c-sun">👆</div><h3>Teach me on my screen</h3><p>"Where is Export?" "Show me how." Loon draws pixel callouts on your actual screen, and follows along with video tutorials step by step. Grounded by on-device OCR, so every box lands on something real. It points, you click.</p></div>
+        <div class="teach-demo" role="img" aria-label="A mock app window: the Export button has a pink outline, a yellow 1 badge and a pixel arrow from a card saying Click Export to save a PDF.">
+          <div class="menubar"><span>Pixelpad</span><span>File</span><span>Edit</span><span>View</span></div>
+          <div class="btns"><span>Crop</span><span>Share</span><span class="target"><b class="badge px">1</b>Export…</span></div>
+          <svg viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true"><path fill="#2b2238" d="M3 0h5v5H7V3H6v1H5v1H4v1H3v1H2v1H0V6h1V5h1V4h1V3h1V2h1V1H3z"/><path fill="#ff8fb8" d="M4 1h3v3H6V3H5v1H4v1H3v1H2v1H1V6h1V5h1V4h1V3h1V2H4z"/></svg>
+          <div class="say"><i class="px">1</i>Click Export… to save a PDF<small>step 1 of 2 · Next ›</small></div>
+        </div>
+      </div>
       <div class="card feat"><div class="icon c-lav">💌</div><h3>Learns your style</h3><p>Custom instructions, reply length and tone, and "Remember this?" when you mention a preference. Say "shorter please" and it sticks.</p></div>
       <div class="card feat"><div class="icon c-sun">🗓️</div><h3>Daily helper</h3><p>"What's my day?", reminders, calendar events, and a focus timer where the cat naps quietly. Everything asks first.</p></div>
       <div class="card feat"><div class="icon c-lav">✍️</div><h3>Writing help</h3><p>Fix grammar, make it shorter, warmer or more professional, and drop it right back into the text box.</p></div>

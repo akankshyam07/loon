@@ -118,6 +118,18 @@ and then it does something cool: moon magic, a pounce, peeking over the edge of 
 - Every change shows a card first (✓ Do it, ⏭ Skip, ✕ Stop). Buy, pay, delete and send always need their own click.
   It never types into password, card or one-time-code fields, ends the task on private pages, and Esc stops it.
 
+**👆 Teach me on my screen**
+- "Where is the Export button?", "show me how to export as PDF", "explain what I'm looking at", or **⌥⇧T**: Loon
+  draws pixel callouts right on your screen (boxes, chunky arrows, numbered steps, a pointing cat) and never clicks
+  anything itself. Next walks through the steps; Esc, ✕ or a click on the cat clears them.
+- **Follow along with video tutorials.** Turn on captions in YouTube, say "follow along", and Loon reads what the
+  video just said ("click File, then Export…") and points at each item in your own app, one step at a time.
+- Grounding is plain code: on-device OCR with word boxes, plus exact element boxes from the Chrome extension. Simple
+  "where is…" questions need no model at all; otherwise a model only picks from a numbered list of what's on screen,
+  so every box lands on something real. It looks only when you ask, keeps no screenshots, redacts screen text before
+  any cloud call, and refuses while a password manager, bank or private page is open. Sending the picture itself to
+  your plan or API key is a separate switch, off by default.
+
 **🧠 Personal, with a brain you can see**
 - Custom instructions ("About you", "How Loon should reply"), reply length, tone and emoji, and a "Remember this?"
   chip when you mention a preference. Say "less emoji" and it sticks.
@@ -187,6 +199,7 @@ The extension only talks to the Loon app on your own computer (127.0.0.1), and o
 |---|---|
 | ⌥Space | Ask Loon, or get help with text selected in any app (needs Accessibility permission) |
 | ⌥⇧S | Explain a screenshot region (needs Screen Recording permission) |
+| ⌥⇧T | Teach me on screen: point at things, follow a video tutorial (needs Screen Recording permission) |
 | ⌥⇧V | Talk to Loon (needs Microphone permission; speech models download once, ~240 MB) |
 | Esc | Close the bubble |
 
@@ -241,8 +254,8 @@ the research behind each choice, is in [DESIGN.md](DESIGN.md).
 
 ## Privacy
 
-- **It sees what you give it.** A selection, a page you ask about, a screenshot region you pick. Nothing is read in
-  the background.
+- **It sees what you give it.** A selection, a page you ask about, a screenshot region you pick, your screen when you
+  ask it to point at something. Nothing is read in the background, and screenshots are never saved.
 - **The cat looks away.** On bank, password and health pages Loon covers its eyes and reads nothing unless you click
   "Look anyway".
 - **Secrets are stripped first.** Card numbers, IBANs, API keys, private keys and passwords are redacted before
@@ -261,7 +274,7 @@ npm run demo      # the cat's idle routines on a fast timer, for animation work
 ```
 
 The full end-to-end selftest runs automatically on GitHub Actions (a macOS runner) on every push, so it never takes
-over a contributor's screen: 135 unit tests and 73 end-to-end checks at the time of writing. Locally,
+over a contributor's screen: 157 unit tests and 73 end-to-end checks at the time of writing. Locally,
 `npm run selftest` runs hidden and needs a downloaded model; see [AGENTS.md](AGENTS.md) for details. The stack
 is plain CommonJS with no build step: Electron for the cat, a Manifest V3 Chrome extension, and Node for the brain.
 

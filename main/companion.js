@@ -7,6 +7,7 @@ const { selectionPacket, pagePacket } = require('./context');
 const { scopeOf } = require('../brain/memory');
 const { parseCommand, describe, normalizeSpoken } = require('../brain/commands');
 const { isAgentGoal } = require('../brain/agent');
+const { teachIntent } = require('../brain/teach');
 const { cleanPersonal, parseFeedback, suggestMemory, secondPerson, normalizeFact } = require('../brain/personal');
 const connectorsLib = require('../brain/connectors');
 const { ConnectorHub } = require('./hub');
@@ -29,9 +30,14 @@ const domainOf = (url) => {
   }
 };
 const chip = (id) => ({ id, label: TASKS[id].label });
+// "Teach me on my screen" (§3.18): not resolver tasks; main/teach.js runs them.
+const TEACH_CHIPS = { teach_explain: 'Show me on screen', teach_follow: 'Follow the video' };
+const teachChip = (id) => ({ id, label: TEACH_CHIPS[id] });
+const TEACH_DONE = /^(?:done|stop|hide(?: it| that| them)?|clear(?: it)?|close(?: it)?|got it|thanks?|ok(?:ay)?)$/i;
+const TEACH_NEXT = /^(?:next(?: step)?|ok(?:ay)?,? next|what'?s next|continue)$/i;
 
 // saveSettings: called after feedback like "shorter please" changes the reply style.
-function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, settings, hub, memory = null, agent = null, saveSettings = () => {} }) {
+function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, settings, hub, memory = null, agent = null, teacher = null, saveSettings = () => {} }) {
   // turns: the bubble thread's answers so far [{ question, answer, tier, target }], for follow-ups (DESIGN.md §2.10).
   // Kept in memory only and cleared with the session, so Privacy mode never writes it anywhere.
   const session = { mode: 'ask', packet: null, threadStarted: false, turns: [], lastTask: null, pendingTask: null };
@@ -50,7 +56,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
       return {
         mode,
         label: `Selection${domain ? ` · ${domain}` : ''}`,
-        chips: [...(SELECTION_CHIPS[packet.selectionKind] || SELECTION_CHIPS.paragraph).map(chip), ...sendChips()],
+        chips: [...(SELECTION_CHIPS[packet.selectionKind] || SELECTION_CHIPS.paragraph).map(chip), ...sendChips(), ...(teacher ? [teachChip('teach_explain')] : [])],
         redactions: packet.redactions,
         editable: Boolean(packet.editable),
         placeholder: 'Ask about this…',
@@ -64,10 +70,20 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
       return {
         mode,
         label: packet.source === 'screenshot' ? 'Screenshot · read on this Mac' : packet.source === 'file' ? `File · ${packet.title}${packet.fileNote ? ` · ${packet.fileNote}` : ''}` : `Selection · ${packet.app || 'app'}`,
-        chips: (SELECTION_CHIPS[packet.selectionKind] || SELECTION_CHIPS.paragraph).map(chip),
+        chips: [...(SELECTION_CHIPS[packet.selectionKind] || SELECTION_CHIPS.paragraph).map(chip), ...(teacher && packet.source !== 'file' ? [teachChip('teach_explain')] : [])],
         redactions: packet.redactions,
         notice: packet.notice,
         placeholder: 'Ask about this…',
+      };
+    }
+    if (mode === 'teach') {
+      const video = bridge.clients.size && activePage && !activePage.sensitive;
+      return {
+        mode: 'ask',
+        label: 'Teach me on screen',
+        chips: [teachChip('teach_explain'), ...(video ? [teachChip('teach_follow')] : [])],
+        notice: 'Ask "where is the Export button?" or "show me how to…", and I\'ll point at it on your screen. I look only now, on this Mac, and keep nothing.',
+        placeholder: 'Where is…? Show me how to…',
       };
     }
     if (mode === 'notice') {
@@ -222,6 +238,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
   }
 
   async function command(id, question, bubble, signal) {
+    if (teacher && (await teachRequest(id, question, bubble, signal))) return true;
     if (await connectorRequest(id, question, bubble)) return true;
     // "click…", "fill…", "open X and …": step-by-step with a confirm card per change (§3.13.1).
     if (agent && isAgentGoal(question)) {
@@ -247,6 +264,33 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
     bubble('confirm', { id, summary: describe(parsed), command: parsed });
     ui.cat('brain', { state: 'done', mood: 'curious' });
     return true;
+  }
+
+  // "where is…", "show me how to…", "follow along", or anything typed in the Teach bubble; "next" / "done" while
+  // callouts are up. Only annotates the screen; the agent above is what acts.
+  async function teachRequest(id, question, bubble, signal) {
+    const text = String(question || '').trim().replace(/[.!?]+$/, '');
+    if (teacher.active() && TEACH_NEXT.test(text)) {
+      await teacher.next();
+      bubble('action-done', { id, ok: true, message: 'Next step is on your screen.' });
+      return true;
+    }
+    if (teacher.active() && TEACH_DONE.test(text)) {
+      teacher.done();
+      bubble('action-done', { id, ok: true, message: 'Cleared.' });
+      return true;
+    }
+    const intent = teachIntent(text) || (session.mode === 'teach' ? { mode: 'how', goal: text, question: text } : null);
+    if (!intent) return false;
+    await runTeach(id, intent, bubble, signal);
+    return true;
+  }
+
+  async function runTeach(id, intent, bubble, signal) {
+    ui.cat('brain', { state: 'thinking' });
+    const result = await teacher.run(id, intent, bubble, signal);
+    if (result?.ok) session.turns.push({ question: intent.question || TEACH_CHIPS.teach_explain, answer: '(pointed at it on screen)', tier: 'code' });
+    ui.cat('brain', { state: 'done', mood: result?.ok ? 'happy' : 'confused' });
   }
 
   async function confirm(command, bubble, id) {
@@ -294,6 +338,12 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
         return;
       }
       if (!task && question && session.mode !== 'selection' && session.mode !== 'app' && (await command(id, question, bubble, controller.signal))) return;
+      if (teacher && TEACH_CHIPS[task]) {
+        // From a selection or screenshot: point at that text and what's around it on the screen.
+        const about = session.packet?.text && session.packet.source !== 'screenshot' ? `Explain "${session.packet.text.replace(/\s+/g, ' ').slice(0, 200)}" and point at it and the parts around it.` : 'Explain what I\'m looking at.';
+        await runTeach(id, task === 'teach_follow' ? { mode: 'follow', question: 'follow along' } : { mode: 'explain', question: about }, bubble, controller.signal);
+        return;
+      }
       if (task?.startsWith('send:')) {
         const connector = hub?.get(task.slice(5));
         const ops = connector ? await hub.ops(connector) : [];
@@ -430,13 +480,17 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
     startSession('ask', null);
   }
 
+  function openTeach() {
+    startSession('teach', null);
+  }
+
   function cancel() {
     active?.controller.abort();
     active = null;
   }
 
   return {
-    onBridgeMessage, run, endThread, lookAnyway, dismissSuggestion, handoff, replace, openAsk, fromCapture, showNotice, context, cancel, onNudgeClick, onNudgeIgnored, confirm, saveNote,
+    onBridgeMessage, run, endThread, lookAnyway, dismissSuggestion, handoff, replace, openAsk, openTeach, fromCapture, showNotice, context, cancel, onNudgeClick, onNudgeIgnored, confirm, saveNote,
     isBusy: () => Boolean(active),
     session,
     get activePage() { return activePage; },

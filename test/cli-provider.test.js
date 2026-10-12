@@ -119,6 +119,26 @@ test('codex runs read-only with shell and web search off and the system text on 
   assert.deepStrictEqual(files, []);
 });
 
+test('a teach screenshot goes to Codex as --image from the temp folder (deleted after); Claude Code refuses it; plan check first', async () => {
+  process.env.FAKE_MODE = 'ok';
+  process.env.FAKE_AUTH = 'plan';
+  await cli.ask('codex', { system: 'Teach.', prompt: 'ids only', image: Buffer.from('fake png') });
+  const { args, files, cwd } = lastCall();
+  const flag = args.find((a) => a.startsWith('--image='));
+  assert.strictEqual(path.basename(flag.slice('--image='.length)), 'screen.png');
+  assert.deepStrictEqual(files, ['screen.png']);
+  assert.ok(args.indexOf(flag) < args.indexOf('-C') && args.at(-1) === '-', 'the prompt still comes on stdin');
+  assert.ok(!fs.existsSync(cwd), 'the screenshot is gone with the temp folder');
+  await assert.rejects(cli.ask('claude', { prompt: 'x', image: Buffer.from('png') }), /can't look at screenshots/);
+  cli.resetPlanCheck();
+  process.env.FAKE_AUTH = 'api';
+  const before = calls().length;
+  await assert.rejects(cli.ask('codex', { prompt: 'x', image: Buffer.from('png') }), /only uses your ChatGPT plan/);
+  assert.strictEqual(calls().length, before);
+  cli.resetPlanCheck();
+  process.env.FAKE_AUTH = 'plan';
+});
+
 test('not-logged-in errors say how to log in', async () => {
   process.env.FAKE_MODE = 'nologin';
   await assert.rejects(cli.ask('claude', { prompt: 'x' }), /isn't logged in.*Run `claude`/);
