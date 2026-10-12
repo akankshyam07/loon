@@ -119,7 +119,8 @@ test('resolver routing: easy stays on the fast model, hard goes to the plan only
   const r4 = await run(priv.resolver, HARD);
   assert.deepStrictEqual([r4.tier, priv.calls], ['local', ['smart']]);
 
-  const medium = setup({ fast: [GOOD], hasSmart: false, settings: { cloudCli: 'claude' } });
+  // "Answer with: This Mac": medium stays local, only hard questions use the plan.
+  const medium = setup({ fast: [GOOD], hasSmart: false, settings: { cloudCli: 'claude', answerWith: 'mac' } });
   const r5 = await run(medium.resolver, 'Compare Postgres and MySQL for a small app');
   assert.deepStrictEqual([r5.tier, r5.detail, medium.calls], ['local', undefined, ['fast']]);
 
@@ -128,9 +129,84 @@ test('resolver routing: easy stays on the fast model, hard goes to the plan only
   assert.deepStrictEqual([r6.tier, failing.calls], ['local', ['cloud', 'smart']]); // a routed plan call falls back to the Mac
 });
 
+test('plan-first: medium and hard go to the plan with the right model level, easy stays local, privacy and private pages never use it', async () => {
+  const MEDIUM_Q = 'Compare Postgres and MySQL for a small app';
+  const levels = [];
+  const plan = setup({ fast: [GOOD], smart: [GOOD], cloud: [GOOD], settings: { cloudCli: 'claude' } }); // answerWith unset = "Your plan"
+  const ask = plan.cli.ask;
+  plan.cli.ask = (which, opts) => { levels.push([opts.level, opts.warm]); return ask(which, opts); };
+
+  const easy = await run(plan.resolver, 'What is the capital of France?');
+  assert.deepStrictEqual([easy.tier, plan.calls], ['local', ['fast']]);
+  const medium = await run(plan.resolver, MEDIUM_Q);
+  assert.deepStrictEqual([medium.tier, medium.detail], ['cloud', 'Claude (your plan) · routed: trickier question']);
+  const hard = await run(plan.resolver, HARD);
+  assert.strictEqual(hard.tier, 'cloud');
+  assert.deepStrictEqual(levels, [['medium', true], ['hard', true]]); // fast model for medium, strongest for hard, warm pool on
+  assert.deepStrictEqual(plan.calls, ['fast', 'cloud', 'cloud']); // the slower smart local model is skipped
+
+  for (const settings of [{ cloudCli: 'claude', privacy: true }, { cloudCli: 'codex' }]) {
+    const offline = setup({ fast: [GOOD], smart: [GOOD], cloud: [GOOD], settings });
+    const sensitive = !settings.privacy;
+    const r = await run(offline.resolver, MEDIUM_Q, { sensitive });
+    assert.deepStrictEqual([r.tier, offline.calls.includes('cloud')], ['local', false], JSON.stringify(settings));
+  }
+
+  // "Go deeper" uses the strongest model.
+  const deep = setup({ cloud: [GOOD], settings: { cloudCli: 'claude' } });
+  let level;
+  const deepAsk = deep.cli.ask;
+  deep.cli.ask = (which, opts) => { level = opts.level; return deepAsk(which, opts); };
+  await run(deep.resolver, 'why?', { deeper: true, firstInThread: false });
+  assert.strictEqual(level, 'hard');
+});
+
+test('plan-first: a failed plan call falls back to the Mac and says so; nothing is cached', async () => {
+  const MEDIUM_Q = 'Compare Postgres and MySQL for a small app';
+  const err = new Error("Codex's configured model isn't available on your ChatGPT plan. Set a model in Loon's Settings.");
+  const { resolver, calls } = setup({ fast: [GOOD], smart: [GOOD], cloud: [err, GOOD], settings: { cloudCli: 'codex' } });
+  const r1 = await run(resolver, MEDIUM_Q);
+  assert.deepStrictEqual([r1.tier, calls], ['local', ['cloud', 'fast']]); // medium falls back to the fast model
+  assert.match(r1.detail, /your plan didn.t answer, so this came from your Mac/);
+  assert.match(r1.text, /^_Your plan didn.t answer \(Codex's configured model isn't available on your ChatGPT plan/);
+  assert.match(r1.text, /REST is simpler/);
+  const r2 = await run(resolver, MEDIUM_Q);
+  assert.strictEqual(r2.tier, 'cloud', 'the fallback answer was not cached');
+
+  const hard = setup({ fast: [GOOD], smart: [GOOD], cloud: [new Error('rate limited')], settings: { cloudCli: 'claude' } });
+  await run(hard.resolver, HARD);
+  assert.deepStrictEqual(hard.calls, ['cloud', 'smart']); // hard falls back to the smart model
+});
+
+test('plan-first quick take: the instant local answer shows first and the plan answer replaces it', async () => {
+  const MEDIUM_Q = 'Compare Postgres and MySQL for a small app';
+  const { resolver, cli, calls } = setup({ fast: ['[mood:happy] Quick local guess.'], settings: { cloudCli: 'claude', quickTake: true } });
+  let release;
+  const gate = new Promise((r) => { release = r; });
+  cli.ask = async (_which, { onText }) => {
+    calls.push('cloud');
+    await gate; // the plan is still thinking while the quick take streams
+    onText(GOOD);
+  };
+  const pending = run(resolver, MEDIUM_Q);
+  await new Promise((r) => setTimeout(r, 20));
+  release();
+  const r = await pending;
+  assert.deepStrictEqual([r.tier, r.text], ['cloud', GOOD.replace('[mood:focused] ', '')]);
+  const restart = r.events.indexOf('<restart>');
+  assert.ok(restart > 0, 'the quick take was cleared');
+  assert.match(r.events.slice(0, restart).join(''), /Quick take from your Mac[\s\S]*Quick local guess\./);
+  assert.ok(!r.events.slice(restart).join('').includes('Quick local guess'));
+  assert.deepStrictEqual(resolver.counts.tiers, { code: 0, cache: 0, local: 0, cloud: 1 }); // the quick take isn't counted
+
+  const off = setup({ fast: ['[mood:happy] Quick local guess.'], cloud: [GOOD], settings: { cloudCli: 'claude' } }); // off by default
+  const r2 = await run(off.resolver, MEDIUM_Q);
+  assert.deepStrictEqual([off.calls, r2.events.includes('<restart>')], [['cloud'], false]);
+});
+
 test('resolver self-check: a weak answer is upgraded exactly once, replaces the first, and is cached', async () => {
   const unsure = "[mood:confused] I'm not sure. Maybe.";
-  const { resolver, calls } = setup({ fast: [unsure], smart: [unsure], cloud: ['[mood:happy] Cats knead because it comforted them as kittens.'], settings: { cloudCli: 'claude' } });
+  const { resolver, calls } = setup({ fast: [unsure], smart: [unsure], cloud: ['[mood:happy] Cats knead because it comforted them as kittens.'], settings: { cloudCli: 'claude', answerWith: 'mac' } });
   const r1 = await run(resolver, 'Why do cats knead blankets?');
   assert.deepStrictEqual(calls, ['fast', 'smart']); // once, even though the smart answer is weak too
   assert.strictEqual(r1.detail, 'upgraded: first answer looked unsure');

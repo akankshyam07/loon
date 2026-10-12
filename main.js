@@ -1,7 +1,8 @@
 const { app, BrowserWindow, screen, ipcMain, globalShortcut, Menu, powerMonitor, clipboard, shell, nativeImage, systemPreferences, session, safeStorage } = require('electron');
 const fs = require('fs');
 const path = require('path');
-const { Brain } = require('./brain/ai');
+const { Brain, SYSTEM_PROMPT } = require('./brain/ai');
+const cliProvider = require('./brain/cli-provider');
 const { Resolver } = require('./brain/resolve');
 const { Translator } = require('./brain/translate');
 const { Skills } = require('./brain/skills');
@@ -40,7 +41,7 @@ if (SELFTEST) {
 }
 
 let settingsFile;
-let settings = { size: 'M', catStyle: 'pixel', companion: 'luna', costume: 'none', seasonalCostumes: false, retroSounds: false, focus: false, privacy: false, judgmental: true, wakeWord: false, speakReplies: 'voiceOnly', projects: [], connectors: [], welcomed: false, cloudCli: 'off', personal: { ...PERSONAL_DEFAULTS }, dismissedSuggestions: [] };
+let settings = { size: 'M', catStyle: 'pixel', companion: 'luna', costume: 'none', seasonalCostumes: false, retroSounds: false, focus: false, privacy: false, judgmental: true, wakeWord: false, speakReplies: 'voiceOnly', projects: [], connectors: [], welcomed: false, cloudCli: 'off', answerWith: 'plan', quickTake: false, planModels: {}, personal: { ...PERSONAL_DEFAULTS }, dismissedSuggestions: [] };
 let catWin;
 let bubbleWin;
 let brain;
@@ -227,6 +228,7 @@ function showBubble({ anchor = null, focus = true, pill = false } = {}) {
     bubbleWin.showInactive();
   }
   bubbleWin.webContents.send('bubble-shown', { context: companion.context(), focus, pill: bubblePill });
+  warmPlan();
   catWin.webContents.send('bubble', { open: true });
 }
 
@@ -454,7 +456,16 @@ function setToggle(key, value) {
   if (key === 'focus') catWin.webContents.send('focus', { on: value });
   // "Hey Loon" pauses in Focus and Privacy modes and resumes after.
   if (['wakeWord', 'focus', 'privacy'].includes(key)) voice.setWake(settings.wakeWord && !settings.focus && !settings.privacy);
+  if (key === 'privacy') warmPlan();
   settingsWin?.webContents.send('settings-changed', settingsSnapshot());
+}
+
+// Plan-first (DESIGN.md §3.17.1): keep one plan CLI process started and waiting (it sends nothing), so the next
+// question skips its startup. Runs after launch and whenever the bubble opens; idle processes end after a few minutes.
+function warmPlan() {
+  const which = settings.cloudCli;
+  if (SELFTEST || settings.privacy || settings.answerWith === 'mac' || !['claude', 'codex'].includes(which)) return cliProvider.shutdown();
+  cliProvider.warm(which, { system: SYSTEM_PROMPT, level: 'medium', models: settings.planModels?.[which] });
 }
 
 const pixelSprites = require('./renderer/pixel-sprites');
@@ -475,6 +486,7 @@ function settingsSnapshot() {
     connected: bridge.clients.size > 0,
     counts: resolver.counts,
     ...apiProvider.snapshot(settings, apiKeys), // key hints only; the keys never leave the main process
+    planModelDefaults: cliProvider.MODEL_DEFAULTS,
     memory: memory.all(),
     personal: cleanPersonal(settings.personal),
     profile: profileSummary(memory.all(), settings.personal),
@@ -619,7 +631,17 @@ function registerIpc() {
     }
     if (['focus', 'privacy', 'judgmental', 'wakeWord'].includes(key)) setToggle(key, Boolean(value));
     if (key === 'speakReplies') { settings.speakReplies = value ? 'voiceOnly' : 'never'; saveSettings(); }
-    if (key === 'cloudCli' && ['off', 'claude', 'codex', 'api'].includes(value)) { settings.cloudCli = value; saveSettings(); }
+    if (key === 'cloudCli' && ['off', 'claude', 'codex', 'api'].includes(value)) { settings.cloudCli = value; saveSettings(); warmPlan(); }
+    if (key === 'answerWith' && ['plan', 'mac'].includes(value)) { settings.answerWith = value; saveSettings(); warmPlan(); }
+    if (key === 'quickTake' && typeof value === 'boolean') { settings.quickTake = value; saveSettings(); }
+    // One model name per CLI and difficulty; '' = Loon's default. Names that could read as a flag are refused.
+    if (key === 'planModel' && ['claude', 'codex'].includes(value?.which) && ['medium', 'hard'].includes(value?.level)) {
+      const model = String(value.model || '').trim();
+      if (model && !cliProvider.MODEL_NAME.test(model)) return { ...settingsSnapshot(), planModelError: 'Model names are letters, numbers and . - _ : / only.' };
+      settings.planModels = { ...settings.planModels, [value.which]: { ...settings.planModels?.[value.which], [value.level]: model } };
+      saveSettings();
+      warmPlan();
+    }
     // Custom instructions and reply style: validated and length-capped in brain/personal.js.
     if (key === 'personal' && value && typeof value === 'object') { settings.personal = cleanPersonal({ ...settings.personal, ...value }); saveSettings(); }
     if (key === 'api' && value && typeof value === 'object') {
@@ -639,7 +661,7 @@ function registerIpc() {
     }
     return settingsSnapshot();
   });
-  ipcMain.handle('cli-detect', () => require('./brain/cli-provider').detect());
+  ipcMain.handle('cli-detect', () => cliProvider.detect());
   // Own API key: the key comes in once from Settings, is encrypted with safeStorage, and only hints go back out.
   ipcMain.handle('api-key-save', (_e, { provider, key }) => {
     try {
@@ -841,6 +863,7 @@ app.whenReady().then(() => {
   if (settings.wakeWord) setTimeout(() => voice.setWake(!settings.focus && !settings.privacy), 3000);
   // Load the fast model shortly after launch so the first answer starts streaming right away.
   if (!SELFTEST) setTimeout(() => brain.warmUp(), 4000);
+  setTimeout(warmPlan, 6000);
   if (!SELFTEST) startDayRhythm();
   hub.refresh();
   setInterval(() => hub.refresh(), 5 * 60 * 1000); // apps come and go; keep "Send to …" chips current
@@ -904,6 +927,7 @@ app.on('will-quit', () => {
   bridge?.stop();
   translator?.stop();
   resolver?.cache.saveNow();
+  cliProvider.shutdown();
 });
 
 app.on('window-all-closed', () => app.quit());
