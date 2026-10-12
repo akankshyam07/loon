@@ -40,7 +40,7 @@ if (SELFTEST) {
 }
 
 let settingsFile;
-let settings = { size: 'M', focus: false, privacy: false, judgmental: true, wakeWord: false, speakReplies: 'voiceOnly', projects: [], connectors: [], welcomed: false, cloudCli: 'off', personal: { ...PERSONAL_DEFAULTS }, dismissedSuggestions: [] };
+let settings = { size: 'M', catStyle: 'pixel', companion: 'luna', costume: 'none', seasonalCostumes: false, retroSounds: false, focus: false, privacy: false, judgmental: true, wakeWord: false, speakReplies: 'voiceOnly', projects: [], connectors: [], welcomed: false, cloudCli: 'off', personal: { ...PERSONAL_DEFAULTS }, dismissedSuggestions: [] };
 let catWin;
 let bubbleWin;
 let brain;
@@ -457,6 +457,12 @@ function setToggle(key, value) {
   settingsWin?.webContents.send('settings-changed', settingsSnapshot());
 }
 
+const pixelSprites = require('./renderer/pixel-sprites');
+function catLook() {
+  const { catStyle, companion, costume, seasonalCostumes, retroSounds } = settings;
+  return { catStyle, companion, costume, seasonalCostumes, retroSounds };
+}
+
 function settingsSnapshot() {
   const { discover } = require('./brain/projects');
   const known = new Map(discover().map((p) => [p.path, p]));
@@ -602,7 +608,15 @@ function registerIpc() {
   // Only reveals files a Loon file search just returned (they exist on disk); never arbitrary paths from a page.
   ipcMain.on('reveal', (_e, file) => { if (typeof file === 'string' && path.isAbsolute(file) && fs.existsSync(file)) shell.showItemInFolder(file); });
   ipcMain.handle('settings-get', () => settingsSnapshot());
+  ipcMain.handle('cat-look', () => catLook());
   ipcMain.handle('settings-set', (_e, { key, value }) => {
+    // How the cat looks (§5.0.2): validated against the sprite tables, then pushed to the cat window live.
+    const lookOk = { catStyle: ['pixel', 'classic'].includes(value), companion: typeof value === 'string' && Object.hasOwn(pixelSprites.CHARACTERS, value), costume: typeof value === 'string' && Object.hasOwn(pixelSprites.COSTUMES, value), seasonalCostumes: typeof value === 'boolean', retroSounds: typeof value === 'boolean' };
+    if (lookOk[key]) {
+      settings[key] = value;
+      saveSettings();
+      catWin?.webContents.send('cat-look', catLook());
+    }
     if (['focus', 'privacy', 'judgmental', 'wakeWord'].includes(key)) setToggle(key, Boolean(value));
     if (key === 'speakReplies') { settings.speakReplies = value ? 'voiceOnly' : 'never'; saveSettings(); }
     if (key === 'cloudCli' && ['off', 'claude', 'codex', 'api'].includes(value)) { settings.cloudCli = value; saveSettings(); }

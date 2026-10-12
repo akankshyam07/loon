@@ -12,6 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap" rel="stylesheet">
+<script src="pixel-sprites.js"></script>
 <style>
 :root {
   --bg: #fff7f1;
@@ -65,7 +66,7 @@ a { color: inherit; }
 nav { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(6px); border-bottom: 3px solid var(--border); }
 nav .wrap { display: flex; align-items: center; gap: 18px; height: 60px; }
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-size: 14px; }
-.brand svg { width: 28px; height: 28px; }
+.brand canvas { width: 26px; height: 32px; image-rendering: pixelated; margin-top: -6px; }
 nav .links { margin-left: auto; display: flex; gap: 18px; font-weight: 700; font-size: 15px; }
 nav .links a { text-decoration: none; }
 nav .links a:hover { color: var(--pink); }
@@ -91,8 +92,8 @@ h1 .hl { color: var(--pink); text-shadow: 3px 3px 0 var(--border); }
 .ctas { display: flex; gap: 14px; flex-wrap: wrap; }
 .stage { position: relative; display: grid; place-items: center; min-height: 340px; }
 .stage .moon { position: absolute; width: 270px; height: 270px; border-radius: 50%; background: var(--lav-soft); border: 3px solid var(--border); box-shadow: var(--shadow); }
-.stage svg.cat { position: relative; width: 230px; height: auto; image-rendering: pixelated; cursor: pointer; filter: drop-shadow(6px 6px 0 rgba(43,34,56,.18)); }
-.stage svg.cat.hop { animation: hop .5s ease; }
+.stage canvas.cat { position: relative; width: 224px; height: 273px; image-rendering: pixelated; cursor: pointer; filter: drop-shadow(6px 6px 0 rgba(43,34,56,.18)); }
+.stage canvas.cat.hop { animation: hop .5s steps(4, end); }
 @keyframes hop { 40% { transform: translateY(-26px) scale(1.04, .96); } 70% { transform: translateY(0) scale(1.06, .94); } }
 .bubble { position: absolute; top: -18px; right: -2%; max-width: 230px; background: var(--card); border: 3px solid var(--border); border-radius: 16px; padding: 12px 14px; box-shadow: var(--shadow); font-weight: 700; font-size: 15px; text-align: left; }
 .bubble::after { content: ""; position: absolute; bottom: -14px; left: 28px; width: 18px; height: 18px; background: var(--card); border-right: 3px solid var(--border); border-bottom: 3px solid var(--border); transform: rotate(45deg); }
@@ -127,8 +128,20 @@ h2 { font-size: clamp(17px, 3vw, 24px); line-height: 1.5; margin: 0 0 10px; }
 
 /* ---------- privacy ---------- */
 .split { display: grid; grid-template-columns: 220px 1fr; gap: 34px; align-items: center; }
-@media (max-width: 720px) { .split { grid-template-columns: 1fr; text-align: center; } .split svg { margin: 0 auto; } }
-.split svg { width: 200px; image-rendering: pixelated; }
+@media (max-width: 720px) { .split { grid-template-columns: 1fr; text-align: center; } .split canvas { margin: 0 auto; } }
+.split canvas { width: 192px; height: 234px; image-rendering: pixelated; }
+
+/* ---------- meet Luna & Soju ---------- */
+.duo { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+@media (max-width: 720px) { .duo { grid-template-columns: 1fr; } }
+.pal { display: grid; grid-template-columns: auto 1fr; gap: 18px; align-items: center; }
+.pal .pad { border: 3px solid var(--border); border-radius: 16px; padding: 10px 12px 4px; }
+.pal canvas { display: block; width: 128px; height: 156px; image-rendering: pixelated; cursor: pointer; }
+.pal h3 { margin: 0 0 4px; font-size: 15px; }
+.pal p { margin: 0; color: var(--muted); font-size: 15.5px; }
+.closet { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; margin-top: 26px; }
+.closet figure { margin: 0; text-align: center; font-size: 13px; font-weight: 700; color: var(--muted); }
+.closet canvas { display: block; width: 80px; height: 98px; image-rendering: pixelated; margin: 0 auto 4px; padding: 6px; border: 3px solid var(--border); border-radius: 14px; background: var(--card); box-shadow: var(--shadow); box-sizing: content-box; }
 .checks { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; text-align: left; }
 .checks li { padding-left: 34px; position: relative; }
 .checks li::before { content: "♥"; position: absolute; left: 0; top: -1px; width: 24px; height: 24px; display: grid; place-items: center; font-size: 13px; background: var(--pink-soft); border: 2px solid var(--border); border-radius: 7px; color: var(--pink); }
@@ -152,7 +165,7 @@ code { background: var(--lav-soft); padding: 1px 6px; border-radius: 6px; font-s
 /* ---------- footer + walker ---------- */
 footer { border-top: 3px solid var(--border); padding: 30px 0 90px; text-align: center; color: var(--muted); font-size: 15px; }
 footer .px { font-size: 11px; color: var(--ink); }
-.walker { position: fixed; bottom: 4px; left: -80px; width: 48px; z-index: 20; pointer-events: none; image-rendering: pixelated; animation: walk 26s linear infinite; }
+.walker { position: fixed; bottom: 4px; left: -80px; width: 64px; height: 78px; z-index: 20; pointer-events: none; image-rendering: pixelated; animation: walk 26s linear infinite; }
 @keyframes walk { 0% { left: -80px; transform: scaleX(1); } 49% { left: calc(100vw + 10px); transform: scaleX(1); } 50% { left: calc(100vw + 10px); transform: scaleX(-1); } 99% { left: -80px; transform: scaleX(-1); } 100% { left: -80px; transform: scaleX(1); } }
 @media (prefers-reduced-motion: reduce) { .walker, .spark, .bubble .caret { animation: none; } .walker { display: none; } }
 </style>
@@ -161,7 +174,7 @@ footer .px { font-size: 11px; color: var(--ink); }
 
 <nav>
   <div class="wrap">
-    <a class="brand px" href="#top" aria-label="Loon home"><svg class="mini" viewBox="0 0 16 14" shape-rendering="crispEdges" aria-hidden="true"></svg>Loon</a>
+    <a class="brand px" href="#top" aria-label="Loon home"><canvas class="mini" aria-hidden="true"></canvas>Loon</a>
     <div class="links">
       <a href="#features">Features</a>
       <a href="#brain">The brain</a>
@@ -190,7 +203,7 @@ footer .px { font-size: 11px; color: var(--ink); }
     <div class="stage">
       <div class="moon"></div>
       <div class="bubble" aria-live="polite"><span id="say"></span><span class="caret"></span></div>
-      <svg class="cat" id="cat" viewBox="0 0 16 14" shape-rendering="crispEdges" role="img" aria-label="Pixel art of Loon, a black cat with green eyes. Click to pet."></svg>
+      <canvas class="cat" id="cat" role="img" aria-label="Pixel art of Luna, a black cat with green eyes and a moon pendant. Click to pet."></canvas>
     </div>
   </div>
 </header>
@@ -232,7 +245,7 @@ footer .px { font-size: 11px; color: var(--ink); }
 <section id="privacy">
   <div class="wrap">
     <div class="card split">
-      <svg id="shy" viewBox="0 0 16 14" shape-rendering="crispEdges" role="img" aria-label="Pixel Loon covering its eyes with its paws"></svg>
+      <canvas id="shy" role="img" aria-label="Pixel Luna covering her eyes with her paws"></canvas>
       <div>
         <h2 class="px">Private by default</h2>
         <p class="sub" style="margin-bottom:16px">On banking or password pages, Loon covers its eyes and looks away.</p>
@@ -245,6 +258,20 @@ footer .px { font-size: 11px; color: var(--ink); }
         </ul>
       </div>
     </div>
+  </div>
+</section>
+
+<section id="meet">
+  <div class="wrap">
+    <h2 class="px">Meet Luna &amp; Soju ✿</h2>
+    <p class="sub">Pick your companion in Settings. Both are little pixel cats with a tiny wardrobe, drawn frame by frame like a '90s handheld game. Prefer the smooth original? Settings has a Classic style too.</p>
+    <div class="duo">
+      <div class="card pal"><div class="pad c-lav"><canvas id="luna" role="img" aria-label="Luna, a black pixel cat with green eyes, a pink collar and a moon pendant. Click to try a costume."></canvas></div>
+        <div><h3>Luna</h3><p>The big sister. Black fur, very green eyes, a dark little nose and a moon pendant that glows when she thinks. A bit sassy, very smart, secretly sweet. Grooms, judges, naps in a perfect loaf.</p></div></div>
+      <div class="card pal"><div class="pad c-mint"><canvas id="soju" role="img" aria-label="Soju, a white pixel cat with a dark patch over one eye, a pink nose and a blue collar. Click to try a costume."></canvas></div>
+        <div><h3>Soju</h3><p>The little brother. White fluff, a dark patch over one eye, yellow-green eyes and a pink nose with his signature freckle. Goofy, always hungry, a little clumsy and completely adorable.</p></div></div>
+    </div>
+    <div class="closet" id="closet"></div>
   </div>
 </section>
 
@@ -284,68 +311,52 @@ footer .px { font-size: 11px; color: var(--ink); }
   </div>
 </footer>
 
-<svg class="walker" id="walker" viewBox="0 0 16 10" shape-rendering="crispEdges" aria-hidden="true"></svg>
+<canvas class="walker" id="walker" aria-hidden="true"></canvas>
 
 <script>
-// Pixel sprites: k = fur, g = eye, w = eye shine, p = pink, m = moon pendant, . = empty.
-const COLORS = { k: 'var(--cat)', g: 'var(--eye)', w: '#ffffff', p: '#ff8fb8', m: '#ffd166' };
-const SIT = [
-  '..k.........k...',
-  '.kkk.......kkk..',
-  '.kpkk.....kkpk..',
-  '.kkkkkkkkkkkkk..',
-  '.kkkkkkkkkkkkk..',
-  '.kkggkkkkkggkk..',
-  '.kkgwkkkkkgwkk..',
-  '.kkkkkkpkkkkkk..',
-  '..kkkkkkkkkkk...',
-  '...kkkkmkkkk....',
-  '..kkkkkkkkkkk..k',
-  '.kkkkkkkkkkkkkk.',
-  '.kkkkkkkkkkkkk..',
-  '.kk.kk...kk.kk..',
-];
-const BLINK = SIT.map((row, i) => (i === 5 ? '.kkkkkkkkkkkkk..' : i === 6 ? '.kkggkkkkkggkk..' : row));
-const HAPPY = SIT.map((row, i) => (i === 5 ? '.kkgkkkkkkkgkk..' : i === 6 ? '.kgkgkkkkkgkgk..' : row));
-const TAIL_UP = SIT.map((row, i) => (i === 8 ? '..kkkkkkkkkkk.k.' : i === 9 ? '...kkkkmkkkk.k..' : i === 10 ? '..kkkkkkkkkkk.k.' : row));
-const SHY = SIT.map((row, i) => (i === 4 ? '.kkkkkkkkkkkkk..' : i === 5 ? '.kpppkkkkkpppk..' : i === 6 ? '.kpppkkkkkpppk..' : row));
-const WALK_A = [
-  '............k.k.',
-  '............kkk.',
-  'k...........kgkg',
-  '.k..........kkkk',
-  '..kkkkkkkkkkkkk.',
-  '..kkkkkkkkkkkk..',
-  '..kkkkkkkkkkkk..',
-  '..k.k......k.k..',
-  '..k..k....k..k..',
-  '................',
-];
-const WALK_B = WALK_A.map((row, i) => (i === 7 ? '...kk......kk...' : i === 8 ? '...kk......kk...' : row));
-const MINI = SIT;
-
-function draw(svg, rows) {
-  svg.innerHTML = rows.flatMap((row, y) => [...row].map((c, x) => (c === '.' ? '' : `<rect x="${x}" y="${y}" width="1.02" height="1.02" fill="${COLORS[c]}"/>`))).join('');
+// The same sprites the app draws (a copy of renderer/pixel-sprites.js, kept identical by a unit test).
+const P = window.LoonPixel;
+const RIM = 'rgba(255, 240, 250, 0.3)';
+const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+function paint(canvas, view, who = 'luna', cell = 8) {
+  if (canvas.width !== P.W * cell) { canvas.width = P.W * cell; canvas.height = P.ROWS * cell; }
+  P.drawGrid(canvas.getContext('2d'), P.compose(P.pickFrame(view, who)), P.colorsFor(who), cell, { rim: RIM });
 }
+// One slow, stepped clock for every sprite on the page: tail wags, breathing, a blink now and then.
+let tick = 0;
+const idle = (extra = {}) => ({ now: tick * 250, tailPeriod: 3000, ...(tick % 16 === 15 ? { lidL: 1, lidR: 1 } : {}), ...extra });
 
 const cat = document.getElementById('cat');
 const say = document.getElementById('say');
-let pose = SIT;
-draw(cat, SIT);
-draw(document.querySelector('svg.mini'), MINI);
-draw(document.getElementById('shy'), SHY);
+let petted = 0;
+paint(document.querySelector('canvas.mini'), {}, 'luna', 2);
+paint(document.getElementById('shy'), { pose: 'pawsUp', mood: 'protective', privacy: true }, 'luna', 6);
 
-// Blink now and then, wag the tail now and then.
-setInterval(() => {
-  if (pose !== SIT) return;
-  draw(cat, BLINK);
-  setTimeout(() => pose === SIT && draw(cat, SIT), 160);
-}, 3200);
-setInterval(() => {
-  if (pose !== SIT) return;
-  draw(cat, TAIL_UP);
-  setTimeout(() => pose === SIT && draw(cat, SIT), 450);
-}, 2300);
+const COSTUMES = ['none', 'strawberry', 'frog', 'bee', 'witch', 'party', 'bread', 'sunglasses', 'bowtie', 'santa', 'grad'];
+const wearing = { luna: 0, soju: 0 };
+const pals = ['luna', 'soju'].map((who) => {
+  const canvas = document.getElementById(who);
+  canvas.addEventListener('click', () => { wearing[who] = (wearing[who] + 1) % COSTUMES.length; draw(); });
+  return { who, canvas };
+});
+const closet = document.getElementById('closet');
+const looks = [['luna', 'strawberry', 'Strawberry hood'], ['soju', 'frog', 'Frog hood'], ['luna', 'witch', 'Witch hat'], ['soju', 'bread', 'Bread loaf'], ['luna', 'sunglasses', 'Sunglasses']]
+  .map(([who, costume, name]) => {
+    const fig = document.createElement('figure');
+    const canvas = document.createElement('canvas');
+    canvas.setAttribute('aria-hidden', 'true');
+    fig.append(canvas, name);
+    closet.append(fig);
+    return { who, costume, canvas };
+  });
+
+function draw() {
+  paint(cat, petted ? { now: tick * 250, state: 'petted', mood: 'happy', happy: 1 } : idle(), 'luna', 7);
+  for (const { who, canvas } of pals) paint(canvas, idle({ costume: COSTUMES[wearing[who]] }), who, 4);
+  for (const { who, costume, canvas } of looks) paint(canvas, idle({ costume }), who, 3);
+}
+draw();
+if (!still) setInterval(() => { tick++; draw(); }, 250);
 
 // Typed speech bubble with real Loon lines.
 const LINES = [
@@ -368,11 +379,11 @@ typeLoop();
 
 // Pet the cat: happy squint, little hop, sparkles.
 cat.addEventListener('click', () => {
-  pose = HAPPY;
-  draw(cat, HAPPY);
+  petted = 1;
+  draw();
   cat.classList.remove('hop'); void cat.getBoundingClientRect(); cat.classList.add('hop');
   burst();
-  setTimeout(() => { pose = SIT; draw(cat, SIT); }, 900);
+  setTimeout(() => { petted = 0; draw(); }, 900);
 });
 
 const stage = document.querySelector('.stage');
@@ -396,9 +407,9 @@ function burst() {
 
 // Little cat walking along the bottom of the page.
 const walker = document.getElementById('walker');
-let step = false;
-draw(walker, WALK_A);
-setInterval(() => { step = !step; draw(walker, step ? WALK_B : WALK_A); }, 220);
+let step = 0;
+paint(walker, { travel: 'walk', now: 0 }, 'luna', 4);
+if (!still) setInterval(() => { step++; paint(walker, { travel: 'walk', now: step * 160 }, 'luna', 4); }, 160);
 
 // Theme toggle, remembered per visitor.
 const root = document.documentElement;

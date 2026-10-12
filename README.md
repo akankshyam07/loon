@@ -32,6 +32,9 @@ Loon is a personal AI familiar: a little black cat with bright green eyes who si
 at you, follows your cursor, and naps when you're busy. Highlight something confusing, click the cat, or just talk to
 it, and it helps right where you are.
 
+The cat is a retro pixel sprite by default: pick **Luna** (black, green eyes) or **Soju** (white with an eye patch),
+dress them up from the Wardrobe (hoods, hats, a bread loaf…), or switch back to the smooth Classic style in Settings.
+
 **Contents:** [Why Loon](#why-loon) · [Features](#features) · [Quick start](#quick-start) ·
 [How it works](#how-it-works) · [Privacy](#privacy) · [Tests](#tests) · [Roadmap](#roadmap) · [License](#license)
 

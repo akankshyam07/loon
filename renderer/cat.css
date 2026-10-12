@@ -128,3 +128,31 @@ html, body {
 .cup.knocked { transform: translate(60px, 140px) rotate(260deg); opacity: 0; }
 #mic.passive { opacity: 0.55; transform: translate(-50%, -100%) scale(0.75); }
 #mic.passive i { animation-duration: 2.4s; }
+
+/* ---- pixel skin (DESIGN.md §5.0.2): sprite on a canvas, retro pops, stepped (frame-by-frame) effects ---- */
+@font-face { font-family: 'Press Start 2P'; src: url('fonts/PressStart2P-Regular.ttf') format('truetype'); font-display: block; }
+#pixelCat { position: absolute; bottom: 0; image-rendering: pixelated; }
+#pixelCat[hidden] { display: none; }
+.sparkle.px { animation-timing-function: steps(6, end); }
+.sparkle.px svg { filter: drop-shadow(1px 1px 0 #2b1d24); }
+.pop {
+  position: absolute; z-index: 3; padding: 4px 5px 3px; transform: translate(-50%, -100%);
+  font: 11px/1 'Press Start 2P', monospace; color: #2b2238; background: #fffdf8;
+  border: 2px solid #2b1d24; box-shadow: 2px 2px 0 #2b1d24; animation: pop 1.1s steps(4, end) forwards;
+}
+@keyframes pop {
+  0% { translate: 0 6px; opacity: 0; }
+  20% { translate: 0 0; opacity: 1; }
+  80% { translate: 0 -4px; opacity: 1; }
+  100% { translate: 0 -8px; opacity: 0; }
+}
+body.pixel .zzz { font-family: 'Press Start 2P', monospace; font-size: var(--size, 14px); color: #eee7ff; text-shadow: 2px 2px 0 #2b1d24; animation-timing-function: steps(8, end); }
+body.pixel #thought { border-radius: 0; background: #fffdf8; border: 2px solid #2b1d24; box-shadow: 2px 2px 0 #2b1d24; padding: 5px 7px; }
+body.pixel #thought::after { content: ''; position: absolute; left: 10px; bottom: -10px; width: 5px; height: 5px; background: #fffdf8; border: 2px solid #2b1d24; }
+body.pixel #thought span { border-radius: 0; background: #8e6bd1; animation-timing-function: steps(2, end); }
+body.pixel #nudge { border-radius: 4px; border: 2px solid #2b1d24; font: 11px/22px 'Press Start 2P', monospace; color: #2b2238; box-shadow: 2px 2px 0 #2b1d24; animation-timing-function: steps(2, end); }
+body.pixel #mic { border-radius: 4px; box-shadow: 0 0 0 2px #2b1d24, 2px 2px 0 2px #2b1d24; }
+@media (prefers-reduced-motion: reduce) {
+  .pop { animation-timing-function: steps(1, end); }
+  body.pixel #nudge, body.pixel #thought span { animation: none; }
+}
