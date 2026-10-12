@@ -2,7 +2,7 @@
 // pick a frame from the cat's live state. Used by renderer/cat.js (window.LoonPixel) and test/pixel.test.js.
 //
 // Maps use semantic characters, so one set of frames serves every character (Luna, Soju):
-//   k fur · s fur shade (inner lines) · O outline/rim · u muzzle fur · e eye · E closed-eye line · w shine
+//   k fur · s fur shade (inner lines) · O outline/rim · u muzzle fur · e eye · P pupil (vertical slit) · E closed-eye line · w shine
 //   n nose · i inner ear · p paw pad · c collar · m pendant · t tail fur · r open mouth · x marking (patch)
 //   f freckle · l/L lock and keyboard lavender · M/y pendant glow (added in code)
 //   '.' keeps what is underneath, '_' erases to transparent.
@@ -55,14 +55,15 @@
   const EYE_R = [13, 7];
   const MOUTH = [8, 12]; // head-relative 4×2 ":3" glyph under the nose; expressions swap the glyph in place
 
-  // Eyes keep their 3×3 box; only the shine moves (gaze) or the box becomes a closed line / squint.
+  // Eyes keep their 3×3 box: a vertical slit pupil that slides with the gaze, a fixed-corner shine, or the box
+  // becomes a closed line / squint.
   const EYES = {
-    center: ['wee', 'eee', 'eee'],
-    left: ['eee', 'wee', 'eee'],
-    right: ['eee', 'eew', 'eee'],
-    up: ['ewe', 'eee', 'eee'],
-    down: ['eee', 'eee', 'ewe'],
-    half: ['kkk', 'wee', 'eee'],
+    center: ['wPe', 'ePe', 'ePe'],
+    left: ['Pwe', 'Pee', 'Pee'],
+    right: ['weP', 'eeP', 'eeP'],
+    up: ['wPe', 'ePe', 'eee'],
+    down: ['wee', 'ePe', 'ePe'],
+    half: ['kkk', 'wPe', 'ePe'],
     closed: ['...', 'EEE', '...'],
     happy: ['.E.', 'E.E', '...'],
   };
@@ -250,7 +251,7 @@
   const CHARACTERS = {
     luna: {
       name: 'Luna',
-      colors: { k: '#2e2733', s: '#463c4f', O: '#2b1d24', u: '#5a4d66', e: '#80e27e', E: '#80e27e', w: '#ffffff', n: '#0e0b14', b: '#ff8fb8', i: '#ff8fb8', p: '#ff8fb8', c: '#ff8fb8', m: '#ffd166', t: '#2e2733', r: '#ff6f9f', x: '#2e2733', f: '#0e0b14' },
+      colors: { k: '#2e2733', s: '#463c4f', O: '#2b1d24', u: '#5a4d66', e: '#80e27e', P: '#14301a', E: '#80e27e', w: '#ffffff', n: '#0e0b14', b: '#ff8fb8', i: '#ff8fb8', p: '#ff8fb8', c: '#ff8fb8', m: '#ffd166', t: '#2e2733', r: '#ff6f9f', x: '#2e2733', f: '#0e0b14' },
       marks: [],
       animations: {},
     },
@@ -258,7 +259,8 @@
     // streak at the other ear's base, a freckle on the viewer's-left side of the pink nose, and a gray tail.
     soju: {
       name: 'Soju',
-      colors: { k: '#fbf8f3', s: '#ddd5e2', O: '#4a3b44', u: '#fbf8f3', e: '#b8c75a', E: '#6f7a2e', w: '#ffffff', n: '#ff9fbf', b: '#ffc2d4', i: '#ffb3cc', p: '#ffb3cc', c: '#8fd3ff', m: '#ffd166', t: '#8c8896', r: '#e0607f', x: '#2b262e', f: '#1a1418' },
+      pendant: false, // the moon pendant is Luna's; Soju just wears the collar
+      colors: { k: '#fbf8f3', s: '#ddd5e2', O: '#4a3b44', u: '#fbf8f3', e: '#b8c75a', P: '#2a2c10', E: '#6f7a2e', w: '#ffffff', n: '#ff9fbf', b: '#ffc2d4', i: '#ffb3cc', p: '#ffb3cc', c: '#8fd3ff', m: '#ffd166', t: '#8c8896', r: '#e0607f', x: '#2b262e', f: '#1a1418' },
       marks: [{
         on: 'head', x: 0, y: 0, only: 'kbufn', map: [
           '....................',
@@ -486,14 +488,15 @@
     const quant = v.sy < 0.93 ? 2 : v.sy < 0.97 ? 1 : v.sy > 1.08 ? -2 : v.sy > 1.03 ? -1 : 0;
     frame.squash = Math.max(-2, Math.min(4, breathe + quant + (pose === 'crouch' ? 3 : 0) + (pose === 'leap' ? -1 : 0)));
     frame.shift = v.bodyRot > 1.5 ? 1 : v.bodyRot < -1.5 ? -1 : 0;
-    frame.glow = v.glow > 0.66 ? 2 : v.glow > 0.3 ? 1 : 0;
+    frame.glow = character.pendant === false ? 0 : v.glow > 0.66 ? 2 : v.glow > 0.3 ? 1 : 0;
+    frame.noPendant = character.pendant === false;
     return frame;
   }
 
   // Grid = TOP rows of headroom (hats) + the 32×32 art + one floor-shadow row. Layer coordinates are art coordinates.
   const TOP = 6;
   const ROWS = TOP + H + 1;
-  function compose({ layers, squash = 0, shift = 0, flip = false, glow = 0 }) {
+  function compose({ layers, squash = 0, shift = 0, flip = false, glow = 0, noPendant = false }) {
     let g = Array.from({ length: ROWS }, () => Array(W).fill('.'));
     for (const { map, x, y, only } of layers) {
       map.forEach((row, j) => {
@@ -508,6 +511,7 @@
         }
       });
     }
+    if (noPendant) g.forEach((row) => row.forEach((c, x) => { if (c === 'm') row[x] = 'k'; }));
     if (glow) {
       const halo = [];
       g.forEach((row, y) => row.forEach((c, x) => {

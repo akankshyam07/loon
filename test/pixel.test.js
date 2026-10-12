@@ -90,3 +90,11 @@ test('the site uses the same sprites as the app', () => {
   const read = (p) => fs.readFileSync(path.join(__dirname, '..', p), 'utf8');
   assert.strictEqual(read('docs/pixel-sprites.js'), read('renderer/pixel-sprites.js'), 'copy renderer/pixel-sprites.js to docs/');
 });
+
+test('only Luna wears the moon pendant; Soju keeps just his collar, even during moon magic', () => {
+  const PX = require('../renderer/pixel-sprites.js');
+  for (const glow of [0, 1]) {
+    assert.ok(!PX.compose(PX.pickFrame({ glow }, 'soju')).join('').match(/[mMy]/), `soju glow ${glow}`);
+  }
+  assert.ok(PX.compose(PX.pickFrame({}, 'luna')).join('').includes('m'));
+});
