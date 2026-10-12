@@ -25,6 +25,10 @@ Models are downloaded at first use, not stored in this repository.
 | wordpos / wordnet-db | dictionary lookups | MIT (package); WordNet data under the WordNet 3.1 license |
 | ws | extension bridge | MIT |
 | pdfjs-dist | reading dropped PDFs | Apache-2.0 |
+| Press Start 2P font (`renderer/fonts/`, by CodeMan38) | small pixel headings and badges in the bubble, Settings and cat pops | SIL OFL 1.1 (`renderer/fonts/OFL.txt`) |
+
+The pixel cats (Luna and Soju), their animations and costumes in `renderer/pixel-sprites.js` are original art made for
+Loon and are MIT like the rest of the code.
 
 ## Models and data (downloaded on first use)
 

@@ -894,6 +894,36 @@ In v1, Moon magic, Cursor pounce, and Edge peek are the cheapest to build and th
 - **Walking** means animating the cat window's position along the bottom of the display (about 30fps, with walk frames). It stays inside the work area and never covers the selection or the bubble. On multiple monitors it walks only on the display the anchor is on.
 - **Poses** are cached after the first render; see the performance fix below.
 
+### 5.0.2 Pixel skin: cat styles, companions, costumes (decided 2026-10-11)
+
+- **Cat styles.** Settings → Your cat → *Cat style*: **Pixel (retro)** (the default) or **Classic** (the SVG puppet in
+  `loon.svg`). Both are driven by the same state machine in `renderer/cat.js`; only the drawing differs. The SVG stays
+  loaded (hidden) in pixel mode so switching is instant and `#headShape` keeps a box for the selftest.
+- **Sprites** live in `renderer/pixel-sprites.js` (plain UMD: the cat window, Settings, the site and `node --test` all
+  load the same file; `docs/pixel-sprites.js` is a copy, kept identical by `test/pixel.test.js`). Art is 32×32 with 6
+  rows of headroom for hats and one floor-shadow row, drawn on a `<canvas>` at an integer cell size (3/4/5 px for
+  S/M/L), so it is always crisp. `pickFrame(view, character)` turns the cat's live state (state, mood, pose, move,
+  gaze, lids, travel…) into layers; `compose()` flattens them into a grid of palette characters.
+- **Companions.** A character is a palette plus marking masks that only recolor fur, so every frame works for every
+  cat. **Luna**: black, bright green eyes, dark nose, pink inner ears and collar, yellow moon pendant. **Soju**: white,
+  a dark patch over the viewer's-left eye running into that ear, a thin streak at the other ear, olive eyes, a pink nose
+  with one black freckle on the viewer's left, gray tail, blue collar. One companion at a time for now; the renderer
+  takes the character per draw, so a duo mode only needs a second canvas and its own state.
+- **Costumes** (Settings → Wardrobe, live previews): strawberry, frog and bee hoods, witch, Santa and party hats,
+  graduation cap, bow tie, sunglasses, bread loaf. Each has three anchors (front head, side view, back of head) so it is
+  worn on every frame: sitting, loaf, stretch, pounce, walk, run and the tail-chase spin. *Seasonal costumes* (off by
+  default) wear a witch hat in late October and a Santa hat in December when nothing else is picked.
+- **Retro rules.** Soft dark-brown outline, never pure black. Chibi proportions. The face is locked: only the eye and
+  mouth glyphs swap, at fixed pixels. Motion is tail, ears, blinks and a 1px breathing bob. Frame-by-frame at low fps
+  with stepped changes; whole-sprite moves snap to the pixel grid; nothing on the sprite is tweened smoothly. A frame is
+  painted only when it differs from the one on screen, and the paused (locked-screen) loop paints nothing.
+- **Hit-testing** uses the frame on screen as the mask: transparent sprite pixels pass clicks through.
+- **Retro extras** (pixel style only): pixel hearts while petted, pixel sparkles, "!" / "?" pops (drag, file drop,
+  selection, errors), a square thought bubble and floating pixel "z". *Retro sounds* (off by default) adds square-wave
+  blips made with WebAudio.
+- The kawaii UI (bubble, Settings, site) shares one look: pastel tokens, 2–3px dark outlines, 4px offset shadows,
+  rounded body text, and the bundled Press Start 2P font (OFL) for small headings and badges only.
+
 ---
 
 ## 6. Settings and first run

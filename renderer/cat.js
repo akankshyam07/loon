@@ -1,4 +1,5 @@
-// Loon's body: drives the SVG puppet in loon.svg (DESIGN.md §5.0).
+// Loon's body: drives the pixel skin (renderer/pixel-sprites.js, DESIGN.md §5.0.2) or the classic SVG puppet in
+// loon.svg (DESIGN.md §5.0). Both read the same state machine below; only the drawing differs.
 // Three layers compose every frame: smoothed targets (mood, pose, gaze), always-on micro motion
 // (breathing, tail sway, blinks, twitches), and tweened offsets used by cool moves.
 (async () => {
@@ -34,6 +35,24 @@
     return { base: g.getAttribute('transform'), pupil: $('.pupil', g), lid: $('.lid', g), lidLow: $('.lidLow', g), lash: $('.lash', g), happy: $('.happy', g) };
   });
 
+  // ---------- pixel skin ----------
+  // The SVG stays loaded (hidden) so switching styles in Settings is instant and nothing below needs two code paths.
+  const PX = window.LoonPixel;
+  const canvas = Object.assign(document.createElement('canvas'), { id: 'pixelCat' });
+  catBox.append(canvas);
+  const pen = canvas.getContext('2d');
+  let look = { catStyle: 'pixel', companion: 'luna', costume: 'none', seasonalCostumes: false, retroSounds: false, ...(await window.loon.catLook()) };
+  const pixel = () => look.catStyle !== 'classic';
+  let cell = 1; // CSS px per sprite pixel: an integer, so the art stays crisp at S/M/L
+  let grid = null; // the frame on screen; also the hit mask
+  let lastKey = '';
+  let travel = null; // walk | run | leap while the window moves
+  let facing = 1;
+  let fidget = null; // groom
+  let currentMove = null;
+  let fileOver = false;
+  let mouthKind = 'smile';
+
   // ---------- layout ----------
   let scale = 1;
   let box = { left: 0, top: 0, width: 0, height: 0 };
@@ -43,6 +62,13 @@
     scale = catH / VIEW_H;
     box = { left: (stage.clientWidth - catW) / 2, top: stage.clientHeight - catH, width: catW, height: catH };
     Object.assign(catBox.style, { width: `${catW}px`, height: `${catH}px`, marginLeft: `${-catW / 2}px` });
+    cell = Math.max(1, Math.floor(catH / PX.ROWS));
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = PX.W * cell * dpr;
+    canvas.height = PX.ROWS * cell * dpr;
+    pen.imageSmoothingEnabled = false;
+    Object.assign(canvas.style, { width: `${PX.W * cell}px`, height: `${PX.ROWS * cell}px`, left: `${(catW - PX.W * cell) / 2}px` });
+    lastKey = '';
   }
   window.addEventListener('resize', layout);
   layout();
@@ -92,6 +118,7 @@
   const show = (el, on) => { el.style.display = on ? 'inline' : 'none'; };
 
   function setMouth(kind) {
+    mouthKind = kind;
     show(P.mouthSmile, kind === 'smile');
     show(P.mouthFlat, kind === 'flat');
     show(P.mouthOpen, kind === 'open');
@@ -152,6 +179,7 @@
   function nextDelay(now) {
     if (paused) return 1000;
     if (tweens.size > 0 || state !== 'idle') return 33;
+    if (fidget) return 100;
     if (bubbleOpen || now - lastCursorMove < 800) return 66; // eyes following the cursor
     return now - lastCursorMove > 2 * MIN ? 500 : 200;
   }
@@ -183,6 +211,7 @@
 
     const k = (speed) => 1 - Math.exp((-dt / 1000) * speed);
     for (const key in T) S[key] += (T[key] - S[key]) * k(SPEED[key] || 9);
+    if (pixel()) { drawPixel(now); return; }
 
     const napping = state === 'napping';
     const breathPeriod = napping ? 5200 : 3600;
@@ -214,7 +243,64 @@
       eye.lash.setAttribute('opacity', lid > 0.92 && S.happy < 0.5 ? '1' : '0');
     });
   }
+  // Pixel frames come from the same live state; a frame is drawn only when it differs from the one on screen.
+  const RIM = 'rgba(255, 240, 250, 0.28)'; // faint light edge so a black cat reads on a dark desktop
+  function wornCostume() {
+    if (look.costume && look.costume !== 'none') return look.costume;
+    return (look.seasonalCostumes && PX.seasonalCostume()) || 'none';
+  }
+  function drawPixel(now) {
+    const next = PX.compose(PX.pickFrame({
+      now, state, pose, mood, move: currentMove, look: { x: S.lookX, y: S.lookY },
+      lidL: Math.max(S.lidL, FX.blink), lidR: Math.max(S.lidR, FX.blink), happy: S.happy, mouth: mouthKind,
+      twitchL: FX.twitchL, twitchR: FX.twitchR, glow: S.glow, tailPeriod: tailStyle.period, travel, facing,
+      spin: M.catRot, sy: M.catSy, bodyRot: M.bodyRot, privacy, dragging, fileOver, fidget, costume: wornCostume(),
+    }, look.companion));
+    // whole-sprite moves snap to the pixel grid: stepped, never sub-pixel
+    const dx = Math.round((M.catX * scale) / cell) * cell;
+    const dy = Math.round((M.catY * scale) / cell) * cell;
+    const key = `${look.companion}|${dx}|${dy}|${next.join('')}`;
+    if (key === lastKey) return;
+    lastKey = key;
+    grid = next;
+    canvas.style.transform = `translate(${dx}px, ${dy}px)`;
+    PX.drawGrid(pen, grid, PX.colorsFor(look.companion), canvas.width / PX.W, { rim: RIM });
+  }
+  // Transparent sprite pixels are not the cat: clicks there go to the app behind.
+  function opaqueAt(x, y) {
+    if (!grid || !pixel()) return false;
+    const r = canvas.getBoundingClientRect();
+    const c = grid[Math.floor((y - r.top) / cell)]?.[Math.floor((x - r.left) / cell)];
+    return Boolean(c) && c !== '.' && c !== 'z';
+  }
+  function applyLook(next) {
+    look = { ...look, ...next };
+    document.body.classList.toggle('pixel', pixel());
+    catBox.querySelector('svg').style.visibility = pixel() ? 'hidden' : ''; // hidden, not removed: #headShape keeps its box
+    canvas.hidden = !pixel();
+    lastKey = '';
+    if (!paused) frame(performance.now());
+  }
+  window.loon.onCatLook(applyLook);
+  applyLook({});
   loop();
+
+  // Retro sounds (off by default): tiny square-wave blips, made on the fly with WebAudio.
+  let blipContext = null;
+  function blip(notes, length = 0.07) {
+    if (!look.retroSounds) return;
+    blipContext ??= new AudioContext();
+    const start = blipContext.currentTime;
+    notes.forEach((freq, i) => {
+      const osc = Object.assign(blipContext.createOscillator(), { type: 'square' });
+      osc.frequency.value = freq;
+      const gain = blipContext.createGain();
+      gain.gain.value = 0.04;
+      osc.connect(gain).connect(blipContext.destination);
+      osc.start(start + i * length);
+      osc.stop(start + (i + 1) * length);
+    });
+  }
 
   // ---------- micro motion ----------
   async function blink() {
@@ -244,7 +330,10 @@
 
   (function scheduleTilt() {
     setTimeout(() => {
-      if (state === 'idle' && !bubbleOpen) {
+      if (state === 'idle' && !bubbleOpen && pixel() && Math.random() < 0.4) {
+        fidget = 'groom'; // the pixel cat has no head tilt; it grooms a paw instead
+        setTimeout(() => { fidget = null; }, 1900);
+      } else if (state === 'idle' && !bubbleOpen) {
         idleTilt = rand(4, 7) * (Math.random() < 0.5 ? -1 : 1);
         setTimeout(() => { idleTilt = 0; }, 1600);
       }
@@ -274,10 +363,18 @@
   // ---------- particles ----------
   const STAR = '<svg viewBox="0 0 24 24"><path fill="COLOR" stroke="#557d4c" stroke-width="1.4" stroke-linejoin="round" d="M12 0 C13 8 16 11 24 12 C16 13 13 16 12 24 C11 16 8 13 0 12 C8 11 11 8 12 0Z"/></svg>';
   const SPARKLE_COLORS = ['#9cc48f', '#b9dcaa', '#e8f5de', '#eef1f4'];
+  // Pixel skin: chunky pixel hearts while petted, pixel sparkles otherwise.
+  const PX_STAR = '<svg viewBox="0 0 5 5" shape-rendering="crispEdges"><path fill="COLOR" d="M2 0h1v2h2v1H3v2H2V3H0V2h2z"/></svg>';
+  const PX_HEART = '<svg viewBox="0 0 7 6" shape-rendering="crispEdges"><path fill="COLOR" d="M1 0h2v1h1V0h2v1h1v2H6v1H5v1H4v1H3V5H2V4H1V3H0V1h1z"/><path fill="#fff" d="M1 1h1v1H1z"/></svg>';
+  const PX_COLORS = { heart: ['#ff8fb8', '#ff6f9f'], star: ['#ffd166', '#80e27e', '#b9a4ff', '#fff4c8'] };
+  const pick = (list) => list[Math.floor(Math.random() * list.length)];
   function sparkle(x, y, { dx = rand(-16, 16), dy = rand(-55, -35), size = rand(13, 20), duration = rand(1.1, 1.5) } = {}) {
     const el = document.createElement('div');
-    el.className = 'sparkle';
-    el.innerHTML = STAR.replace('COLOR', SPARKLE_COLORS[Math.floor(Math.random() * SPARKLE_COLORS.length)]);
+    el.className = pixel() ? 'sparkle px' : 'sparkle';
+    if (!pixel()) el.innerHTML = STAR.replace('COLOR', pick(SPARKLE_COLORS));
+    else if (state === 'petted') el.innerHTML = PX_HEART.replace('COLOR', pick(PX_COLORS.heart));
+    else el.innerHTML = PX_STAR.replace('COLOR', pick(PX_COLORS.star));
+    if (pixel()) size = Math.max(10, Math.round(size / 5) * 5); // whole sprite pixels
     Object.assign(el.style, { left: `${x}px`, top: `${y}px` });
     el.style.setProperty('--dx', `${dx}px`);
     el.style.setProperty('--dy', `${dy}px`);
@@ -310,6 +407,17 @@
     el.addEventListener('animationend', () => el.remove());
   }
 
+  // Pixel "!" and "?" pops over the head (pixel skin only).
+  function pop(text) {
+    if (!pixel()) return;
+    const p = toStage(170, 40 + S.headY);
+    const el = Object.assign(document.createElement('div'), { className: 'pop', textContent: text });
+    Object.assign(el.style, { left: `${p.x}px`, top: `${p.y}px` });
+    fxLayer.appendChild(el);
+    el.addEventListener('animationend', () => el.remove());
+    blip(text === '!' ? [988, 1319] : [659, 523]);
+  }
+
   // ---------- interaction: click-through, drag, pet, click ----------
   let ignoring = true;
   const setIgnore = (ignore) => {
@@ -317,33 +425,42 @@
   };
   const overCat = (x, y) => {
     const el = document.elementFromPoint(x, y);
-    return Boolean(el && (el.closest('#cat') || el.closest('.interactive')));
+    if (el?.closest('.interactive')) return true;
+    return pixel() ? opaqueAt(x, y) : Boolean(el?.closest('#cat'));
   };
+  // The same handlers serve the SVG (#cat) and the pixel canvas; only the visible one gets events.
+  const onCat = (type, handler) => { for (const el of [P.cat, canvas]) el.addEventListener(type, handler); };
   let press = null;
-  document.addEventListener('mousemove', (e) => { if (!press) setIgnore(!overCat(e.clientX, e.clientY)); });
+  document.addEventListener('mousemove', (e) => {
+    if (press) return;
+    const over = overCat(e.clientX, e.clientY);
+    setIgnore(!over);
+    canvas.style.cursor = over ? 'pointer' : '';
+  });
   document.addEventListener('mouseleave', () => { if (!press) setIgnore(true); });
 
   let petTimer = null;
-  P.cat.addEventListener('contextmenu', (e) => { e.preventDefault(); window.loon.showMenu(); });
-  P.cat.addEventListener('pointerdown', (e) => {
-    if (e.button !== 0) return;
-    P.cat.setPointerCapture(e.pointerId);
+  onCat('contextmenu', (e) => { e.preventDefault(); if (!pixel() || opaqueAt(e.clientX, e.clientY)) window.loon.showMenu(); });
+  onCat('pointerdown', (e) => {
+    if (e.button !== 0 || (pixel() && !opaqueAt(e.clientX, e.clientY))) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
     press = { cx: e.clientX, cy: e.clientY };
     clearTimeout(homeTimer); // the user has the cat now; walk home later, if at all
     petTimer = setTimeout(startPet, 320);
   });
-  P.cat.addEventListener('pointermove', (e) => {
+  onCat('pointermove', (e) => {
     if (!press || dragging || state === 'petted') return;
     if (Math.hypot(e.clientX - press.cx, e.clientY - press.cy) > 9) { // trackpad jitter on a click is not a drag
       clearTimeout(petTimer);
       dragging = true;
       window.loon.dragStart(press.cx, press.cy);
       setMood('wide');
+      pop('!');
       tween(M, 'catSy', 1.07, 150);
       tween(M, 'catSx', 0.95, 150);
     }
   });
-  P.cat.addEventListener('pointerup', async (e) => {
+  onCat('pointerup', async (e) => {
     clearTimeout(petTimer);
     const wasPress = press;
     press = null;
@@ -362,7 +479,7 @@
   });
   // Capture can end without a pointerup (app switch, system gesture, a cancelled pointer). Without this the press
   // stays open: main keeps gluing the window to the cursor and tricks, naps and clicks are refused until the next click.
-  P.cat.addEventListener('lostpointercapture', async () => {
+  onCat('lostpointercapture', async () => {
     clearTimeout(petTimer);
     if (!press) return; // the normal case: pointerup already handled it
     press = null;
@@ -396,6 +513,7 @@
     idleTilt = 7;
     tailStyle = { amp: 3, period: 4200 };
     sparklesAround(110, 70, 2);
+    blip([659, 988]);
     petSparkles = setInterval(() => sparklesAround(110, 70, 1, 50), 280);
   }
   function endPet() {
@@ -411,6 +529,7 @@
   async function moonMagic() {
     setMood('wide');
     T.glow = 1;
+    blip([523, 659, 784, 1047], 0.09);
     await wait(450);
     burst(10, 55);
     await wait(320);
@@ -437,7 +556,9 @@
     const duration = dx ? Math.min(650, 300 + Math.abs(dx) * 0.6) : 380;
     tween(M, 'catSy', 1, duration * 0.8);
     tween(M, 'catSx', 1, duration * 0.8);
+    travel = 'leap';
     await window.loon.animateWindow({ dx, duration, arc: 55 });
+    travel = null;
     setPose('sit');
     lookOverride = null;
     await squash();
@@ -479,9 +600,14 @@
       if (state !== 'idle' || bubbleOpen || dragging || press) return comeHome(4000);
       state = 'move';
       try {
+        const startX = (await window.loon.windowInfo()).win.x;
+        travel = 'walk';
+        setTimeout(async () => { facing = (await window.loon.windowInfo()).win.x < startX ? -1 : 1; }, 80);
         await window.loon.goHome();
+        travel = null;
         await squash();
       } finally {
+        travel = null;
         if (state === 'move') state = 'idle';
       }
     }, delay);
@@ -495,7 +621,9 @@
       await Promise.all([tween(M, 'catSy', 0.92, 90), tween(M, 'catSx', 1.05, 90)]);
       tween(M, 'catSy', 1.04, 150);
       tween(M, 'catSx', 0.97, 150);
+      travel = 'leap';
       await window.loon.animateWindow({ dx: dx / 2, duration: 330, arc: 24 });
+      travel = null;
       await squash();
     }
     comeHome(rand(15000, 30000)); // a short wander, then back to its spot
@@ -558,12 +686,15 @@
   async function zoomies() {
     setMood('wide');
     tailStyle = { amp: 12, period: 500 };
+    travel = 'run';
     for (const dx of [90, -150, 120, -60]) {
+      facing = Math.sign(dx);
       tween(M, 'catSy', 1.06, 100);
       await window.loon.animateWindow({ dx, duration: 230, arc: 18 });
       await Promise.all([tween(M, 'catSy', 0.9, 60), tween(M, 'catSx', 1.06, 60)]);
       await Promise.all([tween(M, 'catSy', 1, 90), tween(M, 'catSx', 1, 90)]);
     }
+    travel = null;
     tailStyle = IDLE_TAIL;
     setMood('neutral');
     await blink();
@@ -575,9 +706,12 @@
     if (state !== 'idle' || bubbleOpen || dragging || privacy || focusMode) return;
     if (name === 'random') name = Object.keys(MOVES)[Math.floor(Math.random() * Object.keys(MOVES).length)];
     state = 'move';
+    currentMove = MOVES[name] ? name : 'hop';
     try {
       await (MOVES[name] || hopAround)();
     } finally {
+      currentMove = null;
+      travel = null;
       M.catY = 0;
       M.catRot = 0;
       M.bodyRot = 0;
@@ -630,7 +764,7 @@
     fish.classList.add('eaten');
     await wait(460);
     fish.hidden = true;
-    for (let i = 0; i < 6; i++) { setMouth(i % 2 ? 'open' : 'smile'); await wait(130); }
+    for (let i = 0; i < 6; i++) { setMouth(i % 2 ? 'open' : 'smile'); if (i % 2) blip([392]); await wait(130); }
     setMood('happy');
     sparklesAround(110, 100, 4);
     await wait(1000);
@@ -708,6 +842,7 @@
       tailStyle = IDLE_TAIL;
       state = 'idle';
       const finalMood = brainState === 'error' ? 'confused' : answerMood || 'happy';
+      if (brainState === 'error') pop('?');
       setMood(finalMood);
       setTimeout(() => { if (mood === finalMood && state === 'idle') setMood(bubbleOpen ? 'curious' : 'neutral'); }, brainState === 'error' ? 4000 : 7000);
     }
@@ -747,6 +882,7 @@
     const dx = anchor.x + anchor.w / 2 - (win.x + win.width / 2);
     const dy = anchor.y - win.y;
     setMood('curious');
+    pop('?');
     lookOverride = { x: Math.sign(dx) * 5.5, y: dy < 0 ? -3.5 : 2 };
     if (Math.abs(dx) > 260) {
       state = 'move';
@@ -754,9 +890,12 @@
         await Promise.all([tween(M, 'catSy', 0.92, 90), tween(M, 'catSx', 1.05, 90)]);
         tween(M, 'catSy', 1.04, 150);
         tween(M, 'catSx', 0.97, 150);
+        travel = 'leap';
         await window.loon.animateWindow({ dx: Math.sign(dx) * Math.min(300, Math.abs(dx) - 200), duration: 420, arc: 30 });
+        travel = null;
         await squash();
       } finally {
+        travel = null;
         if (state === 'move') state = 'idle';
       }
     }
@@ -821,11 +960,14 @@
     if (state === 'idle' && mood !== 'wide') {
       setMood('wide');
       T.earL = T.earR = -10;
+      pop('!');
     }
+    fileOver = state === 'idle';
   });
-  document.addEventListener('dragleave', () => { if (state === 'idle') setMood('neutral'); });
+  document.addEventListener('dragleave', () => { fileOver = false; if (state === 'idle') setMood('neutral'); });
   document.addEventListener('drop', (e) => {
     e.preventDefault();
+    fileOver = false;
     const file = e.dataTransfer.files[0];
     if (!file) return;
     setMood('happy');
@@ -932,6 +1074,7 @@
     if (cmd.fish) showFish();
     if (cmd.brain) onBrain(cmd.brain);
     if (cmd.sparkle) sparklesAround(110, 90, 6);
+    if (cmd.catLook) applyLook(cmd.catLook);
   });
 
   // read-only view for test/selftest.js

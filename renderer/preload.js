@@ -5,6 +5,8 @@ const on = (channel) => (callback) => ipcRenderer.on(channel, (_event, payload) 
 contextBridge.exposeInMainWorld('loon', {
   // cat window
   getCatSvg: () => ipcRenderer.invoke('cat-svg'),
+  catLook: () => ipcRenderer.invoke('cat-look'),
+  onCatLook: on('cat-look'),
   onCursor: on('cursor'),
   onBrain: on('brain'),
   onBubble: on('bubble'),

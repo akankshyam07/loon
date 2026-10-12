@@ -3,6 +3,7 @@ const $ = (id) => document.getElementById(id);
 function render(s) {
   for (const box of document.querySelectorAll('[data-key]')) box.checked = box.dataset.key === 'speakReplies' ? s.speakReplies !== 'never' : Boolean(s[box.dataset.key]);
   renderSmarter(s);
+  renderLook(s);
   $('browser').textContent = s.connected ? 'Connected to Chrome ✓' : 'Not connected. Load the extension, then paste the pairing code into its popup.';
   const { code = 0, cache = 0, local = 0, cloud = 0, api = 0 } = s.counts?.tiers || {};
   $('counts').textContent = `${code + cache} answers were instant (no model), ${local} used the model on your Mac${cloud ? `, ${cloud} used your plan` : ''}${api ? `, ${api} went via your API key` : ''}.`;
@@ -194,5 +195,45 @@ $('discover').addEventListener('click', async () => {
     return li;
   }));
 });
+// ---------- Your cat: style, companion and wardrobe (live previews drawn with the real sprites) ----------
+const PX = window.LoonPixel;
+let look = { catStyle: 'pixel', companion: 'luna', costume: 'none' };
+const PREVIEW_CELL = 2;
+function renderLook(s) {
+  look = { catStyle: s.catStyle || 'pixel', companion: s.companion || 'luna', costume: s.costume || 'none' };
+  for (const radio of document.querySelectorAll('[name=catStyle], [name=companion]')) radio.checked = radio.value === look[radio.name];
+  if (!$('wardrobe').children.length) {
+    $('wardrobe').append(...Object.entries(PX.COSTUMES).map(([id, costume]) => {
+      const label = Object.assign(document.createElement('label'), { className: 'costume' });
+      const radio = Object.assign(document.createElement('input'), { type: 'radio', name: 'costume', value: id });
+      radio.addEventListener('change', async () => render(await window.loon.setSetting('costume', id)));
+      const preview = Object.assign(document.createElement('canvas'), { width: PX.W * PREVIEW_CELL * 2, height: PX.ROWS * PREVIEW_CELL * 2 });
+      preview.dataset.costume = id;
+      preview.setAttribute('aria-hidden', 'true');
+      label.append(radio, preview, Object.assign(document.createElement('span'), { textContent: costume?.name || 'Nothing' }));
+      return label;
+    }));
+  }
+  for (const radio of document.querySelectorAll('[name=costume]')) radio.checked = radio.value === look.costume;
+  const classic = look.catStyle === 'classic';
+  $('wardrobe').classList.toggle('off', classic);
+  $('wardrobeNote').hidden = !classic;
+  drawWardrobe();
+}
+// Two frames a second, stepped like the cat itself; still when motion is reduced or the window is hidden.
+let previewClock = 0;
+function drawWardrobe() {
+  for (const preview of document.querySelectorAll('#wardrobe canvas')) {
+    const blink = previewClock % 8 === 7;
+    const frame = PX.pickFrame({ now: previewClock * 500, tailPeriod: 2400, lidL: blink ? 1 : 0.08, lidR: blink ? 1 : 0.08, costume: preview.dataset.costume }, look.companion);
+    PX.drawGrid(preview.getContext('2d'), PX.compose(frame), PX.colorsFor(look.companion), PREVIEW_CELL * 2, { rim: 'rgba(255, 240, 250, 0.3)' });
+  }
+}
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+setInterval(() => { if (!document.hidden && !reduceMotion.matches) { previewClock++; drawWardrobe(); } }, 500);
+for (const radio of document.querySelectorAll('[name=catStyle], [name=companion]')) {
+  radio.addEventListener('change', async () => render(await window.loon.setSetting(radio.name, radio.value)));
+}
+
 window.loon.onSettingsChanged(render);
 window.loon.getSettings().then(render);
