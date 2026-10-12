@@ -110,10 +110,15 @@ and then it does something cool: moon magic, a pounce, peeking over the edge of 
 - Speech recognition (Moonshine), voice detection (Silero) and the voice itself (Kokoro) all run on your Mac.
 
 **☁️ Use your Claude or ChatGPT plan (optional)**
-- Want bigger-brain answers for "Go deeper" without paying for an API? In Settings → *Smarter answers*, pick
+- Want bigger-brain answers without paying for an API? In Settings → *Smarter answers*, pick
   Claude Code or Codex. Loon runs the official `claude` / `codex` CLI that you installed and signed into yourself,
-  with every tool switched off, in an empty folder, after redacting secrets. Loon never touches your login. Off by
-  default, always off in Privacy mode. Follow your provider's terms; it's meant for your own personal use.
+  with every tool switched off, in an empty folder, after redacting secrets. Loon never touches your login, and it
+  refuses to run if the CLI is signed in with API billing. Off by default, always off in Privacy mode and on private
+  pages. Follow your provider's terms; it's meant for your own personal use.
+- Once it's set up, *Answer with: Your plan* is the default: quick questions stay instant on your Mac, everything
+  else goes to your plan (a fast model for normal questions, the strongest one for hard questions and "Go deeper").
+  A Claude Code process waits ready in the background so answers start sooner. Pick *This Mac* to use your plan only
+  for the hard stuff. Optional *Quick take* shows the Mac's instant answer until your plan's arrives.
 - Prefer pay-per-use? The same card has *Your own API key*: Anthropic, OpenAI, Gemini (which has a free tier) or any
   OpenAI-compatible endpoint (OpenRouter, Groq, LM Studio…). The key is encrypted in the macOS Keychain and never
   leaves Loon's main process. Also off by default, never used unless you pick it, and billed by your provider.

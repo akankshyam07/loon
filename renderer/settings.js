@@ -116,6 +116,19 @@ function renderSmarter(s) {
   for (const radio of document.querySelectorAll('[name=cloudCli]')) radio.checked = radio.value === mode;
   $('cloudNote').hidden = !s.privacy || mode === 'off';
   $('apiBox').hidden = mode !== 'api';
+  // Your plan: plan-first or this Mac first, and which model answers per difficulty (blank = the default shown).
+  const plan = ['claude', 'codex'].includes(mode);
+  $('planBox').hidden = !plan;
+  for (const radio of document.querySelectorAll('[name=answerWith]')) radio.checked = radio.value === (s.answerWith === 'mac' ? 'mac' : 'plan');
+  if (plan) {
+    const chosen = s.planModels?.[mode] || {};
+    const defaults = s.planModelDefaults[mode];
+    for (const [id, level] of [['planMedium', 'medium'], ['planHard', 'hard']]) {
+      if (document.activeElement !== $(id)) $(id).value = chosen[level] || '';
+      $(id).placeholder = defaults[level] || "Codex's default";
+    }
+  }
+  $('planMsg').textContent = s.planModelError || '';
   const { provider, baseUrl, normal, hard } = s.apiConfig;
   if (!$('apiProvider').options.length) {
     $('apiProvider').append(...Object.entries(s.apiProviders).map(([id, p]) => new Option(p.name, id)));
@@ -140,6 +153,12 @@ const saveApiConfig = async (changes = {}) => {
 };
 for (const radio of document.querySelectorAll('[name=cloudCli]')) {
   radio.addEventListener('change', async () => render(await window.loon.setSetting('cloudCli', radio.value)));
+}
+for (const radio of document.querySelectorAll('[name=answerWith]')) {
+  radio.addEventListener('change', async () => render(await window.loon.setSetting('answerWith', radio.value)));
+}
+for (const [id, level] of [['planMedium', 'medium'], ['planHard', 'hard']]) {
+  $(id).addEventListener('change', async () => render(await window.loon.setSetting('planModel', { which: smarter.cloudCli, level, model: $(id).value })));
 }
 // A new provider starts from its own default models.
 $('apiProvider').addEventListener('change', () => saveApiConfig({ baseUrl: '', normal: '', hard: '' }));

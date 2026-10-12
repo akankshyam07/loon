@@ -51,7 +51,9 @@ function estimate({ taskId = 'ask', request = '', context = '' } = {}) {
 }
 
 // Picks a model tier from the ones available, weakest first: e.g. ['fast', 'smart', 'cloud'].
-function pickTier(level, ladder) {
+// Plan-first (Smarter answers on the user's plan, "Answer with: Your plan"): only easy questions stay on the Mac.
+function pickTier(level, ladder, { planFirst = false } = {}) {
+  if (planFirst && ladder.includes('cloud')) return level === 'easy' ? ladder[0] : 'cloud';
   if (level === 'hard') return ladder[ladder.length - 1];
   if (level === 'medium' && ladder.includes('smart')) return 'smart';
   return ladder[0];

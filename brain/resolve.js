@@ -20,6 +20,7 @@ const { SYSTEM_PROMPT } = require('./ai');
 const { estimate, pickTier, check, thinkingFor, EscalationLog } = require('./router');
 
 const PROMPT_VERSION = 'v2';
+const QUICK_LABEL = '_Quick take from your Mac while your plan thinks…_\n\n';
 const MOODS = ['happy', 'curious', 'judgy', 'sleepy', 'suspicious', 'focused', 'protective', 'confused'];
 
 // T1: answers that need no model. Time/date change, so these never go in the cache.
@@ -252,6 +253,9 @@ class Resolver {
     const api = !offline && this.settings.cloudCli === 'api' && this.api ? this.api.route(this.settings) : null;
     const cloud = Boolean(cli || api);
     const viaCloud = cloud && deeper;
+    // Plan-first ("Answer with: Your plan", the default once a plan CLI is set up): medium and hard questions go to the
+    // plan, easy ones stay on the fast local model. "This Mac" keeps the plan for hard questions and "Go deeper" only.
+    const planFirst = Boolean(cli) && this.settings.answerWith !== 'mac';
     const prompt = buildPrompt(taskId, { ...packet, text: packet.text && trimForModel(packet.text, MAX_CONTEXT_CHARS) }, { deeper, question, memory, instructions });
     // Follow-ups depend on the conversation so far, so only a thread's first turn is cacheable.
     const cacheable = firstInThread && !question && !privacy;
@@ -274,7 +278,9 @@ class Resolver {
     }
 
     // Router (§2.10): model tiers weakest first; "Go deeper" keeps its own rule (plan if on, else the smart model).
-    const ladder = ['fast', this.brain.hasSmart?.() && 'smart', cloud && 'cloud'].filter(Boolean);
+    // Plan-first skips the slower smart local model; it stays the fallback for hard questions when the plan fails.
+    const local = ['fast', this.brain.hasSmart?.() && 'smart'].filter(Boolean);
+    const ladder = planFirst ? ['fast', 'cloud'] : [...local, cloud && 'cloud'].filter(Boolean);
     const typed = taskId === 'ask' || Boolean(question);
     const asked = typed ? question || packet.question : task.instruction(packet);
     const route = deeper ? null : estimate({ taskId, request: asked, context: packet.text });
@@ -285,11 +291,12 @@ class Resolver {
     this.lastPrompt = prompt;
     let streamed = false;
     const thinking = thinkingFor({ taskId, route });
+    let quick = null; // the instant local answer shown while the plan works (Settings: "Quick take")
     const attempt = async (target) => {
       let text = '';
       let confidence = null;
       const parser = createMoodParser((piece) => { streamed = true; text += piece; onText(piece); });
-      const onChunk = (chunk) => parser.push(chunk);
+      const onChunk = (chunk) => { quick?.stop(); parser.push(chunk); };
       // Redaction already ran on screen context (main/context.js); this pass also covers typed text and memory
       // before anything leaves the Mac.
       // The API's hard model is for "Go deeper" and hard questions; upgrades and fallbacks use the normal one.
@@ -297,7 +304,8 @@ class Resolver {
       if (target === 'cloud') {
         const request = { system: SYSTEM_PROMPT, prompt: redact(prompt).text, onText: onChunk, signal };
         if (api) await api.ask({ ...request, hard });
-        else await this.cli.ask(cli, request);
+        // Normal questions get the plan's fast model, hard ones and "Go deeper" its strongest; a warm process waits.
+        else await this.cli.ask(cli, { ...request, level: hard ? 'hard' : 'medium', models: this.settings.planModels?.[cli], warm: planFirst });
       } else await this.brain.chat(prompt, { onText: onChunk, signal, maxTokens, smart: target === 'smart', thinking, onConfidence: (c) => { confidence = c; } });
       return { text: stripThink(text).trim(), mood: parser.finish(), target, confidence, hard };
     };
@@ -308,7 +316,32 @@ class Resolver {
       if (prefix) onText(prefix);
     };
 
-    let target = deeper ? (viaCloud ? 'cloud' : 'smart') : pickTier(route.level, ladder);
+    // Quick take: streams the fast local answer under a label; the plan's first words replace it. Local only, so
+    // it is shown even when the plan is slow, and it is never cached or counted.
+    const startQuick = () => {
+      const controller = new AbortController();
+      const cancel = () => controller.abort();
+      signal?.addEventListener('abort', cancel, { once: true });
+      let shown = false;
+      const q = { live: true };
+      q.stop = ({ clear = true } = {}) => {
+        if (!q.live) return;
+        q.live = false;
+        cancel();
+        signal?.removeEventListener('abort', cancel);
+        if (shown && clear) restart();
+      };
+      const parser = createMoodParser((piece) => {
+        if (!q.live) return;
+        if (!shown) onText(QUICK_LABEL);
+        shown = true;
+        onText(piece);
+      });
+      this.brain.chat(prompt, { onText: (c) => parser.push(c), signal: controller.signal, maxTokens }).catch(() => {});
+      return q;
+    };
+
+    let target = deeper ? (viaCloud ? 'cloud' : 'smart') : pickTier(route.level, ladder, { planFirst });
     let note = route && target !== 'fast' ? `routed: ${route.level === 'hard' ? 'hard' : 'trickier'} question` : '';
     const stronger = ladder[ladder.indexOf(target) + 1];
     const preRouted = Boolean(route && stronger && learn && await this.escalations.likelyHard(asked));
@@ -316,20 +349,31 @@ class Resolver {
       target = stronger;
       note = 'routed: similar questions needed a stronger model';
     }
+    if (planFirst && target === 'cloud' && !deeper && this.settings.quickTake) quick = startQuick();
     let answer;
     let fallback = false;
     try {
       answer = await attempt(target);
     } catch (err) {
-      // A failed local model falls back to the plan; a routed (not chosen) plan call falls back to the Mac.
-      const other = target === 'cloud' ? !deeper && ladder[ladder.length - 2] : cloud && 'cloud';
+      // A failed local model falls back to the plan; a routed (not chosen) plan call falls back to the Mac
+      // (plan-first: the smart model for hard questions, else the fast one).
+      const backup = planFirst ? (route?.level === 'hard' ? local[local.length - 1] : 'fast') : ladder[ladder.length - 2];
+      const other = target === 'cloud' ? !deeper && backup : cloud && 'cloud';
+      quick?.stop({ clear: false });
       if (!other || signal?.aborted || streamed) throw err;
       console.warn(`[resolve] ${target} model failed, using ${other}:`, err.message);
       fallback = true;
       note = '';
+      if (target === 'cloud') {
+        // Honest label: say the plan didn't answer and why (login, model, rate limit, offline), then answer locally.
+        note = 'your plan didn’t answer, so this came from your Mac';
+        prefix = `_Your plan didn’t answer (${String(err.message || 'unknown error').replace(/\s+/g, ' ').slice(0, 200)}), so this one is from your Mac._\n\n${prefix}`;
+        restart(); // clears any quick take and key points, then shows the notice with them
+      }
       target = other;
       answer = await attempt(target);
     }
+    quick?.stop();
 
     // Self-check: a weak answer gets one automatic try on the next tier up. Never twice, never after a fallback.
     const next = ladder[ladder.indexOf(answer.target) + 1];
@@ -359,7 +403,8 @@ class Resolver {
     if (learn && !preRouted && !fallback && !signal?.aborted) this.escalations.record(asked, deeper || upgrading).catch(() => {});
     // Fallback answers and answers that still look weak are not cached.
     if (key && answer.text && !signal?.aborted && !fallback && !flags.length) this.cache.set(key, { text: answer.text, mood: answer.mood }, similar);
-    const detail = [tier === 'cloud' && (api ? api.label(answer.hard) : this.cli.label(cli)), note].filter(Boolean).join(' · ') || undefined;
+    const planModel = tier === 'cloud' && !api && this.cli.modelFor?.(cli, answer.hard ? 'hard' : 'medium', this.settings.planModels?.[cli]);
+    const detail = [tier === 'cloud' && (api ? api.label(answer.hard) : this.cli.label(cli)), planModel, note].filter(Boolean).join(' · ') || undefined;
     const { text, mood } = answer;
     return { text: prefix + text, mood, tier, detail, smart: answer.target === 'smart', estimated: Boolean(task.estimated), replaceText: task.replaceable ? text : undefined };
   }
