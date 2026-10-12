@@ -1,5 +1,6 @@
 // Task catalog (DESIGN.md §2.5, §3.2, §3.4): what each chip does and which tiers may answer it.
 // Chips in the bubble map 1:1 to these ids.
+const { keySentences } = require('./textrank');
 
 const TASKS = {
   ask: { label: 'Ask', instruction: (p) => p.question, maxTokens: 400 },
@@ -128,15 +129,59 @@ function memoryGroup(taskId) {
   return 'default';
 }
 
+// Follow-ups (DESIGN.md §2.10): every tier gets the conversation as plain text in the prompt, so local, plan and API
+// answers are interchangeable. Budgets in characters; the newest answer is kept almost whole ("make it shorter" needs
+// it), older answers shrink to their first sentences, and the original context to its key sentences.
+const FOLLOW_UP_BUDGET = { context: 2000, turns: 2000, maxTurns: 6, latestAnswer: 1200, olderAnswer: 240, question: 300 };
+
+const oneLine = (text) => String(text || '').trim().replace(/\s+/g, ' ');
+
+// The first sentences of a text that fit in max characters (a hard cut when one sentence is already too long).
+function clip(text, max) {
+  const t = String(text || '').trim().replace(/\n{3,}/g, '\n\n');
+  if (t.length <= max) return t;
+  const cut = t.slice(0, max - 2);
+  const sentences = cut.match(/^[\s\S]*[.!?](?=\s)/)?.[0];
+  return `${sentences && sentences.length > max / 3 ? sentences : cut.trimEnd()} …`;
+}
+
+// The selection/page text for a follow-up: whole when short, else its key sentences and its beginning, ≤ max chars.
+function followUpContext(text, max = FOLLOW_UP_BUDGET.context) {
+  if (text.length <= max) return text;
+  const keys = keySentences(text, 4).join(' ').slice(0, Math.floor(max / 2));
+  return `Key sentences: ${keys}\n\nBeginning: ${text.slice(0, max - keys.length - 30)}`;
+}
+
+// turns: [{ question, answer }] oldest first → the newest ones that fit the budget, oldest first.
+function historyBlock(turns, budget = FOLLOW_UP_BUDGET) {
+  const recent = turns.slice(-budget.maxTurns);
+  const entries = [];
+  let used = 0;
+  for (let i = recent.length - 1; i >= 0; i--) {
+    const latest = i === recent.length - 1;
+    const answer = latest ? clip(recent[i].answer, budget.latestAnswer) : clip(oneLine(recent[i].answer), budget.olderAnswer);
+    const entry = `User: ${clip(oneLine(recent[i].question), budget.question)}\nLoon: ${answer}`;
+    if (!latest && used + entry.length + 2 > budget.turns) break;
+    entries.unshift(entry);
+    used += entry.length + 2;
+  }
+  return `Conversation so far (oldest first):\n<conversation>\n${entries.join('\n\n')}\n</conversation>`;
+}
+
 // Fixed parts first, volatile parts last (user preferences → instruction → context → memory), so consecutive requests
 // share the longest possible token prefix after the system prompt and llama.cpp reuses its KV cache for it. The
 // preferences block (brain/personal.js instructionsBlock) changes only when Settings change. No timestamps anywhere.
-function buildPrompt(taskId, packet, { deeper = false, question, memory = [], instructions = '' } = {}) {
+// A follow-up (history given) keeps that order and grows at the end: preferences → context → conversation → memory →
+// the new message, so the turns of one thread share their prefix too.
+function buildPrompt(taskId, packet, { deeper = false, question, memory = [], instructions = '', history = [] } = {}) {
   const task = TASKS[taskId];
   const instruction = taskId === 'ask' || question ? question || packet.question : task.instruction(packet);
   const text = task.contextText ? task.contextText(packet) : packet.text;
   const depth = deeper ? '\nGo deeper than usual: give a thorough, well-structured answer.' : '';
   const about = memory.length ? `About the user (they chose to share this; use it only when relevant):\n${memory.map((m) => `- ${m}`).join('\n')}` : '';
+  if (history.length) {
+    return [instructions, text && contextBlock(packet, text), historyBlock(history), about, `Now answer this follow-up: ${instruction}${depth}`].filter(Boolean).join('\n\n');
+  }
   return [instructions, instruction + depth, text && contextBlock(packet, text), about].filter(Boolean).join('\n\n');
 }
 
@@ -148,4 +193,4 @@ function handoffPrompt(taskId, packet, question) {
   return packet.text ? `${instruction}\n\nHere is the text${where}:\n"""\n${packet.text}\n"""` : instruction;
 }
 
-module.exports = { TASKS, SELECTION_CHIPS, PAGE_CHIPS, MODE_CHIPS, pageChipsFor, MAX_CONTEXT_CHARS, buildPrompt, handoffPrompt, memoryGroup };
+module.exports = { TASKS, SELECTION_CHIPS, PAGE_CHIPS, MODE_CHIPS, pageChipsFor, MAX_CONTEXT_CHARS, FOLLOW_UP_BUDGET, buildPrompt, historyBlock, followUpContext, handoffPrompt, memoryGroup };

@@ -239,7 +239,7 @@ function hideBubble() {
   if (!bubbleWin.isVisible()) return;
   companion.cancel();
   bubbleWin.hide();
-  brain.resetThread();
+  companion.endThread();
   bubbleWin.webContents.send('bubble-hidden');
   catWin.webContents.send('bubble', { open: false });
 }
