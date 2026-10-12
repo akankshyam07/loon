@@ -300,8 +300,9 @@
   const DONE_BTN = overlayButton(2);
 
   // ---------- the storyboard ----------
-  const T = { article: 3.2, shop: 10.0, menu: 17.2, teach: 25.4, duo: 33.0, end: 42.6 };
-  const DURATION = 47.0;
+  const INTRO = { hook: 0, reveal: 3.0, value: 6.5 }; // the ad opener: a relatable problem, meet Loon, what it does
+  const T = { article: 9.6, shop: 16.4, menu: 23.6, teach: 31.8, duo: 39.4, end: 49.0 };
+  const DURATION = 53.4;
   const t = T;
   const fit = (r, pad = 30) => {
     const z = clamp(Math.min(W / (r.w + pad * 2), H / (r.h + pad * 2)), 1, 3);
@@ -370,14 +371,14 @@
   const FOOD = { chips: t.menu + 1.6, cameo: t.menu + 2.2, answer: t.menu + 2.3, out: t.teach };
   const TEACH = { app: t.teach, keys: t.teach + 0.5, open: t.teach + 1.0, type: t.teach + 1.6, send: t.teach + 2.9, step1: t.teach + 3.9, png: t.teach + 4.95, step2: t.teach + 5.55, saved: t.teach + 6.15, done: t.teach + 6.75, out: t.duo };
   const CAMEO = PX.cameoScene('soju');
-  const BLINKS = [1.1, 2.5, 5.1, 9.2, 12.0, 16.6, 19.0, 24.9, 27.4, 31.0, 38.6];
+  const BLINKS = [4.9, 6.2, 8.4, 11.5, 15.6, 18.4, 22.9, 25.4, 31.3, 33.8, 37.4, 45.0];
 
   const CAPTIONS = [
-    [t.article + 0.6, t.shop - 0.4, '1', 'Highlight a word, get it instantly'],
-    [t.shop + 0.5, t.menu - 0.4, '2', 'Shopping Cat: real price per unit'],
-    [t.menu + 0.5, t.teach - 0.4, '3', "Food Cat: Soju's department"],
+    [t.article + 0.5, t.shop - 0.4, '1', 'Instant definitions'],
+    [t.shop + 0.5, t.menu - 0.4, '2', 'Smart shopping: price per unit'],
+    [t.menu + 0.5, t.teach - 0.4, '3', 'Food? Ask Soju'],
     [t.teach + 0.5, t.duo - 0.4, '4', 'Teach me on my screen'],
-    [t.duo + 0.5, t.end - 0.1, '5', 'Two cats, one tiny wardrobe'],
+    [t.duo + 0.5, t.end - 0.1, '5', 'Two cats, one helper'],
   ];
   let BALLOONS = []; // [from, to, who, text], filled in once the voice cues are timed
 
@@ -435,7 +436,7 @@
     return acc;
   };
   const VOICE_AT = {
-    greet: 0.6,
+    greet: INTRO.reveal + 1.0,
     what: SEL.end + 0.1,
     opinions: t.shop + 0.55,
     darling: SHOP.answer + 0.6,
@@ -529,6 +530,7 @@
   // ---------- 90s transitions, drawn on a 160×100 grid and stepped at 12 fps ----------
   const HALF = 4 / 12; // four steps to cover, four to reveal
   const TRANSITIONS = [
+    { at: INTRO.reveal, kind: 'wipe', colors: ['#ffd6e7', '#ffc2da'] },
     { at: t.article, kind: 'dissolve', colors: ['#ffd6e7', '#ffc2da'] },
     { at: t.shop, kind: 'wipe', colors: ['#d9ccff', '#c4b2ff'] },
     { at: t.menu, kind: 'iris' },
@@ -601,6 +603,33 @@
   }
 
   let camNow = { tx: 0, ty: 0, s: 1.25 };
+  // ---------- the hook: a confusing page, a tired cursor, the copy-paste-into-a-chatbot dance ----------
+  const HOOK1 = 'Ever get stuck on a confusing page…';
+  const HOOK2 = '…and end up copy-pasting it into a chatbot?';
+  const hookText = $('#hookText');
+  const HOOK_TEXT = hookText.textContent;
+  $('#hookCursor').innerHTML = CURSORS.arrow;
+  const HOOK_PATH = [[0.2, { x: 360, y: 640 }], [1.0, { x: 520, y: 420 }], [1.45, { x: 470, y: 440 }], [1.85, { x: 880, y: 470 }], [2.6, { x: 1230, y: 470 }]];
+  function drawHook(tt) {
+    const hook = $('#hook');
+    hook.style.display = tt < INTRO.reveal ? 'flex' : 'none';
+    if (tt >= INTRO.reveal) return;
+    $('#hook1').textContent = HOOK1.slice(0, Math.max(0, Math.floor((tt - 0.15) / 0.03)));
+    $('#hook2').textContent = HOOK2.slice(0, Math.max(0, Math.floor((tt - 1.55) / 0.025)));
+    $('.hook-browser').style.transform = `scale(${popScale(tt, 0.05, 0.3)})`;
+    const sel = Math.floor(stepped(prog(tt, 1.45, 1.8), 6) * HOOK_TEXT.length);
+    hookText.innerHTML = sel ? `<mark>${HOOK_TEXT.slice(0, sel)}</mark>${HOOK_TEXT.slice(sel)}` : HOOK_TEXT;
+    $('#hookKey').style.transform = `scale(${popScale(tt, 1.85, 0.3)})`;
+    $('#hookKey').style.opacity = tt < 2.5 ? '1' : '0';
+    $('.hook-bot').style.transform = `scale(${popScale(tt, 2.1, 0.3)})`;
+    $('#hookPaste').textContent = tt > 2.6 ? 'Notwithstanding the foregoing, the licensee shall…' : 'Paste here…';
+    const p = track(HOOK_PATH, tt);
+    const wobble = Math.round(Math.sin(tt * 3) * 6); // a tired, droopy cursor
+    $('#hookCursor').style.transform = `translate(${p.x}px, ${p.y + wobble}px)`;
+    const sweat = $('#hookSweat');
+    sweat.style.opacity = within(tt, 0.9, 1.45) || tt > 2.65 ? '1' : '0';
+    sweat.style.transform = `translate(${p.x + 30}px, ${p.y - 30 + Math.floor((tt * 6) % 3) * 4}px)`;
+  }
   function seek(tt) {
     // camera
     const cam = track(CAMERA, tt);
@@ -613,16 +642,31 @@
 
     // title (iris opens onto the desktop) and end card (iris closes into it)
     const title = $('#title');
-    title.style.display = tt < t.article ? 'flex' : 'none';
-    if (tt < t.article) {
+    drawHook(tt);
+    title.style.display = tt >= INTRO.reveal && tt < t.article ? 'flex' : 'none';
+    if (tt >= INTRO.reveal && tt < t.article) {
+      const r = INTRO.reveal;
       const lid = blinkLid(tt);
-      const view = within(tt, 2.45, 3.0) ? { now: spriteNow(tt), mood: 'happy', happy: 1 } : { now: spriteNow(tt), lidL: lid, lidR: lid, tailPeriod: 2000, look: tt > 0.6 && tt < 2.4 ? { x: 2, y: 2 } : { x: 0, y: 0 } };
+      const view = within(tt, INTRO.value - 0.5, INTRO.value + 0.3) ? { now: spriteNow(tt), mood: 'happy', happy: 1 } : { now: spriteNow(tt), lidL: lid, lidR: lid, tailPeriod: 2000, look: within(tt, r + 2.2, r + 3.0) ? { x: 6, y: 1 } : { x: 0, y: 0 } };
       if (speaking('luna', tt)) view.mouth = 'open';
       drawSprite(titleCat, view, 'luna');
+      titleCat.style.transform = `scale(${popScale(tt, r + 0.15, 0.4)})`;
       placeScreenBalloon($('#titleSay'), screenBalloon('greet'), tt);
-      $('#title .logo').style.transform = `scale(${popScale(tt, 0.3)})`;
-      tagline.textContent = TAGLINE.slice(0, Math.max(0, Math.floor((tt - 0.9) / 0.03)));
+      $('#title .meet').style.transform = `scale(${popScale(tt, r + 0.3)})`;
+      $('#title .logo').style.transform = `scale(${popScale(tt, r + 0.45)})`;
+      const valueOn = tt >= INTRO.value;
+      tagline.style.display = valueOn ? 'none' : '';
+      tagline.textContent = TAGLINE.slice(0, Math.max(0, Math.floor((tt - r - 0.9) / 0.025)));
       tagline.style.minHeight = '1.5em';
+      const value = $('#title .value');
+      value.style.display = valueOn ? 'flex' : 'none';
+      value.querySelector('.value-big').style.transform = `scale(${popScale(tt, INTRO.value, 0.3)})`;
+      value.querySelector('.value-small').style.opacity = tt > INTRO.value + 0.6 ? '1' : '0';
+      value.querySelectorAll('.value-chips span').forEach((chip, i) => { chip.style.transform = `scale(${popScale(tt, INTRO.value + 1.1 + i * 0.18, 0.3)})`; });
+      // Soju peeks in from the screen edge, looking at his sister
+      const peek = $('#peekSoju');
+      drawSprite(peek, { now: spriteNow(tt), look: { x: -6, y: 0 }, ...(within(tt, r + 2.6, r + 2.9) ? { lidL: 1, lidR: 1 } : {}) }, 'soju');
+      peek.style.right = `${-256 + 128 * stepped(prog(tt, r + 1.6, r + 2.0), 4) - 128 * stepped(prog(tt, INTRO.value + 2.4, INTRO.value + 2.8), 4)}px`;
     }
     const endOn = tt >= t.end;
     const end = $('#end');
@@ -642,10 +686,11 @@
       placeScreenBalloon($('#endSayLuna'), screenBalloon('byeLuna'), tt);
       placeScreenBalloon($('#endSaySoju'), screenBalloon('byeSoju'), tt);
       $('#end .logo').style.transform = `scale(${popScale(tt, t.end + 0.7)})`;
-      $('#end .tagline').style.opacity = tt > t.end + 1.0 ? '1' : '0';
-      $('#end .url-pill').style.transform = `scale(${popScale(tt, t.end + 1.3)})`;
+      $('#end .cta').style.transform = `scale(${popScale(tt, t.end + 1.0)})`;
+      document.querySelectorAll('#end .url-pill').forEach((pill, i) => { pill.style.transform = `scale(${popScale(tt, t.end + 1.3 + i * 0.25)})`; });
+      $('#end .tagline').style.opacity = tt > t.end + 1.9 ? '1' : '0';
     }
-    titleSparks.forEach((sp) => twinkle(sp, tt, tt < t.article));
+    titleSparks.forEach((sp) => twinkle(sp, tt, tt >= INTRO.reveal && tt < t.article));
     endSparks.forEach((sp) => twinkle(sp, tt, endOn && tt > t.end + 0.5));
 
     // windows and pages
@@ -773,7 +818,7 @@
   // ---------- sound cues for demo/music.js ----------
   const SFX = [
     ...TRANSITIONS.map((tr) => ({ t: tr.at - HALF, kind: 'sparkle' })), { t: t.end, kind: 'sparkle' }, { t: DRESS_AT, kind: 'sparkle' },
-    ...[0.3, CARD_DEF.at, SHOP.chips, SHOP.answer, FOOD.chips, TEACH.open, TEACH.step1, TEACH.step2, t.end + 0.7].map((at) => ({ t: at, kind: 'pop' })),
+    ...[0.2, 1.85, 2.1, INTRO.reveal + 0.3, INTRO.reveal + 0.9, INTRO.reveal + 1.6, INTRO.value, INTRO.value + 0.7, CARD_DEF.at, SHOP.chips, SHOP.answer, FOOD.chips, TEACH.open, TEACH.step1, TEACH.step2, t.end + 0.7].map((at) => ({ t: at, kind: 'pop' })),
     ...CLICKS.map((at) => ({ t: at, kind: 'click' })), { t: TEACH.keys + 0.42, kind: 'click' },
     ...CAMEO.steps.reduce((acc, st) => {
       if (st.soju?.act === 'eat' && st.soju.mouth === 'open') acc.list.push({ t: FOOD.cameo + acc.at, kind: 'munch' });

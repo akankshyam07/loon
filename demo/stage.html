@@ -92,18 +92,39 @@
   <div id="caption"><span class="num"></span><span class="text"></span></div>
 
   <div id="title" class="card-screen">
-    <div class="moon"></div>
-    <canvas id="titleCat"></canvas>
+    <div class="hero"><div class="moon"></div><canvas id="titleCat"></canvas></div>
+    <p class="meet">Meet</p>
     <h1 class="logo">Loon</h1>
-    <p class="tagline">a tiny pixel cat that explains your screen</p>
+    <p class="tagline">a tiny pixel cat that lives on your screen</p>
+    <div class="value">
+      <p class="value-big">Highlight anything. Ask anything.</p>
+      <p class="value-small">Loon explains, compares and helps, right where you are.</p>
+      <div class="value-chips"><span>Free</span><span>Open source</span><span>Runs on your Mac</span><span>Private by default</span></div>
+    </div>
     <div id="titleSay" class="balloon big" hidden></div>
+    <canvas id="peekSoju"></canvas>
+  </div>
+
+  <div id="hook" class="card-screen">
+    <p class="hook-line" id="hook1"></p>
+    <div class="hook-browser">
+      <div class="hook-tabs"><i class="dot r"></i><i class="dot y"></i><i class="dot g"></i><span>Terms…</span><span>API ref…</span><span>Docs…</span><span>Forum…</span><span>Terms (2)…</span><span>???</span><span>Help…</span></div>
+      <p class="hook-text" id="hookText">Notwithstanding the foregoing, the licensee shall indemnify and hold harmless the licensor from any and all claims arising hereunder, pursuant to clause 14(b)(iii), save as otherwise provided herein, mutatis mutandis…</p>
+    </div>
+    <div class="hook-bot"><b>Some chatbot tab</b><p id="hookPaste">Paste here…</p></div>
+    <kbd id="hookKey">⌘C</kbd>
+    <p class="hook-line small" id="hook2"></p>
+    <svg id="hookCursor" viewBox="0 0 12 19" shape-rendering="crispEdges"></svg>
+    <span id="hookSweat">💧</span>
   </div>
 
   <div id="end" class="card-screen">
     <canvas id="endCats"></canvas>
     <h1 class="logo small">Loon</h1>
-    <p class="tagline">Free · open source · runs on your Mac</p>
+    <p class="cta">Get Loon free ✦</p>
     <p class="url-pill">akankshyam07.github.io/loon</p>
+    <p class="url-pill gh">github.com/akankshyam07/loon</p>
+    <p class="tagline small">Free · open source · runs on your Mac</p>
     <div id="endSayLuna" class="balloon big" hidden></div>
     <div id="endSaySoju" class="balloon big" hidden></div>
   </div>

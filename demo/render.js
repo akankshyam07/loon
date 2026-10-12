@@ -5,9 +5,10 @@
 //   node demo/render.js                  everything
 //   node demo/render.js --stills 5,12.5  just those moments as PNGs (for checking), printed paths
 //   node demo/render.js --audio-only     remix the soundtrack into the existing docs/demo.mp4
+//   node demo/render.js --variant B --mp4 out.mp4   Soju speaks his real words with TTS; writes only that mp4
 //
-// Needs playwright-core's headless shell (npx playwright-core install chromium-headless-shell) and ffmpeg. Voices use
-// Deepgram Aura when DEEPGRAM_API_KEY is set, else Kokoro (downloads its ~90 MB model once).
+// Needs playwright-core's headless shell (npx playwright-core install chromium-headless-shell) and ffmpeg. The voices
+// are synthesized (demo/voices.js); only variant B uses TTS (Kokoro, or Deepgram Aura when DEEPGRAM_API_KEY is set).
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -25,8 +26,8 @@ const FFMPEG = ['/opt/homebrew/bin/ffmpeg', '/usr/local/bin/ffmpeg'].find((p) =>
 const WORKERS = 4;
 const GIF_FPS = 15;
 // highlight → define into the curtain wipe, the iris onto the menu and Soju's cameo, Teach me into the iris, dress-up
-const GIF_CUTS = [[5.7, 10.0], [17.2, 23.8], [29.1, 33.0], [39.2, 41.6]];
-const POSTER_AT = 46.6;
+const GIF_CUTS = [[3.3, 5.8], [12.1, 16.4], [24.6, 30.2], [35.5, 39.4], [45.6, 48.0]];
+const POSTER_AT = 53.0;
 const arg = (name) => { const i = process.argv.indexOf(name); return i > 0 ? process.argv[i + 1] : null; };
 
 function headlessShell() {
@@ -84,8 +85,9 @@ const mb = (file) => `${(fs.statSync(file).size / 2 ** 20).toFixed(2)} MB`;
   const browser = await chromium.launch({ executablePath: headlessShell(), headless: true });
   const work = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-demo-'));
   try {
-    const speech = await voices.synthesize(content.voiceLines(persona));
-    console.log(`voices: ${speech.backend} (luna ${speech.voices.luna}, soju ${speech.voices.soju})`);
+    const variant = arg('--variant') || 'A';
+    const speech = await voices.synthesize(content.voiceLines(persona), { variant });
+    console.log(`voices: ${speech.backend}`);
     voiceMeta = Object.fromEntries(Object.entries(speech.clips).map(([id, c]) => [id, { duration: c.duration, mouth: c.mouth }]));
     const probe = await openStage(browser, port, 1);
     const { DURATION, FPS, cues } = await probe.evaluate(() => window.DEMO);
@@ -95,7 +97,7 @@ const mb = (file) => `${(fs.statSync(file).size / 2 ** 20).toFixed(2)} MB`;
       const wav = path.join(work, 'soundtrack.wav');
       music.writeWav(wav, music.mix({ duration: DURATION, cues, clips: speech.clips }));
       if (arg('--wav')) fs.copyFileSync(wav, arg('--wav'));
-      const mp4 = path.join(DOCS, 'demo.mp4');
+      const mp4 = arg('--mp4') || path.join(DOCS, 'demo.mp4');
       const out = path.join(work, 'demo.mp4');
       ffmpeg('-i', mp4, '-i', wav, '-map', '0:v', '-map', '1:a', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2', '-shortest', '-movflags', '+faststart', out);
       fs.copyFileSync(out, mp4);
@@ -129,9 +131,10 @@ const mb = (file) => `${(fs.statSync(file).size / 2 ** 20).toFixed(2)} MB`;
     const wav = path.join(work, 'soundtrack.wav');
     music.writeWav(wav, music.mix({ duration: DURATION, cues, clips: speech.clips }));
     if (arg('--wav')) fs.copyFileSync(wav, arg('--wav'));
-    const mp4 = path.join(DOCS, 'demo.mp4');
+    const mp4 = arg('--mp4') || path.join(DOCS, 'demo.mp4');
     ffmpeg('-framerate', String(FPS), '-i', path.join(frames, '%05d.png'), '-i', wav, '-c:v', 'libx264', '-preset', 'slow', '-tune', 'animation', '-crf', '22',
       '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2', '-shortest', '-movflags', '+faststart', mp4);
+    if (variant !== 'A') { console.log(`${mp4} ${mb(mp4)}`); return; }
     fs.copyFileSync(path.join(frames, `${String(Math.round(POSTER_AT * FPS)).padStart(5, '0')}.png`), path.join(DOCS, 'demo-poster.png'));
 
     // The GIF is rendered natively at half size (sharp text, crisp sprites) instead of scaling the video down.

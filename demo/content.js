@@ -37,27 +37,29 @@
       guest: ['soju', 'guest', 0],
       teachDone: ['luna', 'pet', 2],
     },
-    // The spoken lines. `from` points at the persona.js line it speaks (balloon text = that line; `say` is how the TTS
-    // should pronounce it). Lines without `from` are the reel's own: Soju copying his big sister, slightly wrong.
+    // What the cats "say". Balloons show the text (from persona.js when `from` is set; otherwise the reel's own line, like
+    // Soju copying his sister). The sound is cute-game babble plus synthesized cat noises (demo/voices.js):
+    //   ['babble', text]  chirpy syllables · ['copy', lineId, text]  Soju babbles along to Luna's melody for that line
+    //   ['meow'] · ['purr'] · ['trill'] · ['chirp']. A trailing `true` marks real words (variant B can speak those).
     voice: [
-      { id: 'greet', who: 'luna', from: ['luna', 'greeting', 0] },
-      { id: 'what', who: 'luna', from: ['luna', 'selection', 0] },
-      { id: 'opinions', who: 'luna', from: ['luna', 'nudge.shopping'] },
-      { id: 'darling', who: 'luna', from: ['luna', 'shopping', 1] },
-      { id: 'dept', who: 'luna', from: ['luna', 'call', 0], say: "This is Soju's department." },
-      { id: 'food', who: 'soju', from: ['soju', 'guest', 0] },
-      { id: 'purr', who: 'soju', from: ['soju', 'pet', 0], say: 'Purrr! More!' },
-      { id: 'acceptable', who: 'luna', from: ['luna', 'pet', 1], say: 'Mmm. Acceptable.' },
-      { id: 'acceptabubble', who: 'soju', text: 'Mrrr! Acceptabubble!', say: 'Mmm! Acceptabubble!' },
-      { id: 'byeLuna', who: 'luna', text: 'Bye bye!', say: 'Bye bye!' },
-      { id: 'byeSoju', who: 'soju', text: 'Bye bye bye bye!', say: 'Bye bye bye bye!' },
+      { id: 'greet', who: 'luna', from: ['luna', 'greeting', 0], sound: [['meow'], ['babble', 'Hi. I was already looking at you.']] },
+      { id: 'what', who: 'luna', from: ['luna', 'selection', 0], sound: [['babble', "Ooh. What's that?"]] },
+      { id: 'opinions', who: 'luna', from: ['luna', 'nudge.shopping'], sound: [['babble', 'I have opinions about these prices.']] },
+      { id: 'darling', who: 'luna', from: ['luna', 'shopping', 1], sound: [['babble', 'Price per unit, darling. Always.']] },
+      { id: 'dept', who: 'luna', from: ['luna', 'call', 0], sound: [['babble', "This is Soju's department."]] },
+      { id: 'food', who: 'soju', from: ['soju', 'guest', 0], sound: [['chirp'], ['babble', 'Did someone say food?!', true]] },
+      { id: 'purr', who: 'soju', from: ['soju', 'pet', 0], sound: [['purr'], ['babble', 'More!', true]] },
+      { id: 'acceptable', who: 'luna', from: ['luna', 'pet', 1], sound: [['trill'], ['babble', 'Acceptable.']] },
+      { id: 'acceptabubble', who: 'soju', text: 'Mrrr! Acceptabubble!', sound: [['chirp'], ['copy', 'acceptable', 'Acceptabubble!']] },
+      { id: 'byeLuna', who: 'luna', text: 'Bye bye!', sound: [['babble', 'Bye bye!'], ['meow']] },
+      { id: 'byeSoju', who: 'soju', text: 'Bye bye bye bye!', sound: [['copy', 'byeLuna', 'Bye bye bye bye!', true], ['meow']] },
     ],
-    // persona: renderer/persona.js (window.LoonPersona or require) → [{ id, who, text, say }]
+    // persona: renderer/persona.js (window.LoonPersona or require) → [{ id, who, text, sound }]
     voiceLines(persona) {
       return content.voice.map((v) => {
         const value = v.from && v.from[1].split('.').reduce((node, key) => node && node[key], persona.PERSONAS[v.from[0]].lines);
         const text = v.from ? (typeof value === 'string' ? value : value[v.from[2]]) : v.text;
-        return { id: v.id, who: v.who, text, say: v.say || text };
+        return { id: v.id, who: v.who, text, sound: v.sound };
       });
     },
     teach: {

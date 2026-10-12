@@ -318,8 +318,8 @@ things. A few house rules (more in [AGENTS.md](AGENTS.md)):
 ## License
 
 [MIT](LICENSE) for Loon's own code. Packaged builds include eSpeak NG (GPL-3.0) through the voice, so a distributed
-`.dmg` follows GPL-3.0 as a whole; [THIRD_PARTY.md](THIRD_PARTY.md) has the details. The demo video's chiptune and
-sound effects are original (synthesized by `demo/music.js`) and MIT too; its voices come from Kokoro.
+`.dmg` follows GPL-3.0 as a whole; [THIRD_PARTY.md](THIRD_PARTY.md) has the details. The demo video's chiptune, sound
+effects and cat voices are original (synthesized by `demo/music.js` and `demo/voices.js`) and MIT too.
 
 ## Credits
 

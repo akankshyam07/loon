@@ -22,7 +22,7 @@ test('demo persona lines exist in renderer/persona.js', () => {
   // spoken lines marked `from` say exactly that persona line; the rest are the reel's own (Soju copying Luna)
   for (const line of demo.voiceLines(persona)) {
     const spec = demo.voice.find((v) => v.id === line.id);
-    assert.ok(line.text && line.say, line.id);
+    assert.ok(line.text && line.sound.length, line.id);
     if (spec.from) assert.strictEqual(spec.from[0], spec.who, line.id);
   }
   const cameo = persona.cameoFor({ companion: 'luna', task: 'food_lightest', rand: () => 0 });

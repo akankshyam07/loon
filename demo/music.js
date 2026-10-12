@@ -6,8 +6,8 @@ const fs = require('fs');
 const RATE = 44100;
 const BPM = 124;
 const EIGHTH = 60 / BPM / 2;
-const MUSIC_LEVEL = 0.65; // the tune sits well under the voices
-const VOICE_LEVEL = 0.95;
+const MUSIC_LEVEL = 0.73; // the tune sits well under the voices
+const VOICE_LEVEL = 0.62; // the synthesized voices are bright; this keeps them about 8 dB over the music
 const midi = (n) => 440 * 2 ** ((n - 69) / 12);
 const NOTE = Object.fromEntries(['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'].flatMap((name, i) => [2, 3, 4, 5, 6, 7].map((oct) => [`${name}${oct}`, 12 * (oct + 1) + i])));
 
