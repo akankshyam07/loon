@@ -150,23 +150,41 @@
     '.OOOOOOOOOOOOOOOOOOOOOOOOOOOOOO.',
   ];
   const BACK = ARMS_UP.map((row) => row.replace(/m/g, 'k'));
-  // Belly-up sprawl: lying on the back with the head at the left (drawn at 0,15), paws in the air, belly showing.
+  // Belly-up sprawl: on his back with the head upside down at the left (ears toward the floor), a long body, all four
+  // paws in the air and the tail flopped on the floor.
   const SPRAWL = [
-    ...top(18),
-    '.....................OOOO..OOOO.',
-    '.....................OppO..OppO.',
-    '.....................OkkO..OkkO.',
-    '...................OOOkkOOOOkkOO',
-    '..................OkkckkkkkkkkkO',
-    '.................OkkcksssssskkkO',
-    '.................OkkcmuuuuuuskkO',
-    '.................OkkcmmuuuuuskkO',
-    '.................OkkcsuuuuuuskkO',
-    '.................OkkckssssssskkO',
-    '..................OkkckkkkkkkkO.',
-    '...................OOOOOOOOOttO.',
-    '........................OttttO..',
-    '.......................OOOOOO...',
+    '................................',
+    '................................',
+    '................................',
+    '................................',
+    '................................',
+    '................................',
+    '................................',
+    '................................',
+    '................................',
+    '................................',
+    '................................',
+    '................................',
+    '................................',
+    '........................OppOppO.',
+    '........................OkkOkkO.',
+    '.................OppOppOOkkOkkO.',
+    '.................OkkOkkOOkkOkkO.',
+    '.................OkkOkkOOkkOkkO.',
+    '...............OOkkkkkkkkkkkkkOO',
+    '..............OkkkkkkkkkkkkkkkkO',
+    '..............OkkkkkkkkkkkkkkkkO',
+    '..............OkkkkkkkkkkkkkkkkO',
+    '..............OkkkkkkkkkkkkkkkkO',
+    '..............OkkkkkkkkkkkkkkkkO',
+    '...............OkkkkkkkkkkkkkkO.',
+    '................OOOOOOOOOOOOOOtO',
+    '.............................OtO',
+    '...........................OttO.',
+    '.........................OttO...',
+    '.........................OOO....',
+    '................................',
+    '................................',
   ];
 
   // ---------- tails (8×14 at 24,17, drawn behind the body) ----------
@@ -496,7 +514,7 @@
 
     const body = { loaf: LOAF, stretch: STRETCH, cover: ARMS_UP, catch: ARMS_UP, leap: ARMS_UP, busy: ARMS_UP, swat: ONE_ARM, groom: ONE_ARM, sprawl: SPRAWL, fancyGroom: step < 3 ? ONE_ARM : SIT }[pose] || SIT;
     const headX = pose === 'sprawl' ? 0 : HEAD_X;
-    const headY = { loaf: 13, stretch: 7, sprawl: 15, eat: 1 + (v.headDrop ?? 3) }[pose] ?? 1;
+    const headY = { loaf: 13, stretch: 7, sprawl: 16, eat: 1 + (v.headDrop ?? 3) }[pose] ?? 1;
 
     // tail (behind everything); the sprawl draws its own, flopped on the floor
     const wagMs = Math.max(90, Math.min(1100, v.tailPeriod / 4));
@@ -505,6 +523,7 @@
     put(body, 0, 0);
 
     // the locked face: only the eye and mouth glyphs swap, always on the same pixels
+    const headLayers = layers.length;
     put(HEAD, headX, headY);
     const groomUp = pose === 'groom' && tick(320, 2) === 0;
     const gaze = pose === 'busy' ? 'down' : lookDir(v.look);
@@ -525,6 +544,11 @@
 
     // costume over the face/body, under the paws
     if (costume) wear(costume.front, headX, headY);
+    // belly-up: the whole head (face, markings, costume) is drawn upside down around its own 16 rows
+    if (pose === 'sprawl') for (let i = headLayers; i < layers.length; i++) {
+      const l = layers[i];
+      layers[i] = { ...l, flipY: true, y: 2 * headY + 15 - l.y - l.map.length + 1 };
+    }
 
     // what the paws are doing
     if (pose === 'cover') { put(COVER, 8, 7); if (v.privacy) put(LOCK, 26, 1); }
@@ -552,8 +576,8 @@
   const ROWS = TOP + H + 1;
   function compose({ layers, squash = 0, shift = 0, flip = false, glow = 0, noPendant = false }) {
     let g = Array.from({ length: ROWS }, () => Array(W).fill('.'));
-    for (const { map, x, y, only } of layers) {
-      map.forEach((row, j) => {
+    for (const { map, x, y, only, flipY } of layers) {
+      (flipY ? [...map].reverse() : map).forEach((row, j) => {
         const gy = TOP + y + j;
         if (gy < 0 || gy >= TOP + H) return;
         for (let i = 0; i < row.length; i++) {
