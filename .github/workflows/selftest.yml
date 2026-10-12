@@ -34,6 +34,8 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - run: npm ci
+      - name: Install the Chrome headless shell (the DOM test in test/agent.test.js)
+        run: npx playwright-core install --only-shell chromium
       - run: npm test
 
   e2e:
@@ -53,6 +55,7 @@ jobs:
       - run: npm ci
       - name: Make sure Electron's binary is installed
         run: test -x node_modules/electron/dist/Electron.app/Contents/MacOS/Electron || node node_modules/electron/install.js
+      # Full Chrome for Testing: the selftest loads the unpacked extension, which the headless shell can't.
       - name: Install Chrome for Testing (the browser half of the selftest)
         run: npx playwright-core install chromium
 

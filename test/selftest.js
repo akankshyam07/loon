@@ -34,10 +34,8 @@ async function run(ctx) {
     if (event.level === 'error' || event.level === 'warning') console.log(`  [cat ${event.level}] ${event.message}`);
   });
 
-  let lastIgnore = null;
   let dragStarted = false;
   let dragEnded = false;
-  ipcMain.on('set-ignore-mouse', (_e, ignore) => { lastIgnore = ignore; });
   ipcMain.on('drag-start', () => { dragStarted = true; });
   ipcMain.on('drag-end', () => { dragEnded = true; });
 
@@ -53,14 +51,34 @@ async function run(ctx) {
   const head = await cat(`(() => { const r = document.querySelector('#headShape').getBoundingClientRect(); return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) }; })()`);
   check('cat renders', head.x > 0 && head.y > 0, `head at ${head.x},${head.y}`);
 
-  // Start from a known state, then hover.
-  mouse('mouseMove', 3, 3);
+  // Click-through: the renderer hit-tests each mouse move and asks main to capture or pass clicks. Checked on main's
+  // record of the request, because a hidden run keeps the window itself ignoring the real mouse.
+  await cat(`window.__moves = []; document.addEventListener('mousemove', (e) => {
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    window.__moves.push({ x: e.clientX, y: e.clientY, at: el ? el.id || el.tagName : null, overCat: Boolean(el && (el.closest('#cat') || el.closest('.interactive'))), trusted: e.isTrusted });
+  }, true); true`);
+  // Moves go in as real input. Only in a hidden run, and only if Chromium never delivered that input to the page,
+  // the same mousemove is dispatched on the page, so the renderer's hit test, its request and main's handling are
+  // still what's checked; the detail says which path ran.
+  const hover = async (x, y, ignore) => {
+    const seen = await cat('window.__moves.length');
+    mouse('mouseMove', x, y);
+    const reached = () => ctx.catIgnore().requested === ignore;
+    if (await waitFor(reached, 1500, 50)) return 'input event';
+    const delivered = (await cat('window.__moves.length')) > seen;
+    if (ctx.hidden && !delivered) {
+      await cat(`document.dispatchEvent(new MouseEvent('mousemove', { clientX: ${x}, clientY: ${y}, bubbles: true })); true`);
+      if (await waitFor(reached, 1500, 50)) return 'page event (hidden run: the input move never reached the page)';
+    }
+    return `delivered ${delivered} · last move ${await cat('JSON.stringify(window.__moves.at(-1) || null)')} · page ${await cat('document.visibilityState')}`;
+  };
+  const ignoreState = (via) => `${via} · ${JSON.stringify(ctx.catIgnore())}`;
+  mouse('mouseMove', 3, 3); // start from a known state
   await wait(150);
-  lastIgnore = null;
-  mouse('mouseMove', head.x, head.y);
-  check('hovering the cat captures clicks', await waitFor(() => lastIgnore === false, 1500, 50), `last=${lastIgnore}`);
-  mouse('mouseMove', 3, 3);
-  check('empty space passes clicks through', await waitFor(() => lastIgnore === true, 1500, 50), `last=${lastIgnore}`);
+  let via = await hover(head.x, head.y, false);
+  check('hovering the cat captures clicks', ctx.catIgnore().requested === false && ctx.catIgnore().applied === ctx.hidden, ignoreState(via));
+  via = await hover(3, 3, true);
+  check('empty space passes clicks through', ctx.catIgnore().requested === true && ctx.catIgnore().applied === true, ignoreState(via));
 
   mouse('mouseDown', head.x, head.y);
   await wait(60);

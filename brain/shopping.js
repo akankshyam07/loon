@@ -115,22 +115,65 @@ function applyExtractor(doc, extractor) {
   }).filter(Boolean);
 }
 
+const PRICE_TEXT = /[$€£¥₹]\s?\d/;
+const ownText = (el) => [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent.trim()).filter(Boolean).join(' ');
+// tag.class, keeping only classes that are valid in a selector without escaping (utility classes like "md:flex" aren't).
+const cssStep = (el) => [el.tagName.toLowerCase(), ...String(el.className || '').trim().split(/\s+/).filter((c) => /^-?[_a-z][\w-]*$/i.test(c))].join('.');
+
 // Compact "flat JSON" outline of repeated, price-bearing elements: the input format that makes LLM extraction
 // reliable (NEXT-EVAL: flat JSON F1 0.96 vs slimmed HTML 0.10).
 function outlineForExtractor(doc) {
-  const PRICE = /[$€£¥₹]\s?\d/;
   const lines = [];
   for (const el of doc.querySelectorAll('body *')) {
     if (lines.length >= 60) break;
-    const own = [...el.childNodes].filter((n) => n.nodeType === 3).map((n) => n.textContent.trim()).join(' ');
-    if (!own || !(PRICE.test(own) || el.parentElement?.textContent.match(PRICE))) continue;
+    const own = ownText(el);
+    if (!own || !(PRICE_TEXT.test(own) || el.parentElement?.textContent.match(PRICE_TEXT))) continue;
     const path = [];
-    for (let n = el; n && n.tagName && n.tagName !== 'BODY' && path.length < 4; n = n.parentElement) {
-      path.unshift(`${n.tagName.toLowerCase()}${n.className ? `.${String(n.className).trim().split(/\s+/).join('.')}` : ''}`);
-    }
+    for (let n = el; n && n.tagName && n.tagName !== 'BODY' && path.length < 4; n = n.parentElement) path.unshift(cssStep(n));
     lines.push({ path: path.join(' > '), text: own.slice(0, 60) });
   }
   return lines;
+}
+
+// Fallback when the model's selectors don't work: the card is the largest ancestor of a price that holds no other
+// price, and the name is the card's longest non-price text.
+// ponytail: tries the first 10 prices only; a page whose first prices sit outside the listing falls through to null.
+function guessExtractor(doc) {
+  const prices = [...doc.querySelectorAll('body *')].filter((el) => PRICE_TEXT.test(ownText(el))).slice(0, 200);
+  const relative = (card, el) => {
+    const steps = [];
+    for (let n = el; n && n !== card; n = n.parentElement) steps.unshift(cssStep(n));
+    return steps.join(' > ');
+  };
+  for (const price of prices.slice(0, 10)) {
+    let card = price;
+    while (card.parentElement && card.parentElement.tagName !== 'BODY' && prices.filter((p) => card.parentElement.contains(p)).length === 1) card = card.parentElement;
+    if (card === price) continue;
+    const names = [...card.querySelectorAll('*')].filter((el) => !el.contains(price) && ownText(el) && !PRICE_TEXT.test(ownText(el)));
+    const name = names.sort((a, b) => ownText(b).length - ownText(a).length)[0];
+    if (!name) continue;
+    const extractor = { item: cssStep(card), name: relative(card, name), price: relative(card, price) };
+    if (validExtractor(doc, extractor)) return extractor;
+  }
+  return null;
+}
+
+// Why selectors fail, in words the model can act on for its one retry.
+function explainExtractor(doc, extractor) {
+  if (!extractor?.item) return 'it had no "item" selector';
+  let cards;
+  try {
+    cards = [...doc.querySelectorAll(extractor.item)];
+  } catch {
+    return `"${extractor.item}" is not a valid CSS selector`;
+  }
+  let found;
+  try {
+    found = applyExtractor(doc, extractor).length;
+  } catch {
+    return `"${extractor.name}" or "${extractor.price}" is not a valid CSS selector`;
+  }
+  return `"item" matched ${cards.length} element${cards.length === 1 ? '' : 's'} and only ${found} had both a name and a price inside; "item" must match each repeated product card, and "name" and "price" must be inside it`;
 }
 
 function validExtractor(doc, extractor) {
@@ -210,4 +253,4 @@ function renderTable(analysis) {
   return `${header}\n${rows.join('\n')}${warnings}`;
 }
 
-module.exports = { parseQuantity, parsePrice, extractStructured, applyExtractor, outlineForExtractor, validExtractor, analyze, verdict, renderTable, money, short };
+module.exports = { parseQuantity, parsePrice, extractStructured, applyExtractor, outlineForExtractor, validExtractor, guessExtractor, explainExtractor, analyze, verdict, renderTable, money, short };

@@ -17,12 +17,20 @@ async function waitFor(fn, timeoutMs, stepMs = 150) {
   return false;
 }
 
+// Full Chrome (extensions need it, not the headless shell): first the build this playwright-core version installs
+// (`npx playwright-core install chromium`), then any other one in the cache, newest revision first.
 function findChrome() {
-  const root = path.join(os.homedir(), 'Library/Caches/ms-playwright');
-  if (!fs.existsSync(root)) return null;
-  for (const dir of fs.readdirSync(root).filter((d) => /^chromium-\d+$/.test(d)).sort().reverse()) {
-    const exe = path.join(root, dir, 'chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing');
+  try {
+    const exe = require('playwright-core').chromium.executablePath();
     if (fs.existsSync(exe)) return exe;
+  } catch {}
+  const root = process.env.PLAYWRIGHT_BROWSERS_PATH || path.join(os.homedir(), 'Library/Caches/ms-playwright');
+  if (!fs.existsSync(root)) return null;
+  const revision = (d) => Number(d.split('-')[1]);
+  for (const dir of fs.readdirSync(root).filter((d) => /^chromium-\d+$/.test(d)).sort((a, b) => revision(b) - revision(a))) {
+    const exe = ['chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing', 'chrome-mac/Chromium.app/Contents/MacOS/Chromium']
+      .map((p) => path.join(root, dir, p)).find((p) => fs.existsSync(p));
+    if (exe) return exe;
   }
   return null;
 }
@@ -42,7 +50,7 @@ async function run(ctx, check) {
   const { catWin, bubbleWin, bridge, companion, resolver, hooks, settings } = ctx;
   const exe = findChrome();
   if (!exe) {
-    console.log('SKIP  browser checks (no Chrome for Testing in ~/Library/Caches/ms-playwright)');
+    console.log('SKIP  browser checks (no Chrome for Testing: run `npx playwright-core install chromium`)');
     return;
   }
   const { chromium } = require('playwright-core');
@@ -230,8 +238,8 @@ async function run(ctx, check) {
     await waitFor(() => companion.activePage?.url?.includes('shop-plain'), 5000);
     await openAsk();
     before = localCalls();
-    const plain = await clickChip('shop_value', 150000);
-    check('no structured data: the model writes a site extractor once', /Espresso/.test(plain?.text) && /on your Mac.*new site extractor/.test(plain?.tier), plain?.tier);
+    const plain = await clickChip('shop_value', 300000); // up to two CPU model calls before the page heuristic
+    check('no structured data: a site extractor is written once (model, or page heuristic if its selectors fail)', /Espresso/.test(plain?.text) && /on your Mac.*new site extractor/.test(plain?.tier), plain?.tier);
     await closeBubble();
     await openAsk();
     before = localCalls();

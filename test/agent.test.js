@@ -380,14 +380,18 @@ test('runner: macOS steps go to the executors, and missing Accessibility says wh
 
 // ---------- optional: the DOM layer in real headless Chrome ----------
 
+// The headless shell (`npx playwright-core install --only-shell chromium`) or full Chrome for Testing, newest first.
 function findHeadlessChrome() {
-  const root = path.join(os.homedir(), 'Library/Caches/ms-playwright');
+  const root = process.env.PLAYWRIGHT_BROWSERS_PATH || path.join(os.homedir(), 'Library/Caches/ms-playwright');
   if (!fs.existsSync(root)) return null;
-  for (const dir of fs.readdirSync(root).sort().reverse()) {
+  const revision = (d) => Number(d.split('-').pop()) || 0;
+  for (const dir of fs.readdirSync(root).sort((a, b) => revision(b) - revision(a))) {
     const candidates = [
-      path.join(root, dir, 'chrome-headless-shell-mac-arm64/chrome-headless-shell'),
-      path.join(root, dir, 'chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing'),
-    ];
+      'chrome-headless-shell-mac-arm64/chrome-headless-shell',
+      'chrome-mac/headless_shell',
+      'chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing',
+      'chrome-mac/Chromium.app/Contents/MacOS/Chromium',
+    ].map((c) => path.join(root, dir, c));
     const exe = candidates.find((c) => fs.existsSync(c));
     if (exe) return exe;
   }
