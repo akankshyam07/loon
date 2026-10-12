@@ -47,6 +47,7 @@ test('extractor selectors apply to listings without structured data', async () =
   assert.strictEqual(analysis.unit, 'g');
   assert.match(analysis.bestValue.name, /Espresso Roast 2 lb/);
   assert.ok(shopping.outlineForExtractor(doc).some((l) => /li\.card > span\.cost/.test(l.path)));
+  assert.deepStrictEqual(shopping.guessExtractor(doc), { item: 'li.card', name: 'span.title', price: 'span.cost' });
   const mixed = shopping.analyze([{ name: 'Water 1 L', price: 2, currency: 'USD' }, { name: 'Coffee 500g', price: 9, currency: 'USD' }]);
   assert.match(shopping.verdict(mixed).text, /different kinds of products/);
 });

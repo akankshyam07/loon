@@ -78,8 +78,12 @@ function focusWindow(win) {
 }
 const isFocused = (win) => (HIDDEN ? hiddenFocus === win && win.isVisible() : win.isFocused());
 // Real use forwards mouse moves so the page can tell when the cursor is over the cat; a hidden window never takes clicks.
+// catIgnore keeps what the renderer last asked for apart from what the window got, so a hidden selftest can still
+// check the renderer's click-through decisions.
+const catIgnore = { requested: null, applied: null };
 function setCatIgnore(ignore) {
-  catWin.setIgnoreMouseEvents(ignore || HIDDEN, SELFTEST ? {} : { forward: true });
+  catIgnore.applied = ignore || HIDDEN;
+  catWin.setIgnoreMouseEvents(catIgnore.applied, SELFTEST ? {} : { forward: true });
 }
 // Swappable side effects so the selftest never opens a real browser tab or touches the clipboard.
 const hooks = {
@@ -525,7 +529,10 @@ function showCatMenu() {
 
 function registerIpc() {
   ipcMain.handle('cat-svg', () => fs.readFileSync(path.join(__dirname, 'renderer', 'loon.svg'), 'utf8'));
-  ipcMain.on('set-ignore-mouse', (_e, ignore) => setCatIgnore(ignore));
+  ipcMain.on('set-ignore-mouse', (_e, ignore) => {
+    catIgnore.requested = ignore;
+    setCatIgnore(ignore);
+  });
   ipcMain.on('cat-menu', showCatMenu);
   ipcMain.on('open-bubble', openAskBubble);
   ipcMain.on('close-bubble', hideBubble);
@@ -849,6 +856,8 @@ app.whenReady().then(() => {
     const startPosition = settings.position;
     const selftestHooks = {
       isFocused,
+      hidden: HIDDEN,
+      catIgnore: () => ({ ...catIgnore }),
       setCursor: (point) => { virtualCursor = point; },
       // Puts the cat back where the run started, including the home it walks back to and the saved position.
       resetCatPosition: (bounds) => {

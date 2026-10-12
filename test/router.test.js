@@ -242,9 +242,30 @@ test('structured output: the site extractor asks for grammar-constrained JSON', 
   const skills = new Skills({ dataDir: fs.mkdtempSync(path.join(os.tmpdir(), 'loon-skills-')), brain });
   const { parseHTML } = require('linkedom');
   const { document } = parseHTML(`<html><body>${['A', 'B', 'C'].map((n, i) => `<div class="card"><h2 class="title">Tea ${n}</h2><span class="price">$${i + 3}.99</span></div>`).join('')}</body></html>`);
-  const extractor = await skills.generateExtractor(document);
+  const { extractor, modelCalls } = await skills.generateExtractor(document);
   assert.deepStrictEqual([seen[0].type, seen[0].required], ['object', ['item', 'name', 'price']]);
-  assert.deepStrictEqual(extractor, { item: '.card', name: '.title', price: '.price' });
+  assert.deepStrictEqual([extractor, modelCalls], [{ item: '.card', name: '.title', price: '.price', source: 'model' }, 1]);
+});
+
+test('site extractor: bad selectors get one retry with the reason, then a page heuristic; labels stay honest', async () => {
+  const prompts = [];
+  const replies = ['{"item": "ul.results", "name": "span.title", "price": "span.cost"}', '{"item": "li.card > span.cost", "name": "b", "price": "i"}'];
+  const brain = { chat: async (prompt, { onText }) => { prompts.push(prompt); onText(replies[prompts.length - 1]); }, resetThread: () => {} };
+  const skills = new Skills({ dataDir: fs.mkdtempSync(path.join(os.tmpdir(), 'loon-skills-')), brain });
+  const html = fs.readFileSync(path.join(__dirname, 'fixtures', 'shop-plain.html'), 'utf8');
+  const url = 'http://shop.test/beans';
+  const first = await skills.run('shopping', 'shop_value', { html, url, text: '' });
+  assert.strictEqual(prompts.length, 2);
+  assert.match(prompts[1], /"item" matched 1 element and only 1 had both a name and a price/);
+  assert.match(first.detail, /3 products · new site extractor \(page heuristic/);
+  assert.strictEqual(first.usedModel, true);
+  // The saved extractor answers the next visit with no model call.
+  const again = await skills.run('shopping', 'shop_value', { html, url, text: '' });
+  assert.deepStrictEqual([prompts.length, again.usedModel, /saved site extractor/.test(again.detail)], [2, false, true]);
+  // A page where nothing works still says the model ran.
+  const none = await new Skills({ dataDir: fs.mkdtempSync(path.join(os.tmpdir(), 'loon-skills-')), brain: { chat: async (_p, { onText }) => onText('{}'), resetThread: () => {} } })
+    .run('shopping', 'shop_value', { html: '<body><p>$1 off</p><p>$2 off</p></body>', url, text: '' });
+  assert.deepStrictEqual([none.detail, none.usedModel], ['no products found', true]);
 });
 
 // Fake embedder: a strong dimension per topic word plus a weak hashed bag of the other words, so questions about the

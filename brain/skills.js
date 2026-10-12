@@ -51,34 +51,44 @@ class Skills {
     }
     if (structured.length === 1) return { items: structured, via: 'structured data' };
     if (!allowGenerate || !file) return { items: [], via: 'none' };
-    const extractor = await this.generateExtractor(doc);
-    if (!extractor) return { items: [], via: 'none' };
+    const { extractor, modelCalls } = await this.generateExtractor(doc);
+    if (!extractor) return { items: [], via: 'none', modelCalls };
     fs.mkdirSync(this.extractorsDir, { recursive: true });
     fs.writeFileSync(file, JSON.stringify(extractor, null, 2));
-    return { items: shopping.applyExtractor(doc, extractor), via: 'new site extractor (one-time model call)' };
+    const via = extractor.source === 'model' ? 'new site extractor (one-time model call)' : 'new site extractor (page heuristic; the model\'s selectors failed)';
+    return { items: shopping.applyExtractor(doc, extractor), via, modelCalls };
   }
 
+  // The model writes selectors from the outline; selectors that don't find products get one retry with the reason,
+  // then a deterministic guess. Returns { extractor (with its source) | null, modelCalls }.
   async generateExtractor(doc) {
     const outline = shopping.outlineForExtractor(doc).map((l) => ({ ...l, text: redact(l.text).text }));
-    if (outline.length < 2) return null;
-    const prompt = [
+    if (outline.length < 2) return { extractor: null, modelCalls: 0 };
+    const base = [
       'You write CSS selectors for a product listing. Below is a flat JSON outline of page elements that contain prices:',
       'each has a CSS path (tag.class chain) and its text.',
       'Reply with ONLY a JSON object: {"item": "<selector for one repeated product card>", "name": "<selector inside the card for the product name>", "price": "<selector inside the card for the price>"}',
       '',
       JSON.stringify(outline, null, 0),
     ].join('\n');
-    let reply = '';
-    await this.brain.chat(prompt, { onText: (t) => { reply += t; }, maxTokens: 200, jsonSchema: EXTRACTOR_SCHEMA });
-    this.brain.resetThread();
-    const match = reply.match(/\{[\s\S]*?\}/);
-    if (!match) return null;
-    try {
-      const extractor = JSON.parse(match[0]);
-      return shopping.validExtractor(doc, extractor) ? extractor : null;
-    } catch {
-      return null;
+    let feedback = '';
+    let modelCalls = 0;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      let reply = '';
+      modelCalls++;
+      await this.brain.chat(base + feedback, { onText: (t) => { reply += t; }, maxTokens: 200, jsonSchema: EXTRACTOR_SCHEMA });
+      this.brain.resetThread();
+      let extractor = null;
+      try {
+        extractor = JSON.parse(reply.match(/\{[\s\S]*?\}/)?.[0] ?? 'null');
+      } catch {}
+      if (shopping.validExtractor(doc, extractor)) return { extractor: { item: extractor.item, name: extractor.name, price: extractor.price, source: 'model' }, modelCalls };
+      const reason = extractor ? shopping.explainExtractor(doc, extractor) : 'it was not a JSON object';
+      console.warn(`[skills] site extractor rejected (${reason}): ${reply.slice(0, 200)}`);
+      feedback = `\n\nYour previous answer ${reply.slice(0, 200)} did not work: ${reason}. Reply with corrected selectors.`;
     }
+    const guess = shopping.guessExtractor(doc);
+    return { extractor: guess && { ...guess, source: 'heuristic' }, modelCalls };
   }
 
   basket() {
@@ -97,12 +107,13 @@ class Skills {
   async run(tier, taskId, packet, { memory = [], judgmental = true } = {}) {
     switch (tier) {
       case 'shopping': {
-        const { items, via } = await this.products(packet);
-        if (!items.length) return { text: "I couldn't find products with prices on this page.", mood: 'confused', detail: 'no products found' };
+        const { items, via, modelCalls = 0 } = await this.products(packet);
+        // A failed extractor attempt still ran the model: label it on-device, not instant.
+        if (!items.length) return { text: "I couldn't find products with prices on this page.", mood: 'confused', detail: 'no products found', usedModel: modelCalls > 0 };
         const analysis = shopping.analyze(items, packet.text);
         const { text: line, mood } = shopping.verdict(analysis, { judgmental });
         packet.analysis = analysis;
-        return { text: `${line}\n\n${shopping.renderTable(analysis)}`, mood, detail: `${items.length} products · ${via}`, usedModel: via.startsWith('new site extractor') };
+        return { text: `${line}\n\n${shopping.renderTable(analysis)}`, mood, detail: `${items.length} products · ${via}`, usedModel: modelCalls > 0 };
       }
       case 'reviews': {
         const doc = await this.doc(packet);
