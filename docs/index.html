@@ -7,7 +7,7 @@
 <meta name="description" content="Loon is a free, open-source black-cat AI companion for macOS. It lives on your screen, explains what you highlight, and runs on your own Mac.">
 <meta property="og:title" content="Loon · a tiny pixel cat on your screen">
 <meta property="og:description" content="A free, local-first AI familiar for macOS. Highlight anything, the cat helps.">
-<meta property="og:image" content="https://akankshyam07.github.io/loon/luna-soju.png">
+<meta property="og:image" content="https://akankshyam07.github.io/loon/demo-poster.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'><path fill='%231f1b29' d='M1 0h1v1h1v1h2V1h1V0h1v6H6v1H2V6H1z'/><path fill='%2380e27e' d='M2 3h1v1H2zM5 3h1v1H5z'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -128,6 +128,13 @@ h2 { font-size: clamp(17px, 3vw, 24px); line-height: 1.5; margin: 0 0 10px; }
 .teach-demo .say i { font-style: normal; display: inline-grid; place-items: center; width: 18px; height: 18px; margin-right: 6px; font-size: 8px; background: var(--pink); border: 2px solid var(--border); border-radius: 6px; color: #2b2238; vertical-align: 1px; }
 .teach-demo .say small { display: block; margin-top: 4px; font-size: 11px; color: var(--muted); }
 
+/* ---------- demo video ---------- */
+.tv { position: relative; padding: 12px; background: var(--lav-soft); }
+.tv video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 10; border: 3px solid var(--border); border-radius: 12px; background: #fff7f1; }
+.tv .play { position: absolute; left: 50%; top: 86%; transform: translate(-50%, -50%); padding: 14px 20px; font: 13px "Press Start 2P", monospace; color: #2b2238; background: var(--pink); border: 3px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); cursor: pointer; }
+.tv .play[hidden] { display: none; }
+.tv-note { margin: 14px 0 0; text-align: center; font-size: 14.5px; color: var(--muted); }
+
 /* ---------- brain ladder ---------- */
 .ladder { display: grid; gap: 14px; counter-reset: step; }
 .rung { display: grid; grid-template-columns: 56px 1fr auto; gap: 16px; align-items: center; padding: 16px 18px; }
@@ -227,6 +234,18 @@ footer .px { font-size: 11px; color: var(--ink); }
     </div>
   </div>
 </header>
+
+<section id="demo" aria-labelledby="demo-title">
+  <div class="wrap">
+    <h2 class="px" id="demo-title">See it in action ✦</h2>
+    <p class="sub">Highlight a word, compare prices, pick dinner with Soju's help, and get pointed at the right button. All of it on your own Mac.</p>
+    <div class="card tv">
+      <video id="demoVideo" muted loop playsinline preload="none" poster="demo-poster.png" width="1600" height="1000" aria-label="Loon demo: an instant definition, a price-per-unit verdict, a menu pick with Soju's cameo, step-by-step pointing on screen, and Luna and Soju dressing up"></video>
+      <button class="play" id="demoPlay" hidden>▶ Play demo</button>
+    </div>
+    <p class="tv-note">A staged demo made from Loon's real sprites, lines and answers. <a href="demo.mp4">Open the mp4</a></p>
+  </div>
+</section>
 
 <section id="features">
   <div class="wrap">
@@ -490,6 +509,20 @@ function stroll(frame) {
 let step = 0;
 stroll(0);
 if (!still) setInterval(() => { step = 1 - step; stroll(step); }, 400);
+
+// The demo video loads only when it scrolls into view; with reduced motion it waits for a click on Play.
+const video = document.getElementById('demoVideo');
+const playBtn = document.getElementById('demoPlay');
+const load = () => { if (!video.src) video.src = 'demo.mp4'; };
+if (still || !('IntersectionObserver' in window)) {
+  playBtn.hidden = false;
+  playBtn.addEventListener('click', () => { load(); video.controls = true; playBtn.hidden = true; video.play().catch(() => {}); });
+} else {
+  new IntersectionObserver(([entry]) => {
+    if (entry.isIntersecting) { load(); video.play().catch(() => { playBtn.hidden = false; }); } else if (video.src) video.pause();
+  }, { rootMargin: '200px' }).observe(video);
+  playBtn.addEventListener('click', () => { video.controls = true; playBtn.hidden = true; video.play().catch(() => {}); });
+}
 
 // Theme toggle, remembered per visitor.
 const root = document.documentElement;

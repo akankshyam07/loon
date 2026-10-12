@@ -58,7 +58,7 @@ Hand these to the human with clear instructions. You can't do them for them:
 npm test
 ```
 
-All tests should pass (158 at the time of writing). They don't need the app, a model or Chrome.
+All tests should pass (160 at the time of writing). They don't need the app, a model or Chrome.
 
 ## Working on the code
 
@@ -73,6 +73,7 @@ All tests should pass (158 at the time of writing). They don't need the app, a m
 | `renderer/` | the cat (`cat.*`, `loon.svg`), the speech bubble (`bubble.*`), the "teach me on screen" overlay (`overlay.*`) and Settings |
 | `extension/` | the Chrome extension (Manifest V3) |
 | `test/` | `*.test.js` unit tests (node:test) and the end-to-end selftests |
+| `demo/` | the staged demo video (`docs/demo.mp4`, `docs/demo.gif`): `node demo/render.js` renders it headless |
 | `THIRD_PARTY.md` | licenses of everything Loon uses |
 
 ### Rules of the house
