@@ -292,8 +292,8 @@ is plain CommonJS with no build step: Electron for the cat, a Manifest V3 Chrome
 - True hold-to-talk for voice, alongside the current press-to-talk.
 - A lighter, always-on "Hey Loon" wake word model.
 - Drafting email replies from the bubble.
-- Point at your screen to teach: Loon annotates what you're looking at (for example while you follow a video
-  tutorial), using a small local vision model.
+- A small local vision model (Qwen3-VL class) for richer "Teach me on my screen" explanations without sending any
+  picture to the cloud.
 - More duo moments for Luna and Soju, like a curled-up yin-yang nap.
 - Voice checks in the automated end-to-end tests.
 - "Watch this page" alerts, for prices and changes.
