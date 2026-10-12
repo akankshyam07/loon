@@ -3,13 +3,13 @@
 </p>
 
 <p align="center">
-  <img src="build/icon.png" width="180" alt="Loon, a small black cat with big green eyes and a moon pendant">
+  <img src="docs/luna-soju.png" width="720" alt="Pixel-art Luna (a black cat with green eyes and a moon pendant) and Soju (a white cat with an eye patch and a freckled pink nose), in a strawberry hood, frog hood, witch hat and bread-loaf costume, happy and napping">
 </p>
 
 <h1 align="center">Loon</h1>
 
 <p align="center">
-  <b>A tiny black cat who lives on your screen and helps you understand things.</b><br>
+  <b>A tiny pixel cat who lives on your screen and helps you understand things.</b><br>
   Explain, compare, write and get stuff done, without leaving what you're doing.
 </p>
 
@@ -21,7 +21,8 @@
 </p>
 
 <p align="center">
-  <img src="docs/loon.gif" width="260" alt="Loon follows the cursor with its eyes, squints happily while being petted, thinks with a little thought bubble, and does moon magic with sparkles">
+  <img src="docs/loon.gif" width="260" alt="Loon follows the cursor with its eyes, squints happily while being petted, thinks with a little thought bubble, and does moon magic with sparkles"><br>
+  <sub>The smooth Classic style, still one click away in Settings.</sub>
 </p>
 
 <p align="center"><a href="https://akankshyam07.github.io/loon/"><b>✧ Visit the Loon website ✧</b></a></p>
@@ -32,8 +33,14 @@ Loon is a personal AI familiar: a little black cat with bright green eyes who si
 at you, follows your cursor, and naps when you're busy. Highlight something confusing, click the cat, or just talk to
 it, and it helps right where you are.
 
-The cat is a retro pixel sprite by default: pick **Luna** (black, green eyes) or **Soju** (white with an eye patch),
-dress them up from the Wardrobe (hoods, hats, a bread loaf…), or switch back to the smooth Classic style in Settings.
+The cat is a retro pixel sprite by default, animated frame by frame like a '90s handheld game. Pick your companion:
+
+- **Luna**, the big sister: black fur, very green eyes, a moon pendant. A bit sassy, very smart, secretly sweet.
+- **Soju**, the little brother: white with an eye patch and a freckled pink nose. Goofy, always hungry, adorable.
+
+Personality only changes how they act and react, never how good the answers are. Dress them up from the Wardrobe
+(strawberry, frog and bee hoods, witch, Santa and party hats, a grad cap, a bow tie, sunglasses, a bread loaf), or
+switch back to the smooth Classic style in Settings.
 
 **Contents:** [Why Loon](#why-loon) · [Features](#features) · [Quick start](#quick-start) ·
 [How it works](#how-it-works) · [Privacy](#privacy) · [Tests](#tests) · [Roadmap](#roadmap) · [License](#license)
