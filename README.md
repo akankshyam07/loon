@@ -59,6 +59,9 @@ switch back to the smooth Classic style in Settings.
 - **Code first, model last.** Prices, unit conversions, rankings, dates, definitions and common errors are answered by
   plain code and open data. The language model only writes words, so Loon stays useful on a small local model and
   doesn't need a smart cloud LLM to get the numbers right.
+- **Smart when you want it, without a new bill.** A router rates every question easy, medium or hard. Easy stays on
+  your Mac; medium and hard can go to the Claude or ChatGPT plan you already pay for, through their official apps,
+  with first words in about half a second. Never API billing unless you pick a key yourself.
 
 ## Features
 
@@ -66,7 +69,9 @@ switch back to the smooth Classic style in Settings.
 and then it does something cool: moon magic, a pounce, peeking over the edge of your screen. Press and hold to pet it.
 
 **💬 Explain and selection help**
-- **Ask anything.** Click the cat or press **⌥Space**. Answers stream from a model running on your Mac.
+- **Ask anything.** Click the cat or press **⌥Space**. Answers stream from your Mac (or your plan, if you set it up),
+  and every answer says where it came from. Follow-ups remember the conversation: "and in Python?" or "make it
+  shorter" carries the earlier question, answer and selection to whoever answers next.
 - **Highlight help in Chrome.** Select a word and its definition appears instantly (WordNet); select foreign text
   and it's translated offline (Bergamot); select a stack trace and it's explained. Anything else gets a small paw
   you can click for Explain, Simplify, Summarize, Rewrite and more, so selecting text never throws a card at you.
@@ -107,6 +112,19 @@ and then it does something cool: moon magic, a pounce, peeking over the edge of 
 - **Moods.** Focus (the cat naps, no pop-ups), Privacy (no memory), and Judgmental (sass about prices and heavy food:
   *"this looks healthy, but the sauce is probably doing crimes"*).
 
+**🤖 Does it for you**
+- "Search YouTube for lofi and play the first one", "open Notes and make a new note saying milk and eggs", "fill this
+  form with my details". Loon clicks, types, scrolls and uses menus step by step, outlining each target on the page.
+- Every change shows a card first (✓ Do it, ⏭ Skip, ✕ Stop). Buy, pay, delete and send always need their own click.
+  It never types into password, card or one-time-code fields, ends the task on private pages, and Esc stops it.
+
+**🧠 Personal, with a brain you can see**
+- Custom instructions ("About you", "How Loon should reply"), reply length, tone and emoji, and a "Remember this?"
+  chip when you mention a preference. Say "less emoji" and it sticks.
+- Memories become a little graph of people, projects, sites and topics, grouped into domains like work, study,
+  shopping and food. Answers follow the links ("what should I review for Acme" finds "Spring Boot confuses me"), and
+  Settings → Loon's brain lets you explore, edit or forget any node.
+
 **🎙️ Voice**
 - Press **⌥⇧V** and talk. Loon listens until you pause, answers, and reads the first sentences aloud. Say "yes" to
   confirm, "stop" to interrupt. An optional "Hey Loon" wake word lives in Settings (off by default).
@@ -120,8 +138,9 @@ and then it does something cool: moon magic, a pounce, peeking over the edge of 
   pages. Follow your provider's terms; it's meant for your own personal use.
 - Once it's set up, *Answer with: Your plan* is the default: quick questions stay instant on your Mac, everything
   else goes to your plan (a fast model for normal questions, the strongest one for hard questions and "Go deeper").
-  A Claude Code process waits ready in the background so answers start sooner. Pick *This Mac* to use your plan only
-  for the hard stuff. Optional *Quick take* shows the Mac's instant answer until your plan's arrives.
+  A Claude Code process waits ready in the background, so first words arrive in about half a second instead of two.
+  Pick *This Mac* to use your plan only for the hard stuff. Optional *Quick take* shows the Mac's instant answer until
+  your plan's arrives.
 - Prefer pay-per-use? The same card has *Your own API key*: Anthropic, OpenAI, Gemini (which has a free tier) or any
   OpenAI-compatible endpoint (OpenRouter, Groq, LM Studio…). The key is encrypted in the macOS Keychain and never
   leaves Loon's main process. Also off by default, never used unless you pick it, and billed by your provider.
@@ -241,7 +260,9 @@ npm run selftest  # drives the real app, real model and real extension end to en
 npm run demo      # the cat's idle routines on a fast timer, for animation work
 ```
 
-`npm run selftest` opens real windows and needs a downloaded model; see [AGENTS.md](AGENTS.md) for details. The stack
+The full end-to-end selftest runs automatically on GitHub Actions (a macOS runner) on every push, so it never takes
+over a contributor's screen: 135 unit tests and 73 end-to-end checks at the time of writing. Locally,
+`npm run selftest` runs hidden and needs a downloaded model; see [AGENTS.md](AGENTS.md) for details. The stack
 is plain CommonJS with no build step: Electron for the cat, a Manifest V3 Chrome extension, and Node for the brain.
 
 | Read this | To learn |
@@ -258,8 +279,10 @@ is plain CommonJS with no build step: Electron for the cat, a Manifest V3 Chrome
 - True hold-to-talk for voice, alongside the current press-to-talk.
 - A lighter, always-on "Hey Loon" wake word model.
 - Drafting email replies from the bubble.
-- Meaning-based memory search (a small local embedding model) alongside full-text search.
-- A "Remember this?" suggestion when you mention a preference.
+- Point at your screen to teach: Loon annotates what you're looking at (for example while you follow a video
+  tutorial), using a small local vision model.
+- More duo moments for Luna and Soju, like a curled-up yin-yang nap.
+- Voice checks in the automated end-to-end tests.
 - "Watch this page" alerts, for prices and changes.
 - Spaced repetition for "Quiz me" flashcards.
 - Even lower idle CPU for the cat's animations.
