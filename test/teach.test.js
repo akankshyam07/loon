@@ -391,3 +391,19 @@ test('API requests carry the screenshot as an image part only when one is given'
   assert.strictEqual(api.PROVIDERS.gemini.request(base).body.contents[0].parts.length, 1);
   assert.strictEqual(api.PROVIDERS.custom.request({ ...base, image: img }).body.messages[1].content[1].type, 'image_url');
 });
+
+test('the pointing cat never covers a target, badge or other card, and is left out when there is no room', () => {
+  const vp = { x: 0, y: 0, w: 1440, h: 900 };
+  const size = { w: 96, h: 117 };
+  const card = { x: 1010, y: 170, w: 270, h: 100 };
+  const target = { x: 1104, y: 80, w: 84, h: 32 }; // the Export button above-right of the card
+  const neighbours = [{ x: 918, y: 80, w: 104, h: 32 }, { x: 1030, y: 80, w: 70, h: 32 }]; // Adjust colors, Share
+  const spot = layout.catSpot(card, size, [target, ...neighbours], vp, target);
+  assert.ok(spot, 'a free spot exists');
+  const body = { x: spot.x + size.w * 0.15, y: spot.y + size.h * 0.2, w: size.w * 0.7, h: size.h * 0.75 };
+  for (const o of [target, ...neighbours]) assert.strictEqual(layout.overlap(body, { x: o.x - 6, y: o.y - 6, w: o.w + 12, h: o.h + 12 }), 0);
+  assert.ok(spot.x >= 0 && spot.y >= 0 && spot.x + size.w <= vp.w && spot.y + size.h <= vp.h, 'stays on screen');
+  // every spot around the card blocked → no cat at all
+  const wall = { x: card.x - 200, y: card.y - 200, w: card.w + 400, h: card.h + 400 };
+  assert.strictEqual(layout.catSpot(card, size, [wall], vp, target), null);
+});

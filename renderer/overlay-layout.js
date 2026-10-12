@@ -111,7 +111,46 @@
     return out;
   }
 
-  const api = { layout, cardSize, arrowFor, splitByDisplay, overlap, area, GAP, MARGIN };
+  // Where the little pointing cat sits: tucked against a corner or side of the card, on the side facing the target,
+  // and never over a target, a badge or another card (obstacles). Returns { x, y, toRight } or null when every spot is
+  // taken, in which case the cat is simply left out: a cat covering the thing it points at is worse than no cat.
+  function catSpot(card, size, obstacles, viewport, target) {
+    const { w, h } = size;
+    const toRight = !target || target.x + target.w / 2 >= card.x + card.w / 2;
+    const tuck = 26; // the cat's paws overlap the card edge a little, so it reads as leaning on it
+    const left = [
+      { x: card.x - w + tuck, y: card.y - h + tuck },
+      { x: card.x - w + 8, y: card.y + card.h / 2 - h / 2 },
+      { x: card.x - w + tuck, y: card.y + card.h - tuck },
+    ];
+    const right = [
+      { x: card.x + card.w - tuck, y: card.y - h + tuck },
+      { x: card.x + card.w - 8, y: card.y + card.h / 2 - h / 2 },
+      { x: card.x + card.w - tuck, y: card.y + card.h - tuck },
+    ];
+    // below the card, leaning on its bottom edge: the side away from a target above it, where the arrow isn't
+    const below = [
+      { x: card.x + card.w - w + 6, y: card.y + card.h - 14 },
+      { x: card.x - 6, y: card.y + card.h - 14 },
+    ];
+    // facing the target means standing on the far side of the card from it; when the target is above the card (the
+    // usual case for toolbars and menus), the space under the card is free, so try that first
+    const sides = toRight ? [...left, ...right] : [...right, ...left];
+    const targetAbove = target && target.y + target.h / 2 < card.y;
+    const spots = targetAbove ? [...below, ...sides] : [...sides, ...below];
+    const blockers = obstacles.map((o) => grow(o, 6));
+    for (const spot of spots) {
+      const r = { x: Math.round(spot.x), y: Math.round(spot.y), w, h };
+      if (r.x < viewport.x || r.y < viewport.y || r.x + w > viewport.x + viewport.w || r.y + h > viewport.y + viewport.h) continue;
+      // the sprite's own canvas has empty margins; only its inner body counts as covering something
+      const body = { x: r.x + w * 0.15, y: r.y + h * 0.2, w: w * 0.7, h: h * 0.75 };
+      if (blockers.some((b) => overlap(body, b) > 0)) continue;
+      return { x: r.x, y: r.y, toRight: spot.x + w / 2 < card.x + card.w / 2 };
+    }
+    return null;
+  }
+
+  const api = { layout, cardSize, arrowFor, splitByDisplay, catSpot, overlap, area, GAP, MARGIN };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.LoonOverlayLayout = api;
 })(typeof window !== 'undefined' ? window : globalThis);

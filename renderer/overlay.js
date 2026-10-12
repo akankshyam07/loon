@@ -63,20 +63,20 @@
     return canvas;
   }
 
-  // The helper cat with one paw out (the sprite's "swat" pose), facing the target.
-  function pointingCat(card, target, companion) {
+  // The helper cat with one paw out (the sprite's "swat" pose), facing the target, placed where it covers nothing.
+  function pointingCat(card, target, companion, obstacles) {
     if (!PX) return null;
     const cell = 3;
+    const size = { w: PX.W * cell, h: PX.ROWS * cell };
+    const spot = L.catSpot(card, size, obstacles, { x: 0, y: 0, w: innerWidth, h: innerHeight }, target);
+    if (!spot) return null;
     const canvas = el('canvas', 'cat pop');
-    canvas.width = PX.W * cell;
-    canvas.height = PX.ROWS * cell;
-    const toRight = !target || target.x + target.w / 2 >= card.x + card.w / 2;
+    canvas.width = size.w;
+    canvas.height = size.h;
     const frame = PX.pickFrame({ pose: 'pawsUp', move: 'knockItOff', mood: 'happy', happy: 1, lidL: 0.08, lidR: 0.08 }, companion || 'luna');
-    frame.flip = !toRight;
+    frame.flip = !spot.toRight;
     PX.drawGrid(canvas.getContext('2d'), PX.compose(frame), PX.colorsFor(companion || 'luna'), cell, { rim: 'rgba(255, 240, 250, 0.55)' });
-    const x = toRight ? card.x - canvas.width + 30 : card.x + card.w - 30;
-    const y = card.y - canvas.height + 26;
-    place(canvas, { x: Math.max(0, Math.min(x, innerWidth - canvas.width)), y: Math.max(0, y) });
+    place(canvas, { x: spot.x, y: spot.y });
     return canvas;
   }
 
@@ -135,7 +135,12 @@
           row.addEventListener('mouseleave', () => hover(false));
           card.append(row);
         }
-        const cat = pointingCat(item.card, item.box, companion);
+        // keep the cat off every target, badge and other card on screen
+        const obstacles = [
+          ...annotations.filter((x) => x.box).map((x) => ({ x: x.box.x - 6, y: x.box.y - 5, w: x.box.w + 12, h: x.box.h + 10 })),
+          ...laid.flatMap((x) => [x.badge, x === item ? null : x.card].filter(Boolean)),
+        ];
+        const cat = pointingCat(item.card, item.box, companion, obstacles);
         if (cat) layer.append(stagger(cat));
       }
       layer.append(stagger(card));
