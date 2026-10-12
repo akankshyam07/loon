@@ -5,7 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const { ResponseCache } = require('./cache');
-const { TASKS, MAX_CONTEXT_CHARS, buildPrompt, memoryGroup } = require('./tasks');
+const { TASKS, MAX_CONTEXT_CHARS, buildPrompt, historyBlock, followUpContext, memoryGroup } = require('./tasks');
 const { define } = require('./define');
 const { scopeOf } = require('./memory');
 const { domainForTask } = require('./graph');
@@ -152,8 +152,11 @@ class Resolver {
   }
 
   // Runs a task (brain/tasks.js) on a context packet, cheapest tier first.
-  // onText streams answer text; returns { text, mood, tier, detail? }.
-  async run(taskId, packet, { onText, onRestart = () => {}, signal, firstInThread = true, deeper = false, question, sensitive = false } = {}) {
+  // onText streams answer text; returns { text, mood, tier, target, detail? } (target: fast | smart | cloud for a model
+  // answer, so the next follow-up can stay on it).
+  // history: the bubble thread's earlier turns [{ question, answer, target }] for a follow-up (main/companion.js), empty
+  // on a thread's first turn. A follow-up prefers the tier that answered the previous turn (sticky, never downgraded).
+  async run(taskId, packet, { onText, onRestart = () => {}, signal, firstInThread = true, deeper = false, question, sensitive = false, history = [] } = {}) {
     const task = TASKS[taskId];
     if (!task) throw new Error(`Unknown task: ${taskId}`);
     const tiers = task.tiers || [];
@@ -256,17 +259,23 @@ class Resolver {
     // Plan-first ("Answer with: Your plan", the default once a plan CLI is set up): medium and hard questions go to the
     // plan, easy ones stay on the fast local model. "This Mac" keeps the plan for hard questions and "Go deeper" only.
     const planFirst = Boolean(cli) && this.settings.answerWith !== 'mac';
-    const prompt = buildPrompt(taskId, { ...packet, text: packet.text && trimForModel(packet.text, MAX_CONTEXT_CHARS) }, { deeper, question, memory, instructions });
-    // Follow-ups depend on the conversation so far, so only a thread's first turn is cacheable.
-    const cacheable = firstInThread && !question && !privacy;
+    // A follow-up carries the conversation in the prompt (the same text for every tier) and a shorter copy of the
+    // context; "Go deeper" keeps the whole context, since it redoes the task on it.
+    const followUp = history.length > 0;
+    const contextText = packet.text && (followUp && !deeper ? followUpContext(packet.text) : trimForModel(packet.text, MAX_CONTEXT_CHARS));
+    const prompt = buildPrompt(taskId, { ...packet, text: contextText }, { deeper, question, memory, instructions, history });
+    // A first turn caches as before (not a typed question about a selection). A follow-up is only cacheable under a key
+    // that includes its conversation, so it can never get a first turn's answer, and never by meaning.
+    const thread = followUp ? ResponseCache.key(historyBlock(history)) : null;
+    const cacheable = !privacy && (followUp || (firstInThread && !question));
     // Errors cache by fingerprint so the same error with different paths/values reuses one answer.
     const identity = task.cacheByFingerprint ? fingerprint(packet.text || '').hash : normalize(prompt);
     // Routed and upgraded answers share the plain key, so a question that needed a stronger tier is instant next time.
     // Cache keys name the provider and model, never the key.
     const model = !viaCloud ? this.brain.modelId() : api ? `api:${api.provider}:${api.model(true)}` : `cli:${cli}`;
-    const key = cacheable ? ResponseCache.key(taskId, identity, String(deeper), model, PROMPT_VERSION) : null;
+    const key = cacheable ? ResponseCache.key(taskId, identity, String(deeper), model, PROMPT_VERSION, ...(thread ? [`thread:${thread}`] : [])) : null;
     // A typed question may also match an earlier one with the same meaning, never across different context or memory.
-    const similar = key && packet.question && !task.cacheByFingerprint
+    const similar = key && !followUp && packet.question && !task.cacheByFingerprint
       ? { group: ResponseCache.key(taskId, packet.text || '', memory.join('\n'), String(deeper), model, PROMPT_VERSION, ...(instructions ? [instructions] : [])), question: packet.question }
       : null;
     const exact = key && this.cache.get(key);
@@ -274,7 +283,7 @@ class Resolver {
     if (hit) {
       onText(hit.text);
       this.count('cache');
-      return { text: prefix + hit.text, mood: hit.mood, tier: 'cache', detail: exact ? undefined : 'remembered a similar question', estimated: Boolean(task.estimated), replaceText: task.replaceable ? hit.text : undefined };
+      return { text: prefix + hit.text, mood: hit.mood, tier: 'cache', target: hit.target, detail: exact ? undefined : 'remembered a similar question', estimated: Boolean(task.estimated), replaceText: task.replaceable ? hit.text : undefined };
     }
 
     // Router (§2.10): model tiers weakest first; "Go deeper" keeps its own rule (plan if on, else the smart model).
@@ -284,8 +293,9 @@ class Resolver {
     const typed = taskId === 'ask' || Boolean(question);
     const asked = typed ? question || packet.question : task.instruction(packet);
     const route = deeper ? null : estimate({ taskId, request: asked, context: packet.text });
-    // kNN escalation memory: typed questions only (a chip's instruction alone says nothing), never in Privacy mode.
-    const learn = typed && !privacy;
+    // kNN escalation memory: typed first turns only (a chip's instruction alone says nothing, and neither does "why?" out
+    // of its thread), never in Privacy mode.
+    const learn = typed && !privacy && !followUp;
     const maxTokens = deeper ? 900 : maxTokensFor(task.maxTokens, personal.length);
 
     this.lastPrompt = prompt;
@@ -343,6 +353,13 @@ class Resolver {
 
     let target = deeper ? (viaCloud ? 'cloud' : 'smart') : pickTier(route.level, ladder, { planFirst });
     let note = route && target !== 'fast' ? `routed: ${route.level === 'hard' ? 'hard' : 'trickier'} question` : '';
+    // Sticky tier: a follow-up stays on the tier that answered the previous turn ("and in Python?" after a plan answer
+    // reads as easy, but belongs on the plan), unless the router rates it harder or that tier is unavailable now.
+    const previous = followUp && !deeper && history[history.length - 1].target;
+    if (previous && ladder.includes(previous) && ladder.indexOf(previous) > ladder.indexOf(target)) {
+      target = previous;
+      note = 'follow-up: same model as the last answer';
+    }
     const stronger = ladder[ladder.indexOf(target) + 1];
     const preRouted = Boolean(route && stronger && learn && await this.escalations.likelyHard(asked));
     if (preRouted) {
@@ -402,11 +419,11 @@ class Resolver {
     // nothing about the weaker tier, so it leaves the log as it was.
     if (learn && !preRouted && !fallback && !signal?.aborted) this.escalations.record(asked, deeper || upgrading).catch(() => {});
     // Fallback answers and answers that still look weak are not cached.
-    if (key && answer.text && !signal?.aborted && !fallback && !flags.length) this.cache.set(key, { text: answer.text, mood: answer.mood }, similar);
+    if (key && answer.text && !signal?.aborted && !fallback && !flags.length) this.cache.set(key, { text: answer.text, mood: answer.mood, target: answer.target }, similar);
     const planModel = tier === 'cloud' && !api && this.cli.modelFor?.(cli, answer.hard ? 'hard' : 'medium', this.settings.planModels?.[cli]);
     const detail = [tier === 'cloud' && (api ? api.label(answer.hard) : this.cli.label(cli)), planModel, note].filter(Boolean).join(' · ') || undefined;
     const { text, mood } = answer;
-    return { text: prefix + text, mood, tier, detail, smart: answer.target === 'smart', estimated: Boolean(task.estimated), replaceText: task.replaceable ? text : undefined };
+    return { text: prefix + text, mood, tier, target: answer.target, detail, smart: answer.target === 'smart', estimated: Boolean(task.estimated), replaceText: task.replaceable ? text : undefined };
   }
 }
 

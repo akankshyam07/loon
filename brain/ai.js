@@ -222,13 +222,16 @@ class Brain {
     return this.smart;
   }
 
-  // Starts a fresh conversation (a new bubble thread) without reloading the model.
+  // Every chat() call is already a fresh conversation; kept so callers that want a clean slate can say so.
   resetThread() {
     this.fast?.session?.resetChatHistory();
     this.smart?.session?.resetChatHistory();
-    this.ollamaHistory = [];
   }
 
+  // Stateless: each call is one user message after the system prompt. Conversation continuity comes from the prompt
+  // itself (the bubble thread's history block, brain/tasks.js), the same text the plan and API tiers get, so a hidden
+  // chat history can't diverge when another tier answered a turn. The KV cache still reuses the shared token prefix
+  // (system prompt, preferences, context, earlier turns) because llama.cpp compares the new tokens with the sequence.
   // thinking: let Qwen3 think first (hard/compare/debug routes). jsonSchema: constrain the reply to that schema.
   // onConfidence(stats) gets the answer's token confidence when the runtime provides it (llama.cpp, not Ollama).
   async chat(text, { onText, signal, maxTokens = 400, smart = false, thinking = false, jsonSchema = null, onConfidence = null }) {
@@ -238,6 +241,7 @@ class Brain {
       const slot = await this.slot(smart);
       const session = await slot.ensure();
       const grammar = jsonSchema ? await this.llama.createGrammarForJsonSchema(jsonSchema) : undefined;
+      session.resetChatHistory();
       slot.recording = [];
       try {
         const reply = await session.prompt(text, {
@@ -260,8 +264,6 @@ class Brain {
   }
 
   async chatOllama(text, { onText, signal, thinking = false, jsonSchema = null }) {
-    this.ollamaHistory ??= [];
-    this.ollamaHistory.push({ role: 'user', content: text });
     const sampling = thinking ? THINKING_SAMPLING : SAMPLING;
     const res = await fetch(`${OLLAMA}/api/chat`, {
       method: 'POST',
@@ -272,7 +274,7 @@ class Brain {
         think: Boolean(thinking), // Ollama returns thinking in a separate field, never in content
         ...(jsonSchema && { format: jsonSchema }),
         options: { num_predict: 400, temperature: sampling.temperature, top_p: sampling.topP, top_k: sampling.topK },
-        messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...this.ollamaHistory],
+        messages: [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: text }],
       }),
     });
     let full = '';
@@ -288,7 +290,6 @@ class Brain {
         if (piece) onText(piece);
       }
     }
-    this.ollamaHistory.push({ role: 'assistant', content: full });
     return full;
   }
 }

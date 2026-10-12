@@ -32,7 +32,9 @@ const chip = (id) => ({ id, label: TASKS[id].label });
 
 // saveSettings: called after feedback like "shorter please" changes the reply style.
 function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, settings, hub, memory = null, agent = null, saveSettings = () => {} }) {
-  const session = { mode: 'ask', packet: null, threadStarted: false, lastTask: null, pendingTask: null };
+  // turns: the bubble thread's answers so far [{ question, answer, tier, target }], for follow-ups (DESIGN.md §2.10).
+  // Kept in memory only and cleared with the session, so Privacy mode never writes it anywhere.
+  const session = { mode: 'ask', packet: null, threadStarted: false, turns: [], lastTask: null, pendingTask: null };
   let activePage = null; // latest page report from the focused, visible tab
   let active = null; // { controller, id }
   const nudges = { shownFor: new Set(), byDomain: new Map(), times: [], ignored: new Map() };
@@ -94,7 +96,13 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
   function startSession(mode, packet) {
     active?.controller.abort();
     brain.resetThread();
-    Object.assign(session, { mode, packet, threadStarted: false, lastTask: null, pendingTask: null, greeting: persona.line(settings.companion, 'greeting') });
+    Object.assign(session, { mode, packet, threadStarted: false, turns: [], lastTask: null, pendingTask: null, greeting: persona.line(settings.companion, 'greeting') });
+  }
+
+  // The bubble closed: the next question starts a new thread.
+  function endThread() {
+    brain.resetThread();
+    Object.assign(session, { threadStarted: false, turns: [] });
   }
 
   // ---------- extension events ----------
@@ -275,8 +283,9 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
     const controller = new AbortController();
     active = { controller, id };
     try {
-      // Feedback about replies ("too long", "less emoji") changes the reply style in code, before any model.
-      const feedback = !task && question && parseFeedback(question, settings.personal);
+      // Feedback about replies ("too long", "less emoji") changes the reply style in code, before any model. Inside a
+      // thread, "make it shorter" is about the last answer, so it goes to the model as a follow-up instead.
+      const feedback = !task && question && !session.turns.length && parseFeedback(question, settings.personal);
       if (feedback) {
         settings.personal = cleanPersonal({ ...settings.personal, ...feedback.patch });
         saveSettings();
@@ -317,7 +326,10 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
         }
       }
       const effectiveTask = task || (packet?.text ? 'ask' : 'ask');
-      const firstInThread = !session.threadStarted;
+      // Follow-up rule: any typed (or spoken) message, or "Go deeper", after an answer in this bubble carries the thread.
+      // A chip is a fresh task on the same context, so it runs (and caches) like a first turn.
+      const history = (question || deeper) ? session.turns.slice() : [];
+      const firstInThread = !history.length;
       session.threadStarted = true;
       if (!question) session.lastTask = effectiveTask;
       ui.cat('brain', { state: 'thinking' });
@@ -334,6 +346,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
         deeper,
         question: packet?.text ? question : undefined,
         sensitive, // no cloud tier on private pages
+        history,
         onText: (chunk) => {
           if (!talking) {
             talking = true;
@@ -348,6 +361,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
           bubble('chunk', { id, chunk: '', restart: true });
         },
       });
+      if (result.text) session.turns.push({ question: question || `${TASKS[effectiveTask]?.label || effectiveTask}${deeper ? ' (go deeper)' : ''}`, answer: result.text, tier: result.tier, target: result.target });
       bubble('done', { id, ...result, model: brain.modelLabel(deeper || result.smart),counts: resolver.counts, memoryUsed: resolver.lastMemory || [], canGoDeeper: !['code', 'cloud'].includes(result.tier) || task === 'define', ...(flavor ? { flavor } : {}) });
       // History for "what did I look up about…": local only, redacted text, never in Privacy mode.
       if (memory && !settings.privacy && result.text) {
@@ -422,7 +436,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
   }
 
   return {
-    onBridgeMessage, run, lookAnyway, dismissSuggestion, handoff, replace, openAsk, fromCapture, showNotice, context, cancel, onNudgeClick, onNudgeIgnored, confirm, saveNote,
+    onBridgeMessage, run, endThread, lookAnyway, dismissSuggestion, handoff, replace, openAsk, fromCapture, showNotice, context, cancel, onNudgeClick, onNudgeIgnored, confirm, saveNote,
     isBusy: () => Boolean(active),
     session,
     get activePage() { return activePage; },
