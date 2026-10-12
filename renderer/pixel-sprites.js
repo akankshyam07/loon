@@ -2,7 +2,7 @@
 // pick a frame from the cat's live state. Used by renderer/cat.js (window.LoonPixel) and test/pixel.test.js.
 //
 // Maps use semantic characters, so one set of frames serves every character (Luna, Soju):
-//   k fur · s fur shade (inner lines) · O outline/rim · u muzzle fur · e eye · P pupil · W wide-eye ring · E closed-eye line · w shine
+//   k fur · s fur shade (inner lines) · O outline/rim · u muzzle fur · e eye · P slit pupil · D dilated (scared) pupil · E closed-eye line · w shine
 //   n nose · i inner ear · p paw pad · c collar · m pendant · t tail fur · r open mouth · x marking (patch)
 //   f freckle · l/L lock and keyboard lavender · M/y pendant glow (added in code)
 //   '.' keeps what is underneath, '_' erases to transparent.
@@ -55,16 +55,17 @@
   const EYE_R = [13, 7];
   const MOUTH = [8, 12]; // head-relative 4×2 ":3" glyph under the nose; expressions swap the glyph in place
 
-  // The eyes do all the emoting (the face is otherwise just a tiny nose): a ring eye whose dark pupil slides with
-  // the gaze, a flat half-lid for judging, big white rings for surprise, lines for sleepy, ^ ^ for happy.
+  // The eyes do all the emoting (the face is otherwise just a tiny nose): a tall slit pupil that slides with the
+  // gaze, a flat half-lid for judging, big round black pupils (one shine pixel) when scared, lines for sleepy,
+  // ^ ^ for happy.
   const EYES = {
-    center: ['eee', 'ePe', 'eee'],
-    left: ['eee', 'Pee', 'eee'],
-    right: ['eee', 'eeP', 'eee'],
-    up: ['ePe', 'eee', 'eee'],
-    down: ['eee', 'eee', 'ePe'],
+    center: ['ePe', 'ePe', 'ePe'],
+    left: ['Pee', 'Pee', 'Pee'],
+    right: ['eeP', 'eeP', 'eeP'],
+    up: ['ePe', 'ePe', 'eee'],
+    down: ['eee', 'ePe', 'ePe'],
     half: ['...', 'EEE', 'ePe'],
-    wide: ['WWW', 'WPW', 'WWW'],
+    wide: ['wDD', 'DDD', 'DDD'],
     closed: ['...', 'EEE', '...'],
     happy: ['.E.', 'E.E', '...'],
   };
@@ -252,7 +253,7 @@
   const CHARACTERS = {
     luna: {
       name: 'Luna',
-      colors: { k: '#2e2733', s: '#463c4f', O: '#2b1d24', u: '#5a4d66', e: '#80e27e', P: '#14301a', E: '#80e27e', w: '#ffffff', W: '#ffffff', n: '#0e0b14', b: '#ff8fb8', i: '#ff8fb8', p: '#ff8fb8', c: '#ff8fb8', m: '#ffd166', t: '#2e2733', r: '#ff6f9f', x: '#2e2733', f: '#0e0b14' },
+      colors: { k: '#2e2733', s: '#463c4f', O: '#2b1d24', u: '#5a4d66', e: '#80e27e', P: '#14301a', E: '#80e27e', w: '#ffffff', D: '#08060b', n: '#0e0b14', b: '#ff8fb8', i: '#ff8fb8', p: '#ff8fb8', c: '#ff8fb8', m: '#ffd166', t: '#2e2733', r: '#ff6f9f', x: '#2e2733', f: '#0e0b14' },
       marks: [],
       animations: {},
     },
@@ -261,7 +262,7 @@
     soju: {
       name: 'Soju',
       pendant: false, // the moon pendant is Luna's; Soju just wears the collar
-      colors: { k: '#fbf8f3', s: '#ddd5e2', O: '#4a3b44', u: '#fbf8f3', e: '#b8c75a', P: '#2a2c10', E: '#6f7a2e', w: '#ffffff', W: '#4a3b44', n: '#ff9fbf', b: '#ffc2d4', i: '#ffb3cc', p: '#ffb3cc', c: '#8fd3ff', m: '#ffd166', t: '#8c8896', r: '#e0607f', x: '#2b262e', f: '#1a1418' },
+      colors: { k: '#fbf8f3', s: '#ddd5e2', O: '#4a3b44', u: '#fbf8f3', e: '#b8c75a', P: '#2a2c10', E: '#6f7a2e', w: '#ffffff', D: '#08060b', n: '#ff9fbf', b: '#ffc2d4', i: '#ffb3cc', p: '#ffb3cc', c: '#8fd3ff', m: '#ffd166', t: '#8c8896', r: '#e0607f', x: '#2b262e', f: '#1a1418' },
       marks: [{
         on: 'head', x: 0, y: 0, only: 'kbufn', map: [
           '....................',
