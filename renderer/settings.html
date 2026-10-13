@@ -151,6 +151,30 @@
     <ul id="found"></ul>
   </section>
 
+  <section id="mcp">
+    <h2>Tools (MCP)</h2>
+    <p class="muted">Add tool servers that speak MCP, on this Mac or over https. Then ask with the server's name, like "github: my open issues". Read-only tools run directly. Anything else shows you the tool and its details first, and you can edit them. Every call shows up under Recent actions, without its contents.</p>
+    <ul id="mcpServers"></ul>
+    <details id="mcpAdd">
+      <summary>Add a server</summary>
+      <label class="field">Name <input id="mcpName" maxlength="40" placeholder="Files" /></label>
+      <div class="segments">
+        <span><b>Starts with</b></span>
+        <div role="radiogroup" aria-label="Server type">
+          <label><input type="radio" name="mcpKind" value="stdio" checked /><span>A command</span></label>
+          <label><input type="radio" name="mcpKind" value="http" /><span>A URL</span></label>
+        </div>
+      </div>
+      <label class="field" id="mcpCommandRow">Command <input id="mcpCommand" spellcheck="false" placeholder="npx" /></label>
+      <label class="field" id="mcpArgsRow">Arguments, one per line <textarea id="mcpArgs" rows="3" spellcheck="false" placeholder="-y&#10;@modelcontextprotocol/server-filesystem&#10;/Users/you/Documents"></textarea></label>
+      <label class="field" id="mcpUrlRow" hidden>URL <input id="mcpUrl" spellcheck="false" placeholder="https://… or http://localhost:…" /></label>
+      <label class="field">Environment, one NAME=value per line <textarea id="mcpEnv" rows="2" spellcheck="false" placeholder="GITHUB_TOKEN=…"></textarea></label>
+      <p class="muted">Values that look like keys or tokens are stored encrypted with the macOS Keychain, never in the settings file.</p>
+      <button id="mcpAddBtn">Add server</button>
+    </details>
+    <p id="mcpMsg" class="muted" role="status"></p>
+  </section>
+
   <section>
     <h2>Browser</h2>
     <p id="browser"></p>
@@ -172,6 +196,9 @@
     <h2>Memory</h2>
     <p class="muted">Only things you asked me to remember. Edit or delete anything.</p>
     <ul id="memory"></ul>
+    <label class="toggle"><input type="checkbox" data-key="memoryFiles" /> <span><b>Keep a readable copy as Markdown files</b> One file per topic, person and project, in a folder you can open in any editor or Obsidian. Edit or delete a line there and Loon follows. Nothing is written in Privacy mode.</span></label>
+    <p id="memoryDir" class="mono"></p>
+    <button id="openMemory">Open memory folder</button>
     <button id="clearMemory" class="danger">Forget everything</button>
   </section>
 

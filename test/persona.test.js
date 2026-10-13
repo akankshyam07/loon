@@ -74,6 +74,16 @@ test('cameo triggers: food with Luna calls Soju, brainy with Soju calls Luna; of
   assert.ok(!cat.some(([c]) => c === 'cameo'));
 });
 
+test('no flattery in flavor lines: neither cat praises the question or agrees for the sake of it', () => {
+  const { stripFlattery } = require('../brain/resolve');
+  for (const id of ['luna', 'soju']) {
+    for (const text of allLines(id)) {
+      assert.doesNotMatch(text, /\b(great|good|excellent|smart|brilliant) (question|point)\b|absolutely right/i, text);
+      assert.strictEqual(stripFlattery(`${text} More.`), `${text} More.`, text);
+    }
+  }
+});
+
 test('persona lines and idle weights: every event has words for both cats, weights favor their signatures', () => {
   for (const id of ['luna', 'soju']) {
     for (const event of ['greeting', 'pet', 'selection', 'fileDrop', 'error', 'privacy', 'shopping', 'call', 'guest', 'nudge.menu', 'nudge.break', 'nudge.shopping', 'nudge.code', 'nudge.dense', 'nudge.today']) {

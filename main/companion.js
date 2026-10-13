@@ -13,7 +13,8 @@ const crypto = require('crypto');
 const { cleanPersonal, parseFeedback, suggestMemory, secondPerson, normalizeFact, styleNudge, factFromAnswer, chatMarkdown, chatFacts, onboardingResult } = require('../brain/personal');
 const { MODES, detectMode, orderChips, badgeFor } = require('../brain/modes');
 const connectorsLib = require('../brain/connectors');
-const { ConnectorHub } = require('./hub');
+const { ConnectorHub, McpHub } = require('./hub');
+const mcpLib = require('../brain/mcp');
 const persona = require('../renderer/persona');
 const { BROWSERS } = require('./teach');
 const { windowKey } = require('./screen');
@@ -44,6 +45,7 @@ const TEACH_NEXT = /^(?:next(?: step)?|ok(?:ay)?,? next|what'?s next|continue)$/
 
 // saveSettings: called after feedback like "shorter please" changes the reply style.
 // routines: the scheduler (main/routines.js); "every morning at 9…", "show my routines" and friends go to it.
+// mcp: the MCP servers (main/hub.js McpHub), or null.
 // Questions that point at what's on screen, and the subset that just means "tell me what this is".
 const PAGE_QUESTION = /\b(this|the|my|that) (page|site|website|tab|listing|product|item|article|post|shop|store|screen|menu)\b|\bwhat (do|can) you see\b|\bcan you see\b|\b(see|read|look at) (this|it|that)\b|\bwhat'?s (on here|here|on (the |my )?screen)\b|\bwhich (one|of these)\b|\b(these|those) (items|products|ones|options)\b|\bis (this|it) (a )?(good|worth)/i;
 const GENERIC_LOOK = /^\s*(what (do|can) you see|can you see( this| it| my screen)?|see this( page)?|look at this( page)?|what'?s on (this|the|my) (page|screen)|what'?s this( page)?|(summari[sz]e|explain) (this|the) page)\s*[?.!]*\s*$/i;
@@ -55,7 +57,7 @@ const LOOK_AGAIN = /^\s*(look again|look now|refresh|check again|take another lo
 const LOOK_CHIP = 'screen_look'; // the "Look at my screen" chip and "Look again" in the ⋯ menu
 
 // screenSight: main/screen.js (frontWindow, look, downscale); without it a screen question gets the honest CANT_SEE.
-function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, settings, hub, memory = null, agent = null, teacher = null, routines = null, screenSight = null, saveSettings = () => {} }) {
+function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, settings, hub, mcp = null, memory = null, agent = null, teacher = null, routines = null, screenSight = null, saveSettings = () => {} }) {
   // turns: the bubble thread's answers so far [{ question, answer, tier, target }], for follow-ups (DESIGN.md §2.10).
   // Kept in memory only and cleared with the session, so Privacy mode never writes it anywhere.
   // historyId: this thread's row in History (memory.db conversations); answers: per bubble answer id, what 👍/👎 and
@@ -337,9 +339,104 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
     return true;
   }
 
+  // MCP tools (§3.13.2), the same way: a request that names a server ("github: my open issues") or a tool outright
+  // ("run search_issues") is routed by keywords. Close calls go to the local model, which may only pick a tool name
+  // (grammar-constrained), and then to buttons. Read-only or auto-allowed tools with everything filled run straight
+  // away; anything else, and any tool the model picked, gets a confirm card with the arguments to check and edit.
+  async function mcpRequest(id, question, bubble, signal) {
+    if (!mcp) return false;
+    const servers = mcp.list();
+    let server = null;
+    let request = question;
+    let ops;
+    let routed = null;
+    const pageContext = { url: session.packet?.url || activePage?.url, title: session.packet?.title || activePage?.title, text: session.packet?.source === 'selection' ? session.packet.text : undefined };
+    const named = connectorsLib.findConnector(question, servers);
+    try {
+      if (named) {
+        server = named.connector;
+        request = named.request;
+        const tools = await mcp.enabledTools(server);
+        ops = mcpLib.toOps(tools, server.tools);
+        const direct = mcpLib.namedTool(request, tools);
+        routed = direct ? { kind: 'call', op: ops.find((o) => o.id === direct.name), ...connectorsLib.fill(ops.find((o) => o.id === direct.name), request, pageContext) } : connectorsLib.route(request, ops, pageContext);
+      } else {
+        for (const s of servers) {
+          const tool = mcpLib.namedTool(question, mcp.cachedTools(s));
+          if (!tool) continue;
+          server = s;
+          request = question.replace(new RegExp(tool.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'), ' ');
+          ops = mcpLib.toOps(mcp.cachedTools(s), s.tools);
+          const op = ops.find((o) => o.id === tool.name);
+          routed = { kind: 'call', op, ...connectorsLib.fill(op, request, pageContext) };
+          break;
+        }
+        if (!server) return false;
+      }
+    } catch (err) {
+      bubble('action-done', { id, ok: false, message: `${server.name}: ${err.message}` });
+      return true;
+    }
+    if (!ops.length) {
+      bubble('action-done', { id, ok: false, message: `${server.name} has no tools turned on. Check Settings → Tools (MCP).` });
+      return true;
+    }
+    let picked = false;
+    if (routed.kind !== 'call') {
+      const op = await pickWithModel(request, ops, mcp.cachedTools(server), signal);
+      if (op) {
+        routed = { kind: 'call', op, ...connectorsLib.fill(op, request, pageContext) };
+        picked = true;
+      }
+    }
+    if (routed.kind === 'call') {
+      const cmd = McpHub.command(server, routed.op, routed.values);
+      if (routed.op.read && !routed.missing.length && !picked) {
+        ui.cat('brain', { state: 'thinking' });
+        const result = await actions.execute(cmd, { signal });
+        rememberToolTurn(cmd, result);
+        bubble('action-done', { id, ...result, markdown: true });
+        ui.cat('brain', { state: 'done', mood: result.ok ? 'happy' : 'confused' });
+      } else {
+        bubble('confirm', { id, summary: `${server.name}: ${routed.op.label}`, command: cmd });
+        ui.cat('brain', { state: 'done', mood: 'curious' });
+      }
+      return true;
+    }
+    const options = routed.kind === 'choose' ? routed.options : ops.slice(0, 5);
+    bubble('choices', {
+      id,
+      prompt: routed.kind === 'choose' ? `Which one in ${server.name}?` : `I couldn't match that in ${server.name}. It can:`,
+      options: options.map((op) => {
+        const { values, missing } = connectorsLib.fill(op, request, pageContext);
+        return { label: op.label, command: McpHub.command(server, op, values), direct: op.read && !missing.length };
+      }),
+    });
+    return true;
+  }
+
+  // The local model as a fallback picker: only a tool name from the list, never arguments, never a direct run.
+  async function pickWithModel(request, ops, tools, signal) {
+    if (!brain?.chat || !tools.length) return null;
+    try {
+      let raw = '';
+      await brain.chat(mcpLib.pickPrompt(request, tools), { onText: (t) => { raw += t; }, signal, maxTokens: 60, jsonSchema: mcpLib.pickSchema(tools) });
+      const name = JSON.parse(raw.replace(/<think>[\s\S]*?<\/think>/g, '').trim()).tool;
+      return ops.find((o) => o.id === name) || null;
+    } catch {
+      return null; // no model, or nothing usable: the buttons decide
+    }
+  }
+
+  // A tool's output joins the thread as untrusted context, so "summarize that" works and can't be steered by it.
+  function rememberToolTurn(cmd, result) {
+    if (cmd.action === 'mcp' && result.ok && result.context) session.turns.push({ question: `${cmd.serverName}: ${cmd.label}`, answer: result.context, tier: 'code' });
+  }
+
   async function command(id, question, bubble, signal) {
     if (teacher && (await teachRequest(id, question, bubble, signal))) return true;
     if (await connectorRequest(id, question, bubble)) return true;
+    if (await mcpRequest(id, question, bubble, signal)) return true;
     // "click…", "fill…", "open X and …": step-by-step with a confirm card per change (§3.13.1).
     if (agent && isAgentGoal(question)) {
       await agent.run(id, question, bubble, signal);
@@ -413,6 +510,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
     }
     for (const key of ['when', 'start', 'end']) if (command[key]) command[key] = new Date(command[key]);
     const result = await actions.execute(command);
+    rememberToolTurn(command, result);
     bubble('action-done', { id, ...result });
     ui.cat('brain', { state: 'done', mood: result.ok ? 'happy' : 'confused' });
     return result;

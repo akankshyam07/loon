@@ -230,8 +230,13 @@ class KeyStore {
     const clean = String(key || '').trim();
     if (!PROVIDERS[provider]) throw new Error('Unknown provider.');
     if (!clean || clean.length > 400 || /\s/.test(clean)) throw new Error('That doesn\'t look like an API key.');
+    this.put(provider, clean);
+  }
+
+  // Any named secret (MCP servers keep their tokens in their own store file this way).
+  put(name, value) {
     if (!this.safeStorage.isEncryptionAvailable()) throw new Error('macOS Keychain encryption isn\'t available, so Loon won\'t store the key.');
-    this.write({ ...this.read(), [provider]: this.safeStorage.encryptString(clean).toString('base64') });
+    this.write({ ...this.read(), [name]: this.safeStorage.encryptString(String(value)).toString('base64') });
   }
 
   get(provider) {

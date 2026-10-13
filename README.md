@@ -81,6 +81,8 @@ and then it does something cool: moon magic, a pounce, peeking over the edge of 
 - **Ask anything.** Click the cat or press **⌥Space**. Answers stream from your Mac (or your plan, if you set it up),
   and every answer says where it came from. Follow-ups remember the conversation: "and in Python?" or "make it
   shorter" carries the earlier question, answer and selection to whoever answers next.
+- **Honest, not flattering.** Loon never opens with "Great question!" or "You're absolutely right" and says so
+  plainly when you're wrong. A small filter also trims that kind of opener from model answers.
 - **Highlight help in Chrome.** Select a word and its definition appears instantly (WordNet); select foreign text
   and it's translated offline (Bergamot); select a stack trace and it's explained. Anything else gets a small paw
   you can click for Explain, Simplify, Summarize, Rewrite and more, so selecting text never throws a card at you.
@@ -125,8 +127,15 @@ and then it does something cool: moon magic, a pounce, peeking over the edge of 
   boosted for the site you're on. "What did I look up about X?" searches your last 90 days of questions, and
   "what do you know about me?" lists everything. No model is involved in storing or finding memories, nothing is
   saved without your OK, and Privacy mode turns it all off.
+- **Your memory is a folder you can open.** Loon keeps a readable copy of what it remembers as Markdown files in
+  `~/Documents/Loon/Memory`. There is one file per topic, person and project, linked so the folder opens as an
+  Obsidian vault. Edit or delete a line and Loon follows. If you and Loon both change the same memory, it keeps both
+  and asks you to pick. Turn it off in Settings → Memory.
 - **Your local apps.** Connect apps running on your Mac that publish an OpenAPI description (FastAPI does by
   default), then ask them things in plain words. Reads run directly; anything that changes data asks first.
+- **Works with MCP tools.** Add MCP servers in Settings → Tools (MCP), on your Mac or over https, then ask with the
+  server's name, like "github: my open issues". Read-only tools run directly. Anything else shows you the tool and
+  its details first, and every call lands in the action log. Tokens are stored encrypted with the macOS Keychain.
 - **Moods.** Focus (the cat naps, no pop-ups), Privacy (no memory), and Judgmental (sass about prices and heavy food:
   *"this looks healthy, but the sauce is probably doing crimes"*).
 
