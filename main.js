@@ -709,10 +709,11 @@ function registerIpc() {
   });
 
   // Bubble ↔ companion. Every answer streams back as ask-chunk / ask-done / ask-error.
+  // The bubble first: a spoken confirm card is on screen before Loon starts reading it out.
   const toBubble = (type, payload) => {
-    voice.observe(type, payload);
     const channel = { chunk: 'ask-chunk', done: 'ask-done', error: 'ask-error', context: 'bubble-context', sensitive: 'bubble-sensitive', confirm: 'bubble-confirm', 'action-done': 'bubble-action', choices: 'bubble-choices', agent: 'bubble-agent', suggest: 'bubble-suggest', remembered: 'bubble-remembered' }[type];
     bubbleWin.webContents.send(channel, payload);
+    voice.observe(type, payload);
   };
   toBubbleRef.current = toBubble;
   ipcMain.on('ask', (_e, { id, text }) => companion.run({ id, question: text }, toBubble));
@@ -1153,6 +1154,7 @@ app.on('will-quit', () => {
   globalShortcut.unregisterAll();
   bridge?.stop();
   translator?.stop();
+  voiceEngine?.stopTts();
   resolver?.cache.saveNow();
   cliProvider.shutdown();
 });

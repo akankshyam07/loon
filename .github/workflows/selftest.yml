@@ -103,9 +103,8 @@ jobs:
       - name: End-to-end selftest (${{ matrix.part }})
         timeout-minutes: 35
         run: |
-          set -o pipefail
           mkdir -p "$LOON_SHOTS"
-          npm run selftest -- --part=${{ matrix.part }} 2>&1 | tee selftest.log
+          bash .github/scripts/selftest.sh selftest.log npm run selftest -- --part=${{ matrix.part }}
       - name: Save the speech models (Kokoro was fetched during the run)
         if: always() && matrix.part == 'core' && steps.voice-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
@@ -116,12 +115,11 @@ jobs:
         timeout-minutes: 10
         if: matrix.part == 'features'
         run: |
-          set -o pipefail
           FRESH=$(mktemp -d)
-          LOON_USER_DATA="$FRESH" npx electron . --selftest --part=fresh 2>&1 | tee -a selftest.log
+          LOON_USER_DATA="$FRESH" bash .github/scripts/selftest.sh selftest.log npx electron . --selftest --part=fresh
           OLD=$(mktemp -d)
           cp test/fixtures/old-userdata/* "$OLD/"
-          LOON_USER_DATA="$OLD" npx electron . --selftest --part=migrate 2>&1 | tee -a selftest.log
+          LOON_USER_DATA="$OLD" bash .github/scripts/selftest.sh selftest.log npx electron . --selftest --part=migrate
       - name: Upload the selftest log and screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -203,18 +201,15 @@ jobs:
       - name: Packaged app, first launch and upgrade
         timeout-minutes: 10
         run: |
-          set -o pipefail
           mkdir -p "$LOON_SHOTS"
           FRESH=$(mktemp -d)
-          LOON_USER_DATA="$FRESH" "$LOON_APP" --selftest --part=fresh 2>&1 | tee selftest.log
+          LOON_USER_DATA="$FRESH" bash .github/scripts/selftest.sh selftest.log "$LOON_APP" --selftest --part=fresh
           OLD=$(mktemp -d)
           cp test/fixtures/old-userdata/* "$OLD/"
-          LOON_USER_DATA="$OLD" "$LOON_APP" --selftest --part=migrate 2>&1 | tee -a selftest.log
+          LOON_USER_DATA="$OLD" bash .github/scripts/selftest.sh selftest.log "$LOON_APP" --selftest --part=migrate
       - name: Packaged app, smoke test and the browser part
         timeout-minutes: 35
-        run: |
-          set -o pipefail
-          "$LOON_APP" --selftest --keep-bubble --part=smoke,browser 2>&1 | tee -a selftest.log
+        run: bash .github/scripts/selftest.sh selftest.log "$LOON_APP" --selftest --keep-bubble --part=smoke,browser
       - name: Upload the selftest log and screenshots
         if: always()
         uses: actions/upload-artifact@v4

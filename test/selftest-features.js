@@ -96,20 +96,26 @@ async function duo(ctx, check, h, sw) {
     check('duo: turning it on widens the window and draws both cats', widened, `${base.width} → ${catWin.getBounds().width} px · ${JSON.stringify(pts)}`);
     if (!widened) return;
 
+    // The cats settle into their duo spots after the window widens (and idle animation moves them a little), so each
+    // point is read right before it's used, never from the first frame.
     await idle();
-    const onOther = await h.hover(pts[other].x, pts[other].y, false);
+    let at = await point(other);
+    const onOther = await h.hover(at.x, at.y, false);
     const otherCaptures = ctx.catIgnore().requested === false;
     const onEmpty = await h.hover(3, 3, true);
     const emptyPasses = ctx.catIgnore().requested === true;
-    const onHelper = await h.hover(pts[helper].x, pts[helper].y, false);
+    at = await point(helper);
+    const onHelper = await h.hover(at.x, at.y, false);
     check('duo: each cat captures clicks, the transparent space between passes them through', otherCaptures && emptyPasses && ctx.catIgnore().requested === false, `${onOther} · ${onEmpty} · ${onHelper}`);
 
-    await h.click(pts[other].x, pts[other].y);
+    at = await point(other);
+    await h.click(at.x, at.y);
     let said = '';
     const petted = await waitFor(async () => PERSONAS[other].lines.pet.includes(said = await cat('window.__loon.say')), 2000);
     await wait(500);
     const noBubble = !ctx.bubbleWin.isVisible();
-    await h.click(pts[helper].x, pts[helper].y);
+    at = await point(helper);
+    await h.click(at.x, at.y);
     const helperOpens = await waitFor(() => ctx.bubbleWin.isVisible(), 2000);
     check(`duo: clicking ${PERSONAS[other].name} pets them; clicking ${PERSONAS[helper].name} opens the bubble`, petted && noBubble && helperOpens, `"${said}" · bubble after ${other}: ${!noBubble} · after ${helper}: ${helperOpens}`);
     if (helperOpens) await h.closeBubble();
@@ -118,7 +124,7 @@ async function duo(ctx, check, h, sw) {
     await wait(400);
     ctx.catWin.webContents.send('debug', { duoScene: 'groomSoju' });
     const playing = await waitFor(async () => (await cat('window.__loon.duoScene')) === 'groomSoju', 20000);
-    const at = await point(helper);
+    at = await point(helper);
     if (at) h.mouse('mouseDown', at.x, at.y);
     const stopped = await waitFor(async () => (await cat('window.__loon.duoScene')) === null, 1000, 25);
     if (at) h.mouse('mouseUp', at.x, at.y);

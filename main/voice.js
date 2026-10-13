@@ -19,8 +19,9 @@ class VoiceEngine {
     this.dir = dir;
     this.recognizer = null;
     this.vad = null;
-    this.tts = null;
+    this.tts = null; // true once Kokoro has loaded in the host
     this.ttsLoading = null;
+    this.ttsHost = null;
   }
 
   modelsReady() {
@@ -114,25 +115,60 @@ class VoiceEngine {
     };
   }
 
-  loadTts() {
-    this.ttsLoading ??= (async () => {
-      const [{ KokoroTTS }, { env }] = await Promise.all([import('kokoro-js'), import('@huggingface/transformers')]);
-      env.cacheDir = path.join(this.dir, 'tts');
-      this.tts = await KokoroTTS.from_pretrained('onnx-community/Kokoro-82M-v1.0-ONNX', { dtype: 'q8', device: 'cpu' });
-      return this.tts;
-    })().catch((err) => {
-      console.warn('[voice] Kokoro unavailable, using macOS say:', err.message);
-      this.ttsLoading = null;
-      return null;
+  // Kokoro runs in main/tts-host.js (a utility process), never on the main thread.
+  ttsCall(payload, timeoutMs) {
+    if (!this.ttsHost) {
+      const script = path.join(__dirname, 'tts-host.js');
+      const env = { ...process.env };
+      let electron = null;
+      try { electron = require('electron'); } catch { /* plain Node (tests) */ }
+      const host = electron?.utilityProcess
+        ? electron.utilityProcess.fork(script, [], { env, serviceName: 'loon-voice' })
+        : require('child_process').fork(script, [], { env, stdio: 'ignore', serialization: 'advanced' });
+      host.pending = new Map();
+      host.nextId = 1;
+      host.on('message', (m) => {
+        const waiter = host.pending.get(m.id);
+        host.pending.delete(m.id);
+        if (m.error) waiter?.reject(new Error(m.error));
+        else waiter?.resolve(m);
+      });
+      host.on('exit', () => {
+        for (const { reject } of host.pending.values()) reject(new Error('Kokoro stopped'));
+        if (this.ttsHost === host) Object.assign(this, { ttsHost: null, tts: null, ttsLoading: null });
+      });
+      this.ttsHost = host;
+    }
+    const host = this.ttsHost;
+    const id = host.nextId++;
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => { host.pending.delete(id); reject(new Error('Kokoro timed out')); }, timeoutMs);
+      host.pending.set(id, { resolve: (v) => { clearTimeout(timer); resolve(v); }, reject: (e) => { clearTimeout(timer); reject(e); } });
+      if (host.send) host.send({ id, ...payload }); // child_process
+      else host.postMessage({ id, ...payload }); // Electron utilityProcess
     });
+  }
+
+  loadTts() {
+    this.ttsLoading ??= this.ttsCall({ type: 'load', cacheDir: path.join(this.dir, 'tts') }, 10 * 60000)
+      .then(() => { this.tts = true; return true; })
+      .catch((err) => {
+        console.warn('[voice] Kokoro unavailable, using macOS say:', err.message);
+        this.ttsLoading = null;
+        return null;
+      });
     return this.ttsLoading;
   }
 
-  // → { samples: Float32Array, sampleRate } from Kokoro, or null when it isn't loaded yet.
+  // → { samples: Float32Array, sampleRate } or null before Kokoro has loaded
   async synthesize(text, voice = 'af_heart') {
     if (!this.tts) return null;
-    const audio = await this.tts.generate(text, { voice });
-    return { samples: audio.audio, sampleRate: audio.sampling_rate };
+    const { samples, sampleRate } = await this.ttsCall({ type: 'speak', text, voice }, 60000);
+    return { samples, sampleRate };
+  }
+
+  stopTts() {
+    this.ttsHost?.kill();
   }
 }
 
