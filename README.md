@@ -349,7 +349,7 @@ npm run demo      # the cat's idle routines on a fast timer, for animation work
 ```
 
 The full end-to-end selftest runs automatically on GitHub Actions (a macOS runner) on every push, so it never takes
-over a contributor's screen: 195 unit tests and 73 end-to-end checks at the time of writing. Locally,
+over a contributor's screen: 212 unit tests and 73 end-to-end checks at the time of writing. Locally,
 `npm run selftest` runs hidden and needs a downloaded model; see [AGENTS.md](AGENTS.md) for details. The stack
 is plain CommonJS with no build step: Electron for the cat, a Manifest V3 Chrome extension, and Node for the brain.
 
