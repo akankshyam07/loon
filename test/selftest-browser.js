@@ -5,7 +5,21 @@ const path = require('path');
 const http = require('http');
 const WebSocket = require('ws');
 const { PORT } = require('../main/bridge');
-const { ipcMain } = require('electron');
+const { app, ipcMain, globalShortcut } = require('electron');
+
+// playwright-core is a dev dependency, so the packaged app doesn't carry it: there it comes from the source checkout
+// (LOON_SOURCE_DIR, or the folder the app was started from).
+function playwright() {
+  try {
+    return require('playwright-core');
+  } catch {
+    return require(require.resolve('playwright-core', { paths: [process.env.LOON_SOURCE_DIR, process.cwd()].filter(Boolean) }));
+  }
+}
+
+// Chrome loads extensions from the real disk, never from inside app.asar: the packaged app ships the folder in
+// Resources/extension (package.json build.extraResources), which is also the folder users pick in chrome://extensions.
+const extensionDir = () => (app.isPackaged ? path.join(process.resourcesPath, 'extension') : path.join(__dirname, '..', 'extension'));
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 async function waitFor(fn, timeoutMs, stepMs = 150) {
@@ -21,7 +35,7 @@ async function waitFor(fn, timeoutMs, stepMs = 150) {
 // (`npx playwright-core install chromium`), then any other one in the cache, newest revision first.
 function findChrome() {
   try {
-    const exe = require('playwright-core').chromium.executablePath();
+    const exe = playwright().chromium.executablePath();
     if (fs.existsSync(exe)) return exe;
   } catch {}
   const root = process.env.PLAYWRIGHT_BROWSERS_PATH || path.join(os.homedir(), 'Library/Caches/ms-playwright');
@@ -53,10 +67,10 @@ async function run(ctx, check) {
     console.log('SKIP  browser checks (no Chrome for Testing: run `npx playwright-core install chromium`)');
     return;
   }
-  const { chromium } = require('playwright-core');
+  const { chromium } = playwright();
   const server = await serveFixtures();
   const base = `http://127.0.0.1:${server.address().port}`;
-  const extension = path.join(__dirname, '..', 'extension');
+  const extension = extensionDir();
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-chrome-'));
   const browser = await chromium.launchPersistentContext(profile, {
     executablePath: exe,
@@ -131,7 +145,8 @@ async function run(ctx, check) {
     await wait(300);
     const wordChips = await chips();
     check('selecting a word shows chips without stealing focus', shown && wordChips.includes('define') && !ctx.isFocused(bubbleWin), wordChips.join(','));
-    check('the cat perks up at the selection', ['curious', 'neutral'].includes(await cat('window.__loon.mood')));
+    let mood = '';
+    check('the cat perks up at the selection', await waitFor(async () => ['curious', 'neutral'].includes(mood = await cat('window.__loon.mood')), 2000), mood);
 
     const defined = await clickChip('define', 10000);
     if (process.env.LOON_SHOTS) fs.writeFileSync(path.join(process.env.LOON_SHOTS, 'bubble-define.png'), (await bubbleWin.webContents.capturePage()).toPNG());
@@ -171,7 +186,10 @@ async function run(ctx, check) {
     const original = { ...hooks };
     hooks.openExternal = async (url) => { opened.push(url); };
     hooks.clipboard = (text) => { copied = text; };
-    await bubble(`[...document.querySelectorAll('.answer-tools button')].filter((b) => b.textContent === 'Ask in Claude').pop().click()`);
+    // The CPU model can still be writing the redacted answer; its buttons come with the finished answer.
+    const handoff = `[...document.querySelectorAll('.answer-tools button')].filter((b) => b.textContent === 'Ask in Claude').pop()`;
+    await waitFor(() => bubble(`Boolean(${handoff})`), 240000, 250);
+    await bubble(`${handoff}?.click()`);
     await waitFor(() => opened.length > 0, 3000);
     check('hand-off copies the prompt and opens Claude', opened[0] === 'https://claude.ai/new' && /Explain this/.test(copied) && !/4111/.test(copied), opened[0]);
     Object.assign(hooks, original);
@@ -256,11 +274,52 @@ async function run(ctx, check) {
 
     await page.goto(`${base}/menu.html`);
     await waitFor(() => companion.activePage?.kind === 'menu', 5000);
+    // Cameos (§5.0.3): flavor only. The answer (without the flavor line and buttons) must not change with them off.
+    const answerOnly = () => bubble(`(() => { const a = [...document.querySelectorAll('.a')].pop()?.cloneNode(true); if (!a) return ''; a.querySelectorAll('.flavor, .answer-tools, .tier-icon').forEach((n) => n.remove()); return a.textContent.trim(); })()`);
+    const watchCameo = () => {
+      const seen = { cameo: null, width: 0, light: 0 };
+      const timer = setInterval(async () => {
+        try {
+          const guest = await cat('window.__loon.cameo');
+          seen.width = Math.max(seen.width, catWin.getBounds().width);
+          if (!guest) return;
+          seen.cameo = guest;
+          seen.light = Math.max(seen.light, (await cat('window.__loon.canvasStats()')).light);
+        } catch { /* the window is busy; next tick */ }
+      }, 100);
+      return { seen, stop: () => clearInterval(timer) };
+    };
+    const savedCameos = settings.cameos;
+    const narrowWidth = catWin.getBounds().width;
+    const hostLight = (await cat('window.__loon.canvasStats()')).light;
     await openAsk();
     before = localCalls();
+    const watch = watchCameo();
     const lightest = await clickChip('food_lightest', 20000);
+    const withCameo = await answerOnly();
+    await waitFor(async () => watch.seen.cameo && !(await cat('window.__loon.cameo')), 12000);
+    watch.stop();
     check('menu: lightest picks from keywords, no model', /Lightest picks/.test(lightest?.text) && /(Dumplings|Sorbet|Salad)/.test(lightest?.text) && localCalls() === before, lightest?.text.slice(0, 80));
+    if ((settings.companion || 'luna') === 'luna') {
+      check('cameo: Luna calls Soju in for a food task (window widens, Soju drawn beside her)', watch.seen.cameo === 'soju' && watch.seen.width > narrowWidth * 1.3 && watch.seen.light > hostLight + 500,
+        `guest ${watch.seen.cameo} · width ${narrowWidth} → ${watch.seen.width} · light pixels ${hostLight} → ${watch.seen.light}`);
+    }
     await closeBubble();
+    await waitFor(() => catWin.getBounds().width === narrowWidth, 3000);
+    settings.cameos = false;
+    try {
+      await openAsk();
+      const quiet = watchCameo();
+      await clickChip('food_lightest', 20000);
+      const withoutCameo = await answerOnly();
+      await wait(1500);
+      quiet.stop();
+      check('cameo: with Cameos off nothing pops in and the answer text is exactly the same', withCameo.length > 20 && withCameo === withoutCameo && !quiet.seen.cameo && quiet.seen.width === narrowWidth,
+        `${withCameo === withoutCameo ? 'same' : `"${withCameo.slice(0, 40)}" vs "${withoutCameo.slice(0, 40)}"`} · guest ${quiet.seen.cameo}`);
+      await closeBubble();
+    } finally {
+      settings.cameos = savedCameos;
+    }
 
     await page.goto(`${base}/code.html`);
     await selectAndWait('#json');
@@ -323,6 +382,69 @@ async function run(ctx, check) {
       fakeApp.server.close();
     }
 
+    // ---- Screen control (§3.13.1): Loon acts on a local page, one confirm card per change ----
+    await page.goto(`${base}/signup.html`);
+    await waitFor(() => companion.activePage?.url?.includes('signup'), 5000);
+    const submit = (text) => bubble(`(() => { const i = document.getElementById('input'); i.value = ${JSON.stringify(text)}; i.dispatchEvent(new Event('input')); document.getElementById('askForm').requestSubmit(); })()`);
+    const outText = () => page.textContent('#out');
+    const stepCard = () => bubble(`(() => { const c = [...document.querySelectorAll('.agent .confirm')].pop(); return c ? { title: c.querySelector('.confirm-title')?.textContent || '', risky: Boolean(c.querySelector('.risky')), buttons: [...c.querySelectorAll('button')].map((b) => b.textContent) } : null; })()`);
+    const cardFor = async (re, timeoutMs = 15000) => {
+      let card = null;
+      await waitFor(async () => re.test((card = await stepCard())?.title || ''), timeoutMs);
+      return re.test(card?.title || '') ? card : null;
+    };
+    const press = (prefix) => bubble(`(() => { const b = [...document.querySelectorAll('.agent .confirm button')].find((x) => x.textContent.startsWith(${JSON.stringify(prefix)})); if (b) b.click(); return Boolean(b); })()`);
+    // The task's last line once it has ended (the ✕ in its header is gone by then), else null.
+    const taskEnd = () => bubble(`(() => { const p = [...document.querySelectorAll('.agent')].pop(); return !p || p.querySelector('.agent-stop') ? null : p.lastElementChild.textContent; })()`);
+    const ended = async (re, timeoutMs = 10000) => (await waitFor(async () => re.test((await taskEnd()) || ''), timeoutMs)) && (await taskEnd());
+
+    await openAsk();
+    await submit('click Sign up');
+    const signUpCard = await cardFor(/Sign up/);
+    const beforeClick = await outText();
+    const escWhileActing = globalShortcut.isRegistered('Escape');
+    await press('✓ Do it');
+    const signedUp = await waitFor(async () => (await outText()) === 'signed up', 8000);
+    const doneA = await ended(/Done/);
+    check('screen control: "click Sign up" asks with a card first, then clicks it on the page after ✓',
+      Boolean(signUpCard) && beforeClick === 'waiting' && signedUp && Boolean(doneA) && escWhileActing,
+      `card ${JSON.stringify(signUpCard?.title)} · page "${await outText()}" · Esc armed ${escWhileActing} · ${doneA}`);
+    await closeBubble();
+
+    await page.reload();
+    await openAsk();
+    await submit('click Sign up and then click Buy now');
+    const allowCard = await cardFor(/Sign up/);
+    const allowed = allowCard && (await press('Allow the rest'));
+    await waitFor(async () => (await outText()) === 'signed up', 8000);
+    const buyCard = await cardFor(/Buy now/);
+    const notBought = (await outText()) === 'signed up';
+    await press('✕ Stop');
+    const stoppedB = await ended(/Stopped/);
+    check('screen control: "Buy now" always needs its own click, even after "Allow the rest of this task"',
+      allowed && buyCard?.risky && !buyCard.buttons.some((b) => b.startsWith('Allow')) && notBought && Boolean(stoppedB) && (await outText()) === 'signed up',
+      `buy card ${JSON.stringify(buyCard)} · page "${await outText()}"`);
+    await closeBubble();
+
+    await openAsk();
+    await submit('type hunter2 into the password field');
+    const refusedC = await ended(/never type into a password field/i);
+    check('screen control: typing into a password field is refused', Boolean(refusedC) && (await page.inputValue('#pw')) === '' && !(await stepCard()), refusedC || await taskEnd());
+    await closeBubble();
+
+    await page.reload();
+    await openAsk();
+    await submit('click Buy now');
+    const buyAgain = await cardFor(/Buy now/);
+    const escArmed = globalShortcut.isRegistered('Escape');
+    companion.cancel(); // what the Esc shortcut runs while Loon acts (main.js agentRunner ui.busy)
+    const stoppedD = await ended(/Stopped/, 5000);
+    await wait(500);
+    check('screen control: Esc stops the task before anything is clicked, and lets go of Esc',
+      Boolean(buyAgain) && escArmed && Boolean(stoppedD) && (await outText()) === 'waiting' && !globalShortcut.isRegistered('Escape'),
+      `card ${Boolean(buyAgain)} · Esc armed ${escArmed} · ${stoppedD} · page "${await outText()}"`);
+    await closeBubble();
+
     // ---- sensitive page ----
     await page.goto(`${base}/bank.html`);
     check('private page: the cat covers its eyes', await waitFor(async () => (await cat('window.__loon.privacy')) && (await cat('window.__loon.pose')) === 'pawsUp', 5000));
@@ -341,6 +463,17 @@ async function run(ctx, check) {
 
     await page.goto(`${base}/article.html`);
     check('leaving the private page uncovers the eyes', await waitFor(async () => !(await cat('window.__loon.privacy')), 5000));
+
+    // ---- context mode: on github.com the bubble wears the Developer Cat badge (the site answered by a fixture) ----
+    await page.route('https://github.com/**', (route) => route.fulfill({ contentType: 'text/html', body: '<!doctype html><title>akankshyam07/loon</title><h1>akankshyam07/loon</h1><p>A black cat that lives on your screen.</p>' }));
+    await page.goto('https://github.com/akankshyam07/loon');
+    const onGithub = await waitFor(() => /^https:\/\/github\.com\//.test(companion.activePage?.url || ''), 5000);
+    ipcMain.emit('open-bubble');
+    await waitFor(() => bubbleWin.isVisible(), 1500);
+    const badge = await waitFor(() => bubble(`!document.getElementById('modeBadge').hidden && document.getElementById('modeBadge').textContent === 'dev'`), 3000);
+    check('a github.com page puts the "dev" mode badge on the bubble', onGithub && badge, `${companion.activePage?.url} · badge "${await bubble(`document.getElementById('modeBadge').textContent`)}"`);
+    await closeBubble();
+    await page.unroute('https://github.com/**');
   } finally {
     await browser.close();
     server.close();

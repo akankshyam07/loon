@@ -38,10 +38,17 @@ const EDGE_MARGIN = 12;
 const arg = (name) => process.argv.find((a) => a.startsWith(`--${name}=`))?.split('=').slice(1).join('=');
 const DEMO = process.argv.includes('--demo') || process.env.LOON_DEMO === '1';
 const SELFTEST = process.argv.includes('--selftest');
+// `--part=fresh` checks the first-launch welcome, which other selftest runs skip.
+const FRESH_CHECK = SELFTEST && (arg('part') || '').split(',').includes('fresh');
+// A separate data folder (settings, memory, models): the fresh-install and migration selftests start from one.
+if (process.env.LOON_USER_DATA) app.setPath('userData', process.env.LOON_USER_DATA);
 // Hidden runs (the selftest by default; LOON_HIDDEN=0 shows it) draw invisibly, ignore the real mouse and never
 // take focus from the app the user is working in.
 const HIDDEN = process.env.LOON_HIDDEN === '1' || (SELFTEST && process.env.LOON_HIDDEN !== '0');
 const HIDDEN_WINDOW = HIDDEN ? { show: false, opacity: 0 } : {};
+// Electron's default for an uncaught exception is a modal "JavaScript error" alert, which blocks the main thread (and
+// quitting) until someone clicks it. A background cat logs it instead.
+process.on('uncaughtException', (err) => console.error('[main] uncaught exception:', err));
 if (SELFTEST) {
   // Invisible or covered windows must keep painting and running timers, or capturePage and the checks stall.
   app.commandLine.appendSwitch('disable-renderer-backgrounding');
@@ -73,6 +80,7 @@ let voiceEngine;
 let agentRunner;
 let teacher; // "Teach me on my screen" (main/teach.js)
 let overlay; // its click-through windows, one per display
+let teachSeam; // the teacher's screen access; the selftest swaps in a fixture capture
 let routines; // scheduled tasks (main/routines.js)
 let routineNotification = null;
 const pendingPlays = new Map();
@@ -206,7 +214,10 @@ function createBubbleWindow() {
 let bubbleAnchor = null; // screen rect of the selection the bubble belongs to, or null to sit by the cat
 let bubblePill = false; // a small paw beside the selection until clicked
 
-function placeBubble(height = bubbleWin.getBounds().height) {
+function placeBubble(height) {
+  // The bubble page keeps reporting its height while the app quits and destroys the windows.
+  if (bubbleWin.isDestroyed() || catWin.isDestroyed()) return;
+  height ??= bubbleWin.getBounds().height;
   const cat = catWin.getBounds();
   if (bubblePill && bubbleAnchor) {
     const wa = workAreaFor(bubbleAnchor);
@@ -736,10 +747,11 @@ function registerIpc() {
   });
 
   // Bubble ↔ companion. Every answer streams back as ask-chunk / ask-done / ask-error.
+  // The bubble first: a spoken confirm card is on screen before Loon starts reading it out.
   const toBubble = (type, payload) => {
-    voice.observe(type, payload);
     const channel = { chunk: 'ask-chunk', done: 'ask-done', error: 'ask-error', context: 'bubble-context', sensitive: 'bubble-sensitive', confirm: 'bubble-confirm', 'action-done': 'bubble-action', choices: 'bubble-choices', agent: 'bubble-agent', suggest: 'bubble-suggest', remembered: 'bubble-remembered' }[type];
     bubbleWin.webContents.send(channel, payload);
+    voice.observe(type, payload);
   };
   toBubbleRef.current = toBubble;
   ipcMain.on('ask', (_e, { id, text }) => companion.run({ id, question: text }, toBubble));
@@ -1044,7 +1056,7 @@ app.whenReady().then(() => {
   });
   teacher = createTeacher({
     settings,
-    screen: teachScreen(),
+    screen: (teachSeam = teachScreen()),
     overlay,
     bridge,
     brain,
@@ -1177,7 +1189,7 @@ app.whenReady().then(() => {
   createCatWindow();
   createBubbleWindow();
   // First launch (needs catWin, so it runs after the windows exist): a short hello in the bubble instead of a silent cat.
-  if (!settings.welcomed && !SELFTEST && !arg('shot')) {
+  if (!settings.welcomed && (!SELFTEST || FRESH_CHECK) && !arg('shot')) {
     catWin.webContents.once('did-finish-load', () => setTimeout(() => {
       // The hello is Luna's first line in "Get to know you"; Skip ends it and nothing is saved.
       if (settings.onboarded) companion.showNotice("Hi, I'm Loon 🐾 Click me to ask anything, press and hold to pet me, or try ⌥Space. Right-click me for Settings, where you can connect Chrome and pick projects for me to keep up with. Everything stays on this Mac.");
@@ -1207,7 +1219,8 @@ app.whenReady().then(() => {
       },
     };
     catWin.webContents.once('did-finish-load', async () => {
-      const ok = await require('./test/selftest').run({ catWin, bubbleWin, bridge, companion, resolver, hooks, settings, openScreenshot, openDroppedFile, actions, notes, memory, setToggle, voice, voiceEngine, hub, ...selftestHooks }).catch((err) => { console.error(err); return false; });
+      const ok = await require('./test/selftest').run({ catWin, bubbleWin, bridge, companion, resolver, hooks, settings, openScreenshot, openDroppedFile, actions, notes, memory, setToggle, voice, voiceEngine, hub, brain, teacher, overlay, routines, teachScreen: teachSeam, ...selftestHooks }).catch((err) => { console.error(err); return false; });
+      console.log(`selftest finished, exiting with ${ok ? 0 : 1}`);
       app.exit(ok ? 0 : 1);
     });
   }
@@ -1231,6 +1244,7 @@ app.on('will-quit', () => {
   globalShortcut.unregisterAll();
   bridge?.stop();
   translator?.stop();
+  voiceEngine?.stopTts();
   resolver?.cache.saveNow();
   cliProvider.shutdown();
 });

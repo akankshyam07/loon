@@ -1,0 +1,16 @@
+{
+  "size": "L",
+  "focus": false,
+  "privacy": false,
+  "judgmental": false,
+  "wakeWord": false,
+  "speakReplies": "voiceOnly",
+  "projects": ["/Users/someone-else/code/old-project"],
+  "connectors": [],
+  "welcomed": true,
+  "cloudCli": "off",
+  "pairingCode": "K7Q2PX",
+  "position": { "x": 5120, "y": 2880, "width": 254, "height": 305 },
+  "lastTidy": "Mon Jun 01 2026",
+  "lastDayNudge": "Mon Jun 01 2026"
+}

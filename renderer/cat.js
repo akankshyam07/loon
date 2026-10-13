@@ -1342,6 +1342,40 @@
     get privacy() { return privacy; }, get nudge() { return !nudgeButton.hidden; }, get focus() { return focusMode; },
     get listening() { return !micBadge.hidden; }, get played() { return playedCount; },
     get duoScene() { return duo.playing; }, get cameo() { return cameo?.guest || null; },
+    get catStyle() { return look.catStyle; }, get companion() { return look.companion; }, get costume() { return wornCostume(); },
+    get duo() { return Boolean(look.duo); }, get say() { return sayBox.hidden ? '' : sayBox.textContent; },
+    // What the pixel canvas shows: opaque pixels, light ones (Soju's white fur; Luna has almost none) and the top
+    // opaque row in sprite cells (a hat makes the cat taller).
+    canvasStats() {
+      if (canvas.hidden || !canvas.width) return { visible: false, opaque: 0, light: 0, top: null };
+      const d = pen.getImageData(0, 0, canvas.width, canvas.height).data;
+      let opaque = 0;
+      let light = 0;
+      let first = -1;
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i + 3] < 200) continue;
+        opaque++;
+        if (first < 0) first = i / 4;
+        if (d[i] > 220 && d[i + 1] > 220 && d[i + 2] > 220) light++;
+      }
+      return { visible: true, opaque, light, top: first < 0 ? null : Math.floor(Math.floor(first / canvas.width) / (canvas.height / PX.ROWS)) };
+    },
+    // A window point on one cat's own pixels (the opaque cell nearest that cat's middle), or null.
+    catPoint(who = look.companion) {
+      if (!scene || !pixel()) return null;
+      const cells = [];
+      scene.grid.forEach((row, r) => [...row].forEach((c, col) => { if (c !== '.' && c !== 'z' && scene.owner[r]?.[col] === who) cells.push([r, col]); }));
+      if (!cells.length) return null;
+      // The most solid cell (its 5×5 neighbourhood all this cat), nearest the middle: blinks, breathing and the tail
+      // never open a hole there between reading the point and clicking it.
+      const mine = new Set(cells.map(([r, col]) => `${r},${col}`));
+      const solid = ([r, col]) => { let n = 0; for (let dr = -2; dr <= 2; dr++) for (let dc = -2; dc <= 2; dc++) n += mine.has(`${r + dr},${col + dc}`); return n; };
+      const mid = cells.reduce((m, [r, col]) => [m[0] + r / cells.length, m[1] + col / cells.length], [0, 0]);
+      const score = (cell) => solid(cell) * 1000 - Math.hypot(cell[0] - mid[0], cell[1] - mid[1]);
+      const [r, col] = cells.reduce((best, cell) => (score(cell) > score(best) ? cell : best));
+      const rect = canvas.getBoundingClientRect();
+      return { x: Math.round(rect.left + (col + 0.5) * cell), y: Math.round(rect.top + (r + 0.5) * cell) };
+    },
   };
 
   setPose('sit');

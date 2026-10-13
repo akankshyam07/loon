@@ -58,7 +58,7 @@ Hand these to the human with clear instructions. You can't do them for them:
 npm test
 ```
 
-All tests should pass (212 at the time of writing). They don't need the app, a model or Chrome.
+All tests should pass (183 at the time of writing). They don't need the app, a model or Chrome.
 
 ## Working on the code
 
@@ -99,7 +99,16 @@ npm run selftest  # drives the real app, real model and real extension end to en
 ```
 
 The end-to-end selftest runs on GitHub Actions (macOS); don't run it on a contributor's machine unless asked.
-See `.github/workflows/selftest.yml`; the log is uploaded as the `selftest-log` artifact.
+See `.github/workflows/selftest.yml`. It runs in parallel jobs, one per part (`npm run selftest -- --part=core`):
+
+| Part | Covers |
+|---|---|
+| `core` | the cat, the bubble, the local model, assistant actions, memory, voice (Silero, Moonshine, Kokoro on bundled recordings) |
+| `features` | pixel cat looks and Classic, duo mode, Teach me on screen (fixture capture, real OCR), plan-first and follow-ups through a fake `claude` CLI, History → Continue, Loon's brain, Routines (create, Run now, the cat's "?", Focus defers, delete), 👍 and "Remember this" with Undo; then `fresh` (including "Get to know you") and `migrate` launches on an empty and an old data folder |
+| `browser` | the extension in Chrome for Testing: selections, page tasks, shopping, food and cameos, screen control, private pages, the mode badge on github.com |
+| packaged job | `npm run dist`, then `fresh`, `migrate`, `smoke` (native modules, wasm, data files) and `browser` from the app inside the mounted .dmg; the .dmg is uploaded as the `loon-dmg` artifact |
+
+Logs and failure screenshots are uploaded as `selftest-<part>` artifacts.
 
 `npm run selftest` needs a downloaded model, and for the browser half, Chrome for Testing
 (`npx playwright-core install chromium`; without it those checks print SKIP). Before running it:
@@ -109,3 +118,23 @@ See `.github/workflows/selftest.yml`; the log is uploaded as the `selftest-log` 
 - Its windows are invisible, ignore the real mouse and never take focus. Set `LOON_HIDDEN=0` to watch them.
 
 To build the macOS app: `npm run dist` → `dist/Loon-<version>-arm64.dmg` (unsigned).
+
+### Manual smoke test (10 minutes)
+
+CI covers everything else. These need a real Mac, a real person and real accounts, so check them by hand before a
+release, on the .dmg from the `loon-dmg` artifact:
+
+1. **Gatekeeper.** Open the unsigned .dmg, drag Loon to Applications, open it. macOS blocks it the first time: System
+   Settings → Privacy & Security → Open Anyway. The cat appears bottom-right and says hello.
+2. **Accessibility.** Select text in another app (Notes, Mail) and press ⌥Space. macOS asks for Accessibility once;
+   after allowing it, the bubble shows chips for the selection.
+3. **Screen Recording + Teach.** Press ⌥⇧T and ask "where is the File menu?" in any app. macOS asks for Screen
+   Recording once (Loon may need a restart after). The box must land on the real menu bar, above other windows and on
+   the right display if you have two. Next walks through steps; Esc clears them.
+4. **Microphone.** Press ⌥⇧V (after "Set up voice" downloads the models), allow the microphone, say "what time is
+   it". Loon answers out loud.
+5. **Chrome pairing.** Load `Loon.app/Contents/Resources/extension` in your own Chrome (Developer mode → Load
+   unpacked), pair with the code from the cat's menu, select a word on any page: the definition appears.
+6. **Your plan.** With Claude Code (or Codex) installed and logged in with a subscription, pick it in Settings →
+   Smarter answers, ask "compare TCP and UDP": the answer says it came from your plan. Then "and in Python?" stays
+   on the plan.
