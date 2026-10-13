@@ -92,12 +92,6 @@ jobs:
       - name: Download the speech models (cache miss only)
         if: matrix.part == 'core' && steps.voice-cache.outputs.cache-hit != 'true'
         run: bash .github/scripts/download-models.sh voice
-      - name: Save the speech models
-        if: matrix.part == 'core' && steps.voice-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: ~/Library/Application Support/loon/voice
-          key: ${{ env.VOICE_CACHE_KEY }}
       - name: Pin the model so a bigger runner doesn't look for a different one
         run: |
           printf '{ "modelPath": "%s" }\n' "$LOON_DATA/models/$MODEL_FILE" > "$LOON_DATA/settings.json"
@@ -107,11 +101,19 @@ jobs:
         if: matrix.part == 'core'
         run: npm test
       - name: End-to-end selftest (${{ matrix.part }})
+        timeout-minutes: 35
         run: |
           set -o pipefail
           mkdir -p "$LOON_SHOTS"
           npm run selftest -- --part=${{ matrix.part }} 2>&1 | tee selftest.log
+      - name: Save the speech models (Kokoro was fetched during the run)
+        if: always() && matrix.part == 'core' && steps.voice-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/Library/Application Support/loon/voice
+          key: ${{ env.VOICE_CACHE_KEY }}
       - name: First launch on an empty data folder, then an upgrade from old settings and memory
+        timeout-minutes: 10
         if: matrix.part == 'features'
         run: |
           set -o pipefail
@@ -199,6 +201,7 @@ jobs:
           hdiutil attach "$DMG" -nobrowse -readonly -mountpoint /tmp/loon-dmg
           echo "LOON_APP=/tmp/loon-dmg/Loon.app/Contents/MacOS/Loon" >> "$GITHUB_ENV"
       - name: Packaged app, first launch and upgrade
+        timeout-minutes: 10
         run: |
           set -o pipefail
           mkdir -p "$LOON_SHOTS"
@@ -208,6 +211,7 @@ jobs:
           cp test/fixtures/old-userdata/* "$OLD/"
           LOON_USER_DATA="$OLD" "$LOON_APP" --selftest --part=migrate 2>&1 | tee -a selftest.log
       - name: Packaged app, smoke test and the browser part
+        timeout-minutes: 35
         run: |
           set -o pipefail
           "$LOON_APP" --selftest --keep-bubble --part=smoke,browser 2>&1 | tee -a selftest.log

@@ -242,7 +242,9 @@ class Brain {
       const session = await slot.ensure();
       const grammar = jsonSchema ? await this.llama.createGrammarForJsonSchema(jsonSchema) : undefined;
       session.resetChatHistory();
-      slot.recording = [];
+      // This call's own list: a cancelled earlier call can still be unwinding, and its cleanup must not clear ours.
+      const recording = [];
+      slot.recording = recording;
       try {
         const reply = await session.prompt(text, {
           ...(thinking ? THINKING_SAMPLING : SAMPLING),
@@ -253,11 +255,11 @@ class Brain {
           grammar,
           onTextChunk: onText,
         });
-        const stats = onConfidence && answerConfidence(slot.model, slot.recording, reply);
+        const stats = onConfidence && answerConfidence(slot.model, recording, reply);
         if (stats) onConfidence(stats);
         return reply;
       } finally {
-        slot.recording = null;
+        if (slot.recording === recording) slot.recording = null;
       }
     }
     return this.chatOllama(text, { onText, signal, thinking, jsonSchema });

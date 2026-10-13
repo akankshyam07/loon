@@ -258,10 +258,11 @@ async function planFirst(ctx, check, h) {
       `${second.tier} · ${second.text.slice(0, 60)}`);
     await h.closeBubble();
 
+    // Medium questions without a comparison: no thinking pass, so the CPU model answers in about a minute.
     process.env.LOON_FAKE_CLI_AUTH = 'api';
     cli.resetPlanCheck();
     await h.openBubble();
-    const billed = await h.askHere(`Compare apples and oranges as a snack in one sentence (run ${runId})`, 240000);
+    const billed = await h.askHere(`Analyze why bread goes stale, in one short sentence (run ${runId})`, 240000);
     check('plan-first: a CLI signed in with API billing is refused and your Mac answers instead',
       billed.done && /API billing/.test(billed.text) && /on your Mac/.test(billed.tier) && prompts().length === 2 && cli.poolSize() === 0,
       `${billed.tier} · ${billed.text.slice(0, 90)}`);
@@ -271,7 +272,7 @@ async function planFirst(ctx, check, h) {
     cli.resetPlanCheck();
     setToggle('privacy', true);
     await h.openBubble();
-    const quiet = await h.askHere(`Compare cats and dogs as pets in one sentence (run ${runId})`, 240000);
+    const quiet = await h.askHere(`Analyze why ice floats on water, in one short sentence (run ${runId})`, 240000);
     check('plan-first: Privacy mode keeps even a medium question on your Mac (the plan is never called)', quiet.done && /on your Mac/.test(quiet.tier) && prompts().length === 2, quiet.tier);
     await h.closeBubble();
   } finally {

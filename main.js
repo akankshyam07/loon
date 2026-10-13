@@ -1000,6 +1000,7 @@ app.whenReady().then(() => {
     };
     catWin.webContents.once('did-finish-load', async () => {
       const ok = await require('./test/selftest').run({ catWin, bubbleWin, bridge, companion, resolver, hooks, settings, openScreenshot, openDroppedFile, actions, notes, memory, setToggle, voice, voiceEngine, hub, brain, teacher, overlay, teachScreen: teachSeam, ...selftestHooks }).catch((err) => { console.error(err); return false; });
+      console.log(`selftest finished, exiting with ${ok ? 0 : 1}`);
       app.exit(ok ? 0 : 1);
     });
   }

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Puts what the selftest needs into Loon's data folder, skipping anything a cache already restored.
 #   download-models.sh model   the local language model (MODEL_FILE from MODEL_URL)
-#   download-models.sh voice   Silero VAD + Moonshine (sherpa-onnx releases) and Kokoro (Hugging Face)
+#   download-models.sh voice   Silero VAD + Moonshine (sherpa-onnx releases)
 set -euo pipefail
 DATA="$HOME/Library/Application Support/loon"
 fetch() { curl -fL --retry 3 --retry-delay 5 -o "$2.part" "$1" && mv "$2.part" "$2"; }
@@ -21,15 +21,7 @@ case "$1" in
       tar -xjf "$VOICE/stt.tar.bz2" -C "$VOICE"
       rm "$VOICE/stt.tar.bz2"
     fi
-    # Kokoro and its default voice land in voice/tts the same way the app loads them.
-    node -e "
-      const { VoiceEngine } = require('./main/voice');
-      const engine = new VoiceEngine(process.argv[1]);
-      engine.loadTts().then(() => engine.synthesize('Hello.')).then((audio) => {
-        if (!audio) { console.error('Kokoro did not load'); process.exit(1); }
-        console.log('Kokoro ok:', audio.samples.length, 'samples');
-      });
-    " "$VOICE"
+    # Kokoro (Hugging Face) is fetched by the app itself on first use, into voice/tts; CI caches it after the run.
     du -sh "$VOICE"/*
     ;;
   *)
