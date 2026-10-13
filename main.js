@@ -44,6 +44,9 @@ if (process.env.LOON_USER_DATA) app.setPath('userData', process.env.LOON_USER_DA
 // take focus from the app the user is working in.
 const HIDDEN = process.env.LOON_HIDDEN === '1' || (SELFTEST && process.env.LOON_HIDDEN !== '0');
 const HIDDEN_WINDOW = HIDDEN ? { show: false, opacity: 0 } : {};
+// Electron's default for an uncaught exception is a modal "JavaScript error" alert, which blocks the main thread (and
+// quitting) until someone clicks it. A background cat logs it instead.
+process.on('uncaughtException', (err) => console.error('[main] uncaught exception:', err));
 if (SELFTEST) {
   // Invisible or covered windows must keep painting and running timers, or capturePage and the checks stall.
   app.commandLine.appendSwitch('disable-renderer-backgrounding');

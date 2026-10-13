@@ -104,8 +104,8 @@ See `.github/workflows/selftest.yml`. It runs in parallel jobs, one per part (`n
 | Part | Covers |
 |---|---|
 | `core` | the cat, the bubble, the local model, assistant actions, memory, voice (Silero, Moonshine, Kokoro on bundled recordings) |
-| `features` | pixel cat looks and Classic, duo mode, Teach me on screen (fixture capture, real OCR), plan-first and follow-ups through a fake `claude` CLI, Loon's brain; then `fresh` and `migrate` launches on an empty and an old data folder |
-| `browser` | the extension in Chrome for Testing: selections, page tasks, shopping, food and cameos, screen control, private pages |
+| `features` | pixel cat looks and Classic, duo mode, Teach me on screen (fixture capture, real OCR), plan-first and follow-ups through a fake `claude` CLI, History → Continue, Loon's brain, Routines (create, Run now, the cat's "?", Focus defers, delete), 👍 and "Remember this" with Undo; then `fresh` (including "Get to know you") and `migrate` launches on an empty and an old data folder |
+| `browser` | the extension in Chrome for Testing: selections, page tasks, shopping, food and cameos, screen control, private pages, the mode badge on github.com |
 | packaged job | `npm run dist`, then `fresh`, `migrate`, `smoke` (native modules, wasm, data files) and `browser` from the app inside the mounted .dmg; the .dmg is uploaded as the `loon-dmg` artifact |
 
 Logs and failure screenshots are uploaded as `selftest-<part>` artifacts.
