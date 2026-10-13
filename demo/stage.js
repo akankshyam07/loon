@@ -9,6 +9,8 @@
   const world = $('#world');
   const W = 1280;
   const H = 800;
+  const CLIP = new URLSearchParams(location.search).has('clip'); // the square social clip, see CLIP_CUTS
+  if (CLIP) document.documentElement.classList.add('clip');
   window.innerWidth = W; // the Teach overlay lays itself out in the "screen", not the 1600×1000 viewport
   window.innerHeight = H;
 
@@ -304,6 +306,14 @@
   const T = { article: 9.6, shop: 16.4, menu: 23.6, teach: 31.8, duo: 39.4, end: 49.0 };
   const DURATION = 53.4;
   const t = T;
+  // In the clip Luna hops toward the selection, as the app does (renderer/cat.js onSelection: a selection more than
+  // 260 px away gets a leap of up to 300 px). She lands just right of the card. The full demo keeps her in her corner.
+  const LEAP = CLIP ? { at: t.article + 3.55, dur: 0.42, dx: clamp(BOX.define.x + BOX.define.w + 6 - LUNA_BOX.x, -300, 0), until: t.shop } : null;
+  const leapAt = (tt) => {
+    if (!LEAP || tt < LEAP.at || tt >= LEAP.until) return { x: 0, y: 0, flying: false };
+    const p = prog(tt, LEAP.at, LEAP.at + LEAP.dur);
+    return { x: LEAP.dx * ease(p), y: -30 * Math.sin(Math.PI * p), flying: p < 1 };
+  };
   const fit = (r, pad = 30) => {
     const z = clamp(Math.min(W / (r.w + pad * 2), H / (r.h + pad * 2)), 1, 3);
     return { x: r.x + r.w / 2, y: r.y + r.h / 2, z };
@@ -331,7 +341,7 @@
     return { x: box.x + (r.left - b.left) + r.width / 2, y: box.y + (r.top - b.top) + r.height / 2 };
   })();
   const CAM_SEL = fit(union({ x: 230, y: WORD.y - 150, w: 10, h: 10 }, WORD, LUNA_BOX), 16);
-  const CAM_CARD = fit(union(WORD, BOX.define, TIP_BOX()), 26);
+  const CAM_CARD = fit(union(WORD, BOX.define, TIP_BOX(), ...(LEAP ? [{ ...LUNA_BOX, x: LUNA_BOX.x + LEAP.dx }] : [])), 26);
   const CAM_SHOP = fit(union(BOX.shopAnswer, LUNA_BOX), 20);
   const CAM_FOOD = fit(union(BOX.foodAnswer, SOJU_BOX, LUNA_BOX), 16);
   const CAM_TEACH_ASK = fit(union(BOX.teachAnswer, LUNA_BOX), 30);
@@ -410,6 +420,7 @@
     if (within(tt, TEACH.keys + 0.3, TEACH.keys + 0.55)) Object.assign(v, { twitchL: 14, twitchR: 14 });
     if (within(tt, TEACH.send, TEACH.step1)) Object.assign(v, animFrame('think', tt - TEACH.send, 'luna', true), { now: spriteNow(tt) });
     if (within(tt, TEACH.done, t.duo)) Object.assign(v, { mood: 'happy', happy: 1 });
+    if (leapAt(tt).flying) v.travel = 'leap';
     if (speaking('luna', tt)) v.mouth = 'open';
     for (const c of CLICKS.slice(0, 1).concat(CLICKS[2])) if (within(tt, c, c + 0.35)) Object.assign(v, { mood: 'happy', happy: 1 });
     return v;
@@ -483,6 +494,8 @@
   function drawCats(tt) {
     const { cats, props, step } = catsAt(tt);
     PX.drawScene(catsCanvas.getContext('2d'), PX.composeScene({ width: CATS_W, cats, props }), 1, { rim: RIM });
+    const leap = leapAt(tt);
+    catsCanvas.style.translate = `${leap.x}px ${leap.y}px`;
     return step;
   }
 
@@ -724,9 +737,10 @@
       sayEl.textContent = text;
       const col = LUNA_COL + (who === 'luna' ? step.lx ?? 0 : step.sx ?? PX.GAP) + PX.W / 2;
       const half = sayEl.offsetWidth / 2;
-      const x = clamp(CATS.x + col * CELL, half + 4, W - half - 4);
+      const leap = who === 'luna' ? leapAt(tt) : { x: 0, y: 0 };
+      const x = clamp(CATS.x + col * CELL + leap.x, half + 4, W - half - 4);
       const p = stepped(prog(tt, a || tt, (a || tt) + 0.3), 3);
-      Object.assign(sayEl.style, { left: `${x}px`, top: `${CATS.y + (PX.TOP + 1) * CELL - 2 - (step.dress ? 26 : 0)}px`, opacity: a ? String(p) : '1', translate: a ? `0 ${4 - 4 * p}px` : '0 0' });
+      Object.assign(sayEl.style, { left: `${x}px`, top: `${CATS.y + (PX.TOP + 1) * CELL - 2 - (step.dress ? 26 : 0) + leap.y}px`, opacity: a ? String(p) : '1', translate: a ? `0 ${4 - 4 * p}px` : '0 0' });
     }
     dressSparks.forEach((sp, i) => {
       const lt = tt - DRESS_AT + 0.25 - i * 0.04;
@@ -829,7 +843,29 @@
   ].sort((a, b) => a.t - b.t);
   const cues = { sfx: SFX, voice: VOICE_LINES.map((l) => ({ t: VOICE_AT[l.id], id: l.id })) };
 
-  window.DEMO = { seek, DURATION, FPS: 30, T, cues };
+  // ---------- the 10-second social clip: cuts from the timeline above, with big captions over the stage ----------
+  const CLIP_CUTS = [
+    { from: t.article + 2.3, to: t.article + 6.0, big: 'Highlight anything', small: 'Luna hops over and explains it instantly' },
+    { from: t.menu + 0.3, to: t.menu + 4.4, big: 'Looking at a menu?', small: 'Soju runs in, Loon picks the lightest dishes' },
+    { from: t.end + 0.3, to: t.end + 2.5, big: 'Loon · free · runs on your Mac', small: 'Open source · no account · no API key' },
+  ];
+  let acc = 0;
+  for (const c of CLIP_CUTS) { c.start = acc; acc += c.to - c.from; }
+  const CLIP_DURATION = acc;
+  const clipTop = $('#clipTop');
+  function seekClip(ct) {
+    const cut = [...CLIP_CUTS].reverse().find((c) => ct >= c.start) || CLIP_CUTS[0];
+    seek(Math.min(cut.to, cut.from + ct - cut.start));
+    clipTop.querySelector('b').textContent = cut.big;
+    clipTop.querySelector('span').textContent = cut.small;
+    clipTop.querySelector('b').style.transform = `scale(${popScale(ct, cut.start, 0.3)})`;
+    clipTop.querySelector('span').style.opacity = ct > cut.start + 0.25 ? '1' : '0';
+  }
+  const inClip = (m) => CLIP_CUTS.find((c) => m >= c.from && m < c.to);
+  const toClip = (list) => list.filter((x) => inClip(x.t)).map((x) => ({ ...x, t: x.t - inClip(x.t).from + inClip(x.t).start }));
+  const clipReel = { seek: seekClip, DURATION: CLIP_DURATION, cues: { sfx: [...toClip(SFX), ...CLIP_CUTS.slice(1).map((c) => ({ t: c.start, kind: 'sparkle' }))], voice: toClip(cues.voice) } };
+
+  window.DEMO = { seek, DURATION, FPS: 30, T, cues, clip: clipReel };
 
   seek(0);
   window.stageReady = true;

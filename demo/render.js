@@ -6,6 +6,8 @@
 //   node demo/render.js --stills 5,12.5  just those moments as PNGs (for checking), printed paths
 //   node demo/render.js --audio-only     remix the soundtrack into the existing docs/demo.mp4
 //   node demo/render.js --variant B --mp4 out.mp4   Soju speaks his real words with TTS; writes only that mp4
+//   node demo/render.js --clip           the 10-second square social clip: docs/loon-clip.mp4 (1080×1080) and .gif
+//                                        (add --stills 1,5 to check moments of the clip instead)
 //
 // Needs playwright-core's headless shell (npx playwright-core install chromium-headless-shell) and ffmpeg. The voices
 // are synthesized (demo/voices.js); only variant B uses TTS (Kokoro, or Deepgram Aura when DEEPGRAM_API_KEY is set).
@@ -29,6 +31,9 @@ const GIF_FPS = 15;
 const GIF_CUTS = [[3.3, 5.8], [12.1, 16.4], [24.6, 30.2], [35.5, 39.4], [45.6, 48.0]];
 const POSTER_AT = 53.0;
 const arg = (name) => { const i = process.argv.indexOf(name); return i > 0 ? process.argv[i + 1] : null; };
+const CLIP = process.argv.includes('--clip'); // stage.html?clip: a 1600×1600 frame, timed by window.DEMO.clip
+const CLIP_SIZE = 1080;
+const CLIP_GIF = { size: 600, fps: 12 };
 
 function headlessShell() {
   const cache = path.join(os.homedir(), 'Library/Caches/ms-playwright');
@@ -51,10 +56,10 @@ function serve() {
 
 let voiceMeta = {}; // { id: { duration, mouth } } for lip-sync and balloon timing
 async function openStage(browser, port, scale) {
-  const page = await browser.newPage({ viewport: { width: 1600, height: 1000 }, deviceScaleFactor: scale });
+  const page = await browser.newPage({ viewport: { width: 1600, height: CLIP ? 1600 : 1000 }, deviceScaleFactor: scale });
   await page.addInitScript((meta) => { window.DEMO_VOICES = meta; }, voiceMeta);
   page.on('pageerror', (err) => console.error('stage error:', err.message));
-  await page.goto(`http://127.0.0.1:${port}/demo/stage.html`);
+  await page.goto(`http://127.0.0.1:${port}/demo/stage.html${CLIP ? '?clip' : ''}`);
   await page.waitForFunction(() => window.stageReady === true);
   return page;
 }
@@ -68,7 +73,7 @@ async function shoot(browser, port, times, dir, scale) {
     const page = await openStage(browser, port, scale);
     while (next < times.length) {
       const i = next++;
-      await page.evaluate((t) => window.DEMO.seek(t), times[i]);
+      await page.evaluate(([t, clip]) => (clip ? window.DEMO.clip : window.DEMO).seek(t), [times[i], CLIP]);
       await page.screenshot({ path: path.join(dir, `${String(i).padStart(5, '0')}.png`) });
       if (++done % 100 === 0) process.stdout.write(`  ${done}/${times.length}\n`);
     }
@@ -90,8 +95,25 @@ const mb = (file) => `${(fs.statSync(file).size / 2 ** 20).toFixed(2)} MB`;
     console.log(`voices: ${speech.backend}`);
     voiceMeta = Object.fromEntries(Object.entries(speech.clips).map(([id, c]) => [id, { duration: c.duration, mouth: c.mouth }]));
     const probe = await openStage(browser, port, 1);
-    const { DURATION, FPS, cues } = await probe.evaluate(() => window.DEMO);
+    const { DURATION, FPS, cues } = await probe.evaluate((clip) => (clip ? { ...window.DEMO.clip, FPS: window.DEMO.FPS } : window.DEMO), CLIP);
     await probe.close();
+
+    if (CLIP && !arg('--stills')) {
+      console.log(`clip: ${Math.round(DURATION * FPS)} frames`);
+      const frames = path.join(work, 'clip');
+      await shoot(browser, port, Array.from({ length: Math.round(DURATION * FPS) }, (_, i) => i / FPS), frames, 1);
+      const wav = path.join(work, 'clip.wav');
+      music.writeWav(wav, music.mix({ duration: DURATION, cues, clips: speech.clips }));
+      const mp4 = path.join(DOCS, 'loon-clip.mp4');
+      ffmpeg('-framerate', String(FPS), '-i', path.join(frames, '%05d.png'), '-i', wav, '-vf', `scale=${CLIP_SIZE}:${CLIP_SIZE}:flags=lanczos`,
+        '-c:v', 'libx264', '-preset', 'slow', '-tune', 'animation', '-crf', '20', '-pix_fmt', 'yuv420p',
+        '-af', `afade=t=out:st=${(DURATION - 0.4).toFixed(2)}:d=0.4`, '-c:a', 'aac', '-b:a', '160k', '-ar', '44100', '-ac', '2', '-shortest', '-movflags', '+faststart', mp4);
+      const gif = path.join(DOCS, 'loon-clip.gif');
+      ffmpeg('-framerate', String(FPS), '-i', path.join(frames, '%05d.png'),
+        '-vf', `fps=${CLIP_GIF.fps},scale=${CLIP_GIF.size}:${CLIP_GIF.size}:flags=lanczos,split[a][b];[a]palettegen=max_colors=128:stats_mode=full[p];[b][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle`, gif);
+      console.log(`${mp4} ${mb(mp4)}\n${gif} ${mb(gif)}`);
+      return;
+    }
 
     if (process.argv.includes('--audio-only')) {
       const wav = path.join(work, 'soundtrack.wav');

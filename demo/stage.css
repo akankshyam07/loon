@@ -200,3 +200,18 @@ canvas { image-rendering: pixelated; }
 #end { transform-origin: 50% 50%; }
 .url-pill.gh { margin-top: 12px; font-size: 15px; background: var(--lav-soft); }
 .url-pill { margin-top: 16px; padding: 12px 24px; font: 18px/1 'Press Start 2P', monospace; background: var(--sun-soft); border: 4px solid var(--ink); border-radius: 14px; box-shadow: 5px 5px 0 var(--ink); }
+
+/* ---------- the square social clip (render.js --clip): the stage in the middle of a 1600×1600 frame ---------- */
+.clip-band { display: none; }
+html.clip, html.clip body { height: 1600px; }
+html.clip #viewport { margin-top: 330px; box-shadow: 0 -5px 0 var(--ink), 0 5px 0 var(--ink); }
+html.clip #caption, html.clip #end .url-pill.gh, html.clip #end .tagline.small { display: none; }
+html.clip .clip-band {
+  position: absolute; left: 0; width: 1600px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  background-color: #ffeef5; background-image: radial-gradient(rgba(255, 255, 255, .8) 3px, transparent 3px); background-size: 28px 28px;
+}
+#clipTop { top: 0; height: 325px; }
+#clipTop b { font-size: 88px; font-weight: 900; line-height: 1.05; letter-spacing: -1px; transform-origin: 50% 60%; }
+#clipTop span { font-size: 42px; font-weight: 700; color: var(--muted); }
+#clipBottom { top: 1335px; height: 265px; }
+#clipBottom .url-pill { margin: 0; font-size: 34px; padding: 22px 36px; }
