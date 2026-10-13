@@ -39,7 +39,8 @@ const TEACH_DONE = /^(?:done|stop|hide(?: it| that| them)?|clear(?: it)?|close(?
 const TEACH_NEXT = /^(?:next(?: step)?|ok(?:ay)?,? next|what'?s next|continue)$/i;
 
 // saveSettings: called after feedback like "shorter please" changes the reply style.
-function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, settings, hub, memory = null, agent = null, teacher = null, saveSettings = () => {} }) {
+// routines: the scheduler (main/routines.js); "every morning at 9…", "show my routines" and friends go to it.
+function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, settings, hub, memory = null, agent = null, teacher = null, routines = null, saveSettings = () => {} }) {
   // turns: the bubble thread's answers so far [{ question, answer, tier, target }], for follow-ups (DESIGN.md §2.10).
   // Kept in memory only and cleared with the session, so Privacy mode never writes it anywhere.
   // historyId: this thread's row in History (memory.db conversations); answers: per bubble answer id, what 👍/👎 and
@@ -278,6 +279,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
       return true;
     }
     // normalizeSpoken: voice transcripts say "at five"; typed text is unaffected unless it spells numbers out.
+    if (routines && (await routines.handleText(id, normalizeSpoken(question), bubble, { page: activePage, execute: (cmd) => actions.execute(cmd) }))) return true;
     const parsed = parseCommand(normalizeSpoken(question));
     if (!parsed) return false;
     if (parsed.action === 'shortcut') {

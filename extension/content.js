@@ -210,6 +210,15 @@
       if (page.sensitive && !message.force) return reply({ sensitive: true, reason: page.reason });
       const html = document.documentElement.outerHTML;
       reply({ html: html.length > 4_000_000 ? html.slice(0, 4_000_000) : html, url: location.href, title: document.title, outline: pageOutline() });
+    } else if (message.type === 'get-page-if') {
+      // A price-watch routine looking for its page: only the tab showing that page (same address, any ?query) answers.
+      let wanted = null;
+      try { wanted = new URL(message.url); } catch { /* not a URL */ }
+      const strip = (p) => p.replace(/\/$/, '');
+      if (!wanted || wanted.origin !== location.origin || strip(wanted.pathname) !== strip(location.pathname)) return reply({ nomatch: true });
+      if (page.sensitive) return reply({ sensitive: true });
+      const html = document.documentElement.outerHTML;
+      reply({ html: html.length > 4_000_000 ? html.slice(0, 4_000_000) : html, url: location.href, title: document.title });
     } else if (message.type === 'highlight') {
       reply({ count: highlight(message.quotes || []) });
     } else if (message.type === 'clear-highlight') {

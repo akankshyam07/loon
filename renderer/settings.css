@@ -71,6 +71,20 @@ ul { list-style: none; padding: 0; margin: 0 0 10px; display: grid; gap: 8px; }
 #memory input { flex: 1; }
 .tag { font: 8px/1.4 'Press Start 2P', monospace; color: var(--ink); background: var(--sun-soft); border: 2px solid var(--line); border-radius: 7px; padding: 3px 6px; }
 #audit li { font-size: 13px; color: var(--muted); }
+/* routines: one card per routine, pastel like the wardrobe tiles */
+.routine { padding: 10px 12px; border: 2px solid var(--line); border-radius: 12px; background: var(--mint-soft); box-shadow: var(--shadow-sm); }
+.routine .toggle { margin: 0; }
+.routine .toggle .muted { margin: 0; font-size: 12.5px; }
+.routine .last { margin: 6px 0 0 52px; font-size: 12.5px; color: var(--muted); }
+.routine .last.error, #routineMsg.error { color: var(--danger); }
+.routine-buttons { display: flex; gap: 6px; margin: 8px 0 0 52px; flex-wrap: wrap; }
+.routine-buttons button { padding: 3px 10px; font-size: 12.5px; }
+.routine-edit { background: var(--lav-soft); }
+.routine-edit .field { margin: 6px 0; font-size: 13px; }
+.routine-edit .routine-buttons { margin-left: 0; }
+.quiet-times { display: flex; gap: 14px; margin: -2px 0 6px 52px; font-size: 13px; color: var(--muted); }
+.quiet-times input { font: inherit; color: var(--ink); background: var(--field); padding: 3px 8px; border: 2px solid var(--line); border-radius: 10px; margin-left: 6px; }
+.quiet-times input:disabled { opacity: 0.5; }
 #smarter .field { display: grid; gap: 4px; margin: 10px 0; font-size: 13px; color: var(--muted); }
 #apiBox { border-top: 2px dashed var(--soft-line); margin-top: 12px; padding-top: 6px; }
 #smarter .warn { color: var(--danger); font-size: 13px; margin: 8px 0 4px; }

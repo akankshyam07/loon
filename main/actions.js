@@ -2,6 +2,8 @@
 // audit log (metadata only, no content). Executors that touch other apps are swappable so tests never do.
 const { execFile } = require('child_process');
 const fs = require('fs');
+const { describeSchedule } = require('../brain/routines');
+const { when } = require('./routines');
 
 const run = (cmd, args) => new Promise((resolve, reject) => {
   execFile(cmd, args, { timeout: 20_000 }, (err, stdout, stderr) => (err ? reject(new Error((stderr || err.message).trim())) : resolve(stdout.trim())));
@@ -132,7 +134,9 @@ const realExecutors = {
 };
 
 class Actions {
-  constructor({ auditFile, notes, memory, openExternal, projects = () => [], hub = null, onFocus = () => '', executors = realExecutors }) {
+  // routines: the scheduler (main/routines.js), set by main.js once it exists.
+  constructor({ auditFile, notes, memory, openExternal, projects = () => [], hub = null, onFocus = () => '', routines = null, executors = realExecutors }) {
+    this.routines = routines;
     this.onFocus = onFocus;
     this.projects = projects;
     this.hub = hub;
@@ -208,6 +212,21 @@ class Actions {
         case 'focus':
           message = this.onFocus(command.minutes);
           break;
+        // Routines (§3.19): created and deleted only from a confirm card; pause/resume are reversible.
+        case 'routine': {
+          const r = this.routines.createFromCommand(command);
+          message = `Saved "${r.label}", ${describeSchedule(r.schedule)}.${r.nextRun ? ` First run ${when(r.nextRun)}.` : ''} Pause, edit or delete it in Settings → Routines.`;
+          break;
+        }
+        case 'routineDelete':
+          this.routines.remove(command.routineId);
+          message = "Deleted. That routine won't run again.";
+          break;
+        case 'routinePause': {
+          const r = this.routines.setEnabled(command.routineId, command.on);
+          message = command.on ? `"${r.label}" is back on.${r.nextRun ? ` Next run ${when(r.nextRun)}.` : ''}` : `Paused "${r.label}". Say "resume ${r.label}" to turn it back on.`;
+          break;
+        }
         case 'find':
           results = await this.executors.find(command);
           message = results.length ? `Found ${results.length} file${results.length > 1 ? 's' : ''}:` : 'No files matched.';

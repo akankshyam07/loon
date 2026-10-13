@@ -9,6 +9,7 @@
 //   link to them (fact_nodes), and recall walks 1–2 hops from what the request mentions as a third ranked list.
 // - conversations: each bubble thread's turns (for History → Continue), linked to its episodes by `session`.
 // - feedback: 👍/👎 per answer with task, tier, difficulty and reply length (answer text only if the user opted in).
+// - routines/routine_runs: scheduled tasks and their run history (brain/routines.js owns the reads and writes).
 const crypto = require('crypto');
 const fs = require('fs');
 const { DatabaseSync } = require('node:sqlite');
@@ -124,6 +125,13 @@ class Memory {
       CREATE TABLE IF NOT EXISTS feedback (
         id INTEGER PRIMARY KEY, at INTEGER NOT NULL, vote INTEGER NOT NULL, task TEXT NOT NULL, tier TEXT NOT NULL DEFAULT '',
         difficulty TEXT NOT NULL DEFAULT '', length TEXT NOT NULL DEFAULT '', chars INTEGER NOT NULL DEFAULT 0, answer TEXT NOT NULL DEFAULT '');
+      CREATE TABLE IF NOT EXISTS routines (
+        id TEXT PRIMARY KEY, label TEXT NOT NULL, action TEXT NOT NULL, schedule TEXT NOT NULL, payload TEXT NOT NULL DEFAULT '{}',
+        state TEXT NOT NULL DEFAULT '{}', enabled INTEGER NOT NULL DEFAULT 1, created INTEGER NOT NULL, next_run INTEGER, last_run INTEGER,
+        last_result TEXT NOT NULL DEFAULT '', last_status TEXT NOT NULL DEFAULT '');
+      CREATE TABLE IF NOT EXISTS routine_runs (
+        id INTEGER PRIMARY KEY, routine_id TEXT NOT NULL, at INTEGER NOT NULL, due INTEGER, status TEXT NOT NULL, note TEXT NOT NULL DEFAULT '');
+      CREATE INDEX IF NOT EXISTS routine_runs_routine ON routine_runs(routine_id);
     `);
     // Older databases get new columns in place: vec NULL means "not embedded yet", linked 0 "not in the graph yet".
     const columns = this.db.prepare('PRAGMA table_info(facts)').all().map((c) => c.name);

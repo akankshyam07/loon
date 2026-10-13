@@ -23,6 +23,9 @@
           dense: "That's a lot of words. Short version?",
           today: 'Want the plan for today?',
           break: 'Stretch with me. You earned it.',
+          routine: 'Your routine is ready. I did the boring part.',
+          reminder: 'You asked me to nag you:',
+          priceDrop: 'The price dropped. I told you to wait.',
         },
         call: ["This is Soju's department 🙄", 'Soju! Food. Your favorite subject.', 'Ugh, menus. SOJU!'], // calls Soju in (food)
         guest: ["Move over, Soju. I've got this.", 'Let the smart one look.', 'Ahem. Big sister here.'], // her line in Soju's brainy cameo
@@ -67,6 +70,9 @@
           dense: 'So many words. Short version?',
           today: 'What are we doing today?',
           break: 'Break time! Snack break?',
+          routine: 'I did the thing! Wanna see?',
+          reminder: 'Remember! Remember!',
+          priceDrop: 'Cheaper now! Can we get snacks with the change?',
         },
         call: ["LUNA! This one's brainy!", 'Luna, help! Big words!', 'Hold on, getting my sister!'], // calls Luna in (brainy)
         guest: ['Did someone say food?!', "I'd eat all of it, but okay.", 'Nom. Approved by Soju.'], // his line in Luna's food cameo

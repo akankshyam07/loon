@@ -1131,11 +1131,12 @@
     T.glow = 0;
     if (ignored) window.loon.nudgeIgnored(nudgeKind);
   }
-  window.loon.onNudge(({ kind }) => {
+  // line: main's own wording (a routine reminder says what it's reminding you of); otherwise the persona's.
+  window.loon.onNudge(({ kind, line }) => {
     if (privacy || focusMode || state !== 'idle' || bubbleOpen) return;
     interruptDuo();
     nudgeKind = kind;
-    const wording = PERSONA.line(look.companion, `nudge.${kind}`);
+    const wording = line || PERSONA.line(look.companion, `nudge.${kind}`);
     if (wording) { nudgeButton.title = wording; nudgeButton.setAttribute('aria-label', wording); }
     const p = toStage(160, 22);
     Object.assign(nudgeButton.style, { left: `${p.x}px`, top: `${p.y}px` });
