@@ -186,7 +186,10 @@ async function run(ctx, check) {
     const original = { ...hooks };
     hooks.openExternal = async (url) => { opened.push(url); };
     hooks.clipboard = (text) => { copied = text; };
-    await bubble(`[...document.querySelectorAll('.answer-tools button')].filter((b) => b.textContent === 'Ask in Claude').pop().click()`);
+    // The CPU model can still be writing the redacted answer; its buttons come with the finished answer.
+    const handoff = `[...document.querySelectorAll('.answer-tools button')].filter((b) => b.textContent === 'Ask in Claude').pop()`;
+    await waitFor(() => bubble(`Boolean(${handoff})`), 240000, 250);
+    await bubble(`${handoff}?.click()`);
     await waitFor(() => opened.length > 0, 3000);
     check('hand-off copies the prompt and opens Claude', opened[0] === 'https://claude.ai/new' && /Explain this/.test(copied) && !/4111/.test(copied), opened[0]);
     Object.assign(hooks, original);
