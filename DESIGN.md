@@ -524,12 +524,21 @@ site or app they belong to, and nothing is saved silently.
   full-text indexes (porter stemming). The old `memory.json` is imported once and renamed `.imported`.
   - `facts`: `{id, text, category, scope, pinned, source, created, used, uses}`. `scope` is the site (`amazon.com`)
     or app the fact belongs to, or empty for everywhere.
-  - `episodes`: a short history `{at, kind, title, text ≤600 chars, scope}` of what was asked and answered. Logged
-    after each answer, never in Privacy mode; private pages never get this far. Dropped after 90 days.
+  - `episodes`: a short history `{at, kind, title, text ≤600 chars, scope, session}` of what was asked and answered.
+    Logged after each answer, never in Privacy mode or on a private page. Dropped after 90 days. `session` links an
+    episode to its conversation (added in place to older databases).
+  - `conversations`: one row per bubble thread `{id, started, updated, title, scope, turns}` for History → Continue
+    (§3.12.3). `turns` is JSON `[{question, answer ≤2,000 chars, tier, target}]`, newest 20 kept. Same rules and the
+    same 90-day retention as episodes.
+  - `feedback`: 👍/👎 `{at, vote, task, tier, difficulty, length, chars, answer}` (§3.12.1). `answer` stays empty
+    unless the user turns on "Keep answer text with ratings"; newest 2,000 rows kept.
+  These two tables are this feature's own; other features (Routines) keep theirs separate.
 - **Writes to facts happen only by user choice:**
   - The user says "Remember…".
   - The model proposes a `remember` action → a confirm chip, e.g. "Remember that you're vegetarian? ✓ ✗".
-  - Nothing is stored silently.
+  - "Remember this" on an answer, ticked facts from "Save this chat", or the "Get to know you" review (§3.12.1).
+  - Nothing is stored silently, and every save shows a "Loon remembered…" toast with Undo. Privacy mode refuses
+    the remember action outright.
 - **Reads (`recall`):** for each request, in order, at most 8 facts and 1,200 characters:
   1. **Profile:** pinned facts (name, pronouns, where you live, work or study; pinned automatically), always included.
   2. **Matches:** BM25 over the request's words, ×2 when the fact's scope is the current site/app, ×1.3 when used
@@ -602,6 +611,57 @@ site or app they belong to, and nothing is saved silently.
 - **Feedback:** whole messages like "shorter please", "too long", "more detail", "less emoji", "be more formal",
   "reply in Spanish" change the reply style in code before any model, and the answer is just "Got it, shorter from
   now on. Change it in Settings."
+- **Per-answer actions** (the card stays minimal: Copy, Go deeper, ⋯, and two tiny 👍 👎 on the right):
+  - **👍 / 👎** go to the `feedback` table with the task, tier, router difficulty and the reply-length setting, plus
+    the answer's length in characters. One vote per answer; the companion keeps per-answer metadata in memory only
+    (`session.answers`), so the renderer sends just the answer id and the vote. Nothing is stored in Privacy mode.
+  - **Style nudges:** after a 👎, `styleNudge` looks at the last 10 ratings. Three or more 👎 on long answers
+    (> 600 characters) that clearly outnumber the 👍 on them → a chip "Shorter answers by default? ✓ ✗"; the same
+    for short answers (< 200) and "More detailed". ✓ changes the setting as Settings would, ✗ stores the nudge's key
+    so it's never asked again. Nothing changes without the click.
+  - **Calibration log:** `feedbackStats()` gives per-task acceptance (👍 share) with per tier/difficulty cells. The
+    router doesn't use it yet; it's recorded so thresholds can be tuned from real ratings later (no training).
+  - **⋯ → Remember this:** the sentence selected inside that answer, else its first sentence (markdown stripped, at
+    most 200 characters), as an editable "Remember this?" card. ✓ runs the normal remember action.
+  - **⋯ → Forget what you used:** the resolver now returns the recalled facts with their ids (`memoryUsed`), so the
+    card lists them with ✕ each, which deletes that fact.
+  - **⋯ → Save this chat:** the thread as markdown in today's notes file, plus up to three facts the user stated in
+    their own messages (`suggestMemory` per turn, minus known and dismissed ones) as a tick list.
+  - **⋯ → History** opens Settings at History.
+- **"Loon remembered…" toast:** `Memory.add` calls an `onAdd` hook; main.js forwards each new fact to the open bubble,
+  which shows it for 5 s with Undo (deletes it). Several saves in a row share one toast ("Loon remembered 3 things").
+- **"Get to know you"** (first run instead of the plain hello, skippable, and Settings → About you & replies): five
+  optional questions in the bubble, Luna asking (her real pixel sprite, talking) and Soju reacting to each answer with
+  a persona line (flavor only): what to call you, what you mostly do on your Mac (student / developer / design / work
+  / other), reply length and tone, food rules and allergies, interests. `onboardingResult` in `brain/personal.js` maps
+  the answers to facts ("Call me Ada", "I'm a developer", "I'm vegetarian", "I'm allergic to peanuts and shellfish",
+  "I'm interested in jazz") and a reply-style patch. A review screen lists them with ticks; only ticked facts that the
+  main process re-derives from the same answers are saved, pinned, with source `onboarding`. The role also becomes the
+  fallback context mode (§3.12.2). In Privacy mode only the reply style is kept.
+
+#### 3.12.2 Context modes
+
+`brain/modes.js`, plain rules, first match wins: the cat menu's **Mode** override → the selection kind (code, JSON,
+stack trace → Developer; editable text → Work; a document → Study) → the page kind (code/leetcode → Developer,
+shopping → Shopping, menu → Food, article → Study) → the site (github.com, stackoverflow.com, localhost and `.test`
+→ Developer; Amazon, eBay, Etsy… → Shopping; DoorDash, Uber Eats… → Food; Gmail, Google Docs, Outlook, Notion, Slack →
+Work; Wikipedia, arXiv, `.edu`, `docs.*` → Study) → the app for ⌥Space selections (Xcode, VS Code, Terminal → Developer;
+Mail, Slack, Word → Work) → the onboarding role. Never on private pages or during onboarding.
+
+A mode changes only three things: the chip order (its chips first, the rest in their usual order, same set), the
+greeting's persona line in an empty bubble, and the memory domain boost (Developer → code, Shopping → shopping, Food
+→ food, Study → study, Work → work) when the task itself names no domain. Which task runs and what the answer says
+are unchanged. The bubble header shows it as a tiny pixel badge (`dev`, `shop`, `food`, `study`, `work`).
+
+#### 3.12.3 History
+
+Settings → History lists conversations newest first (first question, site, date, number of answers), with a search
+box (BM25 over the conversation's episodes, best first), a row that expands to read the turns, **Continue**, **Delete**
+and **Clear all history**. The cat menu and the bubble's ⋯ have a History item that opens it. Continue replaces the
+bubble thread with the stored turns (`session.turns`), shows them in the bubble with "Picked up from History", and
+keeps the conversation id, so the next question is a normal follow-up (the history block reaches whichever tier
+answers) and its answer is added to the same entry. Stored compactly in `memory.db` (above), 90-day retention, never in
+Privacy mode or on private pages; "Forget everything" also clears it and the ratings.
 
 ### 3.13 Actions (Jarvis)
 

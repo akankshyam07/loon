@@ -138,6 +138,16 @@ and then it does something cool: moon magic, a pounce, peeking over the edge of 
 **🧠 Personal, with a brain you can see**
 - Custom instructions ("About you", "How Loon should reply"), reply length, tone and emoji, and a "Remember this?"
   chip when you mention a preference. Say "less emoji" and it sticks.
+- **Get to know you:** on first run Luna asks five optional questions (what to call you, what you do, reply style,
+  food rules, interests) while Soju reacts, then you review exactly what gets remembered.
+- 👍 / 👎 on any answer. Ratings stay on your Mac (no answer text unless you opt in), and a run of 👎 on long
+  answers gets a "Shorter answers by default?" chip. Nothing changes without your click.
+- "Remember this" and "Forget what you used" on every answer, and a "Loon remembered…" toast with Undo whenever
+  anything is saved.
+- **History:** search past conversations in Settings, read them, and Continue one right where you left off. Or
+  "Save this chat" as a markdown note. 90 days, local, never in Privacy mode.
+- **Modes by context:** Developer Cat on GitHub, Stack Overflow and localhost, Shopping Cat on stores, Food Cat on
+  menus, Study Cat on articles, Work Cat in mail and docs. A tiny badge shows which; it only reorders the chips.
 - Memories become a little graph of people, projects, sites and topics, grouped into domains like work, study,
   shopping and food. Answers follow the links ("what should I review for Acme" finds "Spring Boot confuses me"), and
   Settings → Loon's brain lets you explore, edit or forget any node.

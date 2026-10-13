@@ -157,7 +157,8 @@ class Resolver {
   // answer, so the next follow-up can stay on it).
   // history: the bubble thread's earlier turns [{ question, answer, target }] for a follow-up (main/companion.js), empty
   // on a thread's first turn. A follow-up prefers the tier that answered the previous turn (sticky, never downgraded).
-  async run(taskId, packet, { onText, onRestart = () => {}, signal, firstInThread = true, deeper = false, question, sensitive = false, history = [] } = {}) {
+  // domain: the context mode's area of life (brain/modes.js), boosting those memories when the task names none.
+  async run(taskId, packet, { onText, onRestart = () => {}, signal, firstInThread = true, deeper = false, question, sensitive = false, history = [], domain = '' } = {}) {
     const task = TASKS[taskId];
     if (!task) throw new Error(`Unknown task: ${taskId}`);
     const tiers = task.tiers || [];
@@ -166,8 +167,9 @@ class Resolver {
     const request = question || packet.question || String(packet.text || '').slice(0, 500);
     if (!privacy) await this.memory?.warm?.(request); // embeds the request so recall can match by meaning
     const scope = scopeOf(packet);
-    const memory = privacy || !this.memory ? [] : this.memory.forGroup(memoryGroup(taskId), request, scope, domainForTask(taskId, scope));
-    this.lastMemory = memory;
+    const recalled = privacy || !this.memory ? [] : this.memory.recall({ group: memoryGroup(taskId), query: request, scope, domain: domainForTask(taskId, scope) || domain });
+    const memory = recalled.map((r) => r.text);
+    this.lastMemory = recalled; // [{ id, text }]: the bubble's "Forget what you used" lists these
     // Custom instructions and reply style (Settings): a fixed block right after the system prompt; length also sets
     // the token cap and how many dictionary senses a definition shows.
     const personal = cleanPersonal(this.settings.personal);
@@ -424,7 +426,7 @@ class Resolver {
     const planModel = tier === 'cloud' && !api && this.cli.modelFor?.(cli, answer.hard ? 'hard' : 'medium', this.settings.planModels?.[cli]);
     const detail = [tier === 'cloud' && (api ? api.label(answer.hard) : this.cli.label(cli)), planModel, note].filter(Boolean).join(' · ') || undefined;
     const { text, mood } = answer;
-    return { text: prefix + text, mood, tier, target: answer.target, detail, smart: answer.target === 'smart', estimated: Boolean(task.estimated), replaceText: task.replaceable ? text : undefined };
+    return { text: prefix + text, mood, tier, target: answer.target, detail, smart: answer.target === 'smart', estimated: Boolean(task.estimated), replaceText: task.replaceable ? text : undefined, difficulty: route?.level || (deeper ? 'deeper' : undefined) };
   }
 }
 

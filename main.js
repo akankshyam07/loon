@@ -16,7 +16,8 @@ const { Embedder } = require('./brain/embed');
 const { VoiceEngine, createVoiceController } = require('./main/voice');
 const { ConnectorHub } = require('./main/hub');
 const { createAgentRunner } = require('./main/agent');
-const { PERSONAL_DEFAULTS, cleanPersonal, profileSummary } = require('./brain/personal');
+const { PERSONAL_DEFAULTS, cleanPersonal, profileSummary, onboardingResult } = require('./brain/personal');
+const { MODES } = require('./brain/modes');
 const apiProvider = require('./brain/api-provider');
 const { createTeacher, createOverlay } = require('./main/teach');
 const { splitByDisplay } = require('./renderer/overlay-layout');
@@ -44,7 +45,7 @@ if (SELFTEST) {
 }
 
 let settingsFile;
-let settings = { size: 'M', catStyle: 'pixel', companion: 'luna', costume: 'none', seasonalCostumes: false, retroSounds: false, cameos: true, duo: false, focus: false, privacy: false, judgmental: true, wakeWord: false, speakReplies: 'voiceOnly', projects: [], connectors: [], welcomed: false, cloudCli: 'off', answerWith: 'plan', quickTake: false, teachScreenshots: false, planModels: {}, personal: { ...PERSONAL_DEFAULTS }, dismissedSuggestions: [] };
+let settings = { size: 'M', catStyle: 'pixel', companion: 'luna', costume: 'none', seasonalCostumes: false, retroSounds: false, cameos: true, duo: false, focus: false, privacy: false, judgmental: true, wakeWord: false, speakReplies: 'voiceOnly', projects: [], connectors: [], welcomed: false, cloudCli: 'off', answerWith: 'plan', quickTake: false, teachScreenshots: false, planModels: {}, personal: { ...PERSONAL_DEFAULTS }, dismissedSuggestions: [], onboarded: false, role: '', modeOverride: 'auto', feedbackText: false, dismissedNudges: [] };
 let catWin;
 let bubbleWin;
 let brain;
@@ -542,13 +543,19 @@ function settingsSnapshot() {
     memory: memory.all(),
     personal: cleanPersonal(settings.personal),
     profile: profileSummary(memory.all(), settings.personal),
+    ratings: Object.values(memory.feedbackStats()).reduce((n, t) => ({ up: n.up + t.up, down: n.down + t.down }), { up: 0, down: 0 }),
     embedder: embedder.status(),
     audit: actions.recent(20),
   };
 }
 
-function openSettings() {
-  if (settingsWin && !settingsWin.isDestroyed()) return focusWindow(settingsWin);
+// section: an element id to scroll to (e.g. 'history' from the cat menu or the bubble's ⋯).
+function openSettings(section = '') {
+  const show = () => { if (typeof section === 'string' && /^[a-z]+$/.test(section)) settingsWin.webContents.send('settings-show', section); };
+  if (settingsWin && !settingsWin.isDestroyed()) {
+    show();
+    return focusWindow(settingsWin);
+  }
   settingsWin = new BrowserWindow({
     width: 520,
     height: 640,
@@ -562,6 +569,7 @@ function openSettings() {
     settingsWin.showInactive();
   }
   settingsWin.loadFile(path.join(__dirname, 'renderer', 'settings.html'));
+  settingsWin.webContents.once('did-finish-load', show);
   settingsWin.webContents.on('will-navigate', (e) => e.preventDefault());
   settingsWin.on('closed', () => { settingsWin = null; });
 }
@@ -585,7 +593,14 @@ function showCatMenu() {
     { label: 'Privacy mode', type: 'checkbox', checked: settings.privacy, click: (item) => setToggle('privacy', item.checked) },
     { label: 'Judgmental', type: 'checkbox', checked: settings.judgmental, click: (item) => setToggle('judgmental', item.checked) },
     { label: '"Hey Loon" wake word', type: 'checkbox', checked: settings.wakeWord, enabled: voiceEngine.modelsReady(), click: (item) => setToggle('wakeWord', item.checked) },
-    { label: 'Settings…', click: openSettings },
+    {
+      label: 'Mode',
+      submenu: [['auto', 'Auto (from what you\'re doing)'], ...Object.entries(MODES).map(([id, m]) => [id, m.name])].map(([id, label]) => ({
+        label, type: 'radio', checked: (settings.modeOverride || 'auto') === id, click: () => setMode(id),
+      })),
+    },
+    { label: 'History…', click: () => openSettings('history') },
+    { label: 'Settings…', click: () => openSettings() },
     { type: 'separator' },
     ...Object.keys(SIZES).map((size) => ({
       label: { S: 'Small', M: 'Medium', L: 'Large' }[size],
@@ -596,6 +611,18 @@ function showCatMenu() {
     { type: 'separator' },
     { label: 'Quit Loon', click: () => app.quit() },
   ]).popup({ window: catWin });
+}
+
+// Cat menu → Mode: 'auto' or a pinned mode (brain/modes.js). Only chip order, greeting flavor and memory boost change.
+function setMode(id) {
+  settings.modeOverride = id === 'auto' || Object.hasOwn(MODES, id) ? id : 'auto';
+  saveSettings();
+  if (bubbleWin.isVisible()) bubbleWin.webContents.send('bubble-context', companion.context());
+}
+
+function openOnboarding() {
+  companion.openOnboarding();
+  showBubble();
 }
 
 function registerIpc() {
@@ -659,7 +686,7 @@ function registerIpc() {
   // Bubble ↔ companion. Every answer streams back as ask-chunk / ask-done / ask-error.
   const toBubble = (type, payload) => {
     voice.observe(type, payload);
-    const channel = { chunk: 'ask-chunk', done: 'ask-done', error: 'ask-error', context: 'bubble-context', sensitive: 'bubble-sensitive', confirm: 'bubble-confirm', 'action-done': 'bubble-action', choices: 'bubble-choices', agent: 'bubble-agent', suggest: 'bubble-suggest' }[type];
+    const channel = { chunk: 'ask-chunk', done: 'ask-done', error: 'ask-error', context: 'bubble-context', sensitive: 'bubble-sensitive', confirm: 'bubble-confirm', 'action-done': 'bubble-action', choices: 'bubble-choices', agent: 'bubble-agent', suggest: 'bubble-suggest', remembered: 'bubble-remembered' }[type];
     bubbleWin.webContents.send(channel, payload);
   };
   toBubbleRef.current = toBubble;
@@ -680,6 +707,26 @@ function registerIpc() {
   ipcMain.on('agent-decision', (_e, decision) => agentRunner.decide(decision || {}));
   ipcMain.handle('save-note', (_e, entry) => companion.saveNote(entry));
   ipcMain.on('dismiss-suggestion', (_e, text) => { if (typeof text === 'string') companion.dismissSuggestion(text.slice(0, 200)); });
+  // Per-answer actions and History (DESIGN.md §3.12.1–3.12.3).
+  ipcMain.handle('answer-feedback', (_e, { id, vote } = {}) => companion.feedback({ id, vote }));
+  ipcMain.handle('style-nudge', (_e, { key, accept } = {}) => companion.answerNudge({ key: String(key), accept: Boolean(accept) }));
+  ipcMain.handle('propose-memory', (_e, { id, selection } = {}) => companion.proposeMemory({ id, selection: typeof selection === 'string' ? selection : '' }));
+  ipcMain.handle('remember-facts', (_e, texts) => companion.rememberFacts(Array.isArray(texts) ? texts : []));
+  ipcMain.handle('save-chat', () => companion.saveChat());
+  ipcMain.handle('history-list', (_e, query) => memory.conversations({ query: typeof query === 'string' ? query.slice(0, 200) : '' }));
+  ipcMain.handle('history-get', (_e, id) => memory.conversation(String(id)));
+  ipcMain.handle('history-delete', (_e, id) => { memory.deleteConversation(String(id)); return memory.conversations(); });
+  ipcMain.handle('history-clear', () => { memory.clearHistory(); return []; });
+  ipcMain.on('history-continue', (_e, id) => { if (companion.continueConversation(String(id))) showBubble(); });
+  ipcMain.on('open-history', () => openSettings('history'));
+  ipcMain.handle('onboarding-save', (_e, payload) => {
+    const result = companion.saveOnboarding({ answers: payload?.answers || {}, keep: Array.isArray(payload?.keep) ? payload.keep : [] });
+    settingsWin?.webContents.send('settings-changed', settingsSnapshot());
+    return result;
+  });
+  ipcMain.handle('onboarding-preview', (_e, answers) => onboardingResult(answers && typeof answers === 'object' ? answers : {}));
+  ipcMain.on('onboarding-skip', () => companion.skipOnboarding());
+  ipcMain.on('onboarding-start', openOnboarding);
   // Only reveals files a Loon file search just returned (they exist on disk); never arbitrary paths from a page.
   ipcMain.on('reveal', (_e, file) => { if (typeof file === 'string' && path.isAbsolute(file) && fs.existsSync(file)) shell.showItemInFolder(file); });
   ipcMain.handle('settings-get', () => settingsSnapshot());
@@ -699,6 +746,7 @@ function registerIpc() {
     if (key === 'answerWith' && ['plan', 'mac'].includes(value)) { settings.answerWith = value; saveSettings(); warmPlan(); }
     if (key === 'quickTake' && typeof value === 'boolean') { settings.quickTake = value; saveSettings(); }
     if (key === 'teachScreenshots' && typeof value === 'boolean') { settings.teachScreenshots = value; saveSettings(); }
+    if (key === 'feedbackText' && typeof value === 'boolean') { settings.feedbackText = value; saveSettings(); }
     // One model name per CLI and difficulty; '' = Loon's default. Names that could read as a flag are refused.
     if (key === 'planModel' && ['claude', 'codex'].includes(value?.which) && ['medium', 'hard'].includes(value?.level)) {
       const model = String(value.model || '').trim();
@@ -760,10 +808,10 @@ function registerIpc() {
     }
     return settingsSnapshot();
   });
-  ipcMain.handle('memory-clear', () => { memory.clear(); memory.clearHistory(); resolver.cache.clear(); resolver.escalations.clear(); return settingsSnapshot(); });
+  ipcMain.handle('memory-clear', () => { memory.clear(); memory.clearHistory(); memory.clearFeedback(); resolver.cache.clear(); resolver.escalations.clear(); return settingsSnapshot(); });
   ipcMain.on('open-notes-folder', () => { fs.mkdirSync(notes.dir, { recursive: true }); shell.openPath(notes.dir); });
   ipcMain.on('copy-pairing-code', () => clipboard.writeText(settings.pairingCode));
-  ipcMain.on('open-settings', openSettings);
+  ipcMain.on('open-settings', () => openSettings());
   ipcMain.on('drop-file', (_e, file) => { if (typeof file === 'string' && path.isAbsolute(file) && fs.existsSync(file)) openDroppedFile(file); });
   ipcMain.on('mic-chunk', (_e, samples) => voice.onChunk(Float32Array.from(samples)));
   ipcMain.on('mic-error', (_e, message) => {
@@ -823,6 +871,8 @@ app.whenReady().then(() => {
     embedder,
     projectNames: () => (projectNames ??= require('./brain/projects').discover().map((p) => p.name)),
   });
+  // "Loon remembered…" (§3.12.1): every saved fact, whatever saved it, shows a toast with Undo in the open bubble.
+  memory.onAdd = (fact) => { if (bubbleWin?.isVisible()) bubbleWin.webContents.send('bubble-remembered', { id: fact.id, text: fact.text }); };
   // Only folders the user ticked in Settings → Projects are ever read.
   const allowedProjects = () => (settings.projects || []).filter((p) => fs.existsSync(p));
   hub = new ConnectorHub({ settings, save: saveSettings });
@@ -970,7 +1020,9 @@ app.whenReady().then(() => {
   // First launch (needs catWin, so it runs after the windows exist): a short hello in the bubble instead of a silent cat.
   if (!settings.welcomed && !SELFTEST && !arg('shot')) {
     catWin.webContents.once('did-finish-load', () => setTimeout(() => {
-      companion.showNotice("Hi, I'm Loon 🐾 Click me to ask anything, press and hold to pet me, or try ⌥Space. Right-click me for Settings, where you can connect Chrome and pick projects for me to keep up with. Everything stays on this Mac.");
+      // The hello is Luna's first line in "Get to know you"; Skip ends it and nothing is saved.
+      if (settings.onboarded) companion.showNotice("Hi, I'm Loon 🐾 Click me to ask anything, press and hold to pet me, or try ⌥Space. Right-click me for Settings, where you can connect Chrome and pick projects for me to keep up with. Everything stays on this Mac.");
+      else companion.openOnboarding();
       showBubble();
       settings.welcomed = true;
       saveSettings();
