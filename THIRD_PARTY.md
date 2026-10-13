@@ -43,6 +43,14 @@ Loon and are MIT like the rest of the code.
 | Tesseract `eng` traineddata | OCR | Apache-2.0 |
 | WordNet 3.1 | definitions | WordNet 3.1 license (permissive) |
 
+## The demo video (`docs/demo.mp4`)
+
+- **Music and sound effects are original**, synthesized by `demo/music.js` for this project, and MIT like the rest of
+  the repository. No samples or third-party tracks.
+- **Voices are original too**: `demo/voices.js` synthesizes the cats' cute-game babble and their meows, purrs and
+  trills from oscillators and filtered noise (MIT, no samples, no text-to-speech). An optional variant can give Soju
+  real words through Kokoro-82M (Apache-2.0, see above); the published video doesn't use it.
+
 ## eSpeak NG (GPL-3.0) and the packaged app
 
 Kokoro's phonemizer embeds eSpeak NG, which is GPL-3.0-or-later. It is an npm dependency, not part of this repository.

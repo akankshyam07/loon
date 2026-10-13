@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Loon demo stage</title>
+<!-- A staged product demo, rendered frame by frame by demo/render.js (headless). Real sprites, real persona lines,
+     real bubble and Teach-overlay CSS; seek(t) draws time t, so every frame is reproducible. -->
+<link rel="stylesheet" href="../renderer/overlay.css">
+<link rel="stylesheet" href="../renderer/bubble.css">
+<link rel="stylesheet" href="stage.css">
+</head>
+<body>
+<div id="viewport">
+  <div id="desk">
+    <div id="world">
+      <div class="wallpaper"><canvas id="clouds"></canvas></div>
+      <div class="menubar">
+        <span class="mb-logo"><canvas id="mbCat"></canvas></span>
+        <b id="appName">Browser</b><span>File</span><span>Edit</span><span>View</span><span id="mbExtra">History</span><span>Window</span>
+        <span class="mb-right">◔ &nbsp;▂▄▆ &nbsp;Mon 9:41</span>
+      </div>
+
+      <div id="browser" class="win">
+        <div class="tabs">
+          <i class="dot r"></i><i class="dot y"></i><i class="dot g"></i>
+          <div class="tab"><span id="tabIcon">✈︎</span><span id="tabTitle">Slow travel</span><span class="x">×</span></div>
+          <div class="tab ghost">+</div>
+        </div>
+        <div class="toolbar"><span class="nav">‹ › ↻</span><div class="url"><span class="lock">🔒</span><span id="url">wanderlust.blog/slow-travel</span></div><span class="ext"><canvas id="extIcon"></canvas></span></div>
+        <div class="pages">
+          <article id="pg-article" class="page">
+            <canvas id="heroArt"></canvas>
+            <div class="art-body">
+              <p class="kicker">ESSAYS · 6 MIN READ</p>
+              <h1>The quiet art of slow travel</h1>
+              <p class="byline">by Mira Okafor · May 14</p>
+              <p>The best moments of a trip are <span id="word">ephemeral</span>: steam off a morning cup, a street musician's last song, light sliding across old stone. You can't schedule them. You can only stay long enough to notice.</p>
+              <p>We rush from landmark to landmark as if the map were a checklist. Slow travel asks for the opposite: one town, one café, one long walk at dusk, until a place starts to feel like yours.</p>
+              <p>So book fewer stops. Leave whole afternoons empty. Let the train be late.</p>
+            </div>
+          </article>
+
+          <div id="pg-shop" class="page">
+            <div class="shop-top"><b class="shop-logo">bubble<span>mart</span></b><span class="shop-search">Search drinks…</span><span class="shop-cart">🛒 2</span></div>
+            <p class="crumbs">Drinks › Water › <b>Sparkling water</b></p>
+            <h2 class="shop-h">Sparkling water <small>3 results</small></h2>
+            <div class="prods" id="prods"></div>
+            <p class="shop-note">Free delivery over $35 · Prices include tax</p>
+          </div>
+
+          <div id="pg-menu" class="page">
+            <div class="mn-paper">
+              <p class="mn-kicker">— dinner —</p>
+              <h2 class="mn-title">The Little Fork</h2>
+              <p class="mn-sub">seasonal plates · open till 10</p>
+              <div class="mn-list" id="dishes"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="editor" class="win">
+        <div class="ed-title"><i class="dot r"></i><i class="dot y"></i><i class="dot g"></i><span>moonlit-hills.px — Pixelpad</span></div>
+        <div class="ed-body">
+          <div class="ed-tools"><span>✎</span><span>▢</span><span>◍</span><span>⌖</span><span>✂</span><span>◐</span></div>
+          <div class="ed-canvas"><canvas id="edArt"></canvas></div>
+          <div class="ed-panel">
+            <p class="ed-h">Export</p>
+            <p class="ed-label">Format</p>
+            <div class="seg"><span>JPG</span><span id="fmtPng">PNG</span><span>WebP</span></div>
+            <p class="ed-label">Scale</p>
+            <div class="seg"><span class="on">1×</span><span>2×</span><span>4×</span></div>
+            <button id="exportBtn" class="ed-btn">Export…</button>
+            <p class="ed-label">Layers</p>
+            <ul class="layers"><li>☾ Moon</li><li>⌂ House</li><li>▲ Hills</li><li>▦ Sky</li></ul>
+          </div>
+        </div>
+        <div id="toast" class="toast">Saved moonlit-hills.png ✓</div>
+      </div>
+
+      <canvas id="cats"></canvas>
+      <div id="say" class="balloon" hidden></div>
+      <div id="sparkles"></div>
+      <div id="bubble"><div id="card"></div></div>
+      <div id="tip" class="tip" hidden></div>
+      <div id="layer" aria-live="polite"></div>
+      <svg id="cursor" viewBox="0 0 12 19" shape-rendering="crispEdges"></svg>
+    </div>
+  </div>
+
+  <div id="keys"><kbd>⌥</kbd><kbd>⇧</kbd><kbd>T</kbd></div>
+  <div id="caption"><span class="num"></span><span class="text"></span></div>
+
+  <div id="title" class="card-screen">
+    <div class="hero"><div class="moon"></div><canvas id="titleCat"></canvas></div>
+    <p class="meet">Meet</p>
+    <h1 class="logo">Loon</h1>
+    <p class="tagline">a tiny pixel cat that lives on your screen</p>
+    <div class="value">
+      <p class="value-big">Highlight anything. Ask anything.</p>
+      <p class="value-small">Loon explains, compares and helps, right where you are.</p>
+      <div class="value-chips"><span>Free</span><span>Open source</span><span>Runs on your Mac</span><span>Private by default</span></div>
+    </div>
+    <div id="titleSay" class="balloon big" hidden></div>
+    <canvas id="peekSoju"></canvas>
+  </div>
+
+  <div id="hook" class="card-screen">
+    <p class="hook-line" id="hook1"></p>
+    <div class="hook-browser">
+      <div class="hook-tabs"><i class="dot r"></i><i class="dot y"></i><i class="dot g"></i><span>Terms…</span><span>API ref…</span><span>Docs…</span><span>Forum…</span><span>Terms (2)…</span><span>???</span><span>Help…</span></div>
+      <p class="hook-text" id="hookText">Notwithstanding the foregoing, the licensee shall indemnify and hold harmless the licensor from any and all claims arising hereunder, pursuant to clause 14(b)(iii), save as otherwise provided herein, mutatis mutandis…</p>
+    </div>
+    <div class="hook-bot"><b>Some chatbot tab</b><p id="hookPaste">Paste here…</p></div>
+    <kbd id="hookKey">⌘C</kbd>
+    <p class="hook-line small" id="hook2"></p>
+    <svg id="hookCursor" viewBox="0 0 12 19" shape-rendering="crispEdges"></svg>
+    <span id="hookSweat">💧</span>
+  </div>
+
+  <div id="end" class="card-screen">
+    <canvas id="endCats"></canvas>
+    <h1 class="logo small">Loon</h1>
+    <p class="cta">Get Loon free ✦</p>
+    <p class="url-pill">akankshyam07.github.io/loon</p>
+    <p class="url-pill gh">github.com/akankshyam07/loon</p>
+    <p class="tagline small">Free · open source · runs on your Mac</p>
+    <div id="endSayLuna" class="balloon big" hidden></div>
+    <div id="endSaySoju" class="balloon big" hidden></div>
+  </div>
+  <div id="screenSparkles"></div>
+  <canvas id="fx"></canvas>
+</div>
+
+<script src="../renderer/pixel-sprites.js"></script>
+<script src="../renderer/persona.js"></script>
+<script src="../renderer/overlay-layout.js"></script>
+<script src="../renderer/overlay.js"></script>
+<script src="content.js"></script>
+<script src="stage.js"></script>
+</body>
+</html>

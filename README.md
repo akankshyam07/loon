@@ -21,8 +21,8 @@
 </p>
 
 <p align="center">
-  <img src="docs/loon.gif" width="260" alt="Loon follows the cursor with its eyes, squints happily while being petted, thinks with a little thought bubble, and does moon magic with sparkles"><br>
-  <sub>The smooth Classic style, still one click away in Settings.</sub>
+  <img src="docs/demo.gif" width="720" alt="Demo: Luna defines a highlighted word instantly, Soju runs in to eat while Loon picks the lightest dishes on a menu, Loon points at PNG and Export on screen step by step, and the two cats get dressed up in a witch hat and a strawberry hood"><br>
+  <a href="docs/demo.mp4"><b>▶ Watch the full demo (with sound)</b></a>
 </p>
 
 <p align="center"><a href="https://akankshyam07.github.io/loon/"><b>✧ Visit the Loon website ✧</b></a></p>
@@ -44,6 +44,11 @@ food to judge and Soju fetches Luna for the brainy stuff. **Bring the other cat 
 wrestle and nap together while you're idle and stop the moment you click or ask. Dress them up from the Wardrobe
 (strawberry, frog and bee hoods, witch, Santa and party hats, a grad cap, a bow tie, sunglasses, a bread loaf), or
 switch back to the smooth Classic style in Settings.
+
+<p align="center">
+  <img src="docs/loon.gif" width="200" alt="Loon follows the cursor with its eyes, squints happily while being petted, thinks with a little thought bubble, and does moon magic with sparkles"><br>
+  <sub>The smooth Classic style, still one click away in Settings.</sub>
+</p>
 
 **Contents:** [Why Loon](#why-loon) · [Features](#features) · [Quick start](#quick-start) ·
 [How it works](#how-it-works) · [Privacy](#privacy) · [Tests](#tests) · [Roadmap](#roadmap) · [License](#license)
@@ -274,7 +279,7 @@ npm run demo      # the cat's idle routines on a fast timer, for animation work
 ```
 
 The full end-to-end selftest runs automatically on GitHub Actions (a macOS runner) on every push, so it never takes
-over a contributor's screen: 157 unit tests and 73 end-to-end checks at the time of writing. Locally,
+over a contributor's screen: 160 unit tests and 73 end-to-end checks at the time of writing. Locally,
 `npm run selftest` runs hidden and needs a downloaded model; see [AGENTS.md](AGENTS.md) for details. The stack
 is plain CommonJS with no build step: Electron for the cat, a Manifest V3 Chrome extension, and Node for the brain.
 
@@ -313,7 +318,8 @@ things. A few house rules (more in [AGENTS.md](AGENTS.md)):
 ## License
 
 [MIT](LICENSE) for Loon's own code. Packaged builds include eSpeak NG (GPL-3.0) through the voice, so a distributed
-`.dmg` follows GPL-3.0 as a whole; [THIRD_PARTY.md](THIRD_PARTY.md) has the details.
+`.dmg` follows GPL-3.0 as a whole; [THIRD_PARTY.md](THIRD_PARTY.md) has the details. The demo video's chiptune, sound
+effects and cat voices are original (synthesized by `demo/music.js` and `demo/voices.js`) and MIT too.
 
 ## Credits
 
