@@ -202,7 +202,10 @@ async function run(ctx, check) {
     const askChips = await chips();
     check('the ask bubble offers page chips for the page in front', askChips.includes('page_summary'), askChips.join(','));
     const summary = await clickChip('page_summary');
-    const highlighted = await page.evaluate(() => (CSS.highlights.get('loon-key') ? CSS.highlights.get('loon-key').size : 0));
+    // The highlight request runs alongside the summary, so give it a moment instead of reading it once.
+    const countHighlights = () => page.evaluate(() => (CSS.highlights.get('loon-key') ? CSS.highlights.get('loon-key').size : 0));
+    await waitFor(async () => (await countHighlights()) > 0, 3000, 100);
+    const highlighted = await countHighlights();
     check('Summarize page: instant key points, then a local summary', /Key points/.test(summary?.text) && /Summary/.test(summary?.text), summary?.text.slice(0, 80));
     check('key sentences are highlighted on the page', highlighted > 0, `${highlighted} ranges`);
     await closeBubble();
