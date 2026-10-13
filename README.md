@@ -107,6 +107,12 @@ and then it does something cool: moon magic, a pounce, peeking over the edge of 
   them into flashcards.
 - **"What's my day?"** Today's Calendar events and due Reminders (read-only), plus "focus for 25 minutes" (the cat
   naps and stays quiet until the timer ends) and a gentle stretch nudge after an hour of non-stop work.
+- **Routines.** "Every weekday at 8:30 summarize my calendar", "remind me to drink water every 2 hours between 10
+  and 6", "every Friday at 5 summarize what I worked on this week", "every Monday check the price of this page",
+  "in 20 minutes remind me to stretch". Read without a model, saved only after you click ✓, and delivered as the
+  cat's little "?" (or a macOS notification for reminders, if you turn that on). They respect quiet hours, wait out
+  Focus mode, catch up once after your Mac sleeps instead of piling up, and price watches only speak up on a real
+  drop. "Show my routines", "pause the water reminder", or manage them in Settings → Routines.
 - **Memory you control.** "Remember that I'm vegetarian" and menu picks respect it. Memories live in one local
   SQLite file with full-text search: each request pulls only the few that match (about 4 ms even at 5,000 facts),
   boosted for the site you're on. "What did I look up about X?" searches your last 90 days of questions, and

@@ -44,6 +44,16 @@
     <label class="toggle"><input type="checkbox" data-key="judgmental" /> <span><b>Judgmental</b> A little sass about overpriced things and heavy food.</span></label>
   </section>
 
+  <section id="routinesBox">
+    <h2>Routines</h2>
+    <p class="muted">Things Loon does on a schedule, on this Mac. Make one by telling the cat, like "every weekday at 8:30 summarize my calendar" or "remind me to drink water every 2 hours between 10 and 6". When one runs, the cat shows its little "?"; click it for the result.</p>
+    <ul id="routines"></ul>
+    <p id="routineMsg" class="muted" role="status"></p>
+    <label class="toggle"><input type="checkbox" data-key="routineNotifications" /> <span><b>Use notifications for reminders</b> Reminders also show as a macOS notification, even in Focus mode. Off: they wait for the cat's "?".</span></label>
+    <label class="toggle"><input type="checkbox" id="quietOn" /> <span><b>Quiet hours</b> No repeating reminders and no catch-ups in this window. A routine you set for a time inside it still runs.</span></label>
+    <div class="quiet-times"><label>From <input type="time" id="quietStart" /></label><label>to <input type="time" id="quietEnd" /></label></div>
+  </section>
+
   <section id="personal">
     <h2>About you &amp; replies</h2>
     <p class="muted">Loon reads these before every answer. They stay on this Mac. Privacy mode leaves out "About you".</p>
