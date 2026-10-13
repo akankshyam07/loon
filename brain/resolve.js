@@ -158,7 +158,9 @@ class Resolver {
   // history: the bubble thread's earlier turns [{ question, answer, target }] for a follow-up (main/companion.js), empty
   // on a thread's first turn. A follow-up prefers the tier that answered the previous turn (sticky, never downgraded).
   // domain: the context mode's area of life (brain/modes.js), boosting those memories when the task names none.
-  async run(taskId, packet, { onText, onRestart = () => {}, signal, firstInThread = true, deeper = false, question, sensitive = false, history = [], domain = '' } = {}) {
+  // image: PNG bytes of the window the user asked about, only when they allowed screenshots for a route that takes them
+  // (brain/vision.js imageRoute); it goes to the cloud tier with the prompt and is never cached.
+  async run(taskId, packet, { onText, onRestart = () => {}, signal, firstInThread = true, deeper = false, question, sensitive = false, history = [], domain = '', image = null } = {}) {
     const task = TASKS[taskId];
     if (!task) throw new Error(`Unknown task: ${taskId}`);
     const tiers = task.tiers || [];
@@ -270,7 +272,7 @@ class Resolver {
     // A first turn caches as before (not a typed question about a selection). A follow-up is only cacheable under a key
     // that includes its conversation, so it can never get a first turn's answer, and never by meaning.
     const thread = followUp ? ResponseCache.key(historyBlock(history)) : null;
-    const cacheable = !privacy && (followUp || (firstInThread && !question));
+    const cacheable = !privacy && !image && (followUp || (firstInThread && !question));
     // Errors cache by fingerprint so the same error with different paths/values reuses one answer.
     const identity = task.cacheByFingerprint ? fingerprint(packet.text || '').hash : normalize(prompt);
     // Routed and upgraded answers share the plain key, so a question that needed a stronger tier is instant next time.
@@ -315,7 +317,7 @@ class Resolver {
       // The API's hard model is for "Go deeper" and hard questions; upgrades and fallbacks use the normal one.
       const hard = target === 'cloud' && Boolean(deeper || route?.level === 'hard');
       if (target === 'cloud') {
-        const request = { system: SYSTEM_PROMPT, prompt: redact(prompt).text, onText: onChunk, signal };
+        const request = { system: SYSTEM_PROMPT, prompt: redact(prompt).text, onText: onChunk, signal, ...(image ? { image } : {}) };
         if (api) await api.ask({ ...request, hard });
         // Normal questions get the plan's fast model, hard ones and "Go deeper" its strongest; a warm process waits.
         else await this.cli.ask(cli, { ...request, level: hard ? 'hard' : 'medium', models: this.settings.planModels?.[cli], warm: planFirst });
@@ -369,6 +371,12 @@ class Resolver {
       target = stronger;
       note = 'routed: similar questions needed a stronger model';
     }
+    // A picture the user chose to send only helps a model that can see it.
+    if (image && cloud && target !== 'cloud') {
+      target = 'cloud';
+      note = '';
+    }
+    if (image && target === 'cloud') note = [note, 'with the screenshot'].filter(Boolean).join(' · ');
     if (planFirst && target === 'cloud' && !deeper && this.settings.quickTake) quick = startQuick();
     let answer;
     let fallback = false;

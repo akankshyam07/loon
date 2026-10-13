@@ -1,7 +1,8 @@
 const $ = (id) => document.getElementById(id);
 
 function render(s) {
-  for (const box of document.querySelectorAll('[data-key]')) box.checked = box.dataset.key === 'speakReplies' ? s.speakReplies !== 'never' : Boolean(s[box.dataset.key]);
+  const on = { speakReplies: s.speakReplies !== 'never', screenSight: s.screenSight !== 'off' };
+  for (const box of document.querySelectorAll('[data-key]')) box.checked = box.dataset.key in on ? on[box.dataset.key] : Boolean(s[box.dataset.key]);
   renderSmarter(s);
   renderLook(s);
   $('browser').textContent = s.connected ? 'Connected to Chrome ✓' : 'Not connected. Load the extension, then paste the pairing code into its popup.';

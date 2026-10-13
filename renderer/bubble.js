@@ -117,7 +117,7 @@ function renderContext(next) {
   const onboarding = context.mode === 'onboard';
   $('onboard').hidden = !onboarding;
   // Typing is for questions; next to a selection the buttons come first and "Ask…" reveals the box.
-  $('askForm').hidden = onboarding || !(context.mode === 'ask' || context.mode === 'sensitive' || showInput);
+  $('askForm').hidden = onboarding || !(['ask', 'sensitive', 'screen'].includes(context.mode) || showInput);
   renderEmpty();
 }
 
@@ -138,7 +138,7 @@ function renderChips(all) {
     more.addEventListener('click', () => renderChips(true));
     buttons.push(more);
   }
-  if (!['ask', 'sensitive', 'onboard'].includes(context.mode) && !showInput) {
+  if (!['ask', 'sensitive', 'onboard', 'screen'].includes(context.mode) && !showInput) {
     const askB = Object.assign(document.createElement('button'), { className: 'chip more', textContent: 'Ask…' });
     askB.addEventListener('click', () => { showInput = true; $('askForm').hidden = false; askB.remove(); focused = true; window.loon.focusBubble(); input.focus(); });
     buttons.push(askB);
@@ -154,7 +154,9 @@ function renderEmpty() {
   $('greeting').hidden = !context.greeting;
   $('greeting').textContent = context.greeting || '';
   const ideas = ['What can you do?', 'Where did I leave off?', 'Remind me to stretch in 30 minutes'];
-  $('suggestions').replaceChildren(...ideas.map((text) => {
+  // No page paired: "Look at my screen" reads the window in front (main/screen.js), only on this click.
+  const look = context.lookChip ? [chipButton('Look at my screen', 'Reads the window you were on, on this Mac', () => runChip('screen_look', 'Look at my screen'))] : [];
+  $('suggestions').replaceChildren(...look, ...ideas.map((text) => {
     const b = Object.assign(document.createElement('button'), { className: 'chip', textContent: text });
     b.addEventListener('click', () => ask(text));
     return b;
@@ -197,7 +199,7 @@ async function handoff(app) {
   }
 }
 
-function answerActions({ id, canGoDeeper, replaceText, text, question, quiz, tier, model, detail, estimated, memoryUsed = [] }) {
+function answerActions({ id, canGoDeeper, replaceText, text, question, quiz, tier, model, detail, estimated, fromScreen, memoryUsed = [] }) {
   const row = document.createElement('div');
   row.className = 'answer-tools';
   const add = (parent, label, onClick) => {
@@ -237,6 +239,7 @@ function answerActions({ id, canGoDeeper, replaceText, text, question, quiz, tie
   });
   const item = (label, onClick) => add(list, label, (e) => { list.hidden = true; onClick(e); requestAnimationFrame(reportHeight); });
   for (const chip of (context.chips || []).filter((c) => c.id !== lastTask)) item(chip.label, () => runChip(chip.id, chip.label));
+  if (context.mode === 'screen') item('Look again', () => runChip('screen_look', 'Look again'));
   if ($('askForm').hidden) item('Ask a follow-up', () => { showInput = true; $('askForm').hidden = false; focused = true; window.loon.focusBubble(); input.focus(); reportHeight(); });
   add(list, 'Save to notes', async (e) => {
     try {
@@ -274,7 +277,7 @@ function answerActions({ id, canGoDeeper, replaceText, text, question, quiz, tie
     row.append(votes);
   }
   const icon = Object.assign(document.createElement('span'), { className: 'tier-icon', textContent: tier === 'local' ? '🐾' : tier === 'cloud' ? '☁️' : '⚡' });
-  icon.title = tierLabel({ tier, model, detail, estimated }) + (memoryUsed.length ? `\nRemembered: ${memoryUsed.map((f) => f.text).join('; ')}` : '');
+  icon.title = tierLabel({ tier, model, detail, estimated }) + (fromScreen ? '\n👀 read from your screen' : '') + (memoryUsed.length ? `\nRemembered: ${memoryUsed.map((f) => f.text).join('; ')}` : '');
   row.append(icon, list);
   return row;
 }
@@ -467,7 +470,8 @@ const toLocalInput = (iso) => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
-function confirmCard(id, summary, command) {
+// buttons: optional { yes, no, cancelled } labels (the first-time "look at my screen" card).
+function confirmCard(id, summary, command, buttons = {}) {
   const card = document.createElement('div');
   card.className = 'confirm';
   card.innerHTML = `<div class="confirm-title">${escapeHtml(summary)}</div>`;
@@ -489,14 +493,14 @@ function confirmCard(id, summary, command) {
   if (command.text !== undefined) addField('text', 'What', 'text', command.text);
   if (command.action === 'reminder') addField('when', 'When', 'datetime-local', command.when ? toLocalInput(command.when) : '');
   if (command.action === 'event') addField('start', 'When', 'datetime-local', toLocalInput(command.start));
-  const buttons = document.createElement('div');
-  buttons.className = 'confirm-buttons';
+  const row = document.createElement('div');
+  row.className = 'confirm-buttons';
   const yes = document.createElement('button');
   yes.className = 'primary';
-  yes.textContent = '✓ Do it';
+  yes.textContent = buttons.yes || '✓ Do it';
   const no = document.createElement('button');
   no.className = 'secondary';
-  no.textContent = 'Cancel';
+  no.textContent = buttons.no || 'Cancel';
   yes.addEventListener('click', () => {
     const edited = { ...command };
     if (edited.fields) edited.fields = edited.fields.map((f) => ({ ...f, value: fields[`field:${f.name}`].value.trim() }));
@@ -511,18 +515,18 @@ function confirmCard(id, summary, command) {
     window.loon.confirmAction(id, edited);
   });
   no.addEventListener('click', () => {
-    card.replaceWith(Object.assign(document.createElement('div'), { className: 'note', textContent: 'Cancelled. Nothing was changed.' }));
+    card.replaceWith(Object.assign(document.createElement('div'), { className: 'note', textContent: buttons.cancelled || 'Cancelled. Nothing was changed.' }));
     current = null;
     autosize();
   });
-  buttons.append(yes, no);
-  card.append(buttons);
+  row.append(yes, no);
+  card.append(row);
   return card;
 }
 
-window.loon.onBubbleConfirm(({ id, summary, command }) => {
+window.loon.onBubbleConfirm(({ id, summary, command, buttons }) => {
   if (current?.id !== id) return;
-  current.el.replaceChildren(confirmCard(id, summary, command));
+  current.el.replaceChildren(confirmCard(id, summary, command, buttons));
 });
 // Close calls from connector routing: the user picks, instead of a model guessing.
 window.loon.onBubbleChoices(({ id, prompt, options }) => {

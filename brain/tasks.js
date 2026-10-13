@@ -88,6 +88,8 @@ const TASKS = {
     maxTokens: 360,
     page: true,
   },
+  // "Loon sees your screen when you ask" (§3.20): OCR text of the window in front
+  screen_summary: { label: 'What’s on my screen?', instruction: () => "Describe what's on the user's screen and what they can do there, briefly.", maxTokens: 320 },
 };
 
 // Chips offered for a selection, by the kind the content script detected (DESIGN.md §3.2 table).
@@ -116,7 +118,8 @@ const pageChipsFor = (kind) => MODE_CHIPS[kind] || PAGE_CHIPS;
 const MAX_CONTEXT_CHARS = 24000;
 
 function contextBlock(packet, text) {
-  const attrs = [`source="${packet.source}"`, packet.url ? `url="${packet.url}"` : ''].filter(Boolean).join(' ');
+  const window = packet.source === 'screen' ? `app="${String(packet.app || '').replace(/"/g, "'")}" window="${String(packet.title || '').replace(/"/g, "'")}"` : '';
+  const attrs = [`source="${packet.source}"`, packet.url ? `url="${packet.url}"` : '', window].filter(Boolean).join(' ');
   return `<context ${attrs}>\n${text}\n</context>`;
 }
 

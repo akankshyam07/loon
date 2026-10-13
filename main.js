@@ -8,6 +8,7 @@ const { Translator } = require('./brain/translate');
 const { Skills } = require('./brain/skills');
 const { Bridge, newPairingCode } = require('./main/bridge');
 const { createCompanion } = require('./main/companion');
+const { createScreenSight } = require('./main/screen');
 const capture = require('./main/capture');
 const { Actions } = require('./main/actions');
 const { Notes } = require('./brain/notes');
@@ -47,7 +48,7 @@ if (SELFTEST) {
 }
 
 let settingsFile;
-let settings = { size: 'M', catStyle: 'pixel', companion: 'luna', costume: 'none', seasonalCostumes: false, retroSounds: false, cameos: true, duo: false, focus: false, privacy: false, judgmental: true, wakeWord: false, speakReplies: 'voiceOnly', projects: [], connectors: [], welcomed: false, cloudCli: 'off', answerWith: 'plan', quickTake: false, teachScreenshots: false, planModels: {}, personal: { ...PERSONAL_DEFAULTS }, dismissedSuggestions: [], onboarded: false, role: '', modeOverride: 'auto', feedbackText: false, dismissedNudges: [], routineNotifications: false, quietHours: { on: true, start: '22:00', end: '07:00' } };
+let settings = { size: 'M', catStyle: 'pixel', companion: 'luna', costume: 'none', seasonalCostumes: false, retroSounds: false, cameos: true, duo: false, focus: false, privacy: false, judgmental: true, wakeWord: false, speakReplies: 'voiceOnly', projects: [], connectors: [], welcomed: false, cloudCli: 'off', answerWith: 'plan', quickTake: false, teachScreenshots: false, screenSight: 'ask-first', planModels: {}, personal: { ...PERSONAL_DEFAULTS }, dismissedSuggestions: [], onboarded: false, role: '', modeOverride: 'auto', feedbackText: false, dismissedNudges: [], routineNotifications: false, quietHours: { on: true, start: '22:00', end: '07:00' } };
 let catWin;
 let bubbleWin;
 let brain;
@@ -399,11 +400,24 @@ function teachScreen() {
     ownWindows: () => [catWin, bubbleWin, settingsWin].filter((w) => w && !w.isDestroyed() && w.isVisible()).map(rect),
     displays: () => screen.getAllDisplays().map((d) => ({ id: d.id, bounds: d.bounds, scaleFactor: d.scaleFactor })),
     cursorDisplayId: () => screen.getDisplayNearestPoint(cursorPoint()).id,
-    // Only for a cloud route the user allowed to see screenshots: at most 1600 px wide.
-    downscale: (png) => {
-      const image = nativeImage.createFromBuffer(png);
-      return (image.getSize().width > 1600 ? image.resize({ width: 1600 }) : image).toPNG();
-    },
+    downscale: downscaleForCloud,
+  };
+}
+
+// Only for a cloud route the user allowed to see screenshots: at most 1600 px wide.
+function downscaleForCloud(png) {
+  const image = nativeImage.createFromBuffer(png);
+  return (image.getSize().width > 1600 ? image.resize({ width: 1600 }) : image).toPNG();
+}
+
+// "Loon sees your screen when you ask" (DESIGN.md §3.20): the front window that isn't Loon, read on this Mac.
+function screenSightDeps() {
+  return {
+    frontWindow: () => (process.platform === 'darwin' ? capture.frontWindow() : null),
+    permission: () => (process.platform === 'darwin' ? systemPreferences.getMediaAccessStatus('screen') : 'granted'),
+    grab: (win) => capture.grabWindow(desktopCapturer, screen, win),
+    ocr: (png) => capture.ocr(png, path.join(app.getPath('userData'), 'ocr')),
+    downscale: downscaleForCloud,
   };
 }
 
@@ -766,6 +780,7 @@ function registerIpc() {
     if (key === 'answerWith' && ['plan', 'mac'].includes(value)) { settings.answerWith = value; saveSettings(); warmPlan(); }
     if (key === 'quickTake' && typeof value === 'boolean') { settings.quickTake = value; saveSettings(); }
     if (key === 'teachScreenshots' && typeof value === 'boolean') { settings.teachScreenshots = value; saveSettings(); }
+    if (key === 'screenSight') { settings.screenSight = value ? 'when-asked' : 'off'; saveSettings(); }
     if (key === 'feedbackText' && typeof value === 'boolean') { settings.feedbackText = value; saveSettings(); }
     if (key === 'routineNotifications' && typeof value === 'boolean') { settings.routineNotifications = value; saveSettings(); }
     if (key === 'quietHours' && value && typeof value === 'object') {
@@ -1013,6 +1028,7 @@ app.whenReady().then(() => {
     agent: agentRunner,
     routines,
     teacher,
+    screenSight: createScreenSight(screenSightDeps()),
     memory,
     bridge,
     resolver,

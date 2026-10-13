@@ -119,4 +119,50 @@ async function windowNames(desktopCapturer) {
   return sources.map((s) => s.name).filter(Boolean);
 }
 
-module.exports = { discardShot, sweepShots, captureSelection, screenshotRegion, ocr, ocrBoxes, grabDisplays, windowNames, AccessibilityError, frontmostApp };
+// The frontmost window that isn't Loon's (DESIGN.md §3.20), from the window server's front-to-back list. The bubble
+// has focus while the user types, so "frontmost app" would be Loon itself; this skips our own process instead.
+// Titles need Screen Recording, the same permission the capture needs. → { id, app, title, bounds } or null.
+const FRONT_WINDOW_JXA = `function run(argv) {
+  ObjC.import('CoreGraphics');
+  const own = Number(argv[0]);
+  const list = ObjC.deepUnwrap(ObjC.castRefToObject($.CGWindowListCopyWindowInfo($.kCGWindowListOptionOnScreenOnly | $.kCGWindowListExcludeDesktopElements, 0))) || [];
+  const w = list.find((w) => w.kCGWindowLayer === 0 && w.kCGWindowOwnerPID !== own && w.kCGWindowOwnerName !== 'Loon' && (w.kCGWindowAlpha === undefined || w.kCGWindowAlpha > 0) && w.kCGWindowBounds.Width >= 120 && w.kCGWindowBounds.Height >= 80);
+  if (!w) return 'null';
+  const b = w.kCGWindowBounds;
+  return JSON.stringify({ id: w.kCGWindowNumber, app: w.kCGWindowOwnerName || '', title: w.kCGWindowName || '', bounds: { x: b.X, y: b.Y, w: b.Width, h: b.Height } });
+}`;
+
+async function frontWindow() {
+  try {
+    return JSON.parse(await run('osascript', ['-l', 'JavaScript', '-e', FRONT_WINDOW_JXA, String(process.pid)], { timeout: 5000 }));
+  } catch {
+    return null;
+  }
+}
+
+// One window as PNG bytes in memory (never written to disk). The window's own capture first, so Loon's bubble and cat
+// on top of it aren't in the picture; else the display under it, cropped to the window. The long side is capped at
+// maxSide pixels: Retina text OCRs well at 2x, and anything bigger only makes Tesseract slower.
+async function grabWindow(desktopCapturer, screen, win, { maxSide = 2400 } = {}) {
+  const { x, y, w, h } = win.bounds;
+  const display = screen.getDisplayMatching({ x, y, width: w, height: h });
+  const factor = Math.min(display.scaleFactor || 1, maxSide / Math.max(w, h));
+  const windows = await desktopCapturer.getSources({ types: ['window'], thumbnailSize: { width: Math.round(w * factor), height: Math.round(h * factor) } });
+  const own = windows.find((s) => s.id.startsWith(`window:${win.id}:`));
+  if (own && !own.thumbnail.isEmpty()) return { png: own.thumbnail.toPNG(), ...own.thumbnail.getSize() };
+  const { bounds, scaleFactor } = display;
+  const screens = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: Math.round(bounds.width * scaleFactor), height: Math.round(bounds.height * scaleFactor) } });
+  const shot = screens.find((s) => String(s.display_id) === String(display.id)) || (screens.length === 1 ? screens[0] : null);
+  if (!shot || shot.thumbnail.isEmpty()) return null;
+  const k = shot.thumbnail.getSize().width / bounds.width;
+  const left = Math.max(x, bounds.x);
+  const top = Math.max(y, bounds.y);
+  const rect = { x: Math.round((left - bounds.x) * k), y: Math.round((top - bounds.y) * k), width: Math.round((Math.min(x + w, bounds.x + bounds.width) - left) * k), height: Math.round((Math.min(y + h, bounds.y + bounds.height) - top) * k) };
+  if (rect.width < 1 || rect.height < 1) return null;
+  let image = shot.thumbnail.crop(rect);
+  const size = image.getSize();
+  if (Math.max(size.width, size.height) > maxSide) image = image.resize(size.width >= size.height ? { width: maxSide } : { height: maxSide });
+  return { png: image.toPNG(), ...image.getSize() };
+}
+
+module.exports = { discardShot, sweepShots, captureSelection, screenshotRegion, ocr, ocrBoxes, grabDisplays, grabWindow, windowNames, AccessibilityError, frontmostApp, frontWindow };

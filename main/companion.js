@@ -15,6 +15,9 @@ const { MODES, detectMode, orderChips, badgeFor } = require('../brain/modes');
 const connectorsLib = require('../brain/connectors');
 const { ConnectorHub } = require('./hub');
 const persona = require('../renderer/persona');
+const { BROWSERS } = require('./teach');
+const { windowKey } = require('./screen');
+const { imageRoute } = require('../brain/vision');
 
 const HANDOFF_URLS = {
   claude: 'https://claude.ai/new',
@@ -44,9 +47,15 @@ const TEACH_NEXT = /^(?:next(?: step)?|ok(?:ay)?,? next|what'?s next|continue)$/
 // Questions that point at what's on screen, and the subset that just means "tell me what this is".
 const PAGE_QUESTION = /\b(this|the|my|that) (page|site|website|tab|listing|product|item|article|post|shop|store|screen|menu)\b|\bwhat (do|can) you see\b|\bcan you see\b|\b(see|read|look at) (this|it|that)\b|\bwhat'?s (on here|here|on (the |my )?screen)\b|\bwhich (one|of these)\b|\b(these|those) (items|products|ones|options)\b|\bis (this|it) (a )?(good|worth)/i;
 const GENERIC_LOOK = /^\s*(what (do|can) you see|can you see( this| it| my screen)?|see this( page)?|look at this( page)?|what'?s on (this|the|my) (page|screen)|what'?s this( page)?|(summari[sz]e|explain) (this|the) page)\s*[?.!]*\s*$/i;
-const CANT_SEE = "I can't see your browser right now 🙈\n\nTo let me read pages, open **chrome://extensions**, click ↻ on Loon, then right-click me → **Pair browser…**\n\nOr press **⌥⇧T** and I'll look at your screen and point at things.";
+// Seeing the screen (§3.20): only when asked, only the window in front, and only with the user's say-so once.
+const CANT_SEE = "I can't see your screen right now 🙈\n\nTurn on **Look at my screen when I ask** in Settings, or allow Loon in System Settings → Privacy & Security → **Screen Recording**.";
+const PRIVATE_EYES = "Privacy mode is on, so I'm not looking at your screen. Select some text and press **⌥Space** if you want me to read just that.";
+const SCREEN_CONSENT = "I can look at the window you're on when you ask about it. The screenshot stays on your Mac and is thrown away right after.";
+const LOOK_AGAIN = /^\s*(look again|look now|refresh|check again|take another look|have another look)\b/i;
+const LOOK_CHIP = 'screen_look'; // the "Look at my screen" chip and "Look again" in the ⋯ menu
 
-function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, settings, hub, memory = null, agent = null, teacher = null, routines = null, saveSettings = () => {} }) {
+// screenSight: main/screen.js (frontWindow, look, downscale); without it a screen question gets the honest CANT_SEE.
+function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, settings, hub, memory = null, agent = null, teacher = null, routines = null, screenSight = null, saveSettings = () => {} }) {
   // turns: the bubble thread's answers so far [{ question, answer, tier, target }], for follow-ups (DESIGN.md §2.10).
   // Kept in memory only and cleared with the session, so Privacy mode never writes it anywhere.
   // historyId: this thread's row in History (memory.db conversations); answers: per bubble answer id, what 👍/👎 and
@@ -110,6 +119,16 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
         placeholder: 'Ask about this…',
       };
     }
+    if (mode === 'screen') {
+      return {
+        mode,
+        label: `Looking at: ${[packet.app, packet.title].filter(Boolean).join(' · ')}`,
+        chips: [...['screen_summary', 'explain', 'summarize'].map(chip), ...(teacher ? [teachChip('teach_explain')] : [])],
+        redactions: packet.redactions,
+        notice: packet.lowText ? "I can't read much text in this window. Press ⌥⇧S and pick just the part you mean." : undefined,
+        placeholder: 'Ask about this window…',
+      };
+    }
     if (mode === 'teach') {
       const video = bridge.clients.size && activePage && !activePage.sensitive;
       return {
@@ -142,6 +161,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
       redactions: 0,
       placeholder: 'Ask me anything, or "remind me to…"',
       privacy: Boolean(settings.privacy),
+      lookChip: Boolean(screenSight) && !pageChips.length && !settings.privacy && settings.screenSight !== 'off',
       greeting: session.greeting, // the companion's hello in an empty bubble (flavor, not an answer)
     };
   }
@@ -243,6 +263,45 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
     return pagePacket(reply, activePage?.tabId);
   }
 
+  // ---------- seeing the screen (§3.20) ----------
+  // Eyes ladder: Chrome in front with the extension paired → the page's exact text; anything else → the front window.
+  async function chooseEyes() {
+    if (!bridge.clients.size || !activePage) return 'screen';
+    if (!screenSight) return 'page';
+    const front = await screenSight.frontWindow();
+    return !front || BROWSERS.test(front.app) ? 'page' : 'screen';
+  }
+
+  // A follow-up re-reads the screen only when another window came to the front.
+  async function frontChanged() {
+    if (!screenSight) return false;
+    const front = await screenSight.frontWindow();
+    return Boolean(front) && windowKey(front) !== session.packet.windowKey;
+  }
+
+  // → { packet, png } or null after telling the user why not (off, Privacy mode, first-time consent, private window,
+  // no Screen Recording permission). pending: the request to run again once the user allows it.
+  async function lookAtScreen(id, bubble, pending) {
+    const say = (message) => {
+      bubble('action-done', { id, ok: true, markdown: true, message });
+      ui.cat('brain', { state: 'done', mood: 'confused' });
+      return null;
+    };
+    if (!screenSight || settings.screenSight === 'off') return say(CANT_SEE);
+    if (settings.privacy) return say(PRIVATE_EYES);
+    if (settings.screenSight !== 'when-asked') {
+      session.pendingTask = pending;
+      bubble('confirm', { id, summary: SCREEN_CONSENT, command: { action: 'screen-consent' }, buttons: { yes: 'Allow when I ask', no: 'Not now', cancelled: "Okay, I won't look." } });
+      ui.cat('brain', { state: 'done', mood: 'curious' });
+      return null;
+    }
+    ui.cat('brain', { state: 'thinking' });
+    const seen = await screenSight.look();
+    if (seen.refused === 'sensitive') ui.cat('privacy', { on: true, flash: true });
+    if (seen.refused) return say(seen.message);
+    return seen;
+  }
+
   // Commands ("remind me…", "open…") are parsed without a model and shown as a confirm card.
   // Local, append-only or read-only actions (notes, file search) run straight away.
   // Requests that name a connected app ("career: search python jobs") go to its API. Keyword routing picks the
@@ -336,6 +395,16 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
   }
 
   async function confirm(command, bubble, id) {
+    // "Allow when I ask" on the first-time card: remembered, then the question that asked runs.
+    if (command.action === 'screen-consent') {
+      settings.screenSight = 'when-asked';
+      saveSettings();
+      const pending = session.pendingTask;
+      session.pendingTask = null;
+      if (pending) return run(pending, bubble);
+      bubble('action-done', { id, ok: true, message: 'Okay. Ask me about any window and I\'ll look.' });
+      return { ok: true };
+    }
     // Privacy mode remembers nothing, whichever chip or command asked.
     if (command.action === 'remember' && settings.privacy) {
       const result = { ok: false, message: "Privacy mode is on, so I'm not remembering anything." };
@@ -403,16 +472,27 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
         bubble('confirm', { id, summary: `Send to ${connector.name}: ${op.label}`, command: ConnectorHub.command(connector, op, values) });
         return;
       }
-      // A typed or spoken question about the page in front ("what do you see?", "is this a good deal?") counts as asking
-      // Loon to read it (§4). Without a connected browser, say so plainly instead of letting the model pretend to see.
-      if (!task && question && session.mode === 'ask' && !session.packet && PAGE_QUESTION.test(question)) {
-        if (!bridge.clients.size || !activePage) {
-          bubble('action-done', { id, ok: true, markdown: true, message: CANT_SEE });
-          ui.cat('brain', { state: 'done', mood: 'confused' });
-          return;
+      // A typed or spoken question about what's in front ("what do you see?", "is this a good deal?"), the "Look at my
+      // screen" chip, or "look again" counts as asking Loon to look (§4, §3.20). Never a model pretending to see.
+      const onScreen = session.packet?.source === 'screen';
+      const lookChip = task === LOOK_CHIP;
+      const again = Boolean(onScreen && question && LOOK_AGAIN.test(question));
+      const aboutScreen = Boolean(!task && question && session.mode === 'ask' && !session.packet && PAGE_QUESTION.test(question));
+      let image = null;
+      if (lookChip || again || aboutScreen || (onScreen && !task && question && (await frontChanged()))) {
+        const generic = lookChip || again || (aboutScreen && GENERIC_LOOK.test(question));
+        if ((await chooseEyes()) === 'page') {
+          session.mode = 'page';
+          if (generic) { task = 'page_summary'; question = undefined; }
+        } else {
+          const seen = await lookAtScreen(id, bubble, { id, task, deeper, question });
+          if (!seen) return;
+          Object.assign(session, { packet: seen.packet, mode: 'screen' });
+          bubble('context', context());
+          // The picture goes along only when the user allowed screenshots for a route that takes them; then it's dropped.
+          if (screenSight.downscale && imageRoute(settings)) image = screenSight.downscale(seen.png);
+          if (generic) { task = 'screen_summary'; question = undefined; }
         }
-        session.mode = 'page';
-        if (GENERIC_LOOK.test(question)) { task = 'page_summary'; question = undefined; }
       }
       let packet = session.packet;
       // In page mode every chip works on the page (e.g. Quiz me), not just the page-only tasks.
@@ -457,6 +537,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
         sensitive, // no cloud tier on private pages
         history,
         domain: MODES[currentMode()]?.domain || '',
+        image,
         onText: (chunk) => {
           if (!talking) {
             talking = true;
@@ -474,7 +555,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
       const turn = result.text && { question: question || `${TASKS[effectiveTask]?.label || effectiveTask}${deeper ? ' (go deeper)' : ''}`, answer: result.text, tier: result.tier, target: result.target };
       if (turn) session.turns.push(turn);
       if (result.text) session.answers.set(id, { task: effectiveTask, tier: result.tier, difficulty: result.difficulty || '', chars: result.text.length, text: result.text });
-      bubble('done', { id, ...result, model: brain.modelLabel(deeper || result.smart),counts: resolver.counts, memoryUsed: resolver.lastMemory || [], canGoDeeper: !['code', 'cloud'].includes(result.tier) || task === 'define', ...(flavor ? { flavor } : {}) });
+      bubble('done', { id, ...result, model: brain.modelLabel(deeper || result.smart),counts: resolver.counts, memoryUsed: resolver.lastMemory || [], canGoDeeper: !['code', 'cloud'].includes(result.tier) || task === 'define', fromScreen: packet?.source === 'screen', ...(flavor ? { flavor } : {}) });
       // History ("what did I look up about…", Settings → History → Continue): local only, redacted text, never in Privacy
       // mode or on a private page.
       if (memory && !settings.privacy && !sensitive && turn) {
