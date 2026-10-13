@@ -73,8 +73,51 @@ function couldBeMoodTag(head) {
   return start.length <= tag.length ? tag.startsWith(start) : start.startsWith(tag);
 }
 
-// Streams model text while pulling the leading "[mood:x]" tag (and any <think> block) out of it.
-function createMoodParser(onText) {
+// Praise and agreement fillers a reply must not open with ("Great question!", "You're absolutely right."). Only a whole
+// phrase followed by punctuation counts, so "You're right that…" or "Certainly not" stay as written.
+const FLATTERY = new RegExp(`^\\s*(?:${[
+  "(?:what an?|that['’]?s an?|that is an?|such an?)?\\s*(?:really |very |super )?(?:great|good|excellent|fantastic|wonderful|awesome|brilliant|amazing|interesting|insightful|thoughtful|smart|fair) (?:question|point|observation|catch|idea|thought)",
+  "you(?:'re| are|’re) (?:absolutely |totally |completely |so |exactly |100% )?(?:right|correct)",
+  '(?:absolutely|exactly|definitely|certainly|of course|sure thing|sure|totally|great|awesome|perfect)',
+  'i (?:love|like) (?:this|that|your) (?:question|idea)',
+].join('|')})(?: to ask| there)?\\s*[!.,:;—–]+\\s*`, 'i');
+
+// Drops leading flattery (repeatedly, for "Great question! You're absolutely right."), capitalizing what follows.
+// A reply that is nothing but filler is left alone.
+function stripFlattery(text) {
+  return dropFlattery(text).trim() ? dropFlattery(text) : text;
+}
+
+function dropFlattery(text) {
+  let out = String(text || '');
+  for (let m = out.match(FLATTERY); m; m = out.match(FLATTERY)) out = out.slice(m[0].length);
+  return out === text ? text : out.charAt(0).toUpperCase() + out.slice(1);
+}
+
+// Holds a reply's first clause until it can tell whether it is flattery, then streams the rest straight through.
+function createLeadFilter(onText) {
+  let raw = '';
+  let done = false;
+  const boundary = (t) => /[.!?,;:—–]\s|\n/.test(t) || t.length >= 120;
+  const flush = (text) => { done = true; if (text) onText(text); };
+  return {
+    push(chunk) {
+      if (done) return onText(chunk);
+      raw += chunk;
+      if (!boundary(raw)) return;
+      const rest = dropFlattery(raw);
+      if (rest === raw || boundary(rest)) flush(rest); // otherwise another filler may follow: keep waiting
+    },
+    finish() {
+      if (!done) flush(stripFlattery(raw));
+    },
+  };
+}
+
+// Streams model text while pulling the leading "[mood:x]" tag (and any <think> block) and leading flattery out of it.
+function createMoodParser(onAnswer) {
+  const lead = createLeadFilter(onAnswer);
+  const onText = (text) => lead.push(text);
   let head = '';
   let decided = false;
   let mood = null;
@@ -104,6 +147,7 @@ function createMoodParser(onText) {
     },
     finish() {
       if (!decided && head) emit(head.trimStart());
+      lead.finish();
       return mood;
     },
   };
@@ -320,7 +364,8 @@ class Resolver {
         // Normal questions get the plan's fast model, hard ones and "Go deeper" its strongest; a warm process waits.
         else await this.cli.ask(cli, { ...request, level: hard ? 'hard' : 'medium', models: this.settings.planModels?.[cli], warm: planFirst });
       } else await this.brain.chat(prompt, { onText: onChunk, signal, maxTokens, smart: target === 'smart', thinking, onConfidence: (c) => { confidence = c; } });
-      return { text: stripThink(text).trim(), mood: parser.finish(), target, confidence, hard };
+      const mood = parser.finish(); // flushes the held first clause into `text`
+      return { text: stripThink(text).trim(), mood, target, confidence, hard };
     };
     // Clears the streamed answer so a different one can take its place.
     const restart = () => {
@@ -350,7 +395,7 @@ class Resolver {
         shown = true;
         onText(piece);
       });
-      this.brain.chat(prompt, { onText: (c) => parser.push(c), signal: controller.signal, maxTokens }).catch(() => {});
+      this.brain.chat(prompt, { onText: (c) => parser.push(c), signal: controller.signal, maxTokens }).then(() => parser.finish()).catch(() => {});
       return q;
     };
 
@@ -430,4 +475,4 @@ class Resolver {
   }
 }
 
-module.exports = { Resolver, createMoodParser, normalize, isoWeek };
+module.exports = { Resolver, createMoodParser, stripFlattery, normalize, isoWeek };

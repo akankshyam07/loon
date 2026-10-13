@@ -8,6 +8,7 @@ function render(s) {
   const { code = 0, cache = 0, local = 0, cloud = 0, api = 0 } = s.counts?.tiers || {};
   $('counts').textContent = `${code + cache} answers were instant (no model), ${local} used the model on your Mac${cloud ? `, ${cloud} used your plan` : ''}${api ? `, ${api} went via your API key` : ''}.`;
   $('notesDir').textContent = s.notesDir;
+  $('memoryDir').textContent = s.memoryDir;
   $('embedSize').textContent = `≈${s.embedder.sizeMb}`;
   $('embedStatus').textContent = s.embedder.ready ? `${s.embedder.name} installed ✓` : 'Not installed. Everything works without it.';
   $('downloadEmbedder').hidden = s.embedder.ready;
@@ -26,6 +27,7 @@ function render(s) {
     li.append(text, remove);
     return li;
   }));
+  renderMcp(s);
   $('projects').replaceChildren(...(s.projectChoices.length ? s.projectChoices : [null]).map((p) => {
     const li = document.createElement('li');
     if (!p) { li.className = 'muted'; li.textContent = 'No git projects found on your Desktop.'; return li; }
@@ -89,6 +91,88 @@ function render(s) {
     return li;
   }));
 }
+
+// ---------- Tools (MCP): servers, their tools, on/off and auto-allow per tool ----------
+function renderMcp(s) {
+  $('mcpMsg').textContent = s.mcpError || '';
+  $('mcpServers').replaceChildren(...(s.mcpList.length ? s.mcpList : [null]).map((x) => {
+    const li = document.createElement('li');
+    if (!x) { li.className = 'muted'; li.textContent = 'No tool servers yet.'; return li; }
+    const head = document.createElement('div');
+    head.className = 'row';
+    const text = document.createElement('span');
+    text.innerHTML = '<b></b> <span class="mono"></span> <span class="tag"></span>';
+    text.querySelector('b').textContent = x.name;
+    text.querySelector('.mono').textContent = x.where;
+    text.querySelector('.tag').textContent = x.error ? x.error : x.tools.length ? `${x.tools.length} tools${x.running ? ' · running' : ''}` : 'not started yet';
+    const buttons = document.createElement('span');
+    const refresh = Object.assign(document.createElement('button'), { textContent: 'Refresh' });
+    refresh.addEventListener('click', async () => { refresh.disabled = true; render(await window.loon.mcpRefresh(x.id)); });
+    const remove = Object.assign(document.createElement('button'), { textContent: 'Remove' });
+    remove.addEventListener('click', async () => { if (confirm(`Remove ${x.name}?`)) render(await window.loon.mcpRemove(x.id)); });
+    buttons.append(refresh, ' ', remove);
+    head.append(text, buttons);
+    li.append(head);
+    if (x.envNames.length) li.append(Object.assign(document.createElement('p'), { className: 'muted', textContent: `Environment: ${x.envNames.join(', ')}` }));
+    const tools = document.createElement('ul');
+    for (const t of x.tools) {
+      const row = document.createElement('li');
+      const on = document.createElement('label');
+      on.className = 'toggle';
+      const box = Object.assign(document.createElement('input'), { type: 'checkbox', checked: t.enabled });
+      box.addEventListener('change', async () => render(await window.loon.mcpTool(x.id, t.name, { enabled: box.checked })));
+      const label = document.createElement('span');
+      label.innerHTML = '<b class="mono"></b> <span class="tag"></span> <span></span>';
+      label.querySelector('b').textContent = t.name;
+      label.querySelector('.tag').textContent = t.readOnly ? 'read-only' : t.autoAllow ? 'auto-allowed' : 'asks first';
+      label.querySelector('span:last-child').textContent = t.description;
+      on.append(box, label);
+      row.append(on);
+      if (!t.readOnly && t.enabled) {
+        const auto = document.createElement('label');
+        auto.className = 'toggle';
+        const autoBox = Object.assign(document.createElement('input'), { type: 'checkbox', checked: t.autoAllow });
+        autoBox.addEventListener('change', async () => render(await window.loon.mcpTool(x.id, t.name, { autoAllow: autoBox.checked })));
+        auto.append(autoBox, Object.assign(document.createElement('span'), { textContent: 'Run without asking (only for tools you trust not to change anything)' }));
+        row.append(auto);
+      }
+      tools.append(row);
+    }
+    li.append(tools);
+    return li;
+  }));
+}
+for (const radio of document.querySelectorAll('[name=mcpKind]')) {
+  radio.addEventListener('change', () => {
+    const http = document.querySelector('[name=mcpKind]:checked').value === 'http';
+    $('mcpUrlRow').hidden = !http;
+    $('mcpCommandRow').hidden = http;
+    $('mcpArgsRow').hidden = http;
+  });
+}
+$('mcpAddBtn').addEventListener('click', async () => {
+  const env = {};
+  for (const line of $('mcpEnv').value.split('\n').map((l) => l.trim()).filter(Boolean)) {
+    const at = line.indexOf('=');
+    if (at > 0) env[line.slice(0, at).trim()] = line.slice(at + 1).trim();
+  }
+  $('mcpAddBtn').disabled = true;
+  $('mcpMsg').textContent = 'Starting it and asking for its tools…';
+  const s = await window.loon.mcpAdd({
+    name: $('mcpName').value,
+    transport: document.querySelector('[name=mcpKind]:checked').value,
+    command: $('mcpCommand').value,
+    args: $('mcpArgs').value.split('\n').map((a) => a.trim()).filter(Boolean),
+    url: $('mcpUrl').value,
+    env,
+  });
+  $('mcpAddBtn').disabled = false;
+  render(s);
+  if (!s.mcpError) {
+    for (const id of ['mcpName', 'mcpCommand', 'mcpArgs', 'mcpUrl', 'mcpEnv']) $(id).value = '';
+    $('mcpAdd').open = false;
+  }
+});
 
 // ---------- Routines: list, on/off, edit, delete, run now ----------
 let editingRoutine = null; // a settings refresh must not wipe a half-edited routine
@@ -267,8 +351,9 @@ window.loon.detectCli().then((found) => {
 });
 $('copyCode').addEventListener('click', () => { window.loon.copyPairingCode(); $('copyCode').textContent = 'Copied ✓'; });
 $('openNotes').addEventListener('click', () => window.loon.openNotesFolder());
+$('openMemory').addEventListener('click', () => window.loon.openMemoryFolder());
 $('clearMemory').addEventListener('click', async () => {
-  if (!confirm('Forget everything Loon remembers about you? This also clears your history and remembered answers.')) return;
+  if (!confirm('Forget everything Loon remembers about you? This also clears your history, remembered answers and the memory folder.')) return;
   render(await window.loon.clearMemory());
   window.loonBrain?.refresh();
 });

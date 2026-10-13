@@ -12,9 +12,10 @@ const capture = require('./main/capture');
 const { Actions } = require('./main/actions');
 const { Notes } = require('./brain/notes');
 const { Memory } = require('./brain/memory');
+const { MemoryFiles } = require('./brain/memory-files');
 const { Embedder } = require('./brain/embed');
 const { VoiceEngine, createVoiceController } = require('./main/voice');
-const { ConnectorHub } = require('./main/hub');
+const { ConnectorHub, McpHub } = require('./main/hub');
 const { createAgentRunner } = require('./main/agent');
 const { PERSONAL_DEFAULTS, cleanPersonal, profileSummary, onboardingResult } = require('./brain/personal');
 const { MODES } = require('./brain/modes');
@@ -47,7 +48,7 @@ if (SELFTEST) {
 }
 
 let settingsFile;
-let settings = { size: 'M', catStyle: 'pixel', companion: 'luna', costume: 'none', seasonalCostumes: false, retroSounds: false, cameos: true, duo: false, focus: false, privacy: false, judgmental: true, wakeWord: false, speakReplies: 'voiceOnly', projects: [], connectors: [], welcomed: false, cloudCli: 'off', answerWith: 'plan', quickTake: false, teachScreenshots: false, planModels: {}, personal: { ...PERSONAL_DEFAULTS }, dismissedSuggestions: [], onboarded: false, role: '', modeOverride: 'auto', feedbackText: false, dismissedNudges: [], routineNotifications: false, quietHours: { on: true, start: '22:00', end: '07:00' } };
+let settings = { size: 'M', catStyle: 'pixel', companion: 'luna', costume: 'none', seasonalCostumes: false, retroSounds: false, cameos: true, duo: false, focus: false, privacy: false, judgmental: true, wakeWord: false, speakReplies: 'voiceOnly', projects: [], connectors: [], welcomed: false, cloudCli: 'off', answerWith: 'plan', quickTake: false, teachScreenshots: false, planModels: {}, personal: { ...PERSONAL_DEFAULTS }, dismissedSuggestions: [], onboarded: false, role: '', modeOverride: 'auto', feedbackText: false, dismissedNudges: [], routineNotifications: false, quietHours: { on: true, start: '22:00', end: '07:00' }, memoryFiles: true, mcpServers: [] };
 let catWin;
 let bubbleWin;
 let brain;
@@ -61,10 +62,12 @@ let translator;
 let actions;
 let notes;
 let memory;
+let memoryFiles; // the readable Markdown copy of memory (brain/memory-files.js)
 let embedder;
 let settingsWin = null;
 let voice;
 let hub;
+let mcpHub; // MCP tool servers (main/hub.js McpHub)
 let voiceEngine;
 let agentRunner;
 let teacher; // "Teach me on my screen" (main/teach.js)
@@ -529,7 +532,19 @@ function setToggle(key, value) {
   if (['wakeWord', 'focus', 'privacy'].includes(key)) voice.setWake(settings.wakeWord && !settings.focus && !settings.privacy);
   if (key === 'privacy') warmPlan();
   if (key === 'focus' || key === 'privacy') routines?.poke(); // routines that waited for Focus to end
+  if (key === 'privacy') syncMemoryFiles();
   settingsWin?.webContents.send('settings-changed', settingsSnapshot());
+}
+
+// The Markdown copy of memory follows Privacy mode and its Settings toggle: off means no reads, no writes, no watcher.
+function syncMemoryFiles() {
+  if (!memoryFiles?.enabled()) return memoryFiles?.unwatch();
+  try {
+    memoryFiles.sync();
+    memoryFiles.watch();
+  } catch (err) {
+    console.warn('[memory-files]', err.message);
+  }
 }
 
 // Plan-first (DESIGN.md §3.17.1): keep one plan CLI process started and waiting (it sends nothing), so the next
@@ -554,7 +569,10 @@ function settingsSnapshot() {
     ...settings,
     projectChoices: [...known.values()].map((p) => ({ ...p, allowed: (settings.projects || []).includes(p.path) })),
     connectorList: (settings.connectors || []).map((x) => ({ ...x, ready: hub.cache.has(x.id), operations: hub.cache.get(x.id)?.ops.length || 0, canSend: hub.senders.has(x.id) })),
+    mcpServers: undefined, // mcpList instead: same servers, without environment values
+    mcpList: mcpHub.snapshot(),
     notesDir: notes.dir,
+    memoryDir: memoryFiles.dir,
     connected: bridge.clients.size > 0,
     counts: resolver.counts,
     ...apiProvider.snapshot(settings, apiKeys), // key hints only; the keys never leave the main process
@@ -768,6 +786,7 @@ function registerIpc() {
     if (key === 'teachScreenshots' && typeof value === 'boolean') { settings.teachScreenshots = value; saveSettings(); }
     if (key === 'feedbackText' && typeof value === 'boolean') { settings.feedbackText = value; saveSettings(); }
     if (key === 'routineNotifications' && typeof value === 'boolean') { settings.routineNotifications = value; saveSettings(); }
+    if (key === 'memoryFiles' && typeof value === 'boolean') { settings.memoryFiles = value; saveSettings(); syncMemoryFiles(); }
     if (key === 'quietHours' && value && typeof value === 'object') {
       const time = (t, fallback) => (/^([01]\d|2[0-3]):[0-5]\d$/.test(t) ? t : fallback);
       settings.quietHours = { on: Boolean(value.on), start: time(value.start, settings.quietHours.start), end: time(value.end, settings.quietHours.end) };
@@ -818,6 +837,27 @@ function registerIpc() {
   ipcMain.handle('connectors-discover', () => hub.discover());
   ipcMain.handle('connectors-add', (_e, found) => { hub.add(found); return settingsSnapshot(); });
   ipcMain.handle('connectors-remove', (_e, id) => { hub.remove(id); return settingsSnapshot(); });
+  // Settings → Tools (MCP). Adding (and "Refresh") starts the server and lists its tools; a failure shows on its row.
+  const mcpAction = (fn) => async (_e, arg) => {
+    try {
+      await fn(arg || {});
+      return settingsSnapshot();
+    } catch (err) {
+      return { ...settingsSnapshot(), mcpError: err.message };
+    }
+  };
+  ipcMain.handle('mcp-add', mcpAction(async (server) => {
+    const added = mcpHub.add(server);
+    await mcpHub.tools(added, { force: true }).catch(() => {}); // the error shows on its row
+  }));
+  ipcMain.handle('mcp-remove', mcpAction(({ id }) => mcpHub.remove(String(id))));
+  ipcMain.handle('mcp-refresh', mcpAction(async ({ id }) => {
+    const server = mcpHub.get(String(id));
+    if (!server) return;
+    mcpHub.disconnect(server.id);
+    await mcpHub.tools(server, { force: true }).catch(() => {});
+  }));
+  ipcMain.handle('mcp-tool', mcpAction(({ id, tool, enabled, autoAllow }) => mcpHub.setTool(String(id), String(tool), { enabled, autoAllow })));
   ipcMain.handle('memory-update', (_e, { id, text }) => { memory.update(id, text); return settingsSnapshot(); });
   ipcMain.handle('memory-delete', (_e, id) => { memory.remove(id); return settingsSnapshot(); });
   ipcMain.handle('memory-pin', (_e, { id, pinned }) => { memory.pin(id, pinned); return settingsSnapshot(); });
@@ -834,8 +874,27 @@ function registerIpc() {
     }
     return settingsSnapshot();
   });
-  ipcMain.handle('memory-clear', () => { memory.clear(); memory.clearHistory(); memory.clearFeedback(); resolver.cache.clear(); resolver.escalations.clear(); return settingsSnapshot(); });
+  ipcMain.handle('memory-clear', () => {
+    memory.clear();
+    memory.clearHistory();
+    memory.clearFeedback();
+    resolver.cache.clear();
+    resolver.escalations.clear();
+    memoryFiles.unwatch();
+    memoryFiles.clear(); // the Markdown copy goes too
+    return settingsSnapshot();
+  });
   ipcMain.on('open-notes-folder', () => { fs.mkdirSync(notes.dir, { recursive: true }); shell.openPath(notes.dir); });
+  // Writes the folder first (with its README) unless Privacy mode or the toggle says no writes.
+  ipcMain.on('open-memory-folder', () => {
+    if (memoryFiles.enabled()) {
+      syncMemoryFiles();
+      fs.mkdirSync(memoryFiles.dir, { recursive: true });
+      memoryFiles.write('README.md', memoryFiles.readme());
+      memoryFiles.watch();
+    }
+    if (fs.existsSync(memoryFiles.dir)) shell.openPath(memoryFiles.dir);
+  });
   ipcMain.on('copy-pairing-code', () => clipboard.writeText(settings.pairingCode));
   ipcMain.on('open-settings', () => openSettings());
   ipcMain.on('drop-file', (_e, file) => { if (typeof file === 'string' && path.isAbsolute(file) && fs.existsSync(file)) openDroppedFile(file); });
@@ -912,10 +971,15 @@ app.whenReady().then(() => {
   });
   // "Loon remembered…" (§3.12.1): every saved fact, whatever saved it, shows a toast with Undo in the open bubble.
   memory.onAdd = (fact) => { if (bubbleWin?.isVisible()) bubbleWin.webContents.send('bubble-remembered', { id: fact.id, text: fact.text }); };
+  // Never during the selftest, which swaps in a temporary database.
+  memoryFiles = new MemoryFiles({ dir: path.join(notes.dir, 'Memory'), memory, notesDir: notes.dir, enabled: () => !SELFTEST && settings.memoryFiles !== false && !settings.privacy });
+  memory.onChange = () => memoryFiles.schedule();
+  syncMemoryFiles(); // picks up edits made while Loon was closed
   // Only folders the user ticked in Settings → Projects are ever read.
   const allowedProjects = () => (settings.projects || []).filter((p) => fs.existsSync(p));
   hub = new ConnectorHub({ settings, save: saveSettings });
-  actions = new Actions({ auditFile: path.join(app.getPath('userData'), 'audit.jsonl'), notes, memory, hub, projects: allowedProjects, onFocus: startFocus, openExternal: (url) => hooks.openExternal(url) });
+  mcpHub = new McpHub({ settings, save: saveSettings, secrets: new apiProvider.KeyStore(path.join(app.getPath('userData'), 'mcp-secrets.json'), safeStorage) });
+  actions = new Actions({ auditFile: path.join(app.getPath('userData'), 'audit.jsonl'), notes, memory, hub, mcp: mcpHub, projects: allowedProjects, onFocus: startFocus, openExternal: (url) => hooks.openExternal(url) });
   // Tidy memory at most once a day: merges duplicate facts only, logged as a count (no content).
   if (!settings.privacy && !SELFTEST && settings.lastTidy !== new Date().toDateString()) {
     settings.lastTidy = new Date().toDateString();
@@ -1018,6 +1082,7 @@ app.whenReady().then(() => {
     brain,
     hooks,
     hub,
+    mcp: mcpHub,
     actions,
     notes,
     settings,
@@ -1143,6 +1208,8 @@ app.whenReady().then(() => {
 
 app.on('will-quit', () => {
   routines?.stop();
+  memoryFiles?.unwatch();
+  mcpHub?.closeAll();
   memory?.close();
   globalShortcut.unregisterAll();
   bridge?.stop();

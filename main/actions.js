@@ -4,6 +4,8 @@ const { execFile } = require('child_process');
 const fs = require('fs');
 const { describeSchedule } = require('../brain/routines');
 const { when } = require('./routines');
+const { redact } = require('../brain/redact');
+const { coerceArgs, untrusted } = require('../brain/mcp');
 
 const run = (cmd, args) => new Promise((resolve, reject) => {
   execFile(cmd, args, { timeout: 20_000 }, (err, stdout, stderr) => (err ? reject(new Error((stderr || err.message).trim())) : resolve(stdout.trim())));
@@ -135,8 +137,9 @@ const realExecutors = {
 
 class Actions {
   // routines: the scheduler (main/routines.js), set by main.js once it exists.
-  constructor({ auditFile, notes, memory, openExternal, projects = () => [], hub = null, onFocus = () => '', routines = null, executors = realExecutors }) {
+  constructor({ auditFile, notes, memory, openExternal, projects = () => [], hub = null, mcp = null, onFocus = () => '', routines = null, executors = realExecutors }) {
     this.routines = routines;
+    this.mcp = mcp;
     this.onFocus = onFocus;
     this.projects = projects;
     this.hub = hub;
@@ -172,7 +175,8 @@ class Actions {
   }
 
   // command comes from the (possibly user-edited) confirm card. Returns { ok, message, results? }.
-  async execute(command) {
+  // signal: cancels a running MCP tool call (Esc / a new question).
+  async execute(command, { signal } = {}) {
     const started = Date.now();
     try {
       let message;
@@ -195,6 +199,13 @@ class Actions {
           const result = await this.hub.call(command.connectorId, command.opId, values);
           this.audit({ action: 'api', ok: true, connector: command.connectorName, op: command.opId, write: !command.read });
           return { ok: true, message: `**${command.connectorName}** · ${command.label}\n\n${result}`, markdown: true };
+        }
+        // MCP tools (§3.13.2): reached only after ✓, or directly for read-only / auto-allowed tools. The log gets the
+        // server and tool names, never the arguments or the output. Output goes back to a model only as untrusted context.
+        case 'mcp': {
+          const result = await this.mcp.call(command.serverId, command.tool, coerceArgs(command.fields), { signal });
+          this.audit({ action: 'mcp', ok: !result.isError, server: command.serverName, tool: command.tool, write: !command.read, ms: Date.now() - started });
+          return { ok: !result.isError, message: `**${command.serverName}** · ${command.label}\n\n${result.text}`, markdown: true, context: untrusted(result.text, command.serverName, command.tool) };
         }
         case 'briefing': {
           const { briefing } = require('../brain/projects');
@@ -240,7 +251,8 @@ class Actions {
       this.audit({ action: command.action, ok: true, ms: Date.now() - started, titleChars: String(command.title || command.text || command.target || command.query || '').length });
       return { ok: true, message, results };
     } catch (err) {
-      this.audit({ action: command.action, ok: false, error: err.message.slice(0, 200) });
+      // Error text can come from another app or tool server, so secrets are redacted before it's logged.
+      this.audit({ action: command.action, ok: false, ...(command.action === 'mcp' ? { server: command.serverName, tool: command.tool } : {}), error: redact(err.message).text.slice(0, 200) });
       return { ok: false, message: `That didn't work: ${err.message}.${permissionHint(err.message)}` };
     }
   }

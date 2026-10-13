@@ -4,7 +4,7 @@
 
 const DEV_PORTS = [3000, 3001, 4000, 5000, 5001, 5173, 8000, 8001, 8080, 8888];
 const SPEC_PATHS = ['/openapi.json', '/api/openapi.json', '/docs/openapi.json', '/v3/api-docs'];
-const STOP = new Set(['a', 'an', 'the', 'to', 'for', 'of', 'in', 'on', 'my', 'me', 'please', 'can', 'you', 'show', 'get', 'and', 'with', 'from', 'all', 'some', 'ask', 'tell']);
+const STOP = new Set(['a', 'an', 'the', 'to', 'for', 'of', 'in', 'on', 'my', 'me', 'please', 'can', 'you', 'show', 'get', 'and', 'with', 'from', 'all', 'some', 'ask', 'tell', 'run', 'use']);
 
 const isLocal = (url) => {
   try {

@@ -187,6 +187,7 @@ class Memory {
     this.linkFact(entry.id, entry.text);
     this.embedFact(entry.id, entry.text);
     this.onAdd?.(entry); // main.js: the "Loon remembered…" toast, whichever path saved the fact
+    this.onChange?.(); // main.js: the Markdown copy (brain/memory-files.js) follows every change
     return entry;
   }
 
@@ -194,15 +195,31 @@ class Memory {
     this.db.prepare('UPDATE facts SET text = ?, category = ?, vec = NULL WHERE id = ?').run(text.trim(), categorize(text), id);
     this.linkFact(id, text.trim());
     this.embedFact(id, text.trim());
+    this.onChange?.();
   }
 
   pin(id, pinned) {
     this.db.prepare('UPDATE facts SET pinned = ? WHERE id = ?').run(pinned ? 1 : 0, id);
+    this.onChange?.();
   }
 
   remove(id) {
     this.unlinkFact(id);
     this.db.prepare('DELETE FROM facts WHERE id = ?').run(id);
+    this.onChange?.();
+  }
+
+  get(id) {
+    const r = this.db.prepare('SELECT id, text, category, scope, pinned, source, created FROM facts WHERE id = ?').get(String(id));
+    return r ? { ...r, pinned: Boolean(r.pinned) } : null;
+  }
+
+  // For the Markdown copy (brain/memory-files.js): every fact, the graph nodes each links to, and the node edges.
+  mirrorData() {
+    const links = this.db.prepare(`SELECT fn.fact_id, n.id, n.label, n.kind FROM fact_nodes fn JOIN nodes n ON n.id = fn.node_id
+      WHERE n.id != ? ORDER BY n.label`).all(graph.ME);
+    const edges = this.db.prepare('SELECT src, dst, weight FROM edges WHERE src != ? AND dst != ? ORDER BY weight DESC').all(graph.ME, graph.ME);
+    return { facts: this.all(), links, edges };
   }
 
   // "forget that I'm vegetarian" → removes facts that share most of those words.
@@ -219,6 +236,7 @@ class Memory {
 
   clear() {
     this.db.exec(`DELETE FROM facts; DELETE FROM fact_nodes; DELETE FROM edges; DELETE FROM nodes WHERE id != '${graph.ME}'`);
+    this.onChange?.();
   }
 
   // Merges facts that say the same thing (same normalized text, or cosine ≥ 0.95 when both have vectors) within the
@@ -355,6 +373,7 @@ class Memory {
     this.db.prepare('DELETE FROM edges WHERE src = ? OR dst = ?').run(nodeId, nodeId);
     this.db.prepare('DELETE FROM fact_nodes WHERE node_id = ?').run(nodeId);
     this.db.prepare('DELETE FROM nodes WHERE id = ?').run(nodeId);
+    this.onChange?.();
   }
 
   // "what do you know about Acme": the best matching node with its neighbors and facts, or the facts that mention

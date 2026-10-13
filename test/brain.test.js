@@ -3,7 +3,7 @@ const assert = require('node:assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { createMoodParser, Resolver } = require('../brain/resolve');
+const { createMoodParser, stripFlattery, Resolver } = require('../brain/resolve');
 const { ResponseCache } = require('../brain/cache');
 
 function parse(chunks) {
@@ -23,6 +23,31 @@ test('replies without a valid tag pass through untouched', () => {
   assert.deepStrictEqual(parse(['Hello there', '!']), { mood: null, out: 'Hello there!' });
   assert.deepStrictEqual(parse(['[mood:grumpy] ok']), { mood: null, out: 'ok' });
   assert.deepStrictEqual(parse(['[m']), { mood: null, out: '[m' });
+});
+
+test('no flattery: the system prompt says so, and leading praise or agreement fillers are stripped from replies', () => {
+  const { SYSTEM_PROMPT } = require('../brain/ai');
+  assert.match(SYSTEM_PROMPT, /Never open with praise or agreement fillers/);
+  assert.match(SYSTEM_PROMPT, /If the user is wrong, say so plainly/);
+  const cases = [
+    ['Great question! The answer is 42.', 'The answer is 42.'],
+    ["You're absolutely right. it uses UTF-8.", 'It uses UTF-8.'],
+    ['What a great question! You’re right! Sure, here it is.', 'Here it is.'],
+    ['Absolutely, the second one is cheaper.', 'The second one is cheaper.'],
+    ['That’s a really good point — prices vary.', 'Prices vary.'],
+    ['Of course!\nStep 1: open it.', 'Step 1: open it.'],
+    ["You're right that it's cheaper, but shipping costs more.", "You're right that it's cheaper, but shipping costs more."],
+    ['Certainly not. That claim is false.', 'Certainly not. That claim is false.'],
+    ['Sure-fire bets are rare.', 'Sure-fire bets are rare.'],
+    ['Greatness takes time.', 'Greatness takes time.'],
+    ['Absolutely!', 'Absolutely!'], // nothing but filler: left alone
+    ['Actually, no. Paris is the capital.', 'Actually, no. Paris is the capital.'],
+  ];
+  for (const [input, want] of cases) assert.strictEqual(stripFlattery(input), want, input);
+  // Streaming: the filter holds only the first clause, wherever the chunks split.
+  assert.deepStrictEqual(parse(['[mood:happy] Gre', 'at ques', 'tion! ', "You're absolutely ", 'right. It is ', 'blue.']), { mood: 'happy', out: 'It is blue.' });
+  assert.deepStrictEqual(parse(['[mood:focused] Here', ' is the fix: add a semicolon.']), { mood: 'focused', out: 'Here is the fix: add a semicolon.' });
+  assert.deepStrictEqual(parse(['[mood:happy] Great question!']), { mood: 'happy', out: 'Great question!' });
 });
 
 test('cache evicts least recently used and expires old entries', () => {

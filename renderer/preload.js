@@ -72,6 +72,10 @@ contextBridge.exposeInMainWorld('loon', {
   discoverConnectors: () => ipcRenderer.invoke('connectors-discover'),
   addConnector: (found) => ipcRenderer.invoke('connectors-add', found),
   removeConnector: (id) => ipcRenderer.invoke('connectors-remove', id),
+  mcpAdd: (server) => ipcRenderer.invoke('mcp-add', server),
+  mcpRemove: (id) => ipcRenderer.invoke('mcp-remove', { id }),
+  mcpRefresh: (id) => ipcRenderer.invoke('mcp-refresh', { id }),
+  mcpTool: (id, tool, prefs) => ipcRenderer.invoke('mcp-tool', { id, tool, ...prefs }),
   // teach overlay (one per display)
   onOverlay: on('overlay'),
   onOverlayFade: on('overlay-fade'),
@@ -98,6 +102,7 @@ contextBridge.exposeInMainWorld('loon', {
   downloadEmbedder: () => ipcRenderer.invoke('download-embedder'),
   onEmbedderProgress: on('embedder-progress'),
   openNotesFolder: () => ipcRenderer.send('open-notes-folder'),
+  openMemoryFolder: () => ipcRenderer.send('open-memory-folder'),
   copyPairingCode: () => ipcRenderer.send('copy-pairing-code'),
   onSettingsChanged: on('settings-changed'),
   onFocus: on('focus'),

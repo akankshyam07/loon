@@ -548,8 +548,8 @@ site or app they belong to, and nothing is saved silently.
   search with 20,000 episodes; real sizes are far smaller.
 - **Ask about it:** "what do you know about me", "what did I look up about X", "what did I ask today" answer from
   the store in code. The answer's tier icon tooltip lists the memories that were used.
-- **UI:** a Memory tab to list, edit, delete, and "forget everything" (facts, history and cached answers). Privacy
-  mode skips memory completely.
+- **UI:** a Memory tab to list, edit, delete, and "forget everything" (facts, history, cached answers and the
+  Markdown folder, §3.12.4). Privacy mode skips memory completely.
 - **Optional embeddings (hybrid recall):** Settings → Models offers "Smarter memory & cache" (BGE small en v1.5,
   MIT, the official ggml-org Q8_0 GGUF, ~37 MB, 384 dimensions, ~4 ms per sentence on an M1 Pro), loaded lazily
   through node-llama-cpp (`brain/embed.js`). Nothing downloads on its own. With it:
@@ -663,6 +663,55 @@ keeps the conversation id, so the next question is a normal follow-up (the histo
 answers) and its answer is added to the same entry. Stored compactly in `memory.db` (above), 90-day retention, never in
 Privacy mode or on private pages; "Forget everything" also clears it and the ratings.
 
+#### 3.12.4 Memory as a folder you can open
+
+Why: the most praised thing about OpenHuman is memory you can read as plain files, and the most common complaint
+about Hermes is memory that is hard to inspect. `brain/memory-files.js` keeps an Obsidian-compatible Markdown copy of
+the facts. `memory.db` stays the source of truth; the folder follows it.
+
+- **Where:** `~/Documents/Loon/Memory/` (inside the notes folder, which keeps its dated files at the top level; the
+  folder's README points to them). Settings → Memory has "Open memory folder" (`shell.openPath`) and "Keep a readable
+  copy as Markdown files" (`settings.memoryFiles`, on by default).
+- **Layout:** `About me.md` (pinned facts); one file per category for the rest (`Preferences.md`, `Food.md`,
+  `Writing.md`, `Shopping.md`, `Work and projects.md`, `Languages.md`); `People/<name>.md` and `Projects/<name>.md`
+  for graph nodes of those kinds, holding the facts that mention them (a person beats a project), with a
+  `Related: [[…]]` line from the graph edges. Mentions of nodes that have a file become `[[wikilinks]]` (with the
+  fact's own spelling as the alias). Every fact lives in exactly one file, so an edit has one meaning. Front-matter
+  carries `loon: memory`, the kind, the node or category id and the list of fact ids; each fact line ends in its
+  Obsidian block id (`- I'm vegetarian ^<fact id>`). `README.md` explains all of this; `Needs a look.md` appears
+  only when there is a conflict.
+- **When it syncs:** at launch (catches edits made while Loon was closed), on any memory change (`memory.onChange`,
+  debounced 700 ms), and on file changes (`fs.watch`, recursive, same debounce). A sync reads the user's edits back
+  first, then rewrites the folder; files are written to a temp name and renamed, and only when their content changed.
+- **Reading edits back, conservatively:** `.loon-state.json` records what Loon last wrote (a hash per file, and the
+  text and file of every fact). Only files whose hash changed are read.
+  - Edited line, Loon's copy unchanged since the last write → the fact takes the file's text.
+  - Edited line, Loon's copy also changed (or the fact was deleted in Loon meanwhile, or there is no record) → both
+    are kept: the file's text becomes a new fact with source `file`, and the pair is listed in `Needs a look.md`.
+    Deleting that file clears the list.
+  - Deleted line → the fact is removed, unless Loon changed it since the last write (then it is kept).
+  - New line (no id) → a new fact with source `file`, unpinned (pinned when written in `About me.md`); it gets its
+    id and moves to its topic file on the next write. Text already remembered is not added twice.
+  - Moving a line into or out of `About me.md` pins or unpins it; other moves are undone, since facts are filed by
+    topic. Deleting one whole file removes its facts. If every file Loon wrote is gone at once (folder moved or wiped),
+    nothing is deleted and the folder is written again.
+  - Headings, front-matter, the intro line and the `Related:` line are structure, not memories. Any other line is.
+- **Privacy:** no reads and no writes in Privacy mode or with the toggle off (and never during the selftest, which
+  swaps in a temporary database). Turning Privacy mode off syncs once. "Forget everything" removes the files Loon wrote
+  (and the README, review list and state), then the empty folders; files the user added themselves stay. History,
+  ratings and routines are not copied to the folder.
+
+#### 3.12.5 No flattery
+
+A stable persona that never flatters. One fixed line in `SYSTEM_PROMPT` (`brain/ai.js`, still a single constant, so
+the prefix cache is unaffected): never open with praise or agreement fillers like "Great question" or "You're
+absolutely right", say so plainly and kindly when the user is wrong, honest beats agreeable. Small models ignore rules
+like that sometimes, so `createMoodParser` (`brain/resolve.js`) also runs a deterministic lead filter: it holds the
+reply's first clause, drops leading filler phrases (repeatedly, so "Great question! You're absolutely right." goes
+too), capitalizes what follows and streams the rest straight through. Only a whole phrase followed by punctuation
+counts, so "You're right that…" and "Certainly not." stay as written, and a reply that is nothing but filler is left
+alone. Luna and Soju's flavor lines (§5.0.3) are cute, not flattering; a test checks none praises the question.
+
 ### 3.13 Actions (Jarvis)
 
 - **Registry:** `actions.js`. Each action is `{id, label, paramsSchema, risk: 'auto' | 'confirm', preview(params), run(params)}`.
@@ -711,6 +760,43 @@ Safety rules (enforced in code, not by the model):
 - **Personal details** come only from the request itself or from memory facts the user ticks in a card at the start of the task. Never passwords or payment data.
 - **Stop anytime:** Esc (a global shortcut only while a task runs), the ✕ in the bubble, or closing the bubble. The cat shows busy paws while acting.
 - **Audit:** one `audit.jsonl` line per executed step: op, site, ok, whether it ran without a card, risky, source (fast/model), and character count of typed text, never the text.
+
+#### 3.13.2 MCP tools
+
+Loon is an MCP client (`brain/mcp.js`), written as plain JSON-RPC 2.0 instead of adding the SDK: newline-delimited
+over stdio, or Streamable HTTP (POST with `Accept: application/json, text/event-stream`, JSON or SSE replies, the
+`Mcp-Session-Id` kept and ended with DELETE on close, `MCP-Protocol-Version` after the handshake, redirects refused).
+It sends `initialize` (protocol `2025-06-18`, no client capabilities) and `notifications/initialized`, pages through
+`tools/list`, and calls `tools/call`. Servers' own requests get an answer only for `ping`; sampling, roots and the rest
+are refused. Servers live in `settings.mcpServers`; `McpHub` (`main/hub.js`) owns one client per server.
+
+- **Settings → Tools (MCP):** add a server by command + arguments (stdio) or URL (`https://`, or `http://` on
+  localhost only), with optional environment variables. Variables that look like secrets (names ending in KEY, TOKEN,
+  SECRET, PASSWORD…, or values shaped like `sk-…`, `ghp_…`, a JWT) are stored with the safeStorage `KeyStore` in
+  their own `mcp-secrets.json`, never in `settings.json`, and Settings only ever sees their names. Each server lists
+  its tools with an on/off switch, a read-only tag, and "Run without asking" (auto-allow) for the others. Stdio servers
+  get only PATH (plus Homebrew's bin), HOME, USER, LANG, TMPDIR, SHELL and their own variables, not Loon's environment.
+- **Routing, cheapest first:** a request that names a server ("github: my open issues") is ranked against its enabled
+  tools with the OpenAPI connector code (`brain/connectors.js`): tools become op-like records (name, title, first words
+  of the description as keywords; schema properties as parameters), so the IDF keyword score and the parameter filling
+  are shared. A tool named outright ("run search_issues for loon") works without naming the server once its tools are
+  known. When the score is a close call or nothing matches, the local model may pick a tool name from a
+  grammar-constrained enum (tool names plus "none"); arguments are never left to it. Otherwise the user picks from
+  buttons.
+- **Safety:** a tool runs without a card only when it is read-only (`annotations.readOnlyHint` true and not
+  `destructiveHint`) or auto-allowed by the user, every required argument was filled, and code (not the model)
+  picked it. Everything else is a confirm card with the server, tool and every argument shown and editable; the card's
+  strings are converted to the schema's types (number, boolean, JSON) before the call. The tool must still exist and be
+  enabled at call time. Every call goes through `actions.execute` and writes one audit line: server, tool, ok, write,
+  duration, never arguments or output; error text is redacted first.
+- **Untrusted output:** results are shown as escaped markdown (text items, other content kinds named, capped at 4,000
+  characters). When a result joins the bubble thread for follow-ups, it is wrapped as
+  `<context source="tool" server=… tool=…>` (nested context tags stripped), which the system prompt already treats as
+  data, never instructions. Tool descriptions given to the model are wrapped the same way.
+- **Failure handling:** 15 s for the handshake and listing, 30 s per call; on a timeout or cancel (`AbortSignal`) Loon
+  sends `notifications/cancelled`. A crashed server fails its pending calls with a plain message ("The tool server
+  stopped (exit code 3)"), the row in Settings shows it, and the next use starts a fresh process. Non-JSON lines on
+  stdout are skipped; stderr is drained and never logged.
 
 ### 3.14 Proactive nudges
 
@@ -947,7 +1033,8 @@ Detected as in §2.4. The cat covers its eyes or turns around and shows a lock i
 
 ### 4.3 Prompt injection
 
-- Page text is wrapped in `<context>` tags, and the system prompt calls it untrusted data.
+- Page text is wrapped in `<context>` tags, and the system prompt calls it untrusted data. MCP tool output and tool
+  descriptions get the same wrapping (§3.13.2).
 - The model has **no tools that execute anything**. It can only *propose* actions, which go through code validation and a confirm click.
 - Links the model proposes are shown in full before opening, and only http(s)/mailto links are allowed.
 
