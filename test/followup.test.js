@@ -184,3 +184,32 @@ test('the local brain sends one stateless message per call (no hidden chat histo
   }
   assert.deepStrictEqual(bodies[1].messages, [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: 'second' }]);
 });
+
+test('asking about the page reads it when Chrome is paired, and says so plainly when it is not', async () => {
+  // No browser connected: an honest answer from code, no model call, no pretending to see.
+  const t = setup({ cloudCli: 'off' });
+  const sent = [];
+  await t.companion.run({ id: 1, question: 'what do you see' }, (type, payload) => sent.push({ type, ...payload }));
+  assert.strictEqual(t.calls.length, 0, 'no model call');
+  assert.match(sent.find((m) => m.type === 'action-done').message, /can't see your browser/);
+
+  // Paired, on a shop page: the question is answered from the page text.
+  const page = { type: 'page', active: true, visible: true, tabId: 7, url: 'https://www.etsy.com/listing/1', title: 'Handmade mug', kind: 'shopping', sensitive: false };
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-pageq-'));
+  const brain = { modelId: () => 'fake', modelLabel: () => 'fake', resetThread() {}, chat: async (prompt, { onText }) => { t.calls.push({ tier: 'local', prompt }); onText('[mood:curious] A handmade mug for $24.'); } };
+  const settings = { privacy: false, cloudCli: 'off', personal: {}, cameos: false };
+  const resolver = new Resolver({ brain, settings, cacheFile: path.join(tmp, 'c.json'), countsFile: path.join(tmp, 'n.json') });
+  const bridge = {
+    clients: new Set([{}]),
+    request: async (msg) => (msg.type === 'get-page' ? { url: page.url, title: page.title, html: '<html><body><main><h1>Handmade ceramic mug</h1><p>Price $24. Ships in 3 days. Glazed in sea green by a small studio in Portland.</p></main></body></html>' } : {}),
+  };
+  const companion = createCompanion({ bridge, resolver, brain, ui: { cat() {}, showBubble() {}, hideBubble() {}, bubbleFocused: () => false }, notes: { files: () => [] }, actions: {}, settings });
+  companion.onBridgeMessage(page);
+  companion.openAsk();
+  const out = [];
+  await companion.run({ id: 2, question: 'is this a good deal?' }, (type, payload) => out.push({ type, ...payload }));
+  const prompt = t.calls[t.calls.length - 1].prompt;
+  assert.match(prompt, /Handmade ceramic mug/, 'the page text reached the model');
+  assert.match(prompt, /is this a good deal\?/);
+  assert.ok(out.find((m) => m.type === 'done'));
+});
