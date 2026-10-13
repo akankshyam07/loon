@@ -185,13 +185,13 @@ test('the local brain sends one stateless message per call (no hidden chat histo
   assert.deepStrictEqual(bodies[1].messages, [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: 'second' }]);
 });
 
-test('asking about the page reads it when Chrome is paired, and says so plainly when it is not', async () => {
-  // No browser connected: an honest answer from code, no model call, no pretending to see.
+test('asking about the page reads it when Chrome is paired; with no way to see the screen it says so plainly', async () => {
+  // No browser and no screen sight (main/screen.js): an honest answer from code, no model call, no pretending to see.
   const t = setup({ cloudCli: 'off' });
   const sent = [];
   await t.companion.run({ id: 1, question: 'what do you see' }, (type, payload) => sent.push({ type, ...payload }));
   assert.strictEqual(t.calls.length, 0, 'no model call');
-  assert.match(sent.find((m) => m.type === 'action-done').message, /can't see your browser/);
+  assert.match(sent.find((m) => m.type === 'action-done').message, /can't see your screen right now/);
 
   // Paired, on a shop page: the question is answered from the page text.
   const page = { type: 'page', active: true, visible: true, tabId: 7, url: 'https://www.etsy.com/listing/1', title: 'Handmade mug', kind: 'shopping', sensitive: false };

@@ -318,4 +318,4 @@ function createOverlay({ BrowserWindow, screen, globalShortcut, preload, file, s
   return { show, hide, hideNow, setMouse, visible: () => visible };
 }
 
-module.exports = { createTeacher, createOverlay, GateError };
+module.exports = { createTeacher, createOverlay, GateError, BROWSERS };

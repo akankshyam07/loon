@@ -926,13 +926,30 @@ Things Loon does on a schedule, all on this Mac: "every morning at 9 tell me my 
 - **Week summary** is plain code: the last 7 days of history episodes (count, busiest day, top sites, topics) plus the project briefing for projects you allowed.
 - **Logs:** every run, skip and pause writes an `audit.jsonl` line with metadata only (kind, status, ms). Results are history episodes like normal answers, never in Privacy mode; a price check with no news isn't.
 - **Settings → Routines:** each routine with its schedule, next run, last result, an on/off switch, Edit (the same four fields), Delete (asks first) and Run now (runs regardless of Focus or quiet hours, still paused by Privacy mode), plus the notifications switch and quiet hours.
+
+### 3.20 Loon sees your screen when you ask
+
+"What do you see?", "is this a good deal?", "what does this say about rent?" work on whatever is in front: Safari, a PDF in Preview, Slack, Chrome without the extension. Before this, those questions only worked with the extension paired. Code: `main/screen.js` (look + packet), `main/capture.js` (`frontWindow`, `grabWindow`), the ladder in `main/companion.js`.
+
+- **Triggers:** a typed or spoken question that points at the screen (`PAGE_QUESTION`), the **Look at my screen** chip in the empty bubble (shown when no page is paired), and **Look again** in an answer's ⋯ menu or typed ("look again", "refresh"). Nothing else ever captures.
+- **Eyes ladder**, cheapest and most exact first:
+  1. Chrome (or another Chromium browser) is the front window, the extension is paired and the page isn't private → the page's exact text (§3.4). No pixels.
+  2. Otherwise → **only the front window**. `frontWindow()` asks the window server for its front-to-back list (`CGWindowListCopyWindowInfo` through `osascript -l JavaScript`, ~80 ms) and takes the first normal window (layer 0, at least 120×80) not owned by Loon's process. The bubble has focus while the user types, so "frontmost app" would be Loon itself; skipping our own pid gives the window the user was on. `grabWindow()` captures that window by id through `desktopCapturer` (so Loon's cat and bubble on top of it aren't in the picture), falling back to the display under it cropped to the window's bounds. The long side is capped at 2400 px: Retina text reads well at 2×, and anything bigger only slows Tesseract.
+  3. Tesseract OCR on this Mac (the warm worker shared with ⌥⇧S and Teach, auto page layout so columns come out in reading order) → a **screen packet** `{ source: 'screen', app, title, text, redactions, lowText, windowKey }`, redacted (§4.2) like every packet. Prompts wrap it as `<context source="screen" app="…" window="…">`, untrusted like page text (§4.3).
+- **Tasks:** a generic question ("what do you see?", "what's on my screen?") or the chip → `screen_summary` ("Describe what's on the user's screen and what they can do there, briefly"); anything else → `ask` with the packet. The bubble's context line says **Looking at: App · window title**, the tier tooltip adds "👀 read from your screen", and the chips become What's on my screen? / Explain / Summarize / Show me on screen.
+- **Follow-ups** reuse the same reading, no new capture, unless the user says "look again" / "refresh" or a different window is now in front (app or title changed): then it reads again, in the same thread.
+- **Consent, once:** the first time ever, a card in the bubble says "I can look at the window you're on when you ask about it. The screenshot stays on your Mac and is thrown away right after." with **Allow when I ask** / **Not now**. `settings.screenSight` is `'ask-first'` (default) → `'when-asked'` on Allow; Not now leaves it asking. Settings → Behavior → **Look at my screen when I ask about it** switches between `'when-asked'` and `'off'`. Off, or no screen helper at all, gets the honest reply: "I can't see your screen right now", with where to turn it on.
+- **Refusals before any capture:** Privacy mode (says so; ⌥Space on a selection still works); a password manager, Keychain or wallet app in front, or a window title naming a bank or passwords (`screenGate` from §3.18, applied to the front window only) → the cat looks away and says why. No Screen Recording permission (`getMediaAccessStatus('screen')` denied, or a blank or failed capture) → the friendly message pointing to System Settings, noting that ⌥⇧T uses the same permission. Never a crash, never a model pretending to see.
+- **Vision, opt-in:** with "Send screenshots to your plan/API" on (§3.18.4, off by default) and a route that takes pictures (Codex or an API key), the ≤1600 px window picture goes with that one question and the cloud tier answers it (the tooltip says "with the screenshot"); follow-ups use the text. Never in Privacy mode or on a refused window, never cached.
+- **Memory and disk:** the PNG lives in memory for one request and is dropped; the packet keeps text only. Nothing is written to disk on the default path (the Codex vision route writes its image into the CLI's empty temp folder, as in §3.18.4). Answers go to History like page answers (redacted text, never in Privacy mode).
+- **Speed** (headless, `tesseract.js` 7 on Apple Silicon, a 1200×800-point shop window): worker start plus the first read ≈ 0.8 s; warm reads ≈ 0.56 s at 2× (2400×1600, all key phrases read) and ≈ 0.36 s at 1× (small print starts to drop, so 2× it is). The window list adds ~80 ms; the window capture itself depends on how many windows are open and was not measured headlessly.
 ---
 
 ## 4. Privacy and safety
 
 ### 4.1 Sensitive pages
 
-Detected as in §2.4. The cat covers its eyes or turns around and shows a lock icon. The extension sends no content, and "look anyway" works for one request only. The extension is off in incognito by default. The domain list can be edited in settings.
+Detected as in §2.4. The cat covers its eyes or turns around and shows a lock icon. The extension sends no content, and "look anyway" works for one request only. The extension is off in incognito by default. The domain list can be edited in settings. Outside the browser, a password manager, Keychain or wallet app in front, or a window title naming a bank or passwords, stops screen reads before anything is captured (§3.18.2, §3.20).
 
 ### 4.2 Redaction (runs in `context.js` before every AI call)
 
@@ -959,7 +976,7 @@ Detected as in §2.4. The cat covers its eyes or turns around and shows a lock i
 | settings, memory, compare basket | `app.getPath('userData')/*.json` |
 | audit log | `userData/audit.jsonl`: metadata (time, provider, source, character count, action) — **no content** |
 | notes | `~/Documents/Loon/` |
-| screenshots | ⌥⇧S regions: temp folder, deleted when the bubble closes. "Teach me on my screen" captures: memory only, never written (§3.18.4) |
+| screenshots | ⌥⇧S regions: temp folder, deleted when the bubble closes. "Teach me on my screen" and "what do you see?" window captures: memory only, never written (§3.18.4, §3.20) |
 
 The extension socket listens on `127.0.0.1` only, requires a pairing token, and checks the extension's origin.
 

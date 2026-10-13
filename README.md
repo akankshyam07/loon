@@ -82,6 +82,9 @@ and then it does something cool: moon magic, a pounce, peeking over the edge of 
   you can click for Explain, Simplify, Summarize, Rewrite and more, so selecting text never throws a card at you.
 - **⌥Space in any app.** Get the same help with text selected outside the browser.
 - **Explain this page.** Key sentences highlighted right on the page, then a summary, notes or a checklist.
+- **Ask about anything on your screen.** Type "what do you see?" or "is this a good deal?" and Loon looks at the
+  window in front, whether it's Safari, a PDF, Slack or Chrome without the extension. It reads the text on your Mac,
+  only when you ask, and throws the picture away right after. The first time, it asks before it looks.
 - **Screenshots.** Press **⌥⇧S**, pick a region, and Loon reads it (Tesseract OCR).
 - **Drop a file on the cat.** PDFs, text, code, images (OCR) and CSVs (instant overview).
 
@@ -275,8 +278,9 @@ the research behind each choice, is in [DESIGN.md](DESIGN.md).
 
 ## Privacy
 
-- **It sees what you give it.** A selection, a page you ask about, a screenshot region you pick, your screen when you
-  ask it to point at something. Nothing is read in the background, and screenshots are never saved.
+- **It sees what you give it.** A selection, a page you ask about, a screenshot region you pick, the window in front
+  when you ask what's on your screen, your screen when you ask it to point at something. Nothing is read in the
+  background, and screenshots are never saved. Turn screen reading off in Settings any time.
 - **The cat looks away.** On bank, password and health pages Loon covers its eyes and reads nothing unless you click
   "Look anyway".
 - **Secrets are stripped first.** Card numbers, IBANs, API keys, private keys and passwords are redacted before
