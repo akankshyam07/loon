@@ -145,7 +145,8 @@ async function run(ctx, check) {
     await wait(300);
     const wordChips = await chips();
     check('selecting a word shows chips without stealing focus', shown && wordChips.includes('define') && !ctx.isFocused(bubbleWin), wordChips.join(','));
-    check('the cat perks up at the selection', ['curious', 'neutral'].includes(await cat('window.__loon.mood')));
+    let mood = '';
+    check('the cat perks up at the selection', await waitFor(async () => ['curious', 'neutral'].includes(mood = await cat('window.__loon.mood')), 2000), mood);
 
     const defined = await clickChip('define', 10000);
     if (process.env.LOON_SHOTS) fs.writeFileSync(path.join(process.env.LOON_SHOTS, 'bubble-define.png'), (await bubbleWin.webContents.capturePage()).toPNG());

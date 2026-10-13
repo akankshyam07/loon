@@ -210,7 +210,10 @@ function createBubbleWindow() {
 let bubbleAnchor = null; // screen rect of the selection the bubble belongs to, or null to sit by the cat
 let bubblePill = false; // a small paw beside the selection until clicked
 
-function placeBubble(height = bubbleWin.getBounds().height) {
+function placeBubble(height) {
+  // The bubble page keeps reporting its height while the app quits and destroys the windows.
+  if (bubbleWin.isDestroyed() || catWin.isDestroyed()) return;
+  height ??= bubbleWin.getBounds().height;
   const cat = catWin.getBounds();
   if (bubblePill && bubbleAnchor) {
     const wa = workAreaFor(bubbleAnchor);
