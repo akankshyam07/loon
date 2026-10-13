@@ -20,8 +20,8 @@ function realCopy(name) {
 async function fresh(ctx, check, h) {
   const data = app.getPath('userData');
   check('fresh: started from the empty data folder', Boolean(process.env.LOON_USER_DATA) && data === process.env.LOON_USER_DATA, data);
-  const welcomed = await waitFor(async () => ctx.bubbleWin.isVisible() && /Hi, I'm Loon/.test(await h.bubble(`document.getElementById('notice').textContent`)), 10000);
-  check('fresh: first launch says hello in the bubble', welcomed);
+  const welcomed = await waitFor(async () => ctx.bubbleWin.isVisible() && /Hi, I'm Luna/.test(await h.bubble(`document.querySelector('#onboard .ob-say')?.textContent || ''`)), 10000);
+  check('fresh: first launch says hello with "Get to know you" in the bubble (Luna asks, Soju beside her)', welcomed && (await h.bubble(`document.querySelectorAll('#onboard canvas.ob-cat').length`)) === 2);
   const offer = await waitFor(() => h.bubble(`!document.getElementById('setup').hidden && /^Download /.test(document.getElementById('download').textContent)`), 5000);
   const offerText = await h.bubble(`document.getElementById('setupText').textContent`);
   check('fresh: the bubble offers the model download (one click, nothing starts by itself)', offer && /downloads once/.test(offerText) && (await h.bubble(`document.getElementById('input').disabled`)), offerText.slice(0, 80));
@@ -30,8 +30,48 @@ async function fresh(ctx, check, h) {
   check('fresh: no model download started', !(await ctx.brain.status()).downloading && downloaded.length === 0, downloaded.join(', '));
   const saved = await waitFor(() => { try { return JSON.parse(fs.readFileSync(path.join(data, 'settings.json'), 'utf8')).welcomed === true; } catch { return false; } }, 5000);
   check('fresh: settings are saved, so the welcome shows only once', saved && /^[A-Z0-9]{6}$/.test(ctx.settings.pairingCode || ''));
+  await getToKnowYou(ctx, check, h);
   const stats = await h.cat('window.__loon.canvasStats()');
   check('fresh: the pixel cat (Luna) is the default look', stats.visible && stats.opaque > 500 && (await h.cat('window.__loon.companion')) === 'luna', JSON.stringify(stats));
+}
+
+// Answers the five questions like a person would, unticks one fact on the review screen, and saves.
+async function getToKnowYou(ctx, check, h) {
+  const has = (selector) => waitFor(() => h.bubble(`Boolean(document.querySelector(${JSON.stringify(selector)}))`), 3000);
+  const press = async (label) => {
+    const find = `[...document.querySelectorAll('#onboard button')].find((b) => b.textContent === ${JSON.stringify(label)})`;
+    if (!(await waitFor(() => h.bubble(`Boolean(${find})`), 3000))) throw new Error(`no "${label}" button in Get to know you`);
+    await h.bubble(`${find}.click(); true`);
+  };
+  const type = (selector, text) => h.bubble(`(() => { const i = document.querySelector(${JSON.stringify(selector)}); i.value = ${JSON.stringify(text)}; i.dispatchEvent(new Event('input')); return true; })()`);
+  try {
+    await press("Let's go");
+    await has('#onboard .ob-input[placeholder^="e.g. Sam"]');
+    await type('#onboard .ob-input', 'Selftest Sam');
+    await press('Next');
+    await press('Developer');
+    await press('Next');
+    await press('Skip'); // reply style
+    await press('Vegetarian');
+    await press('Next');
+    await has('#onboard .ob-input[placeholder^="e.g. jazz"]');
+    await type('#onboard .ob-input', 'jazz');
+    await press('Next');
+    const reviewed = await waitFor(() => h.bubble(`document.querySelectorAll('#onboard label.fact').length === 4`), 3000);
+    const listed = await h.bubble(`[...document.querySelectorAll('#onboard label.fact')].map((l) => l.textContent.trim())`);
+    await h.bubble(`[...document.querySelectorAll('#onboard label.fact')].find((l) => /jazz/.test(l.textContent)).querySelector('input').click(); true`);
+    const before = ctx.memory.all().length;
+    await press('Save');
+    await press('Done 🐾');
+    const facts = ctx.memory.all();
+    const texts = facts.map((f) => f.text);
+    check('fresh: "Get to know you" saves only the facts left ticked (pinned) and the role',
+      reviewed && before === 0 && texts.length === 3 && texts.includes('Call me Selftest Sam') && texts.includes("I'm a developer") && texts.includes("I'm vegetarian") && facts.every((f) => f.pinned) && ctx.settings.onboarded === true && ctx.settings.role === 'dev',
+      `review: ${listed.join(' · ')} → saved: ${texts.join(' · ')}`);
+    await waitFor(() => !ctx.bubbleWin.isVisible(), 3000);
+  } catch (err) {
+    check('fresh: "Get to know you" saves only the facts left ticked (pinned) and the role', false, err.message);
+  }
 }
 
 // settings.json and memory.json from an older Loon (before the pixel cat and the SQLite memory).

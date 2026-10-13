@@ -459,6 +459,17 @@ async function run(ctx, check) {
 
     await page.goto(`${base}/article.html`);
     check('leaving the private page uncovers the eyes', await waitFor(async () => !(await cat('window.__loon.privacy')), 5000));
+
+    // ---- context mode: on github.com the bubble wears the Developer Cat badge (the site answered by a fixture) ----
+    await page.route('https://github.com/**', (route) => route.fulfill({ contentType: 'text/html', body: '<!doctype html><title>akankshyam07/loon</title><h1>akankshyam07/loon</h1><p>A black cat that lives on your screen.</p>' }));
+    await page.goto('https://github.com/akankshyam07/loon');
+    const onGithub = await waitFor(() => /^https:\/\/github\.com\//.test(companion.activePage?.url || ''), 5000);
+    ipcMain.emit('open-bubble');
+    await waitFor(() => bubbleWin.isVisible(), 1500);
+    const badge = await waitFor(() => bubble(`!document.getElementById('modeBadge').hidden && document.getElementById('modeBadge').textContent === 'dev'`), 3000);
+    check('a github.com page puts the "dev" mode badge on the bubble', onGithub && badge, `${companion.activePage?.url} · badge "${await bubble(`document.getElementById('modeBadge').textContent`)}"`);
+    await closeBubble();
+    await page.unroute('https://github.com/**');
   } finally {
     await browser.close();
     server.close();

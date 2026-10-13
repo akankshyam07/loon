@@ -1,6 +1,7 @@
 // End-to-end checks for the newer features (`--part=features`): how the cat looks (pixel skin, Luna/Soju, costumes,
 // Classic), duo mode, "Teach me on my screen" on a fixture capture with real OCR, plan-first answers and follow-ups
-// through a fake `claude` CLI, and Loon's brain (the memory graph) in Settings. Fakes only stand in for the outside
+// through a fake `claude` CLI, History → Continue, Loon's brain (the memory graph) in Settings, Routines, and in-chat
+// memory (👍, "Remember this" with its Undo toast). Fakes only stand in for the outside
 // world: the screen capture, the Claude Code binary and the macOS executors.
 const fs = require('fs');
 const os = require('os');
@@ -29,6 +30,8 @@ async function run(ctx, check, h) {
     await teach(ctx, check, h);
     await planFirst(ctx, check, h);
     await brainGraph(ctx, check, h, data);
+    await routinesFlow(ctx, check, h);
+    await personalization(ctx, check, h);
   });
 }
 
@@ -264,13 +267,29 @@ async function planFirst(ctx, check, h) {
       `${second.tier} · ${second.text.slice(0, 60)}`);
     await h.closeBubble();
 
+    // History → Continue: closing the bubble ended the thread; Continue brings it back and the next question carries it.
+    const historyWin = await h.settingsWindow();
+    const hw = (js) => historyWin.webContents.executeJavaScript(js);
+    const conv = `[...document.querySelectorAll('#historyList li.conv')].find((li) => /Compare TCP and UDP/.test(li.textContent))`;
+    const listed = await waitFor(() => hw(`Boolean(${conv}) && /2 answers/.test(${conv}.textContent)`), 5000);
+    if (listed) await hw(`[...${conv}.querySelectorAll('button')].find((b) => b.textContent === 'Continue').click(); true`);
+    const bubble = (js) => ctx.bubbleWin.webContents.executeJavaScript(js);
+    const restored = await waitFor(async () => ctx.bubbleWin.isVisible() && (await bubble(`document.querySelectorAll('#log .q').length === 2 && /Picked up from History/.test(document.getElementById('log').textContent)`)), 5000);
+    const resumed = restored ? await h.askHere('and which one for video calls?', 60000) : {};
+    const p3 = prompts().at(-1);
+    check('History lists the conversation, and Continue brings it back so the next question carries it',
+      listed && restored && resumed.done && prompts().length === 3 && /Compare TCP and UDP/.test(p3.prompt) && /SOCK_STREAM/.test(p3.prompt) && /video calls/.test(p3.prompt),
+      `listed ${listed} · restored ${restored} · ${resumed.tier || ''}`);
+    historyWin.close();
+    await h.closeBubble();
+
     // Medium questions without a comparison: no thinking pass, so the CPU model answers in about a minute.
     process.env.LOON_FAKE_CLI_AUTH = 'api';
     cli.resetPlanCheck();
     await h.openBubble();
     const billed = await h.askHere(`Analyze why bread goes stale, in one short sentence (run ${runId})`, 240000);
     check('plan-first: a CLI signed in with API billing is refused and your Mac answers instead',
-      billed.done && /API billing/.test(billed.text) && /on your Mac/.test(billed.tier) && prompts().length === 2 && cli.poolSize() === 0,
+      billed.done && /API billing/.test(billed.text) && /on your Mac/.test(billed.tier) && prompts().length === 3 && cli.poolSize() === 0,
       `${billed.tier} · ${billed.text.slice(0, 90)}`);
     await h.closeBubble();
 
@@ -279,7 +298,7 @@ async function planFirst(ctx, check, h) {
     setToggle('privacy', true);
     await h.openBubble();
     const quiet = await h.askHere(`Analyze why ice floats on water, in one short sentence (run ${runId})`, 240000);
-    check('plan-first: Privacy mode keeps even a medium question on your Mac (the plan is never called)', quiet.done && /on your Mac/.test(quiet.tier) && prompts().length === 2, quiet.tier);
+    check('plan-first: Privacy mode keeps even a medium question on your Mac (the plan is never called)', quiet.done && /on your Mac/.test(quiet.tier) && prompts().length === 3, quiet.tier);
     await h.closeBubble();
   } finally {
     setToggle('privacy', false);
@@ -327,6 +346,110 @@ async function brainGraph(ctx, check, h, { executed }) {
   check('"forget that…" asks first, then removes the memory', asked && stillThere && forgotten && executed.length === 0);
   await h.closeBubble();
   settingsWin.close();
+}
+
+// ---------- Routines: made in the bubble behind a confirm card, listed in Settings, delivered by the cat's "?" ----------
+// The scheduler isn't started in the selftest; a routine is made due by moving its next run back, then one tick runs.
+async function routinesFlow(ctx, check, h) {
+  const { routines, bubbleWin, setToggle } = ctx;
+  const bubble = (js) => bubbleWin.webContents.executeJavaScript(js);
+  const log = () => bubble(`document.getElementById('log').textContent`);
+  const catIdle = () => waitFor(async () => (await h.cat('window.__loon.state')) === 'idle' && !bubbleWin.isVisible(), 5000);
+  await h.typeInBubble('every weekday at 9 remind me to stretch');
+  const asked = await h.confirmShown();
+  const summary = asked ? await bubble(`document.querySelector('.confirm').textContent`) : '';
+  const notYet = routines.list().length === 0;
+  if (asked) await bubble(`document.querySelector('.confirm .primary').click(); true`);
+  const made = await waitFor(() => routines.list().length === 1, 3000);
+  const r = routines.list()[0];
+  await h.closeBubble();
+  if (!r) return check('routines: "every weekday at 9 remind me to stretch" asks with a card, then shows in Settings with its next run', false, summary.slice(0, 80));
+
+  const settingsWin = await h.settingsWindow();
+  const sw = (js) => settingsWin.webContents.executeJavaScript(js);
+  const rows = () => sw(`[...document.querySelectorAll('#routines li')].map((li) => li.textContent).join(' | ')`);
+  const refresh = () => sw('window.loon.getSettings().then((s) => { render(s); return true; })');
+  try {
+    const listed = await waitFor(async () => /Stretch.*weekdays at 9:00.*next /.test(await rows()), 5000);
+    check('routines: "every weekday at 9 remind me to stretch" asks with a card, then shows in Settings with its next run',
+      asked && /New routine: Stretch/.test(summary) && notYet && made && r.nextRun > Date.now() && listed, `${summary.slice(0, 50)} · ${(await rows()).slice(0, 90)}`);
+
+    await sw(`[...document.querySelectorAll('#routines li.routine button')].find((b) => b.textContent === 'Run now').click(); true`);
+    const ran = await waitFor(async () => bubbleWin.isVisible() && /⏰\s*stretch/i.test(await log()), 5000);
+    check('routines: Run now in Settings shows the result in the bubble straight away', ran && routines.list()[0].lastStatus === 'ok', (await log()).slice(0, 60));
+    await h.closeBubble();
+
+    const due = async () => {
+      routines.store.update(r.id, { nextRun: Date.now() - 1000 });
+      await routines.tick();
+    };
+    await catIdle();
+    await due();
+    const nudged = await waitFor(() => h.cat('window.__loon.nudge'), 3000);
+    await h.cat(`document.getElementById('nudge').click(); true`);
+    const opened = await waitFor(async () => bubbleWin.isVisible() && /stretch/i.test(await log()), 3000);
+    check('routines: when one comes due the cat shows its "?", and clicking it opens the reminder', nudged && opened, `nudge ${nudged} · bubble ${opened}`);
+    await h.closeBubble();
+
+    setToggle('focus', true);
+    await due();
+    const waiting = routines.list()[0].waiting;
+    const quiet = !(await h.cat('window.__loon.nudge'));
+    await refresh();
+    const shownWaiting = await waitFor(async () => /waiting/.test(await rows()), 3000);
+    setToggle('focus', false);
+    await catIdle();
+    await routines.tick();
+    const delivered = await waitFor(() => h.cat('window.__loon.nudge'), 3000);
+    check('routines: in Focus mode a due routine waits (no "?", "waiting" in Settings), then comes once Focus ends', waiting && quiet && shownWaiting && delivered && !routines.list()[0].waiting,
+      `waiting ${waiting} · quiet ${quiet} · listed ${shownWaiting} · after ${delivered}`);
+    if (delivered) {
+      await h.cat(`document.getElementById('nudge').click(); true`);
+      await waitFor(() => bubbleWin.isVisible(), 3000);
+      await h.closeBubble();
+    }
+
+    await h.typeInBubble('delete the stretch routine');
+    const askedDelete = await h.confirmShown();
+    const kept = routines.list().length === 1;
+    if (askedDelete) await bubble(`document.querySelector('.confirm .primary').click(); true`);
+    const gone = await waitFor(() => routines.list().length === 0, 3000);
+    await h.closeBubble();
+    await refresh();
+    const empty = await waitFor(async () => /No routines yet/.test(await rows()), 3000);
+    check('routines: "delete the stretch routine" asks first, then it is gone from Settings', askedDelete && kept && gone && empty);
+  } finally {
+    setToggle('focus', false);
+    for (const x of routines.list()) routines.remove(x.id);
+    settingsWin.close();
+  }
+}
+
+// ---------- in-chat memory: 👍 and "Remember this" with its toast and Undo ----------
+async function personalization(ctx, check, h) {
+  const { memory, bubbleWin } = ctx;
+  const bubble = (js) => bubbleWin.webContents.executeJavaScript(js);
+  const tools = `[...document.querySelectorAll('.answer-tools')].pop()`;
+  await h.openBubble();
+  const answer = await h.askHere('what time is it', 15000);
+  const rated = memory.recentFeedback().length;
+  await bubble(`${tools}.querySelector('.votes button').click(); true`);
+  const stored = await waitFor(() => memory.recentFeedback().length === rated + 1 && memory.recentFeedback()[0].vote === 1, 3000);
+  const row = memory.db.prepare('SELECT task, tier, answer FROM feedback ORDER BY id DESC LIMIT 1').get();
+  check('👍 on an answer is stored on this Mac with the task and tier, not the answer text', answer.done && stored && row?.tier === 'code' && row.answer === '', JSON.stringify(row));
+
+  const fact = 'I take my coffee black';
+  const count = memory.all().length;
+  await bubble(`[...${tools}.querySelectorAll('.menu-list button')].find((b) => b.textContent === 'Remember this').click(); true`);
+  const card = await waitFor(() => bubble(`Boolean(document.querySelector('.remember-box textarea'))`), 3000);
+  const notYet = memory.all().length === count;
+  if (card) await bubble(`(() => { const box = document.querySelector('.remember-box'); box.querySelector('textarea').value = ${JSON.stringify(fact)}; box.querySelector('.primary').click(); return true; })()`);
+  const saved = await waitFor(() => memory.all().some((f) => f.text === fact), 3000);
+  const toast = await waitFor(() => bubble(`!document.getElementById('toast').hidden && /coffee black/.test(document.getElementById('toastText').textContent)`), 3000);
+  check('"Remember this" asks first (an editable card), saves on ✓ and says so in a toast', card && notYet && saved && toast, `card ${card} · saved ${saved} · toast ${toast}`);
+  await bubble(`document.getElementById('toastUndo').click(); true`);
+  check("the toast's Undo forgets it again", await waitFor(() => !memory.all().some((f) => f.text === fact), 3000));
+  await h.closeBubble();
 }
 
 module.exports = { run };
