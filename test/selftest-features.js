@@ -275,10 +275,10 @@ async function planFirst(ctx, check, h) {
     if (listed) await hw(`[...${conv}.querySelectorAll('button')].find((b) => b.textContent === 'Continue').click(); true`);
     const bubble = (js) => ctx.bubbleWin.webContents.executeJavaScript(js);
     const restored = await waitFor(async () => ctx.bubbleWin.isVisible() && (await bubble(`document.querySelectorAll('#log .q').length === 2 && /Picked up from History/.test(document.getElementById('log').textContent)`)), 5000);
-    const resumed = restored ? await h.askHere('and which one for video calls?', 60000) : {};
+    const resumed = restored ? await h.askHere('and in Go?', 60000) : {};
     const p3 = prompts().at(-1);
     check('History lists the conversation, and Continue brings it back so the next question carries it',
-      listed && restored && resumed.done && prompts().length === 3 && /Compare TCP and UDP/.test(p3.prompt) && /SOCK_STREAM/.test(p3.prompt) && /video calls/.test(p3.prompt),
+      listed && restored && resumed.done && prompts().length === 3 && /Compare TCP and UDP/.test(p3.prompt) && /SOCK_STREAM/.test(p3.prompt) && /and in Go/.test(p3.prompt),
       `listed ${listed} · restored ${restored} · ${resumed.tier || ''}`);
     historyWin.close();
     await h.closeBubble();

@@ -1366,8 +1366,13 @@
       const cells = [];
       scene.grid.forEach((row, r) => [...row].forEach((c, col) => { if (c !== '.' && c !== 'z' && scene.owner[r]?.[col] === who) cells.push([r, col]); }));
       if (!cells.length) return null;
+      // The most solid cell (its 5×5 neighbourhood all this cat), nearest the middle: blinks, breathing and the tail
+      // never open a hole there between reading the point and clicking it.
+      const mine = new Set(cells.map(([r, col]) => `${r},${col}`));
+      const solid = ([r, col]) => { let n = 0; for (let dr = -2; dr <= 2; dr++) for (let dc = -2; dc <= 2; dc++) n += mine.has(`${r + dr},${col + dc}`); return n; };
       const mid = cells.reduce((m, [r, col]) => [m[0] + r / cells.length, m[1] + col / cells.length], [0, 0]);
-      const [r, col] = cells.reduce((best, cell) => (Math.hypot(cell[0] - mid[0], cell[1] - mid[1]) < Math.hypot(best[0] - mid[0], best[1] - mid[1]) ? cell : best));
+      const score = (cell) => solid(cell) * 1000 - Math.hypot(cell[0] - mid[0], cell[1] - mid[1]);
+      const [r, col] = cells.reduce((best, cell) => (score(cell) > score(best) ? cell : best));
       const rect = canvas.getBoundingClientRect();
       return { x: Math.round(rect.left + (col + 0.5) * cell), y: Math.round(rect.top + (r + 0.5) * cell) };
     },
