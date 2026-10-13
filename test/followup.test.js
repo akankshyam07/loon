@@ -233,3 +233,14 @@ test('a ⌥⇧S screenshot file is deleted when its conversation ends, and lefto
   assert.ok(sweepShots() >= 1);
   assert.ok(!fs.existsSync(leftover));
 });
+
+test('mid-conversation, "which one…?" is a follow-up, not a question about the screen', async () => {
+  const t = setup({ cloudCli: 'off' });
+  t.companion.openAsk();
+  await t.ask('compare TCP and UDP');
+  const before = t.calls.length;
+  const second = await t.ask('which one for video calls?');
+  assert.ok(second, 'answered by the model as a follow-up');
+  assert.strictEqual(t.calls.length, before + 1);
+  assert.match(t.last().prompt, /compare TCP and UDP/);
+});
