@@ -158,7 +158,11 @@ h2 { font-size: clamp(17px, 3vw, 24px); line-height: 1.5; margin: 0 0 10px; }
 .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
 @media (max-width: 720px) { .duo { grid-template-columns: 1fr; } }
 .pal { display: grid; grid-template-columns: auto 1fr; gap: 18px; align-items: center; }
-.pal .pad { border: 3px solid var(--border); border-radius: 16px; padding: 10px 12px 4px; }
+.pal .pad { position: relative; border: 3px solid var(--border); border-radius: 16px; padding: 10px 12px 4px; }
+.tap-hint { position: absolute; top: -12px; right: -14px; padding: 5px 7px 4px; font: 8px/1 "Press Start 2P", monospace; color: #2b2238; background: var(--sun); border: 2px solid var(--border); border-radius: 8px; box-shadow: 2px 2px 0 var(--border); pointer-events: none; transform: rotate(6deg); animation: tap-bob 1.2s steps(2) infinite; }
+@keyframes tap-bob { 50% { transform: rotate(6deg) translateY(-3px); } }
+.tap-hint.gone { opacity: 0; transition: opacity .3s; }
+@media (prefers-reduced-motion: reduce) { .tap-hint { animation: none; } }
 .pal canvas { display: block; width: 128px; height: 156px; image-rendering: pixelated; cursor: pointer; }
 .pal h3 { margin: 0 0 4px; font-size: 15px; }
 .pal p { margin: 0; color: var(--muted); font-size: 15.5px; }
@@ -315,11 +319,11 @@ footer .px { font-size: 11px; color: var(--ink); }
 <section id="meet">
   <div class="wrap">
     <h2 class="px">Meet Luna &amp; Soju ✿</h2>
-    <p class="sub">Pick your companion in Settings. Both are little pixel cats with a tiny wardrobe, drawn frame by frame like a '90s handheld game. Prefer the smooth original? Settings has a Classic style too.</p>
+    <p class="sub">Pick your companion in Settings. Both are little pixel cats with a tiny wardrobe, drawn frame by frame like a '90s handheld game. Tap a cat to try on outfits ✧ Prefer the smooth original? Settings has a Classic style too.</p>
     <div class="duo">
-      <div class="card pal"><div class="pad c-lav"><canvas id="luna" role="img" aria-label="Luna, a black pixel cat with green eyes, a pink collar and a moon pendant. Click to try a costume."></canvas></div>
+      <div class="card pal"><div class="pad c-lav"><canvas id="luna" role="img" aria-label="Luna, a black pixel cat with green eyes, a pink collar and a moon pendant. Click to try a costume."></canvas><span class="tap-hint" aria-hidden="true">tap me ✧</span></div>
         <div><h3>Luna</h3><p>The big sister. Black fur, very green eyes, a dark little nose and a moon pendant that glows when she thinks. A bit sassy, very smart, secretly sweet. Grooms, judges, naps in a perfect loaf.</p></div></div>
-      <div class="card pal"><div class="pad c-mint"><canvas id="soju" role="img" aria-label="Soju, a white pixel cat with a dark patch over one eye, a pink nose and a blue collar. Click to try a costume."></canvas></div>
+      <div class="card pal"><div class="pad c-mint"><canvas id="soju" role="img" aria-label="Soju, a white pixel cat with a dark patch over one eye, a pink nose and a blue collar. Click to try a costume."></canvas><span class="tap-hint" aria-hidden="true">tap me ✧</span></div>
         <div><h3>Soju</h3><p>The little brother. White fluff, a dark patch over one eye, yellow-green eyes and a pink nose with his signature freckle. Goofy, always hungry, a little clumsy and completely adorable.</p></div></div>
     </div>
     <div class="closet" id="closet"></div>
@@ -390,7 +394,12 @@ const COSTUMES = ['none', 'strawberry', 'frog', 'bee', 'witch', 'party', 'bread'
 const wearing = { luna: 0, soju: 0 };
 const pals = ['luna', 'soju'].map((who) => {
   const canvas = document.getElementById(who);
-  canvas.addEventListener('click', () => { wearing[who] = (wearing[who] + 1) % COSTUMES.length; draw(); });
+  const hint = canvas.parentElement.querySelector('.tap-hint');
+  canvas.addEventListener('click', () => {
+    wearing[who] = (wearing[who] + 1) % COSTUMES.length;
+    draw();
+    if (hint) { hint.textContent = wearing[who] ? 'cute! ✧' : 'again? ✧'; clearTimeout(hint.t); hint.t = setTimeout(() => hint.classList.add('gone'), 1600); hint.classList.remove('gone'); }
+  });
   return { who, canvas };
 });
 const closet = document.getElementById('closet');
