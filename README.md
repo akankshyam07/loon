@@ -14,6 +14,10 @@
 </p>
 
 <p align="center">
+  Loon never acts without asking, shows what it used, and keeps everything on your Mac unless you turn something on.
+</p>
+
+<p align="center">
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-8fdc5a?style=flat-square"></a>
   <img alt="macOS on Apple Silicon" src="https://img.shields.io/badge/macOS-Apple%20Silicon-1f1d24?style=flat-square&logo=apple">
   <img alt="Runs 100% on your Mac" src="https://img.shields.io/badge/runs-100%25%20on%20your%20Mac-3f8f2c?style=flat-square">
@@ -22,7 +26,7 @@
 
 <p align="center">
   <img src="docs/demo.gif" width="720" alt="Demo: Luna defines a highlighted word instantly, Soju runs in to eat while Loon picks the lightest dishes on a menu, Loon points at PNG and Export on screen step by step, and the two cats get dressed up in a witch hat and a strawberry hood"><br>
-  <a href="docs/demo.mp4"><b>▶ Watch the full demo (with sound)</b></a>
+  <a href="docs/demo.mp4"><b>▶ Watch the full demo (with sound)</b></a> · <a href="docs/loon-clip.mp4">10-second clip</a>
 </p>
 
 <p align="center"><a href="https://akankshyam07.github.io/loon/"><b>✧ Visit the Loon website ✧</b></a></p>
@@ -196,6 +200,19 @@ for modes, size, Settings and **Quit Loon**.
 On first use Loon offers to download its brain (Qwen3, Apache-2.0, about 1.8–5 GB depending on your RAM). Already run
 [Ollama](https://ollama.com)? Loon uses it instead.
 
+### Which model?
+
+Loon picks one for you based on your Mac's memory. You don't need to choose.
+
+| Your Mac's memory | Model | Download |
+|---|---|---|
+| 8 GB | Qwen3 1.7B | 1.8 GB |
+| 16 GB or 24 GB | Qwen3 4B | 2.5 GB |
+| 32 GB or more | Qwen3 8B | 5.0 GB |
+
+My recommended default is Qwen3 4B, the 16 GB pick. It's quick and gives good answers.
+If you already use Ollama, Loon talks to it on your Mac and downloads nothing.
+
 <details>
 <summary>"Electron failed to install correctly"?</summary>
 
@@ -285,6 +302,30 @@ the research behind each choice, is in [DESIGN.md](DESIGN.md).
   needs your ✓, and lands in an action log that records what happened, not what you wrote.
 - **No cloud calls in the default path.** Settings, memory and notes stay on your Mac, and Privacy mode turns memory
   and the answer cache off.
+
+### What stays on your Mac
+
+Everything below runs on your Mac. The Network column says when Loon itself goes online, and where to.
+
+| Feature | Network? | When and where |
+|---|---|---|
+| Asking and answers | No | The local model (Qwen3 through llama.cpp) runs on your Mac. With Ollama, Loon talks to it at 127.0.0.1:11434 on your Mac. |
+| Highlight help (define, explain, rewrite, fix grammar) | No | WordNet, Harper and the local model, all on your Mac. |
+| Translation | Once per language pair | The first time you translate a language pair, Loon downloads that pair's Bergamot model from Mozilla's server (bergamot.s3.amazonaws.com) and keeps it. Translating is offline after that. |
+| Voice | Once | "Set up voice" downloads the speech models (about 240 MB) from the sherpa-onnx releases on GitHub. The first time Loon talks back, it downloads the Kokoro voice (about 90 MB) from Hugging Face. Listening and speaking run on your Mac. |
+| OCR and screenshots (⌥⇧S, file drops) | Once | The first OCR downloads Tesseract's English data (a few MB) from the jsDelivr CDN. Reading text runs on your Mac. A ⌥⇧S region is kept as a temporary file on your Mac and never leaves it on its own. |
+| Teach me on screen (⌥⇧T) | No, unless you turn on Smarter answers | OCR and the extension's element boxes, on your Mac. Screenshots stay in memory and are never saved. With Smarter answers on, only the redacted list of words on screen goes to your plan or API key. The picture itself goes only if you also turn on "Send screenshots to your plan/API for teaching" (off by default). Never in Privacy mode or while a private window is open. |
+| Memory, history, notes and routines | No | One SQLite file in Loon's app folder and markdown notes in `~/Documents/Loon`. Price watches read the page through your Chrome extension, so Loon never fetches it. "Smarter memory" is an optional 37 MB model (BGE small) from Hugging Face, downloaded only when you click Download in Settings. |
+| Shopping, food and developer helpers | No | Plain code on what's on the page. Project briefings run `git` on folders you allow. Error answers can include a Stack Overflow search link, which opens only if you click it. |
+| Screen control ("Does it for you") | Only what you approve | Loon clicks and types in your apps after each ✓. If a step opens a website (like a YouTube search), your browser loads it like any link you click. |
+| Chrome extension | Your Mac only | The extension talks to 127.0.0.1:47631 on your Mac, only after pairing. It makes no other connections. |
+| Your local apps (OpenAPI) | Your Mac only | Only apps on 127.0.0.1 or localhost. Loon refuses any other address. |
+| Ask in Claude, ChatGPT or Gemini (the ⋯ menu) | Only when you click | Copies a ready prompt (and the screenshot, if the answer was about one) to your clipboard and opens the site in your browser. You paste it yourself. |
+| Smarter answers via your plan | Only when you turn it on | Runs your plan's official CLI (`claude` or `codex`), which talks to Anthropic or OpenAI. Secrets are redacted first. Never in Privacy mode or on private pages. |
+| Your own API key | Only when you pick it | Sends the redacted prompt to the provider you chose (Anthropic, OpenAI, Gemini or the base URL you typed). Never in Privacy mode or on private pages. |
+| Model downloads | Once, after you click | The Qwen3 model (1.8 to 5 GB) from Hugging Face, the first time you accept. Nothing if you use Ollama. |
+
+Loon has no accounts, analytics, crash reporting or auto-update, so there's nothing else phoning home.
 
 ## Tests
 
