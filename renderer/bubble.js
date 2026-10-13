@@ -108,9 +108,16 @@ function renderContext(next) {
   $('notice').hidden = !context.notice;
   $('notice').textContent = context.notice || '';
   input.placeholder = context.placeholder || 'Ask me anything…';
+  // The context mode (Developer Cat, Shopping Cat…) as a tiny pixel badge; it only reorders chips and flavor.
+  const badge = context.modeBadge;
+  $('modeBadge').hidden = !badge;
+  $('modeBadge').textContent = badge?.badge || '';
+  $('modeBadge').title = badge ? `${badge.name} · right-click the cat → Mode to change` : '';
   renderChips(false);
+  const onboarding = context.mode === 'onboard';
+  $('onboard').hidden = !onboarding;
   // Typing is for questions; next to a selection the buttons come first and "Ask…" reveals the box.
-  $('askForm').hidden = !(context.mode === 'ask' || context.mode === 'sensitive' || showInput);
+  $('askForm').hidden = onboarding || !(context.mode === 'ask' || context.mode === 'sensitive' || showInput);
   renderEmpty();
 }
 
@@ -131,7 +138,7 @@ function renderChips(all) {
     more.addEventListener('click', () => renderChips(true));
     buttons.push(more);
   }
-  if (context.mode !== 'ask' && context.mode !== 'sensitive' && !showInput) {
+  if (!['ask', 'sensitive', 'onboard'].includes(context.mode) && !showInput) {
     const askB = Object.assign(document.createElement('button'), { className: 'chip more', textContent: 'Ask…' });
     askB.addEventListener('click', () => { showInput = true; $('askForm').hidden = false; askB.remove(); focused = true; window.loon.focusBubble(); input.focus(); });
     buttons.push(askB);
@@ -190,7 +197,7 @@ async function handoff(app) {
   }
 }
 
-function answerActions({ canGoDeeper, replaceText, text, question, quiz, tier, model, detail, estimated, memoryUsed = [] }) {
+function answerActions({ id, canGoDeeper, replaceText, text, question, quiz, tier, model, detail, estimated, memoryUsed = [] }) {
   const row = document.createElement('div');
   row.className = 'answer-tools';
   const add = (parent, label, onClick) => {
@@ -200,6 +207,7 @@ function answerActions({ canGoDeeper, replaceText, text, question, quiz, tier, m
     return b;
   };
   const flash = (b, label) => { const old = b.textContent; b.textContent = label; setTimeout(() => { b.textContent = old; }, 1400); };
+  const answerEl = () => row.parentElement;
   if (replaceText && context.editable) {
     add(row, 'Replace', async (e) => {
       try {
@@ -219,9 +227,17 @@ function answerActions({ canGoDeeper, replaceText, text, question, quiz, tier, m
   const menu = document.createElement('span');
   menu.className = 'menu';
   const list = Object.assign(document.createElement('div'), { className: 'menu-list', hidden: true });
-  add(menu, '⋯', () => { list.hidden = !list.hidden; requestAnimationFrame(reportHeight); }).title = 'More actions';
-  for (const chip of (context.chips || []).filter((c) => c.id !== lastTask)) add(list, chip.label, () => { list.hidden = true; runChip(chip.id, chip.label); });
-  if ($('askForm').hidden) add(list, 'Ask a follow-up', () => { list.hidden = true; showInput = true; $('askForm').hidden = false; focused = true; window.loon.focusBubble(); input.focus(); reportHeight(); });
+  // "Remember this" uses the sentence selected in this answer, so it is read before the click can clear it.
+  let selected = '';
+  const toggle = add(menu, '⋯', () => { list.hidden = !list.hidden; requestAnimationFrame(reportHeight); });
+  toggle.title = 'More actions';
+  toggle.addEventListener('mousedown', () => {
+    const sel = window.getSelection();
+    selected = sel && !sel.isCollapsed && answerEl()?.contains(sel.anchorNode) ? sel.toString() : '';
+  });
+  const item = (label, onClick) => add(list, label, (e) => { list.hidden = true; onClick(e); requestAnimationFrame(reportHeight); });
+  for (const chip of (context.chips || []).filter((c) => c.id !== lastTask)) item(chip.label, () => runChip(chip.id, chip.label));
+  if ($('askForm').hidden) item('Ask a follow-up', () => { showInput = true; $('askForm').hidden = false; focused = true; window.loon.focusBubble(); input.focus(); reportHeight(); });
   add(list, 'Save to notes', async (e) => {
     try {
       await window.loon.saveNote({ question, text });
@@ -231,17 +247,183 @@ function answerActions({ canGoDeeper, replaceText, text, question, quiz, tier, m
       console.error(err);
     }
   });
-  add(list, 'Ask in Claude', () => { list.hidden = true; handoff('claude'); });
-  add(list, 'Ask in ChatGPT', () => { list.hidden = true; handoff('chatgpt'); });
-  add(list, 'Ask in Gemini', () => { list.hidden = true; handoff('gemini'); });
+  if (!context.privacy) item('Remember this', () => rememberThis(id, selected, row));
+  if (memoryUsed.length) item('Forget what you used', () => forgetUsed(memoryUsed, row));
+  item('Save this chat', () => saveChat(row));
+  item('History', () => window.loon.openHistory());
+  item('Ask in Claude', () => handoff('claude'));
+  item('Ask in ChatGPT', () => handoff('chatgpt'));
+  item('Ask in Gemini', () => handoff('gemini'));
   row.append(menu);
 
   if (estimated) row.append(Object.assign(document.createElement('span'), { className: 'estimated', textContent: 'estimated' }));
+  // 👍/👎: stored on this Mac with the task and settings (not the answer); nothing in Privacy mode.
+  if (!context.privacy) {
+    const votes = Object.assign(document.createElement('span'), { className: 'votes' });
+    for (const [vote, icon, label] of [[1, '👍', 'Good answer'], [-1, '👎', 'Not helpful']]) {
+      const b = add(votes, icon, async () => {
+        for (const other of votes.children) other.disabled = true;
+        b.setAttribute('aria-pressed', 'true');
+        const result = await window.loon.feedback(id, vote);
+        if (result?.nudge) styleNudge(result.nudge, row);
+      });
+      b.title = label;
+      b.setAttribute('aria-label', label);
+      b.setAttribute('aria-pressed', 'false');
+    }
+    row.append(votes);
+  }
   const icon = Object.assign(document.createElement('span'), { className: 'tier-icon', textContent: tier === 'local' ? '🐾' : tier === 'cloud' ? '☁️' : '⚡' });
-  icon.title = tierLabel({ tier, model, detail, estimated }) + (memoryUsed.length ? `\nRemembered: ${memoryUsed.join('; ')}` : '');
+  icon.title = tierLabel({ tier, model, detail, estimated }) + (memoryUsed.length ? `\nRemembered: ${memoryUsed.map((f) => f.text).join('; ')}` : '');
   row.append(icon, list);
   return row;
 }
+
+// Cards that open under an answer's tools row (one of each kind at a time).
+function underAnswer(row, className, node) {
+  row.parentElement.querySelector(`:scope > .${className}`)?.remove();
+  node.classList.add(className);
+  row.after(node);
+  log.scrollTop = log.scrollHeight;
+  return node;
+}
+const noteEl = (text) => Object.assign(document.createElement('div'), { className: 'note', textContent: text });
+const chipButton = (label, title, onClick) => {
+  const b = Object.assign(document.createElement('button'), { className: 'chip', textContent: label, title, type: 'button' });
+  b.addEventListener('click', onClick);
+  return b;
+};
+
+// A reply-style nudge after several 👎: a question with ✓/✗, never a silent change.
+function styleNudge({ key, label }, row) {
+  const box = document.createElement('div');
+  box.className = 'suggest';
+  box.append(Object.assign(document.createElement('span'), { textContent: `🐾 ${label}` }));
+  const answer = async (accept) => {
+    const result = await window.loon.answerNudge(key, accept);
+    box.replaceWith(noteEl(result?.message || 'Okay.'));
+  };
+  box.append(chipButton('✓', 'Yes, change it', () => answer(true)), chipButton('✗', "No, and don't ask again", () => answer(false)));
+  underAnswer(row, 'nudge-box', box);
+}
+
+// "Remember this": an editable proposal; nothing is saved until ✓ (the normal remember action, then the toast).
+async function rememberThis(id, selected, row) {
+  const { text } = await window.loon.proposeMemory(id, selected);
+  const box = document.createElement('div');
+  box.className = 'confirm';
+  box.append(Object.assign(document.createElement('div'), { className: 'confirm-title', textContent: 'Remember this?' }));
+  const field = Object.assign(document.createElement('textarea'), { value: text || '', placeholder: 'What should I remember?', maxLength: 200, rows: 2 });
+  field.setAttribute('aria-label', 'Memory to save');
+  field.addEventListener('mousedown', () => { if (!focused) { focused = true; window.loon.focusBubble(); } });
+  const buttons = Object.assign(document.createElement('div'), { className: 'confirm-buttons' });
+  const yes = Object.assign(document.createElement('button'), { className: 'primary', textContent: '✓ Remember', type: 'button' });
+  const no = Object.assign(document.createElement('button'), { className: 'secondary', textContent: 'Cancel', type: 'button' });
+  yes.addEventListener('click', () => {
+    const fact = field.value.trim();
+    if (!fact) return;
+    box.remove();
+    window.loon.confirmAction(id, { action: 'remember', text: fact });
+  });
+  no.addEventListener('click', () => box.remove());
+  buttons.append(yes, no);
+  box.append(field, buttons);
+  underAnswer(row, 'remember-box', box);
+  field.focus();
+  field.setSelectionRange(0, 0);
+}
+
+// "Forget what you used": the memories this answer was given, each with ✕.
+function forgetUsed(facts, row) {
+  const box = document.createElement('div');
+  box.className = 'used';
+  box.append(Object.assign(document.createElement('div'), { className: 'used-title', textContent: 'I used these memories:' }));
+  const ul = document.createElement('ul');
+  for (const fact of facts) {
+    const li = document.createElement('li');
+    li.append(Object.assign(document.createElement('span'), { textContent: fact.text }));
+    const x = Object.assign(document.createElement('button'), { textContent: '✕', title: 'Forget this', type: 'button' });
+    x.setAttribute('aria-label', `Forget "${fact.text}"`);
+    x.addEventListener('click', async () => {
+      x.disabled = true;
+      await window.loon.deleteMemory(fact.id);
+      li.classList.add('gone');
+      li.replaceChildren(Object.assign(document.createElement('span'), { textContent: fact.text }), Object.assign(document.createElement('em'), { textContent: 'forgotten' }));
+    });
+    li.append(x);
+    ul.append(li);
+  }
+  box.append(ul);
+  underAnswer(row, 'used-box', box);
+}
+
+// "Save this chat": the thread goes to the notes folder; facts the user stated in it come back as a tick list.
+async function saveChat(row) {
+  let result;
+  try {
+    result = await window.loon.saveChat();
+  } catch (err) {
+    underAnswer(row, 'chat-box', noteEl(`Couldn't save: ${err.message}`));
+    return;
+  }
+  const box = document.createElement('div');
+  box.append(noteEl(`Saved this chat to ${result.file.split('/').slice(-2).join('/')}.`));
+  if (result.facts.length) {
+    const card = Object.assign(document.createElement('div'), { className: 'confirm' });
+    card.append(Object.assign(document.createElement('div'), { className: 'confirm-title', textContent: 'Remember these too?' }));
+    const checks = result.facts.map((fact) => {
+      const check = Object.assign(document.createElement('input'), { type: 'checkbox', checked: true });
+      const label = Object.assign(document.createElement('label'), { className: 'fact' });
+      label.append(check, document.createTextNode(` ${fact}`));
+      card.append(label);
+      return { fact, check };
+    });
+    const buttons = Object.assign(document.createElement('div'), { className: 'confirm-buttons' });
+    const yes = Object.assign(document.createElement('button'), { className: 'primary', textContent: '✓ Remember ticked', type: 'button' });
+    const no = Object.assign(document.createElement('button'), { className: 'secondary', textContent: 'No thanks', type: 'button' });
+    yes.addEventListener('click', async () => {
+      const keep = checks.filter((c) => c.check.checked).map((c) => c.fact);
+      card.remove();
+      if (keep.length) await window.loon.rememberFacts(keep);
+    });
+    no.addEventListener('click', () => card.remove());
+    buttons.append(yes, no);
+    card.append(buttons);
+    box.append(card);
+  }
+  underAnswer(row, 'chat-box', box);
+}
+
+// "Loon remembered…": every saved fact shows here for 5 s with Undo. Several in a row share one toast.
+const toast = { ids: [], texts: [], timer: null };
+function showToast() {
+  clearTimeout(toast.timer);
+  $('toastText').textContent = toast.ids.length > 1 ? `🐾 Loon remembered ${toast.ids.length} things` : `🐾 Loon remembered “${toast.texts[0]}”`;
+  $('toastUndo').hidden = false;
+  $('toast').hidden = false;
+  toast.timer = setTimeout(hideToast, 5000);
+}
+function hideToast() {
+  clearTimeout(toast.timer);
+  $('toast').hidden = true;
+  toast.ids = [];
+  toast.texts = [];
+}
+window.loon.onBubbleRemembered(({ id, text }) => {
+  toast.ids.push(id);
+  toast.texts.push(text);
+  showToast();
+});
+$('toastUndo').addEventListener('click', async () => {
+  const ids = toast.ids.slice();
+  clearTimeout(toast.timer);
+  $('toastUndo').hidden = true;
+  $('toastText').textContent = ids.length > 1 ? 'Okay, forgot those.' : 'Okay, forgot it.';
+  for (const id of ids) await window.loon.deleteMemory(id);
+  toast.ids = [];
+  toast.texts = [];
+  toast.timer = setTimeout(hideToast, 1400);
+});
 
 // Cloze quiz, graded in plain code with the same rules as brain/quiz.js (renderer/lib/grade.js).
 function quizCard(quiz) {
@@ -554,7 +736,7 @@ window.loon.onAskDone(({ id, text, ...meta }) => {
   if (meta.quiz) current.el.append(quizCard(meta.quiz));
   // the companion's little aside, kept apart from the answer (copy, speech and memory use only the answer)
   if (meta.flavor) current.el.append(Object.assign(document.createElement('p'), { className: 'flavor', textContent: meta.flavor }));
-  current.el.append(answerActions({ ...meta, text: text || current.raw, question: current.question }));
+  current.el.append(answerActions({ ...meta, id, text: text || current.raw, question: current.question }));
   current = null;
   autosize();
   if (focused) input.focus();
@@ -582,10 +764,22 @@ window.loon.onBubbleShown(({ context: next, focus, pill } = {}) => {
   $('chips').hidden = false;
   document.body.classList.toggle('pill', Boolean(pill));
   log.replaceChildren();
+  hideToast();
   current = null;
   lastTask = null;
   agentPanel = null;
   renderContext(next);
+  // History → Continue: the earlier turns come back so the next question is a follow-up.
+  for (const turn of context.thread || []) {
+    log.append(Object.assign(document.createElement('div'), { className: 'q', textContent: turn.question }));
+    const a = Object.assign(document.createElement('div'), { className: 'a' });
+    a.innerHTML = renderMarkdown(turn.answer);
+    log.append(a);
+  }
+  if (context.thread?.length) log.append(noteEl('Picked up from History. Ask a follow-up.'));
+  renderEmpty();
+  if (context.mode === 'onboard') window.LoonOnboard.start($('onboard'), { privacy: Boolean(context.onboard?.privacy), onClose: () => window.loon.closeBubble() });
+  else $('onboard').replaceChildren();
   refreshStatus();
 });
 window.loon.onBubbleContext(renderContext);
@@ -612,6 +806,8 @@ window.loon.onBubbleRun(({ task }) => {
 });
 window.loon.onBubbleHidden(() => {
   log.replaceChildren();
+  $('onboard').replaceChildren();
+  hideToast();
   current = null;
   agentPanel = null;
   input.value = '';

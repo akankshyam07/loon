@@ -71,6 +71,20 @@ ul { list-style: none; padding: 0; margin: 0 0 10px; display: grid; gap: 8px; }
 #memory input { flex: 1; }
 .tag { font: 8px/1.4 'Press Start 2P', monospace; color: var(--ink); background: var(--sun-soft); border: 2px solid var(--line); border-radius: 7px; padding: 3px 6px; }
 #audit li { font-size: 13px; color: var(--muted); }
+/* routines: one card per routine, pastel like the wardrobe tiles */
+.routine { padding: 10px 12px; border: 2px solid var(--line); border-radius: 12px; background: var(--mint-soft); box-shadow: var(--shadow-sm); }
+.routine .toggle { margin: 0; }
+.routine .toggle .muted { margin: 0; font-size: 12.5px; }
+.routine .last { margin: 6px 0 0 52px; font-size: 12.5px; color: var(--muted); }
+.routine .last.error, #routineMsg.error { color: var(--danger); }
+.routine-buttons { display: flex; gap: 6px; margin: 8px 0 0 52px; flex-wrap: wrap; }
+.routine-buttons button { padding: 3px 10px; font-size: 12.5px; }
+.routine-edit { background: var(--lav-soft); }
+.routine-edit .field { margin: 6px 0; font-size: 13px; }
+.routine-edit .routine-buttons { margin-left: 0; }
+.quiet-times { display: flex; gap: 14px; margin: -2px 0 6px 52px; font-size: 13px; color: var(--muted); }
+.quiet-times input { font: inherit; color: var(--ink); background: var(--field); padding: 3px 8px; border: 2px solid var(--line); border-radius: 10px; margin-left: 6px; }
+.quiet-times input:disabled { opacity: 0.5; }
 #smarter .field { display: grid; gap: 4px; margin: 10px 0; font-size: 13px; color: var(--muted); }
 #apiBox { border-top: 2px dashed var(--soft-line); margin-top: 12px; padding-top: 6px; }
 #smarter .warn { color: var(--danger); font-size: 13px; margin: 8px 0 4px; }
@@ -80,11 +94,11 @@ ul { list-style: none; padding: 0; margin: 0 0 10px; display: grid; gap: 8px; }
 .field { display: grid; gap: 4px; margin: 10px 0; position: relative; }
 .field.inline { grid-template-columns: auto 1fr; align-items: center; gap: 10px; }
 .field b, .segments b { font-weight: 700; }
-textarea, .field input, .field select, #memory input, #profile input, #brainFacts input, #brainFind {
+textarea, .field input, .field select, #memory input, #profile input, #brainFacts input, #brainFind, #historySearch {
   font: inherit; color: var(--ink); background: var(--field); padding: 6px 10px; border: 2px solid var(--line); border-radius: 10px;
 }
 textarea { resize: vertical; min-height: 48px; }
-textarea:focus, .field input:focus, .field select:focus, #memory input:focus, #profile input:focus, #brainFacts input:focus, #brainFind:focus {
+textarea:focus, .field input:focus, .field select:focus, #memory input:focus, #profile input:focus, #brainFacts input:focus, #brainFind:focus, #historySearch:focus {
   outline: none; box-shadow: 0 0 0 3px var(--lav);
 }
 .count { position: absolute; right: 10px; bottom: 8px; font-size: 11px; color: var(--muted); }
@@ -136,3 +150,18 @@ textarea:focus, .field input:focus, .field select:focus, #memory input:focus, #p
   button, .costume, .toggle input, .toggle input::after { transition: none; }
   button:hover, .costume:hover { transform: none; }
 }
+
+/* History (§3.12.3) */
+#historySearch { width: 100%; margin: 4px 0 8px; }
+#historyList { list-style: none; display: grid; gap: 6px; margin-bottom: 10px; }
+#historyList .conv { display: grid; gap: 6px; }
+#historyList .row { gap: 6px; }
+.conv-title, .conv-title:hover, .conv-title:active { flex: 1; min-width: 0; display: grid; text-align: left; background: none; border: 0; box-shadow: none; transform: none; padding: 0; cursor: pointer; font: inherit; color: inherit; }
+.conv-title b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conv-title:hover b { text-decoration: underline; }
+.conv-turns { display: grid; gap: 4px; padding: 8px 10px; border: 2px dashed var(--soft-line); border-radius: 12px; font-size: 12.5px; max-height: 260px; overflow: auto; }
+.conv-turns[hidden] { display: none; }
+.conv-turns p { margin: 0; }
+.conv-q { color: var(--muted); font-weight: 700; }
+.conv-q::before { content: 'you: '; color: var(--sage); }
+.conv-a { white-space: pre-wrap; }

@@ -7,6 +7,9 @@
 // embedder (brain/embed.js), facts also carry a vector and recall fuses BM25 with meaning (Reciprocal Rank Fusion).
 // - nodes/edges: the brain graph (brain/graph.js). Entities found in each fact by plain rules become nodes, facts
 //   link to them (fact_nodes), and recall walks 1–2 hops from what the request mentions as a third ranked list.
+// - conversations: each bubble thread's turns (for History → Continue), linked to its episodes by `session`.
+// - feedback: 👍/👎 per answer with task, tier, difficulty and reply length (answer text only if the user opted in).
+// - routines/routine_runs: scheduled tasks and their run history (brain/routines.js owns the reads and writes).
 const crypto = require('crypto');
 const fs = require('fs');
 const { DatabaseSync } = require('node:sqlite');
@@ -45,6 +48,9 @@ const BACKFILL = 32; // facts embedded per request until every old fact has a ve
 const HOP_DECAY = 0.5; // a neighbor counts half as much as the node it was reached from, times its edge strength
 const DOMAIN_BOOST = 1.5; // facts from the same area of life as the task or site
 const DUPLICATE_MIN = 0.95; // cosine at which two facts say the same thing (consolidation)
+const TURN_CHARS = 2000; // per stored answer in a conversation; follow-ups use at most 1,200 of the latest one
+const MAX_TURNS = 20;
+const MAX_FEEDBACK = 2000;
 
 function categorize(text) {
   return CATEGORY_RULES.find(([, re]) => re.test(text))?.[0] || 'preference';
@@ -113,13 +119,28 @@ class Memory {
       CREATE TABLE IF NOT EXISTS fact_nodes (
         fact_id TEXT NOT NULL, node_id TEXT NOT NULL, relation TEXT NOT NULL DEFAULT '', PRIMARY KEY (fact_id, node_id));
       CREATE INDEX IF NOT EXISTS fact_nodes_node ON fact_nodes(node_id);
+      CREATE TABLE IF NOT EXISTS conversations (
+        id TEXT PRIMARY KEY, started INTEGER NOT NULL, updated INTEGER NOT NULL, title TEXT NOT NULL, scope TEXT NOT NULL DEFAULT '',
+        turns TEXT NOT NULL DEFAULT '[]');
+      CREATE TABLE IF NOT EXISTS feedback (
+        id INTEGER PRIMARY KEY, at INTEGER NOT NULL, vote INTEGER NOT NULL, task TEXT NOT NULL, tier TEXT NOT NULL DEFAULT '',
+        difficulty TEXT NOT NULL DEFAULT '', length TEXT NOT NULL DEFAULT '', chars INTEGER NOT NULL DEFAULT 0, answer TEXT NOT NULL DEFAULT '');
+      CREATE TABLE IF NOT EXISTS routines (
+        id TEXT PRIMARY KEY, label TEXT NOT NULL, action TEXT NOT NULL, schedule TEXT NOT NULL, payload TEXT NOT NULL DEFAULT '{}',
+        state TEXT NOT NULL DEFAULT '{}', enabled INTEGER NOT NULL DEFAULT 1, created INTEGER NOT NULL, next_run INTEGER, last_run INTEGER,
+        last_result TEXT NOT NULL DEFAULT '', last_status TEXT NOT NULL DEFAULT '');
+      CREATE TABLE IF NOT EXISTS routine_runs (
+        id INTEGER PRIMARY KEY, routine_id TEXT NOT NULL, at INTEGER NOT NULL, due INTEGER, status TEXT NOT NULL, note TEXT NOT NULL DEFAULT '');
+      CREATE INDEX IF NOT EXISTS routine_runs_routine ON routine_runs(routine_id);
     `);
     // Older databases get new columns in place: vec NULL means "not embedded yet", linked 0 "not in the graph yet".
     const columns = this.db.prepare('PRAGMA table_info(facts)').all().map((c) => c.name);
     if (!columns.includes('vec')) this.db.exec('ALTER TABLE facts ADD COLUMN vec BLOB');
     if (!columns.includes('linked')) this.db.exec('ALTER TABLE facts ADD COLUMN linked INTEGER NOT NULL DEFAULT 0');
+    const episodeColumns = this.db.prepare('PRAGMA table_info(episodes)').all().map((c) => c.name);
+    if (!episodeColumns.includes('session')) this.db.exec("ALTER TABLE episodes ADD COLUMN session TEXT NOT NULL DEFAULT ''");
     this.db.prepare(`INSERT OR IGNORE INTO nodes (id, label, kind, domain, subdomain, created) VALUES (?, 'You', 'person', 'personal', 'you', ?)`).run(graph.ME, this.now());
-    this.db.prepare('DELETE FROM episodes WHERE at < ?').run(this.now() - HISTORY_DAYS * DAY);
+    this.pruneHistory();
     for (const f of this.db.prepare('SELECT id, text FROM facts WHERE linked = 0').all()) this.linkFact(f.id, f.text);
   }
 
@@ -165,6 +186,7 @@ class Memory {
       .run(entry.id, entry.text, entry.category, scope, entry.pinned ? 1 : 0, source, created);
     this.linkFact(entry.id, entry.text);
     this.embedFact(entry.id, entry.text);
+    this.onAdd?.(entry); // main.js: the "Loon remembered…" toast, whichever path saved the fact
     return entry;
   }
 
@@ -421,10 +443,84 @@ class Memory {
   }
 
   // ---------- episodes (history) ----------
-  logEpisode({ kind = 'ask', title, text = '', scope = '' }) {
+  // session: the conversation (bubble thread) this answer belongs to, '' for none.
+  logEpisode({ kind = 'ask', title, text = '', scope = '', session = '' }) {
     if (!title) return;
-    this.db.prepare('INSERT INTO episodes (at, kind, title, text, scope) VALUES (?, ?, ?, ?, ?)')
-      .run(this.now(), kind, String(title).slice(0, 200), String(text).slice(0, 600), scope);
+    this.db.prepare('INSERT INTO episodes (at, kind, title, text, scope, session) VALUES (?, ?, ?, ?, ?, ?)')
+      .run(this.now(), kind, String(title).slice(0, 200), String(text).slice(0, 600), scope, session);
+  }
+
+  pruneHistory() {
+    const cutoff = this.now() - HISTORY_DAYS * DAY;
+    this.db.prepare('DELETE FROM episodes WHERE at < ?').run(cutoff);
+    this.db.prepare('DELETE FROM conversations WHERE updated < ?').run(cutoff);
+  }
+
+  // ---------- conversations (History → Continue) ----------
+  // One row per bubble thread; turns are [{ question, answer, tier, target }], answers clipped, newest MAX_TURNS kept.
+  saveTurn(id, { question, answer, tier = '', target }, { scope = '' } = {}) {
+    if (!id || !question || !answer) return;
+    const now = this.now();
+    const row = this.db.prepare('SELECT turns FROM conversations WHERE id = ?').get(id);
+    const turn = { question: String(question).slice(0, 300), answer: String(answer).slice(0, TURN_CHARS), tier, ...(target ? { target } : {}) };
+    if (!row) {
+      this.db.prepare('INSERT INTO conversations (id, started, updated, title, scope, turns) VALUES (?, ?, ?, ?, ?, ?)')
+        .run(id, now, now, turn.question.slice(0, 200), scope, JSON.stringify([turn]));
+      return;
+    }
+    const turns = [...JSON.parse(row.turns), turn].slice(-MAX_TURNS);
+    this.db.prepare('UPDATE conversations SET updated = ?, turns = ? WHERE id = ?').run(now, JSON.stringify(turns), id);
+  }
+
+  // Newest first; with a query, conversations whose answers or questions match (BM25 over episodes, best first).
+  conversations({ query = '', limit = 50 } = {}) {
+    const summary = (r) => ({ id: r.id, title: r.title, scope: r.scope, started: r.started, updated: r.updated, count: JSON.parse(r.turns).length });
+    const match = ftsQuery(query);
+    if (!match) return this.db.prepare('SELECT * FROM conversations ORDER BY updated DESC LIMIT ?').all(limit).map(summary);
+    const ids = [...new Set(this.db.prepare(`SELECT e.session FROM episodes_fts JOIN episodes e ON e.id = episodes_fts.rowid
+      WHERE episodes_fts MATCH ? AND e.session != '' ORDER BY bm25(episodes_fts, 3.0, 1.0, 1.0) LIMIT 200`).all(match).map((r) => r.session))];
+    const get = this.db.prepare('SELECT * FROM conversations WHERE id = ?');
+    return ids.map((id) => get.get(id)).filter(Boolean).slice(0, limit).map(summary);
+  }
+
+  conversation(id) {
+    const r = this.db.prepare('SELECT * FROM conversations WHERE id = ?').get(String(id));
+    return r ? { id: r.id, title: r.title, scope: r.scope, started: r.started, updated: r.updated, turns: JSON.parse(r.turns) } : null;
+  }
+
+  deleteConversation(id) {
+    this.db.prepare('DELETE FROM conversations WHERE id = ?').run(String(id));
+    this.db.prepare('DELETE FROM episodes WHERE session = ?').run(String(id));
+  }
+
+  // ---------- feedback (👍/👎) ----------
+  // Metadata only; `answer` is '' unless the user opted in to keeping answer text with their ratings.
+  recordFeedback({ vote, task = 'ask', tier = '', difficulty = '', length = '', chars = 0, answer = '' }) {
+    this.db.prepare('INSERT INTO feedback (at, vote, task, tier, difficulty, length, chars, answer) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(this.now(), vote > 0 ? 1 : -1, String(task), String(tier), String(difficulty || ''), String(length || ''), Math.max(0, chars | 0), String(answer).slice(0, 2000));
+    this.db.prepare('DELETE FROM feedback WHERE id NOT IN (SELECT id FROM feedback ORDER BY id DESC LIMIT ?)').run(MAX_FEEDBACK);
+  }
+
+  recentFeedback(limit = 20) {
+    return this.db.prepare('SELECT at, vote, task, tier, difficulty, length, chars FROM feedback ORDER BY id DESC LIMIT ?').all(limit);
+  }
+
+  // Calibration for the router later: per task (and per tier/difficulty) how often answers got 👍.
+  feedbackStats() {
+    const rows = this.db.prepare(`SELECT task, tier, difficulty, sum(vote > 0) AS up, sum(vote < 0) AS down FROM feedback GROUP BY task, tier, difficulty`).all();
+    const byTask = {};
+    for (const r of rows) {
+      const t = byTask[r.task] ||= { up: 0, down: 0, cells: [] };
+      t.up += r.up;
+      t.down += r.down;
+      t.cells.push({ tier: r.tier, difficulty: r.difficulty, up: r.up, down: r.down });
+    }
+    for (const t of Object.values(byTask)) t.acceptance = t.up / (t.up + t.down);
+    return byTask;
+  }
+
+  clearFeedback() {
+    this.db.exec('DELETE FROM feedback');
   }
 
   // Newest first when there's no query; otherwise BM25 with a gentle preference for recent episodes.
@@ -445,7 +541,7 @@ class Memory {
   }
 
   clearHistory() {
-    this.db.exec('DELETE FROM episodes');
+    this.db.exec('DELETE FROM episodes; DELETE FROM conversations');
   }
 
   close() {
@@ -453,4 +549,4 @@ class Memory {
   }
 }
 
-module.exports = { Memory, categorize, ftsQuery, scopeOf, TASK_CATEGORIES };
+module.exports = { Memory, categorize, ftsQuery, scopeOf, TASK_CATEGORIES, HISTORY_DAYS };

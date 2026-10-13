@@ -524,12 +524,21 @@ site or app they belong to, and nothing is saved silently.
   full-text indexes (porter stemming). The old `memory.json` is imported once and renamed `.imported`.
   - `facts`: `{id, text, category, scope, pinned, source, created, used, uses}`. `scope` is the site (`amazon.com`)
     or app the fact belongs to, or empty for everywhere.
-  - `episodes`: a short history `{at, kind, title, text ≤600 chars, scope}` of what was asked and answered. Logged
-    after each answer, never in Privacy mode; private pages never get this far. Dropped after 90 days.
+  - `episodes`: a short history `{at, kind, title, text ≤600 chars, scope, session}` of what was asked and answered.
+    Logged after each answer, never in Privacy mode or on a private page. Dropped after 90 days. `session` links an
+    episode to its conversation (added in place to older databases).
+  - `conversations`: one row per bubble thread `{id, started, updated, title, scope, turns}` for History → Continue
+    (§3.12.3). `turns` is JSON `[{question, answer ≤2,000 chars, tier, target}]`, newest 20 kept. Same rules and the
+    same 90-day retention as episodes.
+  - `feedback`: 👍/👎 `{at, vote, task, tier, difficulty, length, chars, answer}` (§3.12.1). `answer` stays empty
+    unless the user turns on "Keep answer text with ratings"; newest 2,000 rows kept.
+  These two tables are this feature's own; other features (Routines) keep theirs separate.
 - **Writes to facts happen only by user choice:**
   - The user says "Remember…".
   - The model proposes a `remember` action → a confirm chip, e.g. "Remember that you're vegetarian? ✓ ✗".
-  - Nothing is stored silently.
+  - "Remember this" on an answer, ticked facts from "Save this chat", or the "Get to know you" review (§3.12.1).
+  - Nothing is stored silently, and every save shows a "Loon remembered…" toast with Undo. Privacy mode refuses
+    the remember action outright.
 - **Reads (`recall`):** for each request, in order, at most 8 facts and 1,200 characters:
   1. **Profile:** pinned facts (name, pronouns, where you live, work or study; pinned automatically), always included.
   2. **Matches:** BM25 over the request's words, ×2 when the fact's scope is the current site/app, ×1.3 when used
@@ -602,6 +611,57 @@ site or app they belong to, and nothing is saved silently.
 - **Feedback:** whole messages like "shorter please", "too long", "more detail", "less emoji", "be more formal",
   "reply in Spanish" change the reply style in code before any model, and the answer is just "Got it, shorter from
   now on. Change it in Settings."
+- **Per-answer actions** (the card stays minimal: Copy, Go deeper, ⋯, and two tiny 👍 👎 on the right):
+  - **👍 / 👎** go to the `feedback` table with the task, tier, router difficulty and the reply-length setting, plus
+    the answer's length in characters. One vote per answer; the companion keeps per-answer metadata in memory only
+    (`session.answers`), so the renderer sends just the answer id and the vote. Nothing is stored in Privacy mode.
+  - **Style nudges:** after a 👎, `styleNudge` looks at the last 10 ratings. Three or more 👎 on long answers
+    (> 600 characters) that clearly outnumber the 👍 on them → a chip "Shorter answers by default? ✓ ✗"; the same
+    for short answers (< 200) and "More detailed". ✓ changes the setting as Settings would, ✗ stores the nudge's key
+    so it's never asked again. Nothing changes without the click.
+  - **Calibration log:** `feedbackStats()` gives per-task acceptance (👍 share) with per tier/difficulty cells. The
+    router doesn't use it yet; it's recorded so thresholds can be tuned from real ratings later (no training).
+  - **⋯ → Remember this:** the sentence selected inside that answer, else its first sentence (markdown stripped, at
+    most 200 characters), as an editable "Remember this?" card. ✓ runs the normal remember action.
+  - **⋯ → Forget what you used:** the resolver now returns the recalled facts with their ids (`memoryUsed`), so the
+    card lists them with ✕ each, which deletes that fact.
+  - **⋯ → Save this chat:** the thread as markdown in today's notes file, plus up to three facts the user stated in
+    their own messages (`suggestMemory` per turn, minus known and dismissed ones) as a tick list.
+  - **⋯ → History** opens Settings at History.
+- **"Loon remembered…" toast:** `Memory.add` calls an `onAdd` hook; main.js forwards each new fact to the open bubble,
+  which shows it for 5 s with Undo (deletes it). Several saves in a row share one toast ("Loon remembered 3 things").
+- **"Get to know you"** (first run instead of the plain hello, skippable, and Settings → About you & replies): five
+  optional questions in the bubble, Luna asking (her real pixel sprite, talking) and Soju reacting to each answer with
+  a persona line (flavor only): what to call you, what you mostly do on your Mac (student / developer / design / work
+  / other), reply length and tone, food rules and allergies, interests. `onboardingResult` in `brain/personal.js` maps
+  the answers to facts ("Call me Ada", "I'm a developer", "I'm vegetarian", "I'm allergic to peanuts and shellfish",
+  "I'm interested in jazz") and a reply-style patch. A review screen lists them with ticks; only ticked facts that the
+  main process re-derives from the same answers are saved, pinned, with source `onboarding`. The role also becomes the
+  fallback context mode (§3.12.2). In Privacy mode only the reply style is kept.
+
+#### 3.12.2 Context modes
+
+`brain/modes.js`, plain rules, first match wins: the cat menu's **Mode** override → the selection kind (code, JSON,
+stack trace → Developer; editable text → Work; a document → Study) → the page kind (code/leetcode → Developer,
+shopping → Shopping, menu → Food, article → Study) → the site (github.com, stackoverflow.com, localhost and `.test`
+→ Developer; Amazon, eBay, Etsy… → Shopping; DoorDash, Uber Eats… → Food; Gmail, Google Docs, Outlook, Notion, Slack →
+Work; Wikipedia, arXiv, `.edu`, `docs.*` → Study) → the app for ⌥Space selections (Xcode, VS Code, Terminal → Developer;
+Mail, Slack, Word → Work) → the onboarding role. Never on private pages or during onboarding.
+
+A mode changes only three things: the chip order (its chips first, the rest in their usual order, same set), the
+greeting's persona line in an empty bubble, and the memory domain boost (Developer → code, Shopping → shopping, Food
+→ food, Study → study, Work → work) when the task itself names no domain. Which task runs and what the answer says
+are unchanged. The bubble header shows it as a tiny pixel badge (`dev`, `shop`, `food`, `study`, `work`).
+
+#### 3.12.3 History
+
+Settings → History lists conversations newest first (first question, site, date, number of answers), with a search
+box (BM25 over the conversation's episodes, best first), a row that expands to read the turns, **Continue**, **Delete**
+and **Clear all history**. The cat menu and the bubble's ⋯ have a History item that opens it. Continue replaces the
+bubble thread with the stored turns (`session.turns`), shows them in the bubble with "Picked up from History", and
+keeps the conversation id, so the next question is a normal follow-up (the history block reaches whichever tier
+answers) and its answer is added to the same entry. Stored compactly in `memory.db` (above), 90-day retention, never in
+Privacy mode or on private pages; "Forget everything" also clears it and the ratings.
 
 ### 3.13 Actions (Jarvis)
 
@@ -626,6 +686,7 @@ site or app they belong to, and nothing is saved silently.
 | Search files | auto (results shown locally, not sent to the AI unless asked) | `mdfind` |
 | Open app | confirm | `open -a` from the installed-apps list |
 | Summarize my day | confirm (reads calendar) | calendar + reminders via `osascript` → AI briefing |
+| Create / delete a routine (§3.19) | confirm | `routines` table in `memory.db`; pause/resume run directly |
 | Notion page (later) | confirm | Notion API, user's integration token in Keychain |
 | Organize downloads (later) | confirm, with preview of the plan | moves only, never deletes; reverse moves logged so it can be undone |
 
@@ -846,6 +907,25 @@ The content script keeps the last ~30 s of captions in the page's memory only (Y
 - **Pixels can't be redacted**, so the default path never sends them: OCR + a text model. "Send screenshots to your plan/API for teaching" (Settings → Smarter answers, off by default, with a confirm dialog that says exactly this) lets "explain my screen" attach a ≤1600 px PNG to Codex (`codex exec --image`, written into the CLI's empty temp folder, deleted with it, plan-only guard unchanged) or to the API key route (Anthropic / OpenAI / Gemini / OpenAI-compatible image parts). Never with Claude Code (it reads images only through tools, which stay off), never in Privacy mode, never past the gate above. The model still answers with ids from the same list.
 - **Local vision later:** `brain/vision.js` holds the hook. The plan is a Qwen3-VL GGUF through llama.cpp's multimodal support, downloaded only when asked and loaded on demand like the smart model, implementing `describe({ image, prompt })` with the same JSON contract. Until it exists, explain mode is OCR + text model.
 
+
+### 3.19 Routines (scheduled tasks)
+
+Things Loon does on a schedule, all on this Mac: "every morning at 9 tell me my day", "every weekday at 8:30 summarize my calendar", "remind me to drink water every 2 hours between 10 and 6", "every Friday at 5 summarize what I worked on this week", "every Monday check the price of this page", "in 20 minutes remind me to stretch", "every night at 10 tell me to sleep 😴". No cron daemon, no cloud.
+
+- **Parsing, code only** (`brain/routines.js`): regexes cut the schedule out of the text (intervals "every 2 hours" / "every half an hour" / "hourly", windows "between 10 and 6", days "weekdays" / "weekends" / "every Mon, Wed and Fri" / "Fridays", "every other day" / "every 3 days", "the 31st of every month", parts of day "every morning/night", times "at 8:30" / "12am" / "noon"; without am/pm 1–6 mean pm, "night at 10" means 10pm), and what's left is the action: `reminder` ("remind me to…"), `notify` ("tell me to…", "say…"), `today` (my day / my calendar), `weekSummary`, `briefing` (catch me up), `priceWatch` (the current Chrome page's URL), `ask` (a saved question). Questions ("what runs every day at 9?"), plain dated reminders ("remind me to call mom at 5", still Apple Reminders) and calendar requests fall through. `describeSchedule` writes the schedule back in words that `parseSchedule` reads to the same thing, and those words are what the confirm card and Settings edit.
+- **Schedule shapes:** `{type:'once', at}`, `{type:'daily', time, days, every?, anchor?, monthDay?}`, `{type:'interval', minutes, window, days}`. `nextRun` walks days in local time with the `Date(y, m, d, h, min)` constructor, so 9:00 stays 9:00 across DST (a time in the spring-forward gap runs an hour later that day), a 31st becomes the month's last day, and "every other day" counts whole days from its anchor.
+- **Creating is persistent configuration, so it always gets a confirm card** with the fields Name / When / Do / Details. Text that's clearly a routine but not fully understood ("every blue moon tell me hi") gets the same card headed "Here's what I understood"; ✓ refuses with a plain reason until the fields make sense. Deleting by command is a card too; "pause/resume the water reminder" runs straight away (reversible). "show my routines" lists them. Command matching needs a specific word to hit ("the gym reminder" never matches "Drink water").
+- **Storage:** tables `routines` and `routine_runs` in `memory.db`, created with `IF NOT EXISTS` (existing databases gain them untouched); the last 50 runs per routine are kept. Routines are settings, so "Forget everything" doesn't remove them.
+- **Scheduler** (`main/routines.js`): one timer armed for the earliest next run, capped at an hour so clock and time-zone changes self-correct; no polling. `tick()` holds all the policy and runs on that timer, at startup, on `powerMonitor` resume/unlock, and when a gate opens (Focus or Privacy toggled, Chrome connects, the watched page reports in):
+  - **Missed runs** (asleep, Loon closed): only the latest missed occurrence runs, and only within 2 hours; older ones are logged as skipped. Never a pile-up.
+  - **Quiet hours** (Settings, default 22:00–07:00): repeating interval reminders and late catch-ups are skipped. A routine whose own time is inside quiet hours ("every night at 11") still runs; you picked that time.
+  - **Focus** defers everything except a one-off reminder when "Use notifications for reminders" is on. Deferred runs collapse to one per routine and are delivered when Focus ends (dropped after 6 h).
+  - **Privacy mode** pauses (skips) routines that read pages, history or may use the cloud: `priceWatch`, `weekSummary`, `ask`.
+- **Delivery:** the result waits behind the cat's "?" nudge with a Luna/Soju line (`renderer/persona.js` kinds `routine`, `reminder`, `priceDrop`; a reminder's nudge says what it's reminding you of). Clicking opens the bubble with every waiting result. If the bubble was open, the nudge comes back when it closes. A macOS notification (Electron `Notification`) is used only for reminders and only with "Use notifications for reminders" on. Saved questions are asked in the bubble when you open them, so they take the normal resolver path, including confirm cards for anything that acts.
+- **Price watch:** the extension asks each open tab's content script whether it shows that page (same origin and path); only a match answers with its HTML. Nothing is opened or fetched in the background, so with Chrome closed or the page not open the run waits, and runs when the page next reports in. Prices come from structured data (`shopping.extractStructured`); the first run is a silent baseline, later runs compare the unit price when both have one (else the price) and nudge only on a drop of at least 1%.
+- **Week summary** is plain code: the last 7 days of history episodes (count, busiest day, top sites, topics) plus the project briefing for projects you allowed.
+- **Logs:** every run, skip and pause writes an `audit.jsonl` line with metadata only (kind, status, ms). Results are history episodes like normal answers, never in Privacy mode; a price check with no news isn't.
+- **Settings → Routines:** each routine with its schedule, next run, last result, an on/off switch, Edit (the same four fields), Delete (asks first) and Run now (runs regardless of Focus or quiet hours, still paused by Privacy mode), plus the notifications switch and quiet hours.
 ---
 
 ## 4. Privacy and safety

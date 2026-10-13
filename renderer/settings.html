@@ -44,6 +44,16 @@
     <label class="toggle"><input type="checkbox" data-key="judgmental" /> <span><b>Judgmental</b> A little sass about overpriced things and heavy food.</span></label>
   </section>
 
+  <section id="routinesBox">
+    <h2>Routines</h2>
+    <p class="muted">Things Loon does on a schedule, on this Mac. Make one by telling the cat, like "every weekday at 8:30 summarize my calendar" or "remind me to drink water every 2 hours between 10 and 6". When one runs, the cat shows its little "?"; click it for the result.</p>
+    <ul id="routines"></ul>
+    <p id="routineMsg" class="muted" role="status"></p>
+    <label class="toggle"><input type="checkbox" data-key="routineNotifications" /> <span><b>Use notifications for reminders</b> Reminders also show as a macOS notification, even in Focus mode. Off: they wait for the cat's "?".</span></label>
+    <label class="toggle"><input type="checkbox" id="quietOn" /> <span><b>Quiet hours</b> No repeating reminders and no catch-ups in this window. A routine you set for a time inside it still runs.</span></label>
+    <div class="quiet-times"><label>From <input type="time" id="quietStart" /></label><label>to <input type="time" id="quietEnd" /></label></div>
+  </section>
+
   <section id="personal">
     <h2>About you &amp; replies</h2>
     <p class="muted">Loon reads these before every answer. They stay on this Mac. Privacy mode leaves out "About you".</p>
@@ -72,6 +82,10 @@
     <label class="toggle"><input type="checkbox" id="emoji" /> <span><b>Emoji</b> A few emoji in answers when they fit.</span></label>
     <label class="field inline"><b>Reply language</b> <input id="language" data-personal="language" maxlength="30" placeholder="Same as my question" /></label>
     <p class="muted">You can also just tell Loon: "shorter please", "less emoji", "be more formal".</p>
+    <p class="row"><span class="muted">Five quick questions from Luna and Soju, all optional.</span><button id="onboarding">Get to know you…</button></p>
+    <h3>Your ratings</h3>
+    <p id="ratings" class="muted"></p>
+    <label class="toggle"><input type="checkbox" data-key="feedbackText" /> <span><b>Keep answer text with ratings</b> Off by default: 👍/👎 store only the kind of question, which model answered and your reply settings. Loon uses them to suggest a better default length, and never changes anything without asking.</span></label>
   </section>
 
   <section>
@@ -158,6 +172,15 @@
     <p class="muted">Only things you asked me to remember. Edit or delete anything.</p>
     <ul id="memory"></ul>
     <button id="clearMemory" class="danger">Forget everything</button>
+  </section>
+
+  <section id="history">
+    <h2>History</h2>
+    <p class="muted">Your conversations with Loon from the last 90 days, on this Mac only. Never saved in Privacy mode or on private pages.</p>
+    <p id="historyPaused" class="muted" hidden>Paused while Privacy mode is on.</p>
+    <input id="historySearch" type="search" placeholder="Search your conversations…" aria-label="Search history" />
+    <ul id="historyList"></ul>
+    <button id="historyClear" class="danger">Clear all history</button>
   </section>
 
   <section>

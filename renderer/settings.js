@@ -80,12 +80,84 @@ function render(s) {
     li.append(tag, input, del);
     return li;
   }));
+  $('ratings').textContent = s.ratings.up + s.ratings.down ? `${s.ratings.up} 👍 and ${s.ratings.down} 👎 so far.` : 'No ratings yet. Tap 👍 or 👎 under an answer.';
+  $('historyPaused').hidden = !s.privacy;
+  renderRoutines(s);
   $('audit').replaceChildren(...(s.audit.length ? s.audit : [null]).map((a) => {
     const li = document.createElement('li');
     li.textContent = a ? `${new Date(a.time).toLocaleString()} · ${a.action} · ${a.ok ? 'done' : `failed (${a.error})`}` : 'No actions yet.';
     return li;
   }));
 }
+
+// ---------- Routines: list, on/off, edit, delete, run now ----------
+let editingRoutine = null; // a settings refresh must not wipe a half-edited routine
+const shortWhen = (ms) => new Date(ms).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+function renderRoutines(s) {
+  const quiet = s.quietHours || {};
+  $('quietOn').checked = Boolean(quiet.on);
+  for (const [id, key] of [['quietStart', 'start'], ['quietEnd', 'end']]) if (document.activeElement !== $(id)) $(id).value = quiet[key] || '';
+  $('quietStart').disabled = $('quietEnd').disabled = !quiet.on;
+  $('routineMsg').textContent = s.routineError || s.routineMessage || '';
+  $('routineMsg').classList.toggle('error', Boolean(s.routineError));
+  if (editingRoutine) return;
+  $('routines').replaceChildren(...(s.routines.length ? s.routines : [null]).map((r) => {
+    const li = document.createElement('li');
+    if (!r) { li.className = 'muted'; li.textContent = 'No routines yet.'; return li; }
+    li.className = 'routine';
+    const head = document.createElement('label');
+    head.className = 'toggle';
+    const box = Object.assign(document.createElement('input'), { type: 'checkbox', checked: r.enabled });
+    box.setAttribute('aria-label', `${r.label} on or off`);
+    box.addEventListener('change', async () => render(await window.loon.toggleRoutine(r.id, box.checked)));
+    const text = document.createElement('span');
+    text.innerHTML = '<b></b><span class="muted"></span>';
+    text.querySelector('b').textContent = r.label;
+    const status = !r.enabled ? (r.once && r.lastRun ? 'done' : 'paused') : r.waiting ? 'waiting (Focus, or Chrome/the page not open)' : r.nextRun ? `next ${shortWhen(r.nextRun)}` : '';
+    text.querySelector('.muted').textContent = `${r.description}${status ? ` · ${status}` : ''}`;
+    head.append(box, text);
+    li.append(head);
+    if (r.lastResult) li.append(Object.assign(document.createElement('p'), { className: `last ${r.lastStatus === 'error' ? 'error' : ''}`, textContent: `Last${r.lastRun ? ` (${shortWhen(r.lastRun)})` : ''}: ${r.lastResult}` }));
+    const buttons = Object.assign(document.createElement('div'), { className: 'routine-buttons' });
+    const run = Object.assign(document.createElement('button'), { textContent: 'Run now' });
+    run.addEventListener('click', async () => { run.disabled = true; render(await window.loon.runRoutine(r.id)); });
+    const edit = Object.assign(document.createElement('button'), { textContent: 'Edit' });
+    edit.addEventListener('click', () => { editingRoutine = r.id; li.replaceWith(routineEditor(r)); });
+    const del = Object.assign(document.createElement('button'), { className: 'danger', textContent: 'Delete' });
+    del.addEventListener('click', async () => { if (confirm(`Delete the routine "${r.label}"?`)) render(await window.loon.deleteRoutine(r.id)); });
+    buttons.append(run, edit, del);
+    li.append(buttons);
+    return li;
+  }));
+}
+// The same fields as the bubble's confirm card: Name, When (plain words), Do, Details.
+const FIELD_HINTS = { When: 'every weekday at 8:30 · every 2 hours between 10 and 6 · in 20 minutes', Do: 'remind me · tell me · my day · week summary · catch me up · price watch · ask', Details: 'what to say, the question, or the page link' };
+function routineEditor(r) {
+  const form = Object.assign(document.createElement('form'), { className: 'routine routine-edit' });
+  const inputs = r.fields.map((f) => {
+    const label = Object.assign(document.createElement('label'), { className: 'field' });
+    label.append(Object.assign(document.createElement('b'), { textContent: f.name }));
+    const input = Object.assign(document.createElement('input'), { value: f.value, placeholder: FIELD_HINTS[f.name] || '', spellcheck: false });
+    label.append(input);
+    form.append(label);
+    return { name: f.name, input };
+  });
+  const buttons = Object.assign(document.createElement('div'), { className: 'routine-buttons' });
+  const save = Object.assign(document.createElement('button'), { type: 'submit', textContent: 'Save' });
+  const cancel = Object.assign(document.createElement('button'), { type: 'button', textContent: 'Cancel' });
+  cancel.addEventListener('click', async () => { editingRoutine = null; render(await window.loon.getSettings()); });
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const s = await window.loon.updateRoutine(r.id, inputs.map(({ name, input }) => ({ name, value: input.value })));
+    if (!s.routineError) editingRoutine = null;
+    render(s);
+  });
+  buttons.append(save, cancel);
+  form.append(buttons);
+  return form;
+}
+const saveQuiet = async () => render(await window.loon.setSetting('quietHours', { on: $('quietOn').checked, start: $('quietStart').value, end: $('quietEnd').value }));
+for (const id of ['quietOn', 'quietStart', 'quietEnd']) $(id).addEventListener('change', saveQuiet);
 
 function countChars() {
   for (const span of document.querySelectorAll('[data-count]')) {
@@ -265,5 +337,56 @@ for (const radio of document.querySelectorAll('[name=catStyle], [name=companion]
   radio.addEventListener('change', async () => render(await window.loon.setSetting(radio.name, radio.value)));
 }
 
-window.loon.onSettingsChanged(render);
+// ---------- History: past conversations, search, read, continue in the bubble, delete ----------
+const day = (ms) => new Date(ms).toLocaleDateString([], { month: 'short', day: 'numeric' });
+function renderHistory(list) {
+  $('historyList').replaceChildren(...(list.length ? list : [null]).map((c) => {
+    const li = document.createElement('li');
+    if (!c) {
+      li.className = 'muted';
+      li.textContent = $('historySearch').value.trim() ? 'No conversations match.' : 'No conversations yet.';
+      return li;
+    }
+    li.className = 'conv';
+    const head = document.createElement('div');
+    head.className = 'row';
+    const open = Object.assign(document.createElement('button'), { className: 'conv-title', type: 'button' });
+    open.setAttribute('aria-expanded', 'false');
+    open.append(Object.assign(document.createElement('b'), { textContent: c.title }), Object.assign(document.createElement('span'), { className: 'mono', textContent: [c.scope, day(c.updated), `${c.count} answer${c.count > 1 ? 's' : ''}`].filter(Boolean).join(' · ') }));
+    const resume = Object.assign(document.createElement('button'), { textContent: 'Continue', title: 'Open this conversation in the bubble and keep going' });
+    resume.addEventListener('click', () => window.loon.continueHistory(c.id));
+    const del = Object.assign(document.createElement('button'), { textContent: 'Delete', className: 'danger' });
+    del.addEventListener('click', async () => { await window.loon.historyDelete(c.id); refreshHistory(); });
+    head.append(open, resume, del);
+    const turns = Object.assign(document.createElement('div'), { className: 'conv-turns', hidden: true });
+    open.addEventListener('click', async () => {
+      if (turns.hidden && !turns.children.length) {
+        const full = await window.loon.historyGet(c.id);
+        for (const t of full?.turns || []) {
+          turns.append(Object.assign(document.createElement('p'), { className: 'conv-q', textContent: t.question }), Object.assign(document.createElement('p'), { className: 'conv-a', textContent: t.answer }));
+        }
+      }
+      turns.hidden = !turns.hidden;
+      open.setAttribute('aria-expanded', String(!turns.hidden));
+    });
+    li.append(head, turns);
+    return li;
+  }));
+}
+let historyQuery = 0;
+async function refreshHistory() {
+  const mine = ++historyQuery;
+  const list = await window.loon.historyList($('historySearch').value.trim());
+  if (mine === historyQuery) renderHistory(list);
+}
+$('historySearch').addEventListener('input', refreshHistory);
+$('historyClear').addEventListener('click', async () => {
+  if (!confirm('Clear all of your conversation history? Memories and notes stay.')) return;
+  renderHistory(await window.loon.historyClear());
+});
+$('onboarding').addEventListener('click', () => window.loon.startOnboarding());
+window.loon.onSettingsShow((section) => document.getElementById(section)?.scrollIntoView({ block: 'start' }));
+refreshHistory();
+
+window.loon.onSettingsChanged((s) => { render(s); refreshHistory(); });
 window.loon.getSettings().then(render);

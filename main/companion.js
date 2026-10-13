@@ -8,7 +8,9 @@ const { scopeOf } = require('../brain/memory');
 const { parseCommand, describe, normalizeSpoken } = require('../brain/commands');
 const { isAgentGoal } = require('../brain/agent');
 const { teachIntent } = require('../brain/teach');
-const { cleanPersonal, parseFeedback, suggestMemory, secondPerson, normalizeFact } = require('../brain/personal');
+const crypto = require('crypto');
+const { cleanPersonal, parseFeedback, suggestMemory, secondPerson, normalizeFact, styleNudge, factFromAnswer, chatMarkdown, chatFacts, onboardingResult } = require('../brain/personal');
+const { MODES, detectMode, orderChips, badgeFor } = require('../brain/modes');
 const connectorsLib = require('../brain/connectors');
 const { ConnectorHub } = require('./hub');
 const persona = require('../renderer/persona');
@@ -37,10 +39,13 @@ const TEACH_DONE = /^(?:done|stop|hide(?: it| that| them)?|clear(?: it)?|close(?
 const TEACH_NEXT = /^(?:next(?: step)?|ok(?:ay)?,? next|what'?s next|continue)$/i;
 
 // saveSettings: called after feedback like "shorter please" changes the reply style.
-function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, settings, hub, memory = null, agent = null, teacher = null, saveSettings = () => {} }) {
+// routines: the scheduler (main/routines.js); "every morning at 9…", "show my routines" and friends go to it.
+function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, settings, hub, memory = null, agent = null, teacher = null, routines = null, saveSettings = () => {} }) {
   // turns: the bubble thread's answers so far [{ question, answer, tier, target }], for follow-ups (DESIGN.md §2.10).
   // Kept in memory only and cleared with the session, so Privacy mode never writes it anywhere.
-  const session = { mode: 'ask', packet: null, threadStarted: false, turns: [], lastTask: null, pendingTask: null };
+  // historyId: this thread's row in History (memory.db conversations); answers: per bubble answer id, what 👍/👎 and
+  // "Remember this" need (task, tier, difficulty, length, text), kept in memory only.
+  const session = { mode: 'ask', packet: null, threadStarted: false, turns: [], lastTask: null, pendingTask: null, historyId: crypto.randomUUID(), answers: new Map(), restored: null };
   let activePage = null; // latest page report from the focused, visible tab
   let active = null; // { controller, id }
   const nudges = { shownFor: new Set(), byDomain: new Map(), times: [], ignored: new Map() };
@@ -49,7 +54,30 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
   const sendChips = () => (hub ? hub.list().filter((x) => hub.senders.has(x.id)).map((x) => ({ id: `send:${x.id}`, label: `Send to ${x.name}` })) : []);
 
   // ---------- bubble context ----------
+  // Context mode (brain/modes.js): from the selection, the page in front, the app, or the onboarding role; the cat menu
+  // can pin one. Never on private pages.
+  function currentMode() {
+    const { mode, packet } = session;
+    if (mode === 'sensitive' || mode === 'onboard' || (activePage?.sensitive && !packet)) return null;
+    const page = bridge.clients.size && activePage && !activePage.sensitive ? activePage : null;
+    const fromPacket = packet && ['selection', 'app'].includes(mode);
+    return detectMode({
+      url: packet?.url || page?.url || '',
+      pageKind: fromPacket ? null : page?.kind,
+      selectionKind: fromPacket ? (packet.editable ? 'editable' : packet.selectionKind) : null,
+      app: packet?.app || '',
+      role: settings.role,
+      override: settings.modeOverride,
+    });
+  }
+
   function context() {
+    const base = baseContext();
+    const mode = currentMode();
+    return { ...base, privacy: Boolean(settings.privacy), chips: orderChips(base.chips || [], mode), modeBadge: badgeFor(mode), ...(session.restored && base.mode === 'ask' ? { thread: session.restored } : {}) };
+  }
+
+  function baseContext() {
     const { mode, packet } = session;
     const domain = domainOf(packet?.url || activePage?.url || '');
     if (mode === 'selection') {
@@ -86,6 +114,9 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
         placeholder: 'Where is…? Show me how to…',
       };
     }
+    if (mode === 'onboard') {
+      return { mode: 'onboard', label: 'Get to know you', chips: [], onboard: { companion: settings.companion || 'luna', privacy: Boolean(settings.privacy) }, placeholder: '' };
+    }
     if (mode === 'notice') {
       return { mode: 'ask', label: '', chips: [], notice: session.notice, placeholder: 'Ask me anything…' };
     }
@@ -112,13 +143,15 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
   function startSession(mode, packet) {
     active?.controller.abort();
     brain.resetThread();
-    Object.assign(session, { mode, packet, threadStarted: false, turns: [], lastTask: null, pendingTask: null, greeting: persona.line(settings.companion, 'greeting') });
+    Object.assign(session, { mode, packet, threadStarted: false, turns: [], lastTask: null, pendingTask: null, historyId: crypto.randomUUID(), answers: new Map(), restored: null });
+    const flavor = currentMode();
+    session.greeting = (flavor && persona.line(settings.companion, `mode.${flavor}`)) || persona.line(settings.companion, 'greeting');
   }
 
-  // The bubble closed: the next question starts a new thread.
+  // The bubble closed: the next question starts a new thread (and a new History entry).
   function endThread() {
     brain.resetThread();
-    Object.assign(session, { threadStarted: false, turns: [] });
+    Object.assign(session, { threadStarted: false, turns: [], historyId: crypto.randomUUID(), answers: new Map(), restored: null });
   }
 
   // ---------- extension events ----------
@@ -246,6 +279,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
       return true;
     }
     // normalizeSpoken: voice transcripts say "at five"; typed text is unaffected unless it spells numbers out.
+    if (routines && (await routines.handleText(id, normalizeSpoken(question), bubble, { page: activePage, execute: (cmd) => actions.execute(cmd) }))) return true;
     const parsed = parseCommand(normalizeSpoken(question));
     if (!parsed) return false;
     if (parsed.action === 'shortcut') {
@@ -294,6 +328,12 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
   }
 
   async function confirm(command, bubble, id) {
+    // Privacy mode remembers nothing, whichever chip or command asked.
+    if (command.action === 'remember' && settings.privacy) {
+      const result = { ok: false, message: "Privacy mode is on, so I'm not remembering anything." };
+      bubble('action-done', { id, ...result });
+      return result;
+    }
     for (const key of ['when', 'start', 'end']) if (command[key]) command[key] = new Date(command[key]);
     const result = await actions.execute(command);
     bubble('action-done', { id, ...result });
@@ -397,6 +437,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
         question: packet?.text ? question : undefined,
         sensitive, // no cloud tier on private pages
         history,
+        domain: MODES[currentMode()]?.domain || '',
         onText: (chunk) => {
           if (!talking) {
             talking = true;
@@ -411,12 +452,17 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
           bubble('chunk', { id, chunk: '', restart: true });
         },
       });
-      if (result.text) session.turns.push({ question: question || `${TASKS[effectiveTask]?.label || effectiveTask}${deeper ? ' (go deeper)' : ''}`, answer: result.text, tier: result.tier, target: result.target });
+      const turn = result.text && { question: question || `${TASKS[effectiveTask]?.label || effectiveTask}${deeper ? ' (go deeper)' : ''}`, answer: result.text, tier: result.tier, target: result.target };
+      if (turn) session.turns.push(turn);
+      if (result.text) session.answers.set(id, { task: effectiveTask, tier: result.tier, difficulty: result.difficulty || '', chars: result.text.length, text: result.text });
       bubble('done', { id, ...result, model: brain.modelLabel(deeper || result.smart),counts: resolver.counts, memoryUsed: resolver.lastMemory || [], canGoDeeper: !['code', 'cloud'].includes(result.tier) || task === 'define', ...(flavor ? { flavor } : {}) });
-      // History for "what did I look up about…": local only, redacted text, never in Privacy mode.
-      if (memory && !settings.privacy && result.text) {
-        const subject = packet?.text ? ` · ${packet.text.replace(/\s+/g, ' ').slice(0, 80)}` : '';
-        memory.logEpisode({ kind: effectiveTask, title: question || `${TASKS[effectiveTask]?.label || effectiveTask}${subject}`, text: result.text.slice(0, 300), scope: scopeOf(packet || {}) });
+      // History ("what did I look up about…", Settings → History → Continue): local only, redacted text, never in Privacy
+      // mode or on a private page.
+      if (memory && !settings.privacy && !sensitive && turn) {
+        const subject = packet?.text && !question ? ` · ${packet.text.replace(/\s+/g, ' ').slice(0, 80)}` : '';
+        const scope = scopeOf(packet || {});
+        memory.logEpisode({ kind: effectiveTask, title: `${turn.question}${subject}`, text: result.text.slice(0, 300), scope, session: session.historyId });
+        memory.saveTurn(session.historyId, { ...turn, question: `${turn.question}${subject}` }, { scope });
       }
       const suggestion = !task && question && memorySuggestion(question);
       if (suggestion) bubble('suggest', { id, ...suggestion });
@@ -480,6 +526,94 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
     startSession('ask', null);
   }
 
+  // ---------- per-answer actions (§3.12.1) ----------
+  // 👍/👎 on bubble answer `id`: metadata into memory.db (the answer text only with settings.feedbackText), one vote
+  // per answer, nothing in Privacy mode. A 👎 may come back with a reply-style nudge chip; settings never change here.
+  function feedback({ id, vote }) {
+    const meta = session.answers.get(id);
+    if (!memory || settings.privacy || !meta || meta.voted || ![1, -1].includes(vote)) return { saved: false };
+    meta.voted = vote;
+    const personal = cleanPersonal(settings.personal);
+    memory.recordFeedback({ vote, task: meta.task, tier: meta.tier, difficulty: meta.difficulty, length: personal.length, chars: meta.chars, answer: settings.feedbackText ? meta.text : '' });
+    const nudge = vote < 0 ? styleNudge(memory.recentFeedback(), personal, settings.dismissedNudges || []) : null;
+    return { saved: true, ...(nudge ? { nudge: { key: nudge.key, label: nudge.label } } : {}) };
+  }
+
+  // The nudge chip's ✓ applies the change (the same as Settings would); ✗ means never suggest that one again.
+  function answerNudge({ key, accept }) {
+    const nudge = memory && styleNudge(memory.recentFeedback(), settings.personal, settings.dismissedNudges || []);
+    if (!nudge || nudge.key !== key) return { ok: false };
+    if (accept) settings.personal = cleanPersonal({ ...settings.personal, ...nudge.patch });
+    else settings.dismissedNudges = [...(settings.dismissedNudges || []), key].slice(-50);
+    saveSettings();
+    return { ok: true, message: accept ? `Done: ${cleanPersonal(settings.personal).length} answers by default. Change it in Settings.` : "Okay, I won't suggest that again." };
+  }
+
+  // "Remember this": a proposed fact from the selected sentence or the answer's first sentence. Saved only from the
+  // confirm card (the remember action), never here.
+  function proposeMemory({ id, selection = '' }) {
+    if (settings.privacy) return { text: '', privacy: true };
+    return { text: factFromAnswer(session.answers.get(id)?.text || '', String(selection).slice(0, 1000)) };
+  }
+
+  // Ticked facts from "Save this chat", through the normal remember action.
+  async function rememberFacts(texts = []) {
+    if (!memory || settings.privacy) return { saved: 0 };
+    let saved = 0;
+    for (const text of texts.filter((t) => typeof t === 'string' && t.trim()).slice(0, 5)) {
+      if ((await actions.execute({ action: 'remember', text: text.trim().slice(0, 200) })).ok) saved++;
+    }
+    return { saved };
+  }
+
+  // "Save this chat": the thread as markdown in the notes folder, plus up to 3 facts the user stated in it to tick.
+  function saveChat() {
+    const turns = session.turns;
+    if (!turns.length) throw new Error('Nothing to save yet');
+    const file = notes.save({ title: `Chat · ${turns[0].question.replace(/\s+/g, ' ').slice(0, 60)}`, text: chatMarkdown(turns), url: session.packet?.url });
+    const facts = memory && !settings.privacy ? chatFacts(turns, { known: memory.all().map((f) => f.text), dismissed: settings.dismissedSuggestions || [] }) : [];
+    return { file, facts };
+  }
+
+  // History → Continue: the stored turns become this bubble's thread, so a follow-up carries them; new answers are
+  // added to the same History entry.
+  function continueConversation(id) {
+    const saved = memory?.conversation(id);
+    if (!saved) return false;
+    startSession('ask', null);
+    Object.assign(session, {
+      turns: saved.turns.map(({ question, answer, tier, target }) => ({ question, answer, tier, target })),
+      historyId: saved.id,
+      threadStarted: true,
+      restored: saved.turns.map(({ question, answer }) => ({ question, answer })),
+    });
+    return true;
+  }
+
+  // ---------- "Get to know you" (onboarding) ----------
+  function openOnboarding() {
+    startSession('onboard', null);
+  }
+
+  // answers come from the bubble; facts are re-derived here and only the ticked ones (keep) are saved, pinned. In
+  // Privacy mode only the reply style is kept.
+  function saveOnboarding({ answers = {}, keep = [] } = {}) {
+    const result = onboardingResult(answers);
+    const facts = result.facts.filter((f) => keep.includes(f));
+    const store = Boolean(memory) && !settings.privacy;
+    if (store) for (const text of facts) memory.add(text, 'onboarding', { pinned: true });
+    settings.personal = cleanPersonal({ ...settings.personal, ...result.personal });
+    if (result.role) settings.role = result.role;
+    settings.onboarded = true;
+    saveSettings();
+    return { saved: store ? facts.length : 0, privacy: Boolean(settings.privacy) };
+  }
+
+  function skipOnboarding() {
+    settings.onboarded = true;
+    saveSettings();
+  }
+
   function openTeach() {
     startSession('teach', null);
   }
@@ -491,6 +625,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
 
   return {
     onBridgeMessage, run, endThread, lookAnyway, dismissSuggestion, handoff, replace, openAsk, openTeach, fromCapture, showNotice, context, cancel, onNudgeClick, onNudgeIgnored, confirm, saveNote,
+    feedback, answerNudge, proposeMemory, rememberFacts, saveChat, continueConversation, openOnboarding, saveOnboarding, skipOnboarding, currentMode,
     isBusy: () => Boolean(active),
     session,
     get activePage() { return activePage; },

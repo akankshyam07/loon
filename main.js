@@ -1,4 +1,4 @@
-const { app, BrowserWindow, screen, ipcMain, globalShortcut, Menu, powerMonitor, clipboard, shell, nativeImage, systemPreferences, session, safeStorage, desktopCapturer } = require('electron');
+const { app, BrowserWindow, screen, ipcMain, globalShortcut, Menu, powerMonitor, clipboard, shell, nativeImage, systemPreferences, session, safeStorage, desktopCapturer, Notification } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const { Brain, SYSTEM_PROMPT } = require('./brain/ai');
@@ -16,10 +16,13 @@ const { Embedder } = require('./brain/embed');
 const { VoiceEngine, createVoiceController } = require('./main/voice');
 const { ConnectorHub } = require('./main/hub');
 const { createAgentRunner } = require('./main/agent');
-const { PERSONAL_DEFAULTS, cleanPersonal, profileSummary } = require('./brain/personal');
+const { PERSONAL_DEFAULTS, cleanPersonal, profileSummary, onboardingResult } = require('./brain/personal');
+const { MODES } = require('./brain/modes');
 const apiProvider = require('./brain/api-provider');
 const { createTeacher, createOverlay } = require('./main/teach');
 const { splitByDisplay } = require('./renderer/overlay-layout');
+const { createRoutines } = require('./main/routines');
+const persona = require('./renderer/persona');
 
 // Cat height in px per size preset; the window adds room around it for sparkles and hops.
 const SIZES = { S: 120, M: 160, L: 210 };
@@ -48,7 +51,7 @@ if (SELFTEST) {
 }
 
 let settingsFile;
-let settings = { size: 'M', catStyle: 'pixel', companion: 'luna', costume: 'none', seasonalCostumes: false, retroSounds: false, cameos: true, duo: false, focus: false, privacy: false, judgmental: true, wakeWord: false, speakReplies: 'voiceOnly', projects: [], connectors: [], welcomed: false, cloudCli: 'off', answerWith: 'plan', quickTake: false, teachScreenshots: false, planModels: {}, personal: { ...PERSONAL_DEFAULTS }, dismissedSuggestions: [] };
+let settings = { size: 'M', catStyle: 'pixel', companion: 'luna', costume: 'none', seasonalCostumes: false, retroSounds: false, cameos: true, duo: false, focus: false, privacy: false, judgmental: true, wakeWord: false, speakReplies: 'voiceOnly', projects: [], connectors: [], welcomed: false, cloudCli: 'off', answerWith: 'plan', quickTake: false, teachScreenshots: false, planModels: {}, personal: { ...PERSONAL_DEFAULTS }, dismissedSuggestions: [], onboarded: false, role: '', modeOverride: 'auto', feedbackText: false, dismissedNudges: [], routineNotifications: false, quietHours: { on: true, start: '22:00', end: '07:00' } };
 let catWin;
 let bubbleWin;
 let brain;
@@ -71,6 +74,8 @@ let agentRunner;
 let teacher; // "Teach me on my screen" (main/teach.js)
 let overlay; // its click-through windows, one per display
 let teachSeam; // the teacher's screen access; the selftest swaps in a fixture capture
+let routines; // scheduled tasks (main/routines.js)
+let routineNotification = null;
 const pendingPlays = new Map();
 const toBubbleRef = { current: null };
 let playId = 0;
@@ -251,6 +256,7 @@ function hideBubble() {
   companion.endThread();
   bubbleWin.webContents.send('bubble-hidden');
   catWin.webContents.send('bubble', { open: false });
+  routines?.renudge(); // a routine nudge that arrived while the bubble was open
 }
 
 function openAskBubble() {
@@ -301,9 +307,22 @@ function startDayRhythm() {
   }, 60000);
 }
 
+// Routine results behind the "?" (or a notification): shown together in a fresh bubble. Saved questions are asked
+// there, so they take the normal path (resolver, confirm cards, history).
+function openRoutineResults(items) {
+  openAskBubble();
+  for (const item of items.filter((i) => !i.ask)) {
+    const message = item.kind === 'reminder' ? `⏰ **${item.text}**` : `**${item.label}**\n\n${item.text}`;
+    toBubbleRef.current?.('action-done', { id: 0, ok: true, markdown: true, message });
+  }
+  const ask = items.find((i) => i.ask);
+  if (ask) askInBubble(ask.ask);
+}
+
 function onNudgeClick() {
   const kind = dailyNudge;
   dailyNudge = null;
+  if (kind === 'routine') return routines.openPending();
   if (kind === 'today') return askInBubble("what's my day");
   if (kind === 'break') {
     companion.showNotice("You've been at it for about an hour. Quick break: stand up, roll your shoulders, look at something far away for 20 seconds.");
@@ -514,6 +533,7 @@ function setToggle(key, value) {
   // "Hey Loon" pauses in Focus and Privacy modes and resumes after.
   if (['wakeWord', 'focus', 'privacy'].includes(key)) voice.setWake(settings.wakeWord && !settings.focus && !settings.privacy);
   if (key === 'privacy') warmPlan();
+  if (key === 'focus' || key === 'privacy') routines?.poke(); // routines that waited for Focus to end
   settingsWin?.webContents.send('settings-changed', settingsSnapshot());
 }
 
@@ -547,13 +567,20 @@ function settingsSnapshot() {
     memory: memory.all(),
     personal: cleanPersonal(settings.personal),
     profile: profileSummary(memory.all(), settings.personal),
+    ratings: Object.values(memory.feedbackStats()).reduce((n, t) => ({ up: n.up + t.up, down: n.down + t.down }), { up: 0, down: 0 }),
     embedder: embedder.status(),
     audit: actions.recent(20),
+    routines: routines.list().map(({ id, label, enabled, description, nextRun, lastRun, lastResult, lastStatus, waiting, fields, schedule }) => ({ id, label, enabled, description, nextRun, lastRun, lastResult, lastStatus, waiting, fields, once: schedule.type === 'once' })),
   };
 }
 
-function openSettings() {
-  if (settingsWin && !settingsWin.isDestroyed()) return focusWindow(settingsWin);
+// section: an element id to scroll to (e.g. 'history' from the cat menu or the bubble's ⋯).
+function openSettings(section = '') {
+  const show = () => { if (typeof section === 'string' && /^[a-z]+$/.test(section)) settingsWin.webContents.send('settings-show', section); };
+  if (settingsWin && !settingsWin.isDestroyed()) {
+    show();
+    return focusWindow(settingsWin);
+  }
   settingsWin = new BrowserWindow({
     width: 520,
     height: 640,
@@ -567,6 +594,7 @@ function openSettings() {
     settingsWin.showInactive();
   }
   settingsWin.loadFile(path.join(__dirname, 'renderer', 'settings.html'));
+  settingsWin.webContents.once('did-finish-load', show);
   settingsWin.webContents.on('will-navigate', (e) => e.preventDefault());
   settingsWin.on('closed', () => { settingsWin = null; });
 }
@@ -590,7 +618,14 @@ function showCatMenu() {
     { label: 'Privacy mode', type: 'checkbox', checked: settings.privacy, click: (item) => setToggle('privacy', item.checked) },
     { label: 'Judgmental', type: 'checkbox', checked: settings.judgmental, click: (item) => setToggle('judgmental', item.checked) },
     { label: '"Hey Loon" wake word', type: 'checkbox', checked: settings.wakeWord, enabled: voiceEngine.modelsReady(), click: (item) => setToggle('wakeWord', item.checked) },
-    { label: 'Settings…', click: openSettings },
+    {
+      label: 'Mode',
+      submenu: [['auto', 'Auto (from what you\'re doing)'], ...Object.entries(MODES).map(([id, m]) => [id, m.name])].map(([id, label]) => ({
+        label, type: 'radio', checked: (settings.modeOverride || 'auto') === id, click: () => setMode(id),
+      })),
+    },
+    { label: 'History…', click: () => openSettings('history') },
+    { label: 'Settings…', click: () => openSettings() },
     { type: 'separator' },
     ...Object.keys(SIZES).map((size) => ({
       label: { S: 'Small', M: 'Medium', L: 'Large' }[size],
@@ -601,6 +636,18 @@ function showCatMenu() {
     { type: 'separator' },
     { label: 'Quit Loon', click: () => app.quit() },
   ]).popup({ window: catWin });
+}
+
+// Cat menu → Mode: 'auto' or a pinned mode (brain/modes.js). Only chip order, greeting flavor and memory boost change.
+function setMode(id) {
+  settings.modeOverride = id === 'auto' || Object.hasOwn(MODES, id) ? id : 'auto';
+  saveSettings();
+  if (bubbleWin.isVisible()) bubbleWin.webContents.send('bubble-context', companion.context());
+}
+
+function openOnboarding() {
+  companion.openOnboarding();
+  showBubble();
 }
 
 function registerIpc() {
@@ -664,7 +711,7 @@ function registerIpc() {
   // Bubble ↔ companion. Every answer streams back as ask-chunk / ask-done / ask-error.
   const toBubble = (type, payload) => {
     voice.observe(type, payload);
-    const channel = { chunk: 'ask-chunk', done: 'ask-done', error: 'ask-error', context: 'bubble-context', sensitive: 'bubble-sensitive', confirm: 'bubble-confirm', 'action-done': 'bubble-action', choices: 'bubble-choices', agent: 'bubble-agent', suggest: 'bubble-suggest' }[type];
+    const channel = { chunk: 'ask-chunk', done: 'ask-done', error: 'ask-error', context: 'bubble-context', sensitive: 'bubble-sensitive', confirm: 'bubble-confirm', 'action-done': 'bubble-action', choices: 'bubble-choices', agent: 'bubble-agent', suggest: 'bubble-suggest', remembered: 'bubble-remembered' }[type];
     bubbleWin.webContents.send(channel, payload);
   };
   toBubbleRef.current = toBubble;
@@ -685,6 +732,26 @@ function registerIpc() {
   ipcMain.on('agent-decision', (_e, decision) => agentRunner.decide(decision || {}));
   ipcMain.handle('save-note', (_e, entry) => companion.saveNote(entry));
   ipcMain.on('dismiss-suggestion', (_e, text) => { if (typeof text === 'string') companion.dismissSuggestion(text.slice(0, 200)); });
+  // Per-answer actions and History (DESIGN.md §3.12.1–3.12.3).
+  ipcMain.handle('answer-feedback', (_e, { id, vote } = {}) => companion.feedback({ id, vote }));
+  ipcMain.handle('style-nudge', (_e, { key, accept } = {}) => companion.answerNudge({ key: String(key), accept: Boolean(accept) }));
+  ipcMain.handle('propose-memory', (_e, { id, selection } = {}) => companion.proposeMemory({ id, selection: typeof selection === 'string' ? selection : '' }));
+  ipcMain.handle('remember-facts', (_e, texts) => companion.rememberFacts(Array.isArray(texts) ? texts : []));
+  ipcMain.handle('save-chat', () => companion.saveChat());
+  ipcMain.handle('history-list', (_e, query) => memory.conversations({ query: typeof query === 'string' ? query.slice(0, 200) : '' }));
+  ipcMain.handle('history-get', (_e, id) => memory.conversation(String(id)));
+  ipcMain.handle('history-delete', (_e, id) => { memory.deleteConversation(String(id)); return memory.conversations(); });
+  ipcMain.handle('history-clear', () => { memory.clearHistory(); return []; });
+  ipcMain.on('history-continue', (_e, id) => { if (companion.continueConversation(String(id))) showBubble(); });
+  ipcMain.on('open-history', () => openSettings('history'));
+  ipcMain.handle('onboarding-save', (_e, payload) => {
+    const result = companion.saveOnboarding({ answers: payload?.answers || {}, keep: Array.isArray(payload?.keep) ? payload.keep : [] });
+    settingsWin?.webContents.send('settings-changed', settingsSnapshot());
+    return result;
+  });
+  ipcMain.handle('onboarding-preview', (_e, answers) => onboardingResult(answers && typeof answers === 'object' ? answers : {}));
+  ipcMain.on('onboarding-skip', () => companion.skipOnboarding());
+  ipcMain.on('onboarding-start', openOnboarding);
   // Only reveals files a Loon file search just returned (they exist on disk); never arbitrary paths from a page.
   ipcMain.on('reveal', (_e, file) => { if (typeof file === 'string' && path.isAbsolute(file) && fs.existsSync(file)) shell.showItemInFolder(file); });
   ipcMain.handle('settings-get', () => settingsSnapshot());
@@ -704,6 +771,13 @@ function registerIpc() {
     if (key === 'answerWith' && ['plan', 'mac'].includes(value)) { settings.answerWith = value; saveSettings(); warmPlan(); }
     if (key === 'quickTake' && typeof value === 'boolean') { settings.quickTake = value; saveSettings(); }
     if (key === 'teachScreenshots' && typeof value === 'boolean') { settings.teachScreenshots = value; saveSettings(); }
+    if (key === 'feedbackText' && typeof value === 'boolean') { settings.feedbackText = value; saveSettings(); }
+    if (key === 'routineNotifications' && typeof value === 'boolean') { settings.routineNotifications = value; saveSettings(); }
+    if (key === 'quietHours' && value && typeof value === 'object') {
+      const time = (t, fallback) => (/^([01]\d|2[0-3]):[0-5]\d$/.test(t) ? t : fallback);
+      settings.quietHours = { on: Boolean(value.on), start: time(value.start, settings.quietHours.start), end: time(value.end, settings.quietHours.end) };
+      saveSettings();
+    }
     // One model name per CLI and difficulty; '' = Loon's default. Names that could read as a flag are refused.
     if (key === 'planModel' && ['claude', 'codex'].includes(value?.which) && ['medium', 'hard'].includes(value?.level)) {
       const model = String(value.model || '').trim();
@@ -765,10 +839,10 @@ function registerIpc() {
     }
     return settingsSnapshot();
   });
-  ipcMain.handle('memory-clear', () => { memory.clear(); memory.clearHistory(); resolver.cache.clear(); resolver.escalations.clear(); return settingsSnapshot(); });
+  ipcMain.handle('memory-clear', () => { memory.clear(); memory.clearHistory(); memory.clearFeedback(); resolver.cache.clear(); resolver.escalations.clear(); return settingsSnapshot(); });
   ipcMain.on('open-notes-folder', () => { fs.mkdirSync(notes.dir, { recursive: true }); shell.openPath(notes.dir); });
   ipcMain.on('copy-pairing-code', () => clipboard.writeText(settings.pairingCode));
-  ipcMain.on('open-settings', openSettings);
+  ipcMain.on('open-settings', () => openSettings());
   ipcMain.on('drop-file', (_e, file) => { if (typeof file === 'string' && path.isAbsolute(file) && fs.existsSync(file)) openDroppedFile(file); });
   ipcMain.on('mic-chunk', (_e, samples) => voice.onChunk(Float32Array.from(samples)));
   ipcMain.on('mic-error', (_e, message) => {
@@ -778,6 +852,19 @@ function registerIpc() {
   });
   ipcMain.on('audio-played', (_e, id) => { pendingPlays.get(id)?.(); pendingPlays.delete(id); });
   ipcMain.on('nudge-click', onNudgeClick);
+  // Settings → Routines. Creating one happens in the bubble, behind a confirm card.
+  const routineAction = (fn) => async (_e, arg) => {
+    try {
+      const message = await fn(arg);
+      return { ...settingsSnapshot(), routineMessage: message || '' };
+    } catch (err) {
+      return { ...settingsSnapshot(), routineError: err.message };
+    }
+  };
+  ipcMain.handle('routine-toggle', routineAction(({ id, on }) => { routines.setEnabled(String(id), Boolean(on)); }));
+  ipcMain.handle('routine-update', routineAction(({ id, fields }) => { routines.update(String(id), Array.isArray(fields) ? fields.map((f) => ({ name: String(f.name), value: String(f.value ?? '').slice(0, 500) })) : []); }));
+  ipcMain.handle('routine-delete', routineAction((id) => { routines.remove(String(id)); }));
+  ipcMain.handle('routine-run', routineAction(async (id) => (await routines.runNow(String(id))).message));
   ipcMain.on('nudge-ignored', (_e, kind) => { dailyNudge = null; companion.onNudgeIgnored(kind); });
 }
 
@@ -828,6 +915,8 @@ app.whenReady().then(() => {
     embedder,
     projectNames: () => (projectNames ??= require('./brain/projects').discover().map((p) => p.name)),
   });
+  // "Loon remembered…" (§3.12.1): every saved fact, whatever saved it, shows a toast with Undo in the open bubble.
+  memory.onAdd = (fact) => { if (bubbleWin?.isVisible()) bubbleWin.webContents.send('bubble-remembered', { id: fact.id, text: fact.text }); };
   // Only folders the user ticked in Settings → Projects are ever read.
   const allowedProjects = () => (settings.projects || []).filter((p) => fs.existsSync(p));
   hub = new ConnectorHub({ settings, save: saveSettings });
@@ -889,8 +978,44 @@ app.whenReady().then(() => {
     activePage: () => companion?.activePage,
     audit: (entry) => actions.audit(entry),
   });
+  routines = createRoutines({
+    memory,
+    settings,
+    audit: (entry) => actions.audit(entry),
+    tasks: {
+      connected: () => bridge.clients.size > 0,
+      today: async () => (await actions.execute({ action: 'today' })).message,
+      briefing: async (project) => (await actions.execute({ action: 'briefing', project })).message,
+      projects: async () => (allowedProjects().length ? (await require('./brain/projects').briefing(allowedProjects())).text : ''),
+      // Price watch: only a Chrome tab already showing that page answers; nothing is opened or fetched behind your back.
+      products: async (url) => {
+        const reply = await bridge.request({ type: 'find-page', url }, 15000);
+        if (reply.error) throw new Error(reply.error);
+        if (reply.sensitive) throw new Error('that page looks private, so I skipped it');
+        if (!reply.html) return null;
+        const { parseHTML } = await import('linkedom');
+        return require('./brain/shopping').extractStructured(parseHTML(reply.html).document);
+      },
+    },
+    ui: {
+      nudge: ({ kind, item }) => {
+        dailyNudge = 'routine';
+        const line = kind === 'reminder' ? `${persona.line(settings.companion, 'nudge.reminder')} ${item.text}`.slice(0, 80) : '';
+        catWin.webContents.send('nudge', { kind, ...(line ? { line } : {}) });
+      },
+      notify: Notification.isSupported() ? ({ title, body, onClick }) => {
+        // Held in a variable: a collected Notification never reports its click.
+        routineNotification = new Notification({ title, body });
+        routineNotification.on('click', onClick);
+        routineNotification.show();
+      } : null,
+      open: openRoutineResults,
+    },
+  });
+  actions.routines = routines;
   companion = createCompanion({
     agent: agentRunner,
+    routines,
     teacher,
     memory,
     bridge,
@@ -964,10 +1089,12 @@ app.whenReady().then(() => {
   bridge.on('message', (message) => {
     try {
       companion.onBridgeMessage(message);
+      if (message.type === 'page') routines.onPage(message.url);
     } catch (err) {
       console.error('[bridge message]', message.type, err);
     }
   });
+  bridge.on('status', ({ connected }) => { if (connected) routines.poke(); }); // price watches waiting for Chrome
   bridge.start();
   registerIpc();
   createCatWindow();
@@ -975,12 +1102,16 @@ app.whenReady().then(() => {
   // First launch (needs catWin, so it runs after the windows exist): a short hello in the bubble instead of a silent cat.
   if (!settings.welcomed && (!SELFTEST || FRESH_CHECK) && !arg('shot')) {
     catWin.webContents.once('did-finish-load', () => setTimeout(() => {
-      companion.showNotice("Hi, I'm Loon 🐾 Click me to ask anything, press and hold to pet me, or try ⌥Space. Right-click me for Settings, where you can connect Chrome and pick projects for me to keep up with. Everything stays on this Mac.");
+      // The hello is Luna's first line in "Get to know you"; Skip ends it and nothing is saved.
+      if (settings.onboarded) companion.showNotice("Hi, I'm Loon 🐾 Click me to ask anything, press and hold to pet me, or try ⌥Space. Right-click me for Settings, where you can connect Chrome and pick projects for me to keep up with. Everything stays on this Mac.");
+      else companion.openOnboarding();
       showBubble();
       settings.welcomed = true;
       saveSettings();
     }, 1800));
   }
+  // Routines start once the cat can show a nudge; the first tick also catches up on runs missed while Loon was closed.
+  if (!SELFTEST && !arg('shot')) catWin.webContents.once('did-finish-load', () => setTimeout(() => routines.start(), 3000));
   scheduleScreenshot();
   if (SELFTEST) {
     const startPosition = settings.position;
@@ -1008,8 +1139,8 @@ app.whenReady().then(() => {
   const setPaused = (paused) => { if (!SELFTEST) catWin.webContents.send('power', { paused }); };
   powerMonitor.on('lock-screen', () => setPaused(true));
   powerMonitor.on('suspend', () => setPaused(true));
-  powerMonitor.on('unlock-screen', () => setPaused(false));
-  powerMonitor.on('resume', () => setPaused(false));
+  powerMonitor.on('unlock-screen', () => { setPaused(false); routines.poke(); });
+  powerMonitor.on('resume', () => { setPaused(false); routines.poke(); }); // catch up on runs missed while asleep
   if (!globalShortcut.register('Alt+Space', onAskHotkey)) console.warn('Loon: ⌥Space is taken by another app; open the bubble by clicking the cat.');
   if (!globalShortcut.register('Alt+Shift+S', onScreenshotHotkey)) console.warn('Loon: ⌥⇧S is taken by another app.');
   if (!globalShortcut.register('Alt+Shift+V', onVoiceHotkey)) console.warn('Loon: ⌥⇧V is taken by another app.');
@@ -1017,6 +1148,7 @@ app.whenReady().then(() => {
 });
 
 app.on('will-quit', () => {
+  routines?.stop();
   memory?.close();
   globalShortcut.unregisterAll();
   bridge?.stop();

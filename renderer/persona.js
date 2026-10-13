@@ -23,9 +23,31 @@
           dense: "That's a lot of words. Short version?",
           today: 'Want the plan for today?',
           break: 'Stretch with me. You earned it.',
+          routine: 'Your routine is ready. I did the boring part.',
+          reminder: 'You asked me to nag you:',
+          priceDrop: 'The price dropped. I told you to wait.',
         },
         call: ["This is Soju's department 🙄", 'Soju! Food. Your favorite subject.', 'Ugh, menus. SOJU!'], // calls Soju in (food)
         guest: ["Move over, Soju. I've got this.", 'Let the smart one look.', 'Ahem. Big sister here.'], // her line in Soju's brainy cameo
+        // greeting flavor per context mode (brain/modes.js)
+        mode: {
+          dev: ['Code? Show me the scary part.', 'Developer Cat, reporting. Paste the error.'],
+          shopping: ['Shopping Cat is on duty. Prices, please.', 'Let me judge these deals.'],
+          food: ['Menus. Let me find the sensible thing.', 'Food Cat. I read the fine print on sauces.'],
+          study: ['Study time. I can make this make sense.', 'Dense page? I love those.'],
+          work: ['Work mode. Short and professional, got it.', 'Inbox face on. What needs doing?'],
+        },
+        // "Get to know you" (onboarding): Luna asks
+        onboard: {
+          intro: "Hi, I'm Luna, and this is my little brother Soju. Five quick questions so I can help you better? All optional, and it all stays on this Mac.",
+          name: 'First things first. What should I call you?',
+          role: 'What do you mostly do on your Mac?',
+          style: 'How do you like your answers?',
+          food: 'Any food rules I should know about? Soju insists.',
+          interests: 'Last one. What are you into?',
+          review: "Here's what I'll remember. Untick anything you'd rather I didn't.",
+          done: 'All set. I already like you.',
+        },
       },
     },
     // The little brother: younger, goofy, always hungry, a bit clumsy.
@@ -48,9 +70,29 @@
           dense: 'So many words. Short version?',
           today: 'What are we doing today?',
           break: 'Break time! Snack break?',
+          routine: 'I did the thing! Wanna see?',
+          reminder: 'Remember! Remember!',
+          priceDrop: 'Cheaper now! Can we get snacks with the change?',
         },
         call: ["LUNA! This one's brainy!", 'Luna, help! Big words!', 'Hold on, getting my sister!'], // calls Luna in (brainy)
         guest: ['Did someone say food?!', "I'd eat all of it, but okay.", 'Nom. Approved by Soju.'], // his line in Luna's food cameo
+        mode: {
+          dev: ["Ooh, code! I'll get Luna if it's hard.", 'Beep boop! Developer Cat!'],
+          shopping: ['Shopping! Can we get snacks?', 'I love a bargain!'],
+          food: ['FOOD! My favorite mode!', 'Menu time! I call dibs on dessert.'],
+          study: ['Study buddy mode! I brought pencils.', "Big words! I'm ready!"],
+          work: ['Work Cat! I put on my tiny tie.', 'Business time! Very serious. Mostly.'],
+        },
+        // "Get to know you": Soju reacts to each answer (flavor only)
+        onboard: {
+          name: ['Nice to meet you!', 'Ooh, pretty name!', "I'll remember it! Probably!"],
+          role: { student: 'A student! Do you have snacks in your backpack?', dev: 'A coder! Luna loves bugs. The code kind.', design: 'An artist! Can you draw me?', work: 'Busy bee! I can be quiet. Mostly.', other: 'Mysterious! I like it.' },
+          style: { short: 'Short! Like me!', normal: 'Just right!', detailed: 'Luna will love that. She talks a LOT.' },
+          food: ['Noted! More snacks for me.', "Got it! I'll never offer you the wrong treat."],
+          interests: ['Ooh, fun!', "That's so cool!"],
+          skip: ['Skipping is fine!', 'Next!'],
+          done: ['Yay! New friend!', 'Best day ever!'],
+        },
       },
     },
   };

@@ -107,6 +107,12 @@ and then it does something cool: moon magic, a pounce, peeking over the edge of 
   them into flashcards.
 - **"What's my day?"** Today's Calendar events and due Reminders (read-only), plus "focus for 25 minutes" (the cat
   naps and stays quiet until the timer ends) and a gentle stretch nudge after an hour of non-stop work.
+- **Routines.** "Every weekday at 8:30 summarize my calendar", "remind me to drink water every 2 hours between 10
+  and 6", "every Friday at 5 summarize what I worked on this week", "every Monday check the price of this page",
+  "in 20 minutes remind me to stretch". Read without a model, saved only after you click ✓, and delivered as the
+  cat's little "?" (or a macOS notification for reminders, if you turn that on). They respect quiet hours, wait out
+  Focus mode, catch up once after your Mac sleeps instead of piling up, and price watches only speak up on a real
+  drop. "Show my routines", "pause the water reminder", or manage them in Settings → Routines.
 - **Memory you control.** "Remember that I'm vegetarian" and menu picks respect it. Memories live in one local
   SQLite file with full-text search: each request pulls only the few that match (about 4 ms even at 5,000 facts),
   boosted for the site you're on. "What did I look up about X?" searches your last 90 days of questions, and
@@ -138,6 +144,16 @@ and then it does something cool: moon magic, a pounce, peeking over the edge of 
 **🧠 Personal, with a brain you can see**
 - Custom instructions ("About you", "How Loon should reply"), reply length, tone and emoji, and a "Remember this?"
   chip when you mention a preference. Say "less emoji" and it sticks.
+- **Get to know you:** on first run Luna asks five optional questions (what to call you, what you do, reply style,
+  food rules, interests) while Soju reacts, then you review exactly what gets remembered.
+- 👍 / 👎 on any answer. Ratings stay on your Mac (no answer text unless you opt in), and a run of 👎 on long
+  answers gets a "Shorter answers by default?" chip. Nothing changes without your click.
+- "Remember this" and "Forget what you used" on every answer, and a "Loon remembered…" toast with Undo whenever
+  anything is saved.
+- **History:** search past conversations in Settings, read them, and Continue one right where you left off. Or
+  "Save this chat" as a markdown note. 90 days, local, never in Privacy mode.
+- **Modes by context:** Developer Cat on GitHub, Stack Overflow and localhost, Shopping Cat on stores, Food Cat on
+  menus, Study Cat on articles, Work Cat in mail and docs. A tiny badge shows which; it only reorders the chips.
 - Memories become a little graph of people, projects, sites and topics, grouped into domains like work, study,
   shopping and food. Answers follow the links ("what should I review for Acme" finds "Spring Boot confuses me"), and
   Settings → Loon's brain lets you explore, edit or forget any node.
@@ -279,7 +295,7 @@ npm run demo      # the cat's idle routines on a fast timer, for animation work
 ```
 
 The full end-to-end selftest runs automatically on GitHub Actions (a macOS runner) on every push, so it never takes
-over a contributor's screen: 160 unit tests and 73 end-to-end checks at the time of writing. Locally,
+over a contributor's screen: 182 unit tests and 73 end-to-end checks at the time of writing. Locally,
 `npm run selftest` runs hidden and needs a downloaded model; see [AGENTS.md](AGENTS.md) for details. The stack
 is plain CommonJS with no build step: Electron for the cat, a Manifest V3 Chrome extension, and Node for the brain.
 

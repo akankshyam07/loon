@@ -80,10 +80,21 @@ async function onAgentMessage(message) {
   }
 }
 
+// A price-watch routine: asks each open tab whether it shows this page. Only a match answers with its HTML; no tab is
+// opened and nothing is fetched in the background.
+async function findPage(url) {
+  for (const tab of await chrome.tabs.query({ status: 'complete' })) {
+    const reply = await chrome.tabs.sendMessage(tab.id, { type: 'get-page-if', url }).catch(() => null);
+    if (reply && !reply.nomatch) return reply;
+  }
+  return { nomatch: true };
+}
+
 // Requests from the app, answered with { replyTo }.
 async function onAppMessage(message) {
   if (message.type === 'pong' || !message.requestId) return;
   if (message.type.startsWith('agent-')) return send({ ...(await onAgentMessage(message)), replyTo: message.requestId });
+  if (message.type === 'find-page') return send({ ...(await findPage(message.url)), replyTo: message.requestId });
   const tabId = message.tabId || (await activeTab())?.id;
   let reply;
   try {
