@@ -54,6 +54,19 @@ function restore(clipboard, { text, html, image }) {
   if (Object.keys(data).length) clipboard.write(data);
 }
 
+// ⌥⇧S screenshots live in a temp file only while their conversation is open (the "Ask in…" hand-off copies the image
+// from it). discardShot removes one when the conversation ends; sweepShots clears any left behind by a crash or quit.
+const SHOT = /^loon-shot-\d+\.png$/;
+function discardShot(file) {
+  if (!file || path.dirname(file) !== os.tmpdir() || !SHOT.test(path.basename(file))) return false;
+  try { fs.rmSync(file, { force: true }); return true; } catch { return false; }
+}
+function sweepShots(dir = os.tmpdir()) {
+  let n = 0;
+  for (const name of fs.readdirSync(dir)) if (SHOT.test(name)) { try { fs.rmSync(path.join(dir, name), { force: true }); n++; } catch { /* in use */ } }
+  return n;
+}
+
 // Interactive region picker; resolves with a PNG path, or null if the user pressed Esc.
 async function screenshotRegion() {
   const file = path.join(os.tmpdir(), `loon-shot-${Date.now()}.png`);
@@ -106,4 +119,4 @@ async function windowNames(desktopCapturer) {
   return sources.map((s) => s.name).filter(Boolean);
 }
 
-module.exports = { captureSelection, screenshotRegion, ocr, ocrBoxes, grabDisplays, windowNames, AccessibilityError, frontmostApp };
+module.exports = { discardShot, sweepShots, captureSelection, screenshotRegion, ocr, ocrBoxes, grabDisplays, windowNames, AccessibilityError, frontmostApp };

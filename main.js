@@ -892,6 +892,7 @@ function scheduleScreenshot() {
 }
 
 app.whenReady().then(() => {
+  try { capture.sweepShots(); } catch { /* temp dir unreadable */ } // screenshots left behind by a crash or quit
   if (arg('theme')) require('electron').nativeTheme.themeSource = arg('theme'); // screenshots in light/dark
   if (process.platform === 'darwin') app.dock.hide();
   loadSettings();

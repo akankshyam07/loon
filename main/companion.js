@@ -4,6 +4,7 @@ const { TASKS, SELECTION_CHIPS, pageChipsFor, handoffPrompt } = require('../brai
 const { keySentences } = require('../brain/textrank');
 const { classifySelection } = require('../extension/lib/classify');
 const { selectionPacket, pagePacket } = require('./context');
+const { discardShot } = require('./capture');
 const { scopeOf } = require('../brain/memory');
 const { parseCommand, describe, normalizeSpoken } = require('../brain/commands');
 const { isAgentGoal } = require('../brain/agent');
@@ -147,6 +148,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
 
   function startSession(mode, packet) {
     active?.controller.abort();
+    if (session.packet?.imagePath && session.packet.imagePath !== packet?.imagePath) discardShot(session.packet.imagePath);
     brain.resetThread();
     Object.assign(session, { mode, packet, threadStarted: false, turns: [], lastTask: null, pendingTask: null, historyId: crypto.randomUUID(), answers: new Map(), restored: null });
     const flavor = currentMode();
@@ -156,6 +158,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
   // The bubble closed: the next question starts a new thread (and a new History entry).
   function endThread() {
     brain.resetThread();
+    if (session.packet?.imagePath && discardShot(session.packet.imagePath)) session.packet.imagePath = null;
     Object.assign(session, { threadStarted: false, turns: [], historyId: crypto.randomUUID(), answers: new Map(), restored: null });
   }
 

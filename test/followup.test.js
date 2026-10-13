@@ -213,3 +213,23 @@ test('asking about the page reads it when Chrome is paired, and says so plainly 
   assert.match(prompt, /is this a good deal\?/);
   assert.ok(out.find((m) => m.type === 'done'));
 });
+
+test('a ⌥⇧S screenshot file is deleted when its conversation ends, and leftovers are swept', () => {
+  const { discardShot, sweepShots } = require('../main/capture');
+  const shot = path.join(os.tmpdir(), `loon-shot-${Date.now()}.png`);
+  fs.writeFileSync(shot, 'png');
+  const t = setup({ cloudCli: 'off' });
+  t.companion.fromCapture({ text: 'Cats love boxes', source: 'screenshot', imagePath: shot });
+  t.companion.endThread();
+  assert.ok(!fs.existsSync(shot), 'deleted when the conversation ends');
+  // only Loon's own temp screenshots, never other files
+  const other = path.join(os.tmpdir(), 'not-loon.png');
+  fs.writeFileSync(other, 'x');
+  assert.strictEqual(discardShot(other), false);
+  assert.ok(fs.existsSync(other));
+  fs.rmSync(other);
+  const leftover = path.join(os.tmpdir(), `loon-shot-${Date.now() + 1}.png`);
+  fs.writeFileSync(leftover, 'png');
+  assert.ok(sweepShots() >= 1);
+  assert.ok(!fs.existsSync(leftover));
+});
