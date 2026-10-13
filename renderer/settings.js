@@ -80,6 +80,8 @@ function render(s) {
     li.append(tag, input, del);
     return li;
   }));
+  $('ratings').textContent = s.ratings.up + s.ratings.down ? `${s.ratings.up} 👍 and ${s.ratings.down} 👎 so far.` : 'No ratings yet. Tap 👍 or 👎 under an answer.';
+  $('historyPaused').hidden = !s.privacy;
   $('audit').replaceChildren(...(s.audit.length ? s.audit : [null]).map((a) => {
     const li = document.createElement('li');
     li.textContent = a ? `${new Date(a.time).toLocaleString()} · ${a.action} · ${a.ok ? 'done' : `failed (${a.error})`}` : 'No actions yet.';
@@ -265,5 +267,56 @@ for (const radio of document.querySelectorAll('[name=catStyle], [name=companion]
   radio.addEventListener('change', async () => render(await window.loon.setSetting(radio.name, radio.value)));
 }
 
-window.loon.onSettingsChanged(render);
+// ---------- History: past conversations, search, read, continue in the bubble, delete ----------
+const day = (ms) => new Date(ms).toLocaleDateString([], { month: 'short', day: 'numeric' });
+function renderHistory(list) {
+  $('historyList').replaceChildren(...(list.length ? list : [null]).map((c) => {
+    const li = document.createElement('li');
+    if (!c) {
+      li.className = 'muted';
+      li.textContent = $('historySearch').value.trim() ? 'No conversations match.' : 'No conversations yet.';
+      return li;
+    }
+    li.className = 'conv';
+    const head = document.createElement('div');
+    head.className = 'row';
+    const open = Object.assign(document.createElement('button'), { className: 'conv-title', type: 'button' });
+    open.setAttribute('aria-expanded', 'false');
+    open.append(Object.assign(document.createElement('b'), { textContent: c.title }), Object.assign(document.createElement('span'), { className: 'mono', textContent: [c.scope, day(c.updated), `${c.count} answer${c.count > 1 ? 's' : ''}`].filter(Boolean).join(' · ') }));
+    const resume = Object.assign(document.createElement('button'), { textContent: 'Continue', title: 'Open this conversation in the bubble and keep going' });
+    resume.addEventListener('click', () => window.loon.continueHistory(c.id));
+    const del = Object.assign(document.createElement('button'), { textContent: 'Delete', className: 'danger' });
+    del.addEventListener('click', async () => { await window.loon.historyDelete(c.id); refreshHistory(); });
+    head.append(open, resume, del);
+    const turns = Object.assign(document.createElement('div'), { className: 'conv-turns', hidden: true });
+    open.addEventListener('click', async () => {
+      if (turns.hidden && !turns.children.length) {
+        const full = await window.loon.historyGet(c.id);
+        for (const t of full?.turns || []) {
+          turns.append(Object.assign(document.createElement('p'), { className: 'conv-q', textContent: t.question }), Object.assign(document.createElement('p'), { className: 'conv-a', textContent: t.answer }));
+        }
+      }
+      turns.hidden = !turns.hidden;
+      open.setAttribute('aria-expanded', String(!turns.hidden));
+    });
+    li.append(head, turns);
+    return li;
+  }));
+}
+let historyQuery = 0;
+async function refreshHistory() {
+  const mine = ++historyQuery;
+  const list = await window.loon.historyList($('historySearch').value.trim());
+  if (mine === historyQuery) renderHistory(list);
+}
+$('historySearch').addEventListener('input', refreshHistory);
+$('historyClear').addEventListener('click', async () => {
+  if (!confirm('Clear all of your conversation history? Memories and notes stay.')) return;
+  renderHistory(await window.loon.historyClear());
+});
+$('onboarding').addEventListener('click', () => window.loon.startOnboarding());
+window.loon.onSettingsShow((section) => document.getElementById(section)?.scrollIntoView({ block: 'start' }));
+refreshHistory();
+
+window.loon.onSettingsChanged((s) => { render(s); refreshHistory(); });
 window.loon.getSettings().then(render);

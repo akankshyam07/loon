@@ -195,3 +195,62 @@ body.pill #paw:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 v
 .flavor { margin: 6px 0 0; font-size: 12px; font-style: italic; color: var(--muted); }
 .flavor::before { content: '🐾 '; font-style: normal; }
 #greeting { margin: 2px 2px 8px; }
+
+/* ---- memory & personalization (§3.12.1–3.12.3) ---- */
+/* context mode: a tiny pixel badge next to the title */
+.mode-badge { font: 7px/1 'Press Start 2P', monospace; text-transform: uppercase; color: var(--ink); background: var(--mint-soft); border: 2px solid var(--line); border-radius: 6px; padding: 3px 4px 2px; flex: none; }
+.mode-badge[hidden] { display: none; }
+/* 👍/👎: tiny, quiet until hovered */
+.answer-tools .votes { display: inline-flex; gap: 2px; margin-left: auto; }
+.answer-tools .votes + .tier-icon { margin-left: 4px; }
+.answer-tools .votes button { border: 0; background: none; padding: 0 3px; font-size: 12px; line-height: 1.4; cursor: pointer; filter: grayscale(1); opacity: .55; border-radius: 6px; }
+.answer-tools .votes button:hover:not(:disabled) { opacity: 1; filter: none; background: var(--lav-soft); }
+.answer-tools .votes button[aria-pressed="true"] { opacity: 1; filter: none; background: var(--sun-soft); box-shadow: inset 0 0 0 2px var(--line); }
+.answer-tools .votes button:disabled { cursor: default; }
+.answer-tools .votes button:disabled:not([aria-pressed="true"]) { opacity: .25; }
+.used, .remember-box, .chat-box .confirm { margin-top: 6px; }
+.used { padding: 8px 10px; border: 2px dashed var(--line); border-radius: 12px; background: var(--lav-soft); font-size: 12.5px; }
+.used-title { font-weight: 800; margin-bottom: 4px; }
+.used ul { list-style: none; display: grid; gap: 3px; }
+.used li { display: flex; gap: 6px; align-items: baseline; justify-content: space-between; }
+.used li button { border: 2px solid var(--line); background: var(--paper); border-radius: 6px; width: 20px; height: 20px; line-height: 1; font-size: 11px; cursor: pointer; flex: none; }
+.used li button:hover { background: var(--pink-soft); color: var(--danger); }
+.used li.gone span { color: var(--muted); text-decoration: line-through; }
+.used li.gone em { flex: none; font-size: 11px; color: var(--muted); }
+.confirm > textarea { font: inherit; resize: none; color: var(--ink); padding: 5px 9px; border: 2px solid var(--line); border-radius: 9px; background: var(--field); }
+.confirm > textarea:focus { outline: none; box-shadow: 0 0 0 3px var(--lav); }
+/* "Loon remembered…" with Undo */
+#toast { display: flex; align-items: center; gap: 8px; margin: 8px 12px 0; padding: 6px 8px 6px 10px; border: 2px solid var(--line); border-radius: 12px; background: var(--mint-soft); box-shadow: var(--shadow-sm); font-size: 12.5px; animation: popIn .18s steps(3, end); }
+#toast[hidden] { display: none; }
+#toastText { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#toastUndo { border: 2px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--ink); font: inherit; font-weight: 700; padding: 1px 8px; cursor: pointer; }
+#toastUndo[hidden] { display: none; }
+#toastUndo:hover { background: var(--sun-soft); }
+/* "Get to know you": Luna asks (left), Soju reacts (right) */
+#onboard { padding: 0 12px 12px; display: grid; gap: 8px; }
+#onboard[hidden] { display: none; }
+.ob-dots { display: flex; gap: 5px; justify-content: center; }
+.ob-dots[hidden] { display: none; }
+.ob-dots i { width: 8px; height: 8px; border: 2px solid var(--line); background: var(--paper); }
+.ob-dots i.on { background: var(--pink); }
+.ob-row { display: flex; align-items: flex-end; gap: 6px; }
+.ob-row.soju { justify-content: flex-end; min-height: 40px; }
+.ob-cat { width: 64px; height: 78px; image-rendering: pixelated; flex: none; }
+.ob-row.soju .ob-cat { width: 48px; height: 58px; }
+.ob-say, .ob-react { position: relative; padding: 8px 10px; border: 2px solid var(--line); border-radius: 12px; background: var(--paper); box-shadow: var(--shadow-sm); font-size: 13px; margin-bottom: 18px; }
+.ob-say { flex: 1; font-weight: 700; }
+.ob-say::before { content: ''; position: absolute; left: -7px; bottom: 8px; width: 10px; height: 10px; background: inherit; border-left: 2px solid var(--line); border-bottom: 2px solid var(--line); transform: rotate(45deg); }
+.ob-react { background: var(--sun-soft); font-size: 12px; margin-bottom: 12px; }
+.ob-react[hidden] { display: none; }
+.ob-react::after { content: ''; position: absolute; right: -7px; bottom: 8px; width: 10px; height: 10px; background: inherit; border-right: 2px solid var(--line); border-top: 2px solid var(--line); transform: rotate(45deg); }
+.ob-body { display: grid; gap: 6px; }
+.ob-body .fact { display: flex; gap: 6px; align-items: baseline; font-size: 12.5px; }
+.ob-body .fact input { accent-color: var(--sage); }
+.ob-label { font: 8px/1 'Press Start 2P', monospace; color: var(--muted); margin-top: 2px; }
+.ob-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.ob-pills .chip[aria-pressed="true"], .ob-pills .chip[aria-pressed="true"]:hover:not(:disabled) { background: var(--pink); color: #2b2238; }
+.ob-input { font: inherit; color: var(--ink); padding: 6px 10px; border: 2px solid var(--line); border-radius: 10px; background: var(--field); }
+.ob-input:focus { outline: none; box-shadow: 0 0 0 3px var(--lav); }
+.ob-buttons { display: flex; gap: 8px; justify-content: flex-end; align-items: center; }
+.ob-buttons .linkish { margin-right: auto; font-size: 12px; }
+@media (prefers-reduced-motion: reduce) { #toast { animation: none; } }

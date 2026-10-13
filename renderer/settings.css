@@ -80,11 +80,11 @@ ul { list-style: none; padding: 0; margin: 0 0 10px; display: grid; gap: 8px; }
 .field { display: grid; gap: 4px; margin: 10px 0; position: relative; }
 .field.inline { grid-template-columns: auto 1fr; align-items: center; gap: 10px; }
 .field b, .segments b { font-weight: 700; }
-textarea, .field input, .field select, #memory input, #profile input, #brainFacts input, #brainFind {
+textarea, .field input, .field select, #memory input, #profile input, #brainFacts input, #brainFind, #historySearch {
   font: inherit; color: var(--ink); background: var(--field); padding: 6px 10px; border: 2px solid var(--line); border-radius: 10px;
 }
 textarea { resize: vertical; min-height: 48px; }
-textarea:focus, .field input:focus, .field select:focus, #memory input:focus, #profile input:focus, #brainFacts input:focus, #brainFind:focus {
+textarea:focus, .field input:focus, .field select:focus, #memory input:focus, #profile input:focus, #brainFacts input:focus, #brainFind:focus, #historySearch:focus {
   outline: none; box-shadow: 0 0 0 3px var(--lav);
 }
 .count { position: absolute; right: 10px; bottom: 8px; font-size: 11px; color: var(--muted); }
@@ -136,3 +136,18 @@ textarea:focus, .field input:focus, .field select:focus, #memory input:focus, #p
   button, .costume, .toggle input, .toggle input::after { transition: none; }
   button:hover, .costume:hover { transform: none; }
 }
+
+/* History (§3.12.3) */
+#historySearch { width: 100%; margin: 4px 0 8px; }
+#historyList { list-style: none; display: grid; gap: 6px; margin-bottom: 10px; }
+#historyList .conv { display: grid; gap: 6px; }
+#historyList .row { gap: 6px; }
+.conv-title, .conv-title:hover, .conv-title:active { flex: 1; min-width: 0; display: grid; text-align: left; background: none; border: 0; box-shadow: none; transform: none; padding: 0; cursor: pointer; font: inherit; color: inherit; }
+.conv-title b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.conv-title:hover b { text-decoration: underline; }
+.conv-turns { display: grid; gap: 4px; padding: 8px 10px; border: 2px dashed var(--soft-line); border-radius: 12px; font-size: 12.5px; max-height: 260px; overflow: auto; }
+.conv-turns[hidden] { display: none; }
+.conv-turns p { margin: 0; }
+.conv-q { color: var(--muted); font-weight: 700; }
+.conv-q::before { content: 'you: '; color: var(--sage); }
+.conv-a { white-space: pre-wrap; }

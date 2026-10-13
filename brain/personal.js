@@ -145,4 +145,96 @@ function profileSummary(facts = [], input = {}) {
   return lines;
 }
 
-module.exports = { PERSONAL_DEFAULTS, LIMITS, cleanPersonal, instructionsBlock, maxTokensFor, sensesFor, parseFeedback, suggestMemory, secondPerson, normalizeFact, profileSummary };
+// ---------- 👍/👎: reply-style nudges ----------
+// Long/short by stored answer length (characters, never the text). A nudge is only ever a chip the user can accept;
+// nothing here changes a setting.
+const LONG_ANSWER = 600;
+const SHORT_ANSWER = 200;
+const NUDGE_WINDOW = 10; // the most recent ratings
+const NUDGE_MIN_DOWNS = 3;
+
+// recent: newest first [{ vote, chars }]. dismissed: nudge keys the user said no to. → { key, label, patch } or null.
+function styleNudge(recent = [], input = {}, dismissed = []) {
+  const p = cleanPersonal(input);
+  const window = recent.slice(0, NUDGE_WINDOW);
+  const downs = (test) => window.filter((r) => r.vote < 0 && test(r.chars)).length;
+  const ups = (test) => window.filter((r) => r.vote > 0 && test(r.chars)).length;
+  const long = (c) => c > LONG_ANSWER;
+  const short = (c) => c > 0 && c < SHORT_ANSWER;
+  const candidates = [
+    p.length !== 'short' && downs(long) >= NUDGE_MIN_DOWNS && downs(long) > ups(long) * 2
+      && { key: `length:short:${p.length}`, label: 'Shorter answers by default?', patch: { length: p.length === 'detailed' ? 'normal' : 'short' } },
+    p.length !== 'detailed' && downs(short) >= NUDGE_MIN_DOWNS && downs(short) > ups(short) * 2
+      && { key: `length:detailed:${p.length}`, label: 'More detailed answers by default?', patch: { length: p.length === 'short' ? 'normal' : 'detailed' } },
+  ];
+  return candidates.find((c) => c && !dismissed.includes(c.key)) || null;
+}
+
+// ---------- "Remember this" on an answer ----------
+const plain = (text) => String(text || '').replace(/```[\s\S]*?```/g, ' ').replace(/[*_`#>|]+/g, '').replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/\s+/g, ' ').trim();
+
+// The selected sentence when there is one, else the answer's first sentence, as a proposed memory (the user edits it
+// on the confirm card before anything is saved). '' when there's nothing usable.
+function factFromAnswer(answer, selection = '') {
+  const bullet = /^(?:[-•✦*]|\d+[.)])(?:\s+(?:[-•✦*]|\d+[.)]))*\s+/;
+  const source = plain(selection).replace(bullet, '') || plain(answer).replace(bullet, '').split(/(?<=[.!?])\s+/)[0] || '';
+  return source.length > 200 ? `${source.slice(0, 199).replace(/\s+\S*$/, '')}…` : source;
+}
+
+// ---------- "Save this chat" ----------
+// turns: [{ question, answer }] → a markdown transcript for the notes folder.
+function chatMarkdown(turns = []) {
+  return turns.map((t) => `**You:** ${String(t.question).trim()}\n\n${String(t.answer).trim()}`).join('\n\n---\n\n');
+}
+
+// Up to 3 facts the user stated in the thread's questions (suggestMemory, deduplicated), skipping ones already known
+// or dismissed. Never saved here; the bubble shows them as a tick list.
+function chatFacts(turns = [], { known = [], dismissed = [] } = {}) {
+  const skip = new Set([...known, ...dismissed].map(normalizeFact));
+  const out = [];
+  for (const t of turns) {
+    const fact = suggestMemory(t.question);
+    if (!fact || skip.has(normalizeFact(fact))) continue;
+    skip.add(normalizeFact(fact));
+    out.push(fact);
+    if (out.length === 3) break;
+  }
+  return out;
+}
+
+// ---------- "Get to know you" onboarding ----------
+const ROLES = {
+  student: { fact: "I'm a student", mode: 'study' },
+  dev: { fact: "I'm a developer", mode: 'dev' },
+  design: { fact: "I'm a designer", mode: null },
+  work: { fact: 'I mostly use my Mac for work', mode: 'work' },
+  other: { fact: '', mode: null },
+};
+const DIETS = { vegetarian: "I'm vegetarian", vegan: "I'm vegan", pescatarian: "I'm pescatarian", gluten_free: "I'm gluten-free", halal: 'I eat halal', kosher: 'I keep kosher', lactose: "I'm lactose intolerant" };
+const tidy = (text, max = 80) => String(text || '').replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
+const list = (text) => tidy(text, 200).split(/\s*(?:,|;|\band\b)\s*/i).map((x) => x.replace(/[.!]+$/, '').trim()).filter(Boolean).slice(0, 6);
+const joinList = (items) => (items.length > 1 ? `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}` : items[0] || '');
+
+// answers: { name, role, length, tone, diets: [], allergies, interests } (every one optional) → what the review screen
+// shows: { facts: [text] (saved pinned), personal: patch for cleanPersonal, role }. Plain code, no model.
+function onboardingResult(answers = {}) {
+  const facts = [];
+  const name = tidy(answers.name, 40).replace(/[^\p{L}\p{N} .'-]/gu, '');
+  if (name) facts.push(`Call me ${name}`);
+  const role = Object.hasOwn(ROLES, answers.role) ? answers.role : '';
+  if (role && ROLES[role].fact) facts.push(ROLES[role].fact);
+  for (const d of answers.diets || []) if (Object.hasOwn(DIETS, d)) facts.push(DIETS[d]);
+  const allergies = list(answers.allergies);
+  if (allergies.length) facts.push(`I'm allergic to ${joinList(allergies)}`);
+  const interests = list(answers.interests);
+  if (interests.length) facts.push(`I'm interested in ${joinList(interests)}`);
+  const personal = {};
+  if (CHOICES.length.includes(answers.length)) personal.length = answers.length;
+  if (CHOICES.tone.includes(answers.tone)) personal.tone = answers.tone;
+  return { facts, personal, role };
+}
+
+module.exports = {
+  PERSONAL_DEFAULTS, LIMITS, cleanPersonal, instructionsBlock, maxTokensFor, sensesFor, parseFeedback, suggestMemory, secondPerson, normalizeFact, profileSummary,
+  styleNudge, factFromAnswer, chatMarkdown, chatFacts, onboardingResult, ROLES, DIETS,
+};

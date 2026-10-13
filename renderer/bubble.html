@@ -11,6 +11,7 @@
     <header>
       <svg class="face" viewBox="0.5 -0.5 7 8" shape-rendering="crispEdges" aria-hidden="true"><path fill="#2e2733" d="M1 0h1v1h1v1h2V1h1V0h1v6H6v1H2V6H1z"/><path fill="#ff8fb8" d="M1 1h1v1H1zM6 1h1v1H6zM1.5 4.5h1v.5h-1zM5.5 4.5h1v.5h-1z"/><path fill="#80e27e" d="M2 3h1v1H2zM5 3h1v1H5z"/></svg>
       <span class="title">Loon</span>
+      <span id="modeBadge" class="mode-badge" hidden></span>
       <span id="sourceLabel" class="source"></span>
       <button id="close" title="Close (Esc)" aria-label="Close">×</button>
     </header>
@@ -31,12 +32,15 @@
       <p id="progressText" class="muted"></p>
     </section>
 
+    <section id="onboard" hidden></section>
     <section id="log" aria-live="polite"></section>
     <section id="empty" hidden>
       <p id="greeting" class="flavor" hidden></p>
       <div id="suggestions"></div>
       <p class="hint">⌥⇧V talk · ⌥⇧S screenshot · drop a file on me</p>
     </section>
+
+    <div id="toast" role="status" hidden><span id="toastText"></span><button id="toastUndo" type="button">Undo</button></div>
 
     <form id="askForm">
       <textarea id="input" rows="1" placeholder="Ask me anything…" aria-label="Ask Loon"></textarea>
@@ -46,6 +50,9 @@
 
   </div>
   <script src="lib/grade.js"></script>
+  <script src="pixel-sprites.js"></script>
+  <script src="persona.js"></script>
+  <script src="onboard.js"></script>
   <script src="bubble.js"></script>
 </body>
 </html>
