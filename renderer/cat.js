@@ -1341,6 +1341,35 @@
     get privacy() { return privacy; }, get nudge() { return !nudgeButton.hidden; }, get focus() { return focusMode; },
     get listening() { return !micBadge.hidden; }, get played() { return playedCount; },
     get duoScene() { return duo.playing; }, get cameo() { return cameo?.guest || null; },
+    get catStyle() { return look.catStyle; }, get companion() { return look.companion; }, get costume() { return wornCostume(); },
+    get duo() { return Boolean(look.duo); }, get say() { return sayBox.hidden ? '' : sayBox.textContent; },
+    // What the pixel canvas shows: opaque pixels, light ones (Soju's white fur; Luna has almost none) and the top
+    // opaque row in sprite cells (a hat makes the cat taller).
+    canvasStats() {
+      if (canvas.hidden || !canvas.width) return { visible: false, opaque: 0, light: 0, top: null };
+      const d = pen.getImageData(0, 0, canvas.width, canvas.height).data;
+      let opaque = 0;
+      let light = 0;
+      let first = -1;
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i + 3] < 200) continue;
+        opaque++;
+        if (first < 0) first = i / 4;
+        if (d[i] > 220 && d[i + 1] > 220 && d[i + 2] > 220) light++;
+      }
+      return { visible: true, opaque, light, top: first < 0 ? null : Math.floor(Math.floor(first / canvas.width) / (canvas.height / PX.ROWS)) };
+    },
+    // A window point on one cat's own pixels (the opaque cell nearest that cat's middle), or null.
+    catPoint(who = look.companion) {
+      if (!scene || !pixel()) return null;
+      const cells = [];
+      scene.grid.forEach((row, r) => [...row].forEach((c, col) => { if (c !== '.' && c !== 'z' && scene.owner[r]?.[col] === who) cells.push([r, col]); }));
+      if (!cells.length) return null;
+      const mid = cells.reduce((m, [r, col]) => [m[0] + r / cells.length, m[1] + col / cells.length], [0, 0]);
+      const [r, col] = cells.reduce((best, cell) => (Math.hypot(cell[0] - mid[0], cell[1] - mid[1]) < Math.hypot(best[0] - mid[0], best[1] - mid[1]) ? cell : best));
+      const rect = canvas.getBoundingClientRect();
+      return { x: Math.round(rect.left + (col + 0.5) * cell), y: Math.round(rect.top + (r + 0.5) * cell) };
+    },
   };
 
   setPose('sit');

@@ -13,13 +13,19 @@ async function waitFor(fn, timeoutMs, stepMs = 100) {
   return false;
 }
 
-async function run(ctx) {
+// Which parts to run: `--part=core,features` (CI runs them as parallel jobs). No flag runs core, features and browser,
+// as before; fresh, migrate and smoke are separate launches (test/selftest-install.js).
+function selectedParts() {
+  const named = process.argv.find((a) => a.startsWith('--part='))?.slice(7);
+  if (named) return named.split(',').filter(Boolean);
+  if (process.argv.includes('--browser-only')) return ['browser'];
+  if (process.argv.includes('--no-browser')) return ['core', 'features'];
+  return ['core', 'features', 'browser'];
+}
+
+// Shared by every part: the windows, synthetic input and the bubble driven like a person would.
+function helpers(ctx) {
   const { catWin, bubbleWin } = ctx;
-  const results = [];
-  const check = (name, ok, detail = '') => {
-    results.push({ name, ok });
-    console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? `  (${detail})` : ''}`);
-  };
   const cat = (js) => catWin.webContents.executeJavaScript(js);
   const bubble = (js) => bubbleWin.webContents.executeJavaScript(js);
   // Synthetic input also moves main's virtual pointer, which stands in for the real mouse during the run.
@@ -28,39 +34,19 @@ async function run(ctx) {
     ctx.setCursor({ x: b.x + x, y: b.y + y });
     catWin.webContents.sendInputEvent({ type, x, y, button: 'left', clickCount: 1, ...extra });
   };
-  const homeBounds = catWin.getBounds();
-  const backHome = () => ctx.resetCatPosition(homeBounds);
-  catWin.webContents.on('console-message', (event) => {
-    if (event.level === 'error' || event.level === 'warning') console.log(`  [cat ${event.level}] ${event.message}`);
-  });
-
-  let dragStarted = false;
-  let dragEnded = false;
-  ipcMain.on('drag-start', () => { dragStarted = true; });
-  ipcMain.on('drag-end', () => { dragEnded = true; });
-
-  await waitFor(() => cat('Boolean(window.__loon)'), 5000);
-  if (process.argv.includes('--browser-only')) {
-    console.log('— browser companion —');
-    await require('./selftest-browser').run(ctx, check);
-    const failedEarly = results.filter((r) => !r.ok).length;
-    console.log(`\n${results.length - failedEarly}/${results.length} checks passed`);
-    return failedEarly === 0;
-  }
-  await wait(800); // let the first layout and mouse state settle
-  const head = await cat(`(() => { const r = document.querySelector('#headShape').getBoundingClientRect(); return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) }; })()`);
-  check('cat renders', head.x > 0 && head.y > 0, `head at ${head.x},${head.y}`);
-
-  // Click-through: the renderer hit-tests each mouse move and asks main to capture or pass clicks. Checked on main's
-  // record of the request, because a hidden run keeps the window itself ignoring the real mouse.
-  await cat(`window.__moves = []; document.addEventListener('mousemove', (e) => {
-    const el = document.elementFromPoint(e.clientX, e.clientY);
-    window.__moves.push({ x: e.clientX, y: e.clientY, at: el ? el.id || el.tagName : null, overCat: Boolean(el && (el.closest('#cat') || el.closest('.interactive'))), trusted: e.isTrusted });
-  }, true); true`);
+  const click = async (x, y) => {
+    mouse('mouseDown', x, y);
+    await wait(60);
+    mouse('mouseUp', x, y);
+  };
   // Moves go in as real input. Only in a hidden run, and only if Chromium never delivered that input to the page,
   // the same mousemove is dispatched on the page, so the renderer's hit test, its request and main's handling are
-  // still what's checked; the detail says which path ran.
+  // still what's checked; the result says which path ran.
   const hover = async (x, y, ignore) => {
+    await cat(`if (!window.__moves) { window.__moves = []; document.addEventListener('mousemove', (e) => {
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      window.__moves.push({ x: e.clientX, y: e.clientY, at: el ? el.id || el.tagName : null, overCat: Boolean(el && (el.closest('#cat') || el.closest('.interactive'))), trusted: e.isTrusted });
+    }, true); } true`);
     const seen = await cat('window.__moves.length');
     mouse('mouseMove', x, y);
     const reached = () => ctx.catIgnore().requested === ignore;
@@ -72,6 +58,142 @@ async function run(ctx) {
     }
     return `delivered ${delivered} · last move ${await cat('JSON.stringify(window.__moves.at(-1) || null)')} · page ${await cat('document.visibilityState')}`;
   };
+  const openBubble = async () => {
+    ipcMain.emit('open-bubble');
+    await waitFor(() => bubbleWin.isVisible(), 1500);
+    await wait(300);
+  };
+  const closeBubble = async () => {
+    await bubble('window.loon.closeBubble()');
+    await waitFor(() => !bubbleWin.isVisible(), 1500);
+  };
+  const tierCount = () => bubble(`document.querySelectorAll('.tier-icon').length`);
+  // Types into the bubble that is already open (a follow-up stays in the same thread).
+  const submit = (text) => bubble(`(() => { const i = document.getElementById('input'); i.value = ${JSON.stringify(text)}; i.dispatchEvent(new Event('input')); document.getElementById('askForm').requestSubmit(); })()`);
+  const typeInBubble = async (text) => {
+    await openBubble();
+    await submit(text);
+  };
+  const lastAnswer = () => bubble(`(() => { const a = [...document.querySelectorAll('.a')].pop(); return a ? { text: a.textContent, tier: a.querySelector('.tier-icon')?.title || '' } : null; })()`);
+  // Asks in the open bubble and waits for the answer's tier icon.
+  const askHere = async (text, timeoutMs = 120000) => {
+    const before = await tierCount();
+    await submit(text);
+    const done = await waitFor(async () => (await tierCount()) > before, timeoutMs, 250);
+    return { done, ...(await lastAnswer()) };
+  };
+  const askViaBubble = async (text) => {
+    await openBubble();
+    const answer = await askHere(text);
+    await closeBubble();
+    return answer;
+  };
+  const confirmShown = () => waitFor(() => bubble(`Boolean(document.querySelector('.confirm'))`), 5000);
+  const settingsWindow = async () => {
+    const { BrowserWindow } = require('electron');
+    ipcMain.emit('open-settings');
+    let win = null;
+    await waitFor(() => (win = BrowserWindow.getAllWindows().find((x) => !x.isDestroyed() && x.getTitle() === 'Loon Settings')), 5000);
+    if (win) await waitFor(() => !win.webContents.isLoading() && win.webContents.executeJavaScript('document.readyState === "complete"').catch(() => false), 5000);
+    return win;
+  };
+  return { cat, bubble, mouse, click, hover, openBubble, closeBubble, submit, typeInBubble, askHere, askViaBubble, lastAnswer, tierCount, confirmShown, settingsWindow, waitFor, wait };
+}
+
+// Real notes, memory and the action log swapped for temporary ones; executors stubbed so nothing touches the Mac.
+async function withTempData(ctx, fn) {
+  const os = require('os');
+  const fs = require('fs');
+  const path = require('path');
+  const { actions, notes, memory } = ctx;
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-selftest-data-'));
+  const saved = { notesDir: notes.dir, memoryFile: memory.file, auditFile: actions.auditFile, executors: actions.executors };
+  notes.dir = path.join(tmp, 'notes');
+  memory.open(path.join(tmp, 'memory.db'));
+  actions.auditFile = path.join(tmp, 'audit.jsonl');
+  const executed = [];
+  actions.executors = {
+    reminder: async (c) => { executed.push(c); return 'Added to Reminders.'; },
+    event: async (c) => { executed.push(c); return 'Added to Calendar.'; },
+    open: async (c) => { executed.push(c); return 'Opened.'; },
+    find: async () => [path.join(tmp, 'resume.pdf')],
+    shortcuts: async () => ['Open Breethe', 'New Note with Date'],
+    shortcut: async (c) => { executed.push(c); return `Ran "${c.name}".`; },
+    events: async () => [{ start: new Date(Date.now() + 3600000), allDay: false, title: 'Selftest standup' }],
+    dueReminders: async () => ['Water the cat grass'],
+  };
+  try {
+    return await fn({ tmp, executed });
+  } finally {
+    Object.assign(notes, { dir: saved.notesDir });
+    memory.open(saved.memoryFile);
+    Object.assign(actions, { auditFile: saved.auditFile, executors: saved.executors });
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+}
+
+async function run(ctx) {
+  const results = [];
+  const check = (name, ok, detail = '') => {
+    results.push({ name, ok });
+    console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? `  (${detail})` : ''}`);
+    if (!ok && process.env.LOON_SHOTS) shoot(`fail-${results.length}`); // CI uploads these with the log
+  };
+  // The cat and the bubble as they were when a check failed.
+  const shoot = (label) => {
+    const fs = require('fs');
+    const path = require('path');
+    for (const [name, win] of [['cat', ctx.catWin], ['bubble', ctx.bubbleWin]]) {
+      if (win.isDestroyed()) continue;
+      win.webContents.capturePage().then((img) => fs.writeFileSync(path.join(process.env.LOON_SHOTS, `${label}-${name}.png`), img.toPNG())).catch(() => {});
+    }
+  };
+  const h = helpers(ctx);
+  for (const win of [ctx.catWin, ctx.bubbleWin]) {
+    win.webContents.on('console-message', (event) => {
+      if (event.level === 'error' || event.level === 'warning') console.log(`  [${win === ctx.catWin ? 'cat' : 'bubble'} ${event.level}] ${event.message}`);
+    });
+  }
+  await waitFor(() => h.cat('Boolean(window.__loon)'), 5000);
+  const parts = selectedParts();
+  const started = Date.now();
+  for (const part of parts) {
+    const t = Date.now();
+    console.log(`\n— ${part} —`);
+    try {
+      if (part === 'core') await core(ctx, check, h);
+      else if (part === 'features') await require('./selftest-features').run(ctx, check, h);
+      else if (part === 'browser') await require('./selftest-browser').run(ctx, check);
+      else if (['fresh', 'migrate', 'smoke'].includes(part)) await require('./selftest-install')[part](ctx, check, h);
+      else check(`known part "${part}"`, false);
+    } catch (err) {
+      console.error(err);
+      check(`${part}: ran to the end without throwing`, false, err.message);
+    }
+    console.log(`  (${part} took ${Math.round((Date.now() - t) / 1000)} s)`);
+  }
+  const failed = results.filter((r) => !r.ok).length;
+  console.log(`\n${results.length - failed}/${results.length} checks passed (${parts.join(', ')}; ${Math.round((Date.now() - started) / 1000)} s)`);
+  return failed === 0 && results.length > 0;
+}
+
+async function core(ctx, check, h) {
+  const { catWin, bubbleWin } = ctx;
+  const { cat, bubble, mouse, hover, askViaBubble, typeInBubble } = h;
+  const homeBounds = catWin.getBounds();
+  const backHome = () => ctx.resetCatPosition(homeBounds);
+
+  let dragStarted = false;
+  let dragEnded = false;
+  ipcMain.on('drag-start', () => { dragStarted = true; });
+  ipcMain.on('drag-end', () => { dragEnded = true; });
+
+  await wait(800); // let the first layout and mouse state settle
+  const head = await cat(`(() => { const r = document.querySelector('#headShape').getBoundingClientRect(); return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) }; })()`);
+  check('cat renders', head.x > 0 && head.y > 0, `head at ${head.x},${head.y}`);
+
+  // Click-through: the renderer hit-tests each mouse move and asks main to capture or pass clicks. Checked on main's
+  // record of the request, because a hidden run keeps the window itself ignoring the real mouse.
   const ignoreState = (via) => `${via} · ${JSON.stringify(ctx.catIgnore())}`;
   mouse('mouseMove', 3, 3); // start from a known state
   await wait(150);
@@ -136,18 +258,6 @@ async function run(ctx) {
   catWin.webContents.send('debug', { mood: 'neutral' });
 
   // Brain, through the real bubble UI.
-  const askViaBubble = async (text) => {
-    ipcMain.emit('open-bubble');
-    await waitFor(() => bubbleWin.isVisible(), 1500);
-    await wait(300);
-    await bubble(`(() => { const i = document.getElementById('input'); i.value = ${JSON.stringify(text)}; i.dispatchEvent(new Event('input')); document.getElementById('askForm').requestSubmit(); })()`);
-    const done = await waitFor(() => bubble(`Boolean([...document.querySelectorAll('.tier-icon')].pop())`), 120000, 250);
-    const out = await bubble(`(() => { const a = [...document.querySelectorAll('.a')].pop(); return { text: a.textContent, tier: a.querySelector('.tier-icon')?.title || '' }; })()`);
-    await bubble('window.loon.closeBubble()');
-    await waitFor(() => !bubbleWin.isVisible(), 1500);
-    return { done, ...out };
-  };
-
   const timeAnswer = await askViaBubble('what time is it');
   check('code tier answers the time instantly', timeAnswer.done && /no model/.test(timeAnswer.tier), timeAnswer.text.slice(0, 60));
 
@@ -166,34 +276,11 @@ async function run(ctx) {
   check('minimal card: no footer, at most 3 visible answer buttons', !card.footer && card.tools <= 3, JSON.stringify(card));
 
   // ---- M4: assistant (notes, memory, actions, toggles) with real files swapped for temp ones ----
-  const os = require('os');
   const fs = require('fs');
   const path = require('path');
   const { BrowserWindow } = require('electron');
   const { actions, notes, memory, setToggle, resolver } = ctx;
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-selftest-m4-'));
-  const saved = { notesDir: notes.dir, memoryFile: memory.file, auditFile: actions.auditFile, executors: actions.executors };
-  notes.dir = path.join(tmp, 'notes');
-  memory.open(path.join(tmp, 'memory.db'));
-  actions.auditFile = path.join(tmp, 'audit.jsonl');
-  const executed = [];
-  actions.executors = {
-    reminder: async (c) => { executed.push(c); return 'Added to Reminders.'; },
-    event: async (c) => { executed.push(c); return 'Added to Calendar.'; },
-    open: async (c) => { executed.push(c); return 'Opened.'; },
-    find: async () => [path.join(tmp, 'resume.pdf')],
-    shortcuts: async () => ['Open Breethe', 'New Note with Date'],
-    shortcut: async (c) => { executed.push(c); return `Ran "${c.name}".`; },
-    events: async () => [{ start: new Date(Date.now() + 3600000), allDay: false, title: 'Selftest standup' }],
-    dueReminders: async () => ['Water the cat grass'],
-  };
-  const typeInBubble = async (text) => {
-    ipcMain.emit('open-bubble');
-    await waitFor(() => bubbleWin.isVisible(), 1500);
-    await wait(300);
-    await bubble(`(() => { const i = document.getElementById('input'); i.value = ${JSON.stringify(text)}; i.dispatchEvent(new Event('input')); document.getElementById('askForm').requestSubmit(); })()`);
-  };
-  try {
+  await withTempData(ctx, async ({ tmp, executed }) => {
     const localBefore = resolver.counts.tiers.local || 0;
     await typeInBubble('remind me to call mom at 5');
     const card = await waitFor(() => bubble(`Boolean(document.querySelector('.confirm'))`), 3000);
@@ -261,41 +348,51 @@ async function run(ctx) {
     setToggle('focus', false);
     await waitFor(async () => (await cat('window.__loon.pose')) === 'sit', 3000);
 
-    // ---- M5: voice, driven by audio files made with macOS `say` (the mic is never opened; playback is muted) ----
+    // ---- M5: voice, driven by bundled recordings (test/fixtures/voice-*.wav; the mic is never opened; playback is muted) ----
     const { voice, voiceEngine } = ctx;
     if (voiceEngine.modelsReady()) {
-      const { execFileSync } = require('child_process');
-      const spoken = (text) => {
-        const file = path.join(tmp, `${text.replace(/\W+/g, '-')}.wav`);
-        execFileSync('say', ['-o', file, '--data-format=LEF32@16000', text]);
+      // Copied out first: sherpa-onnx is native code and can't read inside the packaged app's archive.
+      const spoken = (name) => {
+        const file = path.join(tmp, `voice-${name}.wav`);
+        fs.copyFileSync(path.join(__dirname, 'fixtures', `voice-${name}.wav`), file);
         return require('sherpa-onnx-node').readWave(file, false).samples; // Electron's V8 sandbox forbids external buffers
       };
+      // End of turn: the recording with silence around it, streamed in 100 ms chunks like the mic worklet sends.
+      const turns = [];
+      const detector = voiceEngine.createTurnDetector((samples) => turns.push(voiceEngine.transcribe(samples)));
+      const clip = spoken('remind');
+      const stream = new Float32Array(clip.length + 16000 * 2);
+      stream.set(clip, 8000);
+      for (let i = 0; i < stream.length; i += 1600) detector.push(stream.subarray(i, i + 1600));
+      check('voice: Silero VAD ends the turn after the pause and Moonshine transcribes it', turns.length === 1 && /remind me to call mom/i.test(turns[0]), JSON.stringify(turns));
       const sayCalls = [];
       const savedSay = ctx.hooks.say;
       ctx.hooks.say = async (t) => { sayCalls.push(t); };
       await voiceEngine.loadTts();
+      const tts = await voiceEngine.synthesize('Hi, I am Loon.').catch((err) => ({ error: err.message }));
+      check('voice: Kokoro speaks on this Mac (audio samples, no macOS say)', tts?.samples?.length > tts?.sampleRate / 4 && sayCalls.length === 0, tts ? `${tts.samples?.length || 0} samples @ ${tts.sampleRate} Hz${tts.error ? ` · ${tts.error}` : ''}` : 'Kokoro did not load');
       const played = () => cat('window.__loon.played');
       try {
         executed.length = 0;
-        const heard = voiceEngine.transcribe(spoken('Remind me to call mom at five.'));
+        const heard = voiceEngine.transcribe(spoken('remind'));
         voice.handleTranscript(heard);
         const confirmShown = await waitFor(() => bubble(`Boolean(document.querySelector('.confirm'))`), 5000);
         const promptSpoken = await waitFor(async () => (await played()) > 0 || sayCalls.length > 0, 30000);
         check('voice: a spoken reminder becomes a confirm card and Loon reads it back', confirmShown && promptSpoken && Boolean(voice.pendingConfirm), `${heard} · card ${confirmShown} · spoken ${promptSpoken} · pending ${Boolean(voice.pendingConfirm)}`);
-        voice.handleTranscript(voiceEngine.transcribe(spoken('Yes.')));
+        voice.handleTranscript(voiceEngine.transcribe(spoken('yes')));
         await waitFor(() => executed.length > 0, 5000);
         check('voice: saying "yes" runs it (stubbed) with no model call', executed[0]?.title === 'call mom' && new Date(executed[0].when).getHours() === 17);
         await bubble('window.loon.closeBubble()');
 
         const before = await played();
-        voice.handleTranscript(voiceEngine.transcribe(spoken('What is the capital of France?')));
+        voice.handleTranscript(voiceEngine.transcribe(spoken('capital')));
         await waitFor(() => bubble(`Boolean([...document.querySelectorAll('.tier-icon')].pop())`), 120000, 250);
         const answered = await bubble(`[...document.querySelectorAll('.a')].pop()?.textContent || ''`);
         const replied = await waitFor(async () => (await played()) > before, 30000);
         check('voice: an open question is answered in the bubble and spoken with Kokoro', /Paris/i.test(answered) && replied, answered.slice(0, 60));
         await bubble('window.loon.closeBubble()');
 
-        voice.handleTranscript(voiceEngine.transcribe(spoken('Turn on focus mode.')));
+        voice.handleTranscript(voiceEngine.transcribe(spoken('focus')));
         check('voice: "turn on focus mode" flips the toggle', await waitFor(async () => (await cat('window.__loon.focus')) === true, 3000));
         setToggle('focus', false);
       } finally {
@@ -392,21 +489,9 @@ async function run(ctx) {
     await waitFor(() => memory.all().length === 0, 3000);
     check('Settings lists memory and deletes it', /very short answers/.test(memoryShown || '') && memory.all().length === 0, memoryShown);
     settingsWin?.close();
-  } finally {
-    Object.assign(notes, { dir: saved.notesDir });
-    memory.open(saved.memoryFile);
-    Object.assign(actions, { auditFile: saved.auditFile, executors: saved.executors });
-    fs.rmSync(tmp, { recursive: true, force: true });
-  }
+  });
 
   backHome();
-  if (!process.argv.includes('--no-browser')) {
-    console.log('\n— browser companion —');
-    await require('./selftest-browser').run(ctx, check);
-  }
-  const failed = results.filter((r) => !r.ok).length;
-  console.log(`\n${results.length - failed}/${results.length} checks passed`);
-  return failed === 0;
 }
 
-module.exports = { run };
+module.exports = { run, helpers, withTempData, waitFor, wait };

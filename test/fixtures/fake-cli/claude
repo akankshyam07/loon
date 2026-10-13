@@ -1,0 +1,40 @@
+#!/usr/bin/env node
+// A stand-in for the Claude Code CLI in the selftest (test/selftest-features.js). It answers like `claude -p
+// --input-format stream-json --output-format stream-json`, and `claude auth status` reports a Claude plan login, or API
+// billing when LOON_FAKE_CLI_AUTH=api. Every question it receives is appended to LOON_FAKE_CLI_LOG as one JSON line.
+const fs = require('fs');
+
+const args = process.argv.slice(2);
+if (args[0] === '--version') {
+  console.log('9.9.9 (Claude Code, selftest fake)');
+  process.exit(0);
+}
+if (args[0] === 'auth' && args[1] === 'status') {
+  const api = process.env.LOON_FAKE_CLI_AUTH === 'api';
+  console.log(JSON.stringify({ loggedIn: true, authMethod: api ? 'console' : 'claude.ai', apiProvider: 'firstParty' }));
+  process.exit(0);
+}
+
+let input = '';
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', (chunk) => { input += chunk; });
+process.stdin.on('end', () => {
+  if (!input.trim()) process.exit(1); // a warm process that was never asked anything
+  let prompt = '';
+  try {
+    const message = JSON.parse(input.split('\n')[0]).message;
+    prompt = message.content.map((c) => c.text || '').join('');
+  } catch {
+    prompt = input;
+  }
+  const system = args[args.indexOf('--system-prompt') + 1] || '';
+  if (process.env.LOON_FAKE_CLI_LOG) fs.appendFileSync(process.env.LOON_FAKE_CLI_LOG, `${JSON.stringify({ args, system, prompt })}\n`);
+  const answer = /and in python/i.test(prompt)
+    ? 'In Python, use socket.SOCK_STREAM for TCP and socket.SOCK_DGRAM for UDP. (fake plan)'
+    : 'TCP is reliable and ordered, so chat messages arrive intact; UDP is faster but can drop them. (fake plan)';
+  const out = (event) => process.stdout.write(`${JSON.stringify(event)}\n`);
+  out({ type: 'system', subtype: 'init', model: 'fake' });
+  for (const piece of answer.match(/.{1,24}/g)) out({ type: 'stream_event', event: { type: 'content_block_delta', delta: { type: 'text_delta', text: piece } } });
+  out({ type: 'assistant', message: { content: [{ type: 'text', text: answer }] } });
+  out({ type: 'result', subtype: 'success', is_error: false, result: answer });
+});

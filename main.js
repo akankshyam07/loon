@@ -33,6 +33,10 @@ const EDGE_MARGIN = 12;
 const arg = (name) => process.argv.find((a) => a.startsWith(`--${name}=`))?.split('=').slice(1).join('=');
 const DEMO = process.argv.includes('--demo') || process.env.LOON_DEMO === '1';
 const SELFTEST = process.argv.includes('--selftest');
+// `--part=fresh` checks the first-launch welcome, which other selftest runs skip.
+const FRESH_CHECK = SELFTEST && (arg('part') || '').split(',').includes('fresh');
+// A separate data folder (settings, memory, models): the fresh-install and migration selftests start from one.
+if (process.env.LOON_USER_DATA) app.setPath('userData', process.env.LOON_USER_DATA);
 // Hidden runs (the selftest by default; LOON_HIDDEN=0 shows it) draw invisibly, ignore the real mouse and never
 // take focus from the app the user is working in.
 const HIDDEN = process.env.LOON_HIDDEN === '1' || (SELFTEST && process.env.LOON_HIDDEN !== '0');
@@ -66,6 +70,7 @@ let voiceEngine;
 let agentRunner;
 let teacher; // "Teach me on my screen" (main/teach.js)
 let overlay; // its click-through windows, one per display
+let teachSeam; // the teacher's screen access; the selftest swaps in a fixture capture
 const pendingPlays = new Map();
 const toBubbleRef = { current: null };
 let playId = 0;
@@ -875,7 +880,7 @@ app.whenReady().then(() => {
   });
   teacher = createTeacher({
     settings,
-    screen: teachScreen(),
+    screen: (teachSeam = teachScreen()),
     overlay,
     bridge,
     brain,
@@ -968,7 +973,7 @@ app.whenReady().then(() => {
   createCatWindow();
   createBubbleWindow();
   // First launch (needs catWin, so it runs after the windows exist): a short hello in the bubble instead of a silent cat.
-  if (!settings.welcomed && !SELFTEST && !arg('shot')) {
+  if (!settings.welcomed && (!SELFTEST || FRESH_CHECK) && !arg('shot')) {
     catWin.webContents.once('did-finish-load', () => setTimeout(() => {
       companion.showNotice("Hi, I'm Loon 🐾 Click me to ask anything, press and hold to pet me, or try ⌥Space. Right-click me for Settings, where you can connect Chrome and pick projects for me to keep up with. Everything stays on this Mac.");
       showBubble();
@@ -994,7 +999,7 @@ app.whenReady().then(() => {
       },
     };
     catWin.webContents.once('did-finish-load', async () => {
-      const ok = await require('./test/selftest').run({ catWin, bubbleWin, bridge, companion, resolver, hooks, settings, openScreenshot, openDroppedFile, actions, notes, memory, setToggle, voice, voiceEngine, hub, ...selftestHooks }).catch((err) => { console.error(err); return false; });
+      const ok = await require('./test/selftest').run({ catWin, bubbleWin, bridge, companion, resolver, hooks, settings, openScreenshot, openDroppedFile, actions, notes, memory, setToggle, voice, voiceEngine, hub, brain, teacher, overlay, teachScreen: teachSeam, ...selftestHooks }).catch((err) => { console.error(err); return false; });
       app.exit(ok ? 0 : 1);
     });
   }

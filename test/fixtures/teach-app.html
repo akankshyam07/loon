@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Inkwell (fake app for the teach selftest)</title>
+<style>
+  /* A made-up desktop app, rendered once to teach-app.png. Big, plain text so OCR reads it the same way every run. */
+  html, body { margin: 0; width: 1280px; height: 800px; background: #f4f1ea; font-family: Helvetica, Arial, sans-serif; color: #1d1b20; }
+  .menubar { height: 56px; background: #e4e0d8; display: flex; align-items: center; gap: 44px; padding-left: 36px; font-size: 26px; }
+  .toolbar { height: 96px; display: flex; align-items: center; gap: 28px; padding-left: 36px; border-bottom: 2px solid #c9c3b8; }
+  .toolbar button { font: 28px Helvetica, Arial, sans-serif; padding: 14px 30px; background: #ffffff; border: 2px solid #8a8478; border-radius: 10px; color: #1d1b20; }
+  .doc { margin: 60px 36px; font-size: 26px; line-height: 1.6; width: 700px; }
+</style>
+</head>
+<body>
+  <div class="menubar"><span id="file">File</span><span>Edit</span><span>View</span><span>Help</span></div>
+  <div class="toolbar">
+    <button>New</button><button>Open</button><button id="export">Export</button><button>Share</button>
+  </div>
+  <div class="doc">Quarterly garden report. Tomatoes did well this summer and the basil needs more sun.</div>
+</body>
+</html>

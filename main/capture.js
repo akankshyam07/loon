@@ -68,9 +68,13 @@ async function screenshotRegion() {
 let workerPromise = null;
 function worker(cacheDir) {
   workerPromise ??= (async () => {
-    const { createWorker } = require('tesseract.js');
+    const { createWorker, PSM } = require('tesseract.js');
     fs.mkdirSync(cacheDir, { recursive: true });
-    return createWorker('eng', 1, { cachePath: cacheDir });
+    const w = await createWorker('eng', 1, { cachePath: cacheDir });
+    // tesseract.js defaults to one uniform text block, which skips words inside bordered buttons and toolbars.
+    // Automatic layout finds those and still reads paragraphs as before.
+    await w.setParameters({ tessedit_pageseg_mode: PSM.AUTO });
+    return w;
   })();
   return workerPromise;
 }

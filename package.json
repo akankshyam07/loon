@@ -66,8 +66,8 @@
       "brain/**",
       "renderer/**",
       "extension/**",
-      "test/selftest.js",
-      "test/fixtures/openapi-app.js",
+      "test/selftest*.js",
+      "test/fixtures/**",
       "package.json",
       "!node_modules/onnxruntime-node/bin/napi-v3/{linux,win32}/**",
       "!**/*.map"

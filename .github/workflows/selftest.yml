@@ -1,11 +1,12 @@
-# Unit tests on every push and PR, and the end-to-end selftest (real Electron app, real local model, real
-# extension in Chrome for Testing) on a macOS Apple Silicon runner, so it never has to run on a contributor's laptop.
-# No secrets: the model comes from Hugging Face's public Qwen3 repo and everything else from npm.
+# Unit tests on every push and PR, and the end-to-end selftest (real Electron app, real local model, real speech
+# models, real extension in Chrome for Testing) on macOS Apple Silicon runners, so it never has to run on a
+# contributor's laptop. The e2e parts run as parallel jobs; the packaged job builds the .dmg and runs the selftest
+# from the app inside it. No secrets: models come from public Hugging Face / GitHub releases and the rest from npm.
 name: selftest
 
 on:
   push:
-    branches: [main]
+    branches: [main, e2e-launch]
   pull_request:
   workflow_dispatch:
 
@@ -22,6 +23,12 @@ env:
   # What brain/ai.js picks on a runner's 7 GB of RAM (MODEL_CHOICES[0]).
   MODEL_FILE: Qwen3-1.7B-Q8_0.gguf
   MODEL_URL: https://huggingface.co/Qwen/Qwen3-1.7B-GGUF/resolve/main/Qwen3-1.7B-Q8_0.gguf
+  # The speech models main/voice.js downloads (MODELS there); Kokoro comes from Hugging Face on first use.
+  VAD_URL: https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/silero_vad_v5.onnx
+  STT_URL: https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-moonshine-base-en-int8.tar.bz2
+  VOICE_CACHE_KEY: loon-voice-v1-silero_vad_v5-moonshine-base-en-int8-kokoro-82m-q8
+  # Hosted macOS VMs have no usable GPU; run llama.cpp on the CPU.
+  NODE_LLAMA_CPP_GPU: 'false'
 
 jobs:
   unit:
@@ -39,13 +46,16 @@ jobs:
       - run: npm test
 
   e2e:
+    name: e2e-${{ matrix.part }}
     runs-on: macos-15
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [core, features, browser]
     env:
       CI: 'true'
       LOON_SHOTS: ${{ github.workspace }}/selftest-shots
-      # Hosted macOS VMs have no usable GPU; run llama.cpp on the CPU.
-      NODE_LLAMA_CPP_GPU: 'false'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -56,7 +66,8 @@ jobs:
       - name: Make sure Electron's binary is installed
         run: test -x node_modules/electron/dist/Electron.app/Contents/MacOS/Electron || node node_modules/electron/install.js
       # Full Chrome for Testing: the selftest loads the unpacked extension, which the headless shell can't.
-      - name: Install Chrome for Testing (the browser half of the selftest)
+      - name: Install Chrome for Testing (the browser part)
+        if: matrix.part == 'browser'
         run: npx playwright-core install chromium
 
       - name: Find Loon's data folder
@@ -70,29 +81,141 @@ jobs:
             ~/Library/Application Support/loon/ocr
           key: loon-models-${{ env.MODEL_URL }}
       - name: Download the model (cache miss only)
-        run: |
-          mkdir -p "$LOON_DATA/models"
-          if [ ! -s "$LOON_DATA/models/$MODEL_FILE" ]; then
-            curl -fL --retry 3 --retry-delay 5 -o "$LOON_DATA/models/$MODEL_FILE.part" "$MODEL_URL"
-            mv "$LOON_DATA/models/$MODEL_FILE.part" "$LOON_DATA/models/$MODEL_FILE"
-          fi
-          ls -lh "$LOON_DATA/models"
+        run: bash .github/scripts/download-models.sh model
+      - name: Restore the speech models
+        if: matrix.part == 'core'
+        id: voice-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/Library/Application Support/loon/voice
+          key: ${{ env.VOICE_CACHE_KEY }}
+      - name: Download the speech models (cache miss only)
+        if: matrix.part == 'core' && steps.voice-cache.outputs.cache-hit != 'true'
+        run: bash .github/scripts/download-models.sh voice
+      - name: Save the speech models
+        if: matrix.part == 'core' && steps.voice-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/Library/Application Support/loon/voice
+          key: ${{ env.VOICE_CACHE_KEY }}
       - name: Pin the model so a bigger runner doesn't look for a different one
         run: |
           printf '{ "modelPath": "%s" }\n' "$LOON_DATA/models/$MODEL_FILE" > "$LOON_DATA/settings.json"
           cat "$LOON_DATA/settings.json"
 
-      - run: npm test
-      - name: End-to-end selftest
+      - name: Unit tests (the voice test runs here, with the speech models)
+        if: matrix.part == 'core'
+        run: npm test
+      - name: End-to-end selftest (${{ matrix.part }})
         run: |
           set -o pipefail
           mkdir -p "$LOON_SHOTS"
-          npm run selftest 2>&1 | tee selftest.log
+          npm run selftest -- --part=${{ matrix.part }} 2>&1 | tee selftest.log
+      - name: First launch on an empty data folder, then an upgrade from old settings and memory
+        if: matrix.part == 'features'
+        run: |
+          set -o pipefail
+          FRESH=$(mktemp -d)
+          LOON_USER_DATA="$FRESH" npx electron . --selftest --part=fresh 2>&1 | tee -a selftest.log
+          OLD=$(mktemp -d)
+          cp test/fixtures/old-userdata/* "$OLD/"
+          LOON_USER_DATA="$OLD" npx electron . --selftest --part=migrate 2>&1 | tee -a selftest.log
       - name: Upload the selftest log and screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: selftest-log
+          name: selftest-${{ matrix.part }}
+          retention-days: 14
+          path: |
+            selftest.log
+            selftest-shots/
+          if-no-files-found: ignore
+
+  packaged:
+    runs-on: macos-15
+    timeout-minutes: 75
+    env:
+      CI: 'true'
+      LOON_SHOTS: ${{ github.workspace }}/selftest-shots
+      # Unsigned build: no signing identity is looked up.
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      # playwright-core for the browser part comes from the checkout; the packaged app doesn't ship it.
+      LOON_SOURCE_DIR: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: Make sure Electron's binary is installed
+        run: test -x node_modules/electron/dist/Electron.app/Contents/MacOS/Electron || node node_modules/electron/install.js
+      - name: Build the .dmg (unsigned)
+        run: npm run dist
+      - name: What got built
+        run: |
+          ls -lh dist/
+          du -sh dist/mac-arm64/Loon.app
+          ls dist/mac-arm64/Loon.app/Contents/Resources/
+          echo "DMG=$(ls dist/Loon-*-arm64.dmg)" >> "$GITHUB_ENV"
+      - name: Upload the .dmg
+        uses: actions/upload-artifact@v4
+        with:
+          name: loon-dmg
+          retention-days: 14
+          path: dist/Loon-*-arm64.dmg
+          compression-level: 0
+
+      - name: Install Chrome for Testing (the browser part)
+        run: npx playwright-core install chromium
+      - name: Find Loon's data folder
+        run: echo "LOON_DATA=$HOME/Library/Application Support/loon" >> "$GITHUB_ENV"
+      - name: Cache the model and offline language data
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Application Support/loon/models
+            ~/Library/Application Support/loon/translation-models
+            ~/Library/Application Support/loon/ocr
+          key: loon-models-${{ env.MODEL_URL }}
+      - name: Download the model (cache miss only)
+        run: bash .github/scripts/download-models.sh model
+      - name: Restore the speech models
+        id: voice-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/Library/Application Support/loon/voice
+          key: ${{ env.VOICE_CACHE_KEY }}
+      - name: Download the speech models (cache miss only)
+        if: steps.voice-cache.outputs.cache-hit != 'true'
+        run: bash .github/scripts/download-models.sh voice
+      - name: Pin the model
+        run: printf '{ "modelPath": "%s" }\n' "$LOON_DATA/models/$MODEL_FILE" > "$LOON_DATA/settings.json"
+
+      # Run from the mounted .dmg, read-only like a fresh download: nothing may write into the app bundle.
+      - name: Mount the .dmg
+        run: |
+          hdiutil attach "$DMG" -nobrowse -readonly -mountpoint /tmp/loon-dmg
+          echo "LOON_APP=/tmp/loon-dmg/Loon.app/Contents/MacOS/Loon" >> "$GITHUB_ENV"
+      - name: Packaged app, first launch and upgrade
+        run: |
+          set -o pipefail
+          mkdir -p "$LOON_SHOTS"
+          FRESH=$(mktemp -d)
+          LOON_USER_DATA="$FRESH" "$LOON_APP" --selftest --part=fresh 2>&1 | tee selftest.log
+          OLD=$(mktemp -d)
+          cp test/fixtures/old-userdata/* "$OLD/"
+          LOON_USER_DATA="$OLD" "$LOON_APP" --selftest --part=migrate 2>&1 | tee -a selftest.log
+      - name: Packaged app, smoke test and the browser part
+        run: |
+          set -o pipefail
+          "$LOON_APP" --selftest --keep-bubble --part=smoke,browser 2>&1 | tee -a selftest.log
+      - name: Upload the selftest log and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: selftest-packaged
+          retention-days: 14
           path: |
             selftest.log
             selftest-shots/

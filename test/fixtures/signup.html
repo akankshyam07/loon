@@ -1,0 +1,18 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Tea Club</title></head>
+<body>
+  <main>
+    <h1>Tea Club</h1>
+    <p>Members get a new tea every month.</p>
+    <label for="email">Email</label>
+    <input id="email" name="email" type="email">
+    <!-- A text field that is still a password field (autocomplete): the page itself is not "sensitive", the field is. -->
+    <label for="pw">Password</label>
+    <input id="pw" name="password" autocomplete="new-password">
+    <button id="signup" onclick="document.getElementById('out').textContent = 'signed up'">Sign up</button>
+    <button id="buy" onclick="document.getElementById('out').textContent = 'bought'">Buy now</button>
+    <p id="out">waiting</p>
+  </main>
+</body>
+</html>
