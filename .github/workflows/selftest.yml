@@ -190,7 +190,8 @@ jobs:
         if: steps.voice-cache.outputs.cache-hit != 'true'
         run: bash .github/scripts/download-models.sh voice
       - name: Pin the model
-        run: printf '{ "modelPath": "%s" }\n' "$LOON_DATA/models/$MODEL_FILE" > "$LOON_DATA/settings.json"
+        run: |
+          printf '{ "modelPath": "%s" }\n' "$LOON_DATA/models/$MODEL_FILE" > "$LOON_DATA/settings.json"
 
       # Run from the mounted .dmg, read-only like a fresh download: nothing may write into the app bundle.
       - name: Mount the .dmg
