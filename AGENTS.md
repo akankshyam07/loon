@@ -58,7 +58,7 @@ Hand these to the human with clear instructions. You can't do them for them:
 npm test
 ```
 
-All tests should pass (182 at the time of writing). They don't need the app, a model or Chrome.
+All tests should pass (183 at the time of writing). They don't need the app, a model or Chrome.
 
 ## Working on the code
 
