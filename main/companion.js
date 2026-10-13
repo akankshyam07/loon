@@ -40,6 +40,11 @@ const TEACH_NEXT = /^(?:next(?: step)?|ok(?:ay)?,? next|what'?s next|continue)$/
 
 // saveSettings: called after feedback like "shorter please" changes the reply style.
 // routines: the scheduler (main/routines.js); "every morning at 9…", "show my routines" and friends go to it.
+// Questions that point at what's on screen, and the subset that just means "tell me what this is".
+const PAGE_QUESTION = /\b(this|the|my|that) (page|site|website|tab|listing|product|item|article|post|shop|store|screen|menu)\b|\bwhat (do|can) you see\b|\bcan you see\b|\b(see|read|look at) (this|it|that)\b|\bwhat'?s (on here|here|on (the |my )?screen)\b|\bwhich (one|of these)\b|\b(these|those) (items|products|ones|options)\b|\bis (this|it) (a )?(good|worth)/i;
+const GENERIC_LOOK = /^\s*(what (do|can) you see|can you see( this| it| my screen)?|see this( page)?|look at this( page)?|what'?s on (this|the|my) (page|screen)|what'?s this( page)?|(summari[sz]e|explain) (this|the) page)\s*[?.!]*\s*$/i;
+const CANT_SEE = "I can't see your browser right now 🙈\n\nTo let me read pages, open **chrome://extensions**, click ↻ on Loon, then right-click me → **Pair browser…**\n\nOr press **⌥⇧T** and I'll look at your screen and point at things.";
+
 function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, settings, hub, memory = null, agent = null, teacher = null, routines = null, saveSettings = () => {} }) {
   // turns: the bubble thread's answers so far [{ question, answer, tier, target }], for follow-ups (DESIGN.md §2.10).
   // Kept in memory only and cleared with the session, so Privacy mode never writes it anywhere.
@@ -394,6 +399,17 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
         const values = connectorsLib.fill(op, '', { url: packet?.url || activePage?.url, title: packet?.title || activePage?.title, text: packet?.source === 'selection' ? packet.text : undefined }).values;
         bubble('confirm', { id, summary: `Send to ${connector.name}: ${op.label}`, command: ConnectorHub.command(connector, op, values) });
         return;
+      }
+      // A typed or spoken question about the page in front ("what do you see?", "is this a good deal?") counts as asking
+      // Loon to read it (§4). Without a connected browser, say so plainly instead of letting the model pretend to see.
+      if (!task && question && session.mode === 'ask' && !session.packet && PAGE_QUESTION.test(question)) {
+        if (!bridge.clients.size || !activePage) {
+          bubble('action-done', { id, ok: true, markdown: true, message: CANT_SEE });
+          ui.cat('brain', { state: 'done', mood: 'confused' });
+          return;
+        }
+        session.mode = 'page';
+        if (GENERIC_LOOK.test(question)) { task = 'page_summary'; question = undefined; }
       }
       let packet = session.packet;
       // In page mode every chip works on the page (e.g. Quiz me), not just the page-only tasks.
