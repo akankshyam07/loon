@@ -191,3 +191,10 @@ test('notes come back: "what did I note about…", "show my notes", and a search
   assert.strictEqual(notes.search('what does sam like')[0].body, 'Sam likes oat milk lattes');
   assert.deepStrictEqual(notes.search('what did I note'), []);
 });
+
+test('grammar fixes pick the closest spelling, not Harper\'s first guess', async () => {
+  const { fixGrammar, typoDistance } = require('../brain/devtools');
+  assert.strictEqual(typoDistance('recieve', 'receive'), 1);
+  assert.strictEqual((await fixGrammar('we should probly ship it')).fixed, 'we should probably ship it');
+  assert.strictEqual((await fixGrammar('i definately agree')).fixed, 'I definitely agree');
+});
