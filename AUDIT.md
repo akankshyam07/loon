@@ -29,6 +29,12 @@ with the global hotkeys left alone (`LOON_NO_HOTKEYS=1`). The model files are sh
 | Settings | ✅ **improved** | 18 cards, 6,400 px scroll; now sticky jump bar and filter |
 | History → Continue | ✅ e2e | features part |
 | Browser: selections, page summary, shopping, food | ✅ e2e | browser part (44/44) |
+| No model yet (first run) | ✅ **fixed** | input was disabled; now code features work and a waiting question is answered after the download |
+| Ollama fallback | ✅ **fixed** | ignored each task's answer length (always 400 tokens) |
+| Model answer endings | ✅ **fixed** | "let me know if…" filler trimmed in code |
+| Weather | ✅ **new** | was a false offer; now a confirm card that opens a forecast |
+| Error selections (npm, git, tsc, gcc, rustc, shell) | ✅ **fixed** | were "code" → paw; now instant error-table answers |
+| "Best value?" on any page with prices | ✅ **fixed** | model guessed with no numbers; now the unit-price table |
 | Voice | ⚠️ not run | voice models not in the test data folder |
 | Screen look / Teach | ✅ e2e (fixtures) | real permissions need a manual check |
 
@@ -37,11 +43,13 @@ with the global hotkeys left alone (`LOON_NO_HOTKEYS=1`). The model files are sh
 1. **Small-model reasoning** (UX, high). Qwen3 4B flip-flopped: "which one for video calls?" got UDP on one run and
    TCP on the next. Code can't fix this; Smarter answers or "Go deeper" covers it. Possible mitigation: when the
    question compares two things, add the earlier turn's verdict to the prompt.
-2. **Filler in model answers** (polish). "Let me know if you need help with anything else!" ends many replies.
-3. **Weather and other live data** (missing). It's an honest "I can't", but the user expects an answer. Proposal: a
-   free, keyless weather source (Open-Meteo) with the location the user gives. It's a network call, so it needs a
-   product decision.
-4. **Unknown-language translation** makes things up (e.g. Klingon "ju'va"). Low impact.
+2. **Live weather** (proposal, needs your call). A forecast link works today. A free, keyless source
+   (Open-Meteo) could answer inline, but it's a network call, which goes against "no cloud calls in the default
+   path". Recommendation: offer it as a Settings toggle, off by default.
+3. **The streamed answer shows the filler, then it disappears** at the end. It's a short flash. Removing it would
+   mean holding back the last sentence while streaming.
+4. **Mode badge** for a selection ignores the page kind (an article selection shows the site's mode). Low impact.
+5. **Unknown-language translation** makes things up (e.g. Klingon "ju'va"). Low impact.
 
 ## Improvements made (commits on the branch)
 
@@ -53,16 +61,24 @@ with the global hotkeys left alone (`LOON_NO_HOTKEYS=1`). The model files are sh
 5. Mid-conversation, "the window" no longer triggers a screen look; "this product" does. Regression test included.
 6. Short-text language detection (common words and letters, Unicode-aware).
 7. Settings: sticky jump chips (active card highlighted) and a filter with an empty state.
+8. First run without a model: the input stays usable, the question waits, and it's answered after the download.
+9. Ollama answers respect the task's length; `LOON_OLLAMA_URL` keeps test runs off a running Ollama.
+10. Trailing model filler is trimmed in code (with tests).
+11. Weather becomes an "open a forecast" confirm card.
+12. Terminal error classification and two new error-table entries.
+13. Value questions on any page with prices go to the unit-price code.
 
 ## Test results
 
-- Unit: 220/220 (was 213).
+- Unit: 223/223 (was 213).
+- End-to-end after the changes: core 36/36, features 32/32, browser 44/44.
 - End-to-end baseline before changes: core 36/36, features 32/32, browser 44/44.
 - Explore sessions: 3 rounds; timings and results are in the commit messages above.
 
 ## Prioritized next
 
-1. Re-run the full end-to-end suite on the branch (regression gate).
-2. Explore the browser flows as a user: selection paw, page summary, shopping table on a real-looking page.
-3. Model-answer polish: strip trailing filler sentences in code.
-4. A first-run walkthrough: what a new user sees in the first 60 seconds.
+1. Turn the explore scenarios (no-model flow, value question on a plain page) into permanent selftest checks.
+2. Voice: download the voice models into a test folder and walk through "remind me", "timer" and math by voice.
+3. Food/menu pages that aren't fixtures (a real restaurant layout), as a user.
+4. Writing in a text field: the rewrite → Replace flow on an unfamiliar editor (contenteditable).
+5. Accessibility pass on the bubble: keyboard-only use, focus order, screen-reader labels.
