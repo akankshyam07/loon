@@ -161,6 +161,21 @@ function guessExtractor(doc) {
   return null;
 }
 
+// A product page's own product (for "Add to compare" on a page with one item and no structured data): the <h1> and
+// the first price after it that stands alone, outside "related" / "you may also like" blocks.
+const RELATED = /related|recommend|also|similar|carousel|upsell|cross-?sell|sponsored/i;
+const LONE_PRICE = /^[$€£¥₹]\s?\d[\d,]*(?:\.\d{2})?$/;
+function mainProduct(doc) {
+  const heading = doc.querySelector('h1');
+  const name = (heading?.textContent || '').replace(/\s+/g, ' ').trim();
+  if (!name) return null;
+  const all = [...doc.querySelectorAll('body *')];
+  const inRelated = (el) => { for (let n = el; n && n.tagName !== 'BODY'; n = n.parentElement) if (RELATED.test(`${n.className || ''} ${n.id || ''}`)) return true; return false; };
+  const priceEl = all.slice(all.indexOf(heading) + 1).find((el) => LONE_PRICE.test(ownText(el)) && !inRelated(el));
+  if (!priceEl) return null;
+  return { name, price: parsePrice(ownText(priceEl)), currency: 'USD', rating: null, reviewCount: null, sizeText: name, url: null };
+}
+
 // Why selectors fail, in words the model can act on for its one retry.
 function explainExtractor(doc, extractor) {
   if (!extractor?.item) return 'it had no "item" selector';
@@ -256,4 +271,4 @@ function renderTable(analysis) {
   return `${header}\n${rows.join('\n')}${warnings}`;
 }
 
-module.exports = { parseQuantity, parsePrice, extractStructured, applyExtractor, outlineForExtractor, validExtractor, guessExtractor, explainExtractor, analyze, verdict, renderTable, money, short };
+module.exports = { mainProduct, parseQuantity, parsePrice, extractStructured, applyExtractor, outlineForExtractor, validExtractor, guessExtractor, explainExtractor, analyze, verdict, renderTable, money, short };

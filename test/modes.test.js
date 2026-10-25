@@ -111,3 +111,11 @@ test('reply drafts name who writes to whom, read from the greeting and sign-off'
   assert.match(none, /Below is a message the user received\./);
   assert.match(none, /Start the reply with "Hi there,"/);
 });
+
+test('a single product page: the h1 and its own price, not the related items', async () => {
+  const { parseHTML } = require('linkedom');
+  const { mainProduct } = require('../brain/shopping');
+  const { document } = parseHTML('<html><body><main><h1>Oatly Oat Milk, 32 fl oz</h1><p>Free shipping over $35.</p><div class="buy"><span>$4.99</span><button>Add to cart</button></div><section class="related"><h3>Straws</h3><span>$3.99</span></section></main></body></html>');
+  assert.deepStrictEqual([mainProduct(document).name, mainProduct(document).price], ['Oatly Oat Milk, 32 fl oz', 4.99]);
+  assert.strictEqual(mainProduct(parseHTML('<html><body><p>$4</p></body></html>').document), null);
+});

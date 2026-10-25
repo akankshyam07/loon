@@ -57,6 +57,7 @@ const PAGE_TASK_QUESTIONS = [
   { task: 'food_lightest', kinds: ['menu'], re: /\b(lightest|low(est)?[- ]?cal\w*|fewest calories|healthiest|least fattening|on a diet)\b/i },
   { task: 'food_protein', kinds: ['menu'], re: /\bprotein\b/i },
   { task: 'food_veg', kinds: ['menu'], re: /\b(vegetarian|vegan|meatless|plant[- ]based|no meat|don'?t eat meat)\b/i },
+  { task: 'shop_add', kinds: null, re: /\b(?:add|save|put) (?:this|it)(?: one)? (?:to|in|into) (?:my |the )?(?:compare|comparison|basket)\b/i },
   { task: 'shop_value', kinds: null, re: /\b(best value|best deal|better deal|cheapest|cheaper|price per|unit price|most for (my|the) money|bang for (the|my) buck)\b/i },
 ];
 const pageTaskFor = (question, kind) => PAGE_TASK_QUESTIONS.find((q) => (!q.kinds || q.kinds.includes(kind)) && q.re.test(question))?.task || null;
@@ -587,6 +588,8 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
       const onScreen = session.packet?.source === 'screen';
       const lookChip = task === LOOK_CHIP;
       const again = Boolean(onScreen && question && LOOK_AGAIN.test(question));
+      // The compare basket lives across pages, so "compare my basket" needs no page at all.
+      if (!task && question && /^(?:compare|show|check)(?: me)? (?:my |the )?(?:compare |comparison )?basket\b|^compare (?:what i saved|my saved (?:items|products|stuff))\b/i.test(question.trim())) { task = 'shop_basket'; question = undefined; }
       // A page task named on a menu or shop page is unmistakable even mid-conversation; "cheapest" on any page only at the start.
       const pageTask = !task && question && bridge.clients.size && activePage && !activePage.sensitive ? pageTaskFor(question, activePage.kind) : null;
       const namesPageTask = Boolean(pageTask && (['menu', 'shopping'].includes(activePage.kind) || !session.turns.length));

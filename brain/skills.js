@@ -127,8 +127,10 @@ class Skills {
       }
       case 'basket-add': {
         const { items } = await this.products(packet, { allowGenerate: false });
-        if (!items.length) return { text: "I couldn't find a product price to save from this page.", mood: 'confused' };
-        const item = { ...items[0], site: new URL(packet.url).hostname.replace(/^www\./, ''), url: packet.url, savedAt: Date.now() };
+        const doc = items[0] ? null : await this.doc(packet);
+        const found = items[0] || (doc && shopping.mainProduct(doc));
+        if (!found) return { text: "I couldn't find a product price to save from this page.", mood: 'confused' };
+        const item = { ...found, site: new URL(packet.url).hostname.replace(/^www\./, ''), url: packet.url, savedAt: Date.now() };
         const basket = this.basket().filter((b) => !(b.name === item.name && b.site === item.site));
         basket.push(item);
         this.saveBasket(basket.slice(-12));
