@@ -254,3 +254,4 @@ body.pill #paw:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 v
 .ob-buttons { display: flex; gap: 8px; justify-content: flex-end; align-items: center; }
 .ob-buttons .linkish { margin-right: auto; font-size: 12px; }
 @media (prefers-reduced-motion: reduce) { #toast { animation: none; } }
+.a.waiting { color: var(--muted); font-style: italic; }

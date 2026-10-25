@@ -87,7 +87,7 @@ async function refreshStatus() {
   const status = await window.loon.brainStatus();
   const needsBrain = !status.ready;
   setup.hidden = !needsBrain;
-  input.disabled = needsBrain && !status.downloading;
+  // Without a model the input stays open: math, timers, reminders and definitions are all code.
   if (needsBrain) {
     const { name, sizeGb } = status.recommended;
     $('setupText').textContent = `I need my brain first: ${name}, about ${sizeGb} GB. It downloads once, then I run fully offline on your Mac. No account, no key.`;
@@ -690,6 +690,14 @@ $('download').addEventListener('click', async () => {
     $('progress').hidden = true;
     $('progressText').textContent = '';
     await refreshStatus();
+    if (waitingForBrain && !current) {
+      const question = waitingForBrain;
+      waitingForBrain = null;
+      const waiting = document.querySelector('.a.waiting');
+      if (waiting?.previousElementSibling?.classList.contains('q')) waiting.previousElementSibling.remove();
+      waiting?.remove();
+      ask(question);
+    }
   } catch (err) {
     $('progressText').textContent = `Download failed: ${err.message}. Try again?`;
     $('download').disabled = false;
@@ -701,8 +709,11 @@ window.loon.onDownloadProgress(({ downloaded, total }) => {
   $('progressText').textContent = `${(downloaded / 2 ** 30).toFixed(2)} / ${(total / 2 ** 30).toFixed(2)} GB`;
 });
 
+let lastTyped = null;
+let waitingForBrain = null; // a typed question that needs the model, answered once the download finishes
 function ask(text) {
   lastTask = null;
+  lastTyped = text;
   const id = startAnswer(text);
   window.loon.ask(id, text);
   input.value = '';
@@ -747,6 +758,14 @@ window.loon.onAskDone(({ id, text, ...meta }) => {
 });
 window.loon.onAskError(({ id, message }) => {
   if (current?.id !== id) return;
+  if (/no model available/i.test(message) && current.question === lastTyped) {
+    waitingForBrain = current.question;
+    current.el.classList.add('waiting');
+    current.el.textContent = "That one needs my brain. Tap Download above and I'll answer it as soon as it's ready.";
+    current = null;
+    autosize();
+    return;
+  }
   current.el.classList.add('error');
   current.el.textContent = `My brain hiccuped: ${message}`;
   current = null;

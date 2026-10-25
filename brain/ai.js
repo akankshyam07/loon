@@ -22,7 +22,7 @@ const MODEL_CHOICES = [
   { maxRamGb: Infinity, name: 'Qwen3 8B', uri: 'hf:Qwen/Qwen3-8B-GGUF/Qwen3-8B-Q4_K_M.gguf', file: 'Qwen3-8B-Q4_K_M.gguf', sizeGb: 5.0 },
 ];
 
-const OLLAMA = 'http://127.0.0.1:11434';
+const OLLAMA = process.env.LOON_OLLAMA_URL || 'http://127.0.0.1:11434'; // tests point this away from a running Ollama
 
 function recommendedModel() {
   const ramGb = os.totalmem() / 2 ** 30;
@@ -263,10 +263,10 @@ class Brain {
         if (slot.recording === recording) slot.recording = null;
       }
     }
-    return this.chatOllama(text, { onText, signal, thinking, jsonSchema });
+    return this.chatOllama(text, { onText, signal, maxTokens, thinking, jsonSchema });
   }
 
-  async chatOllama(text, { onText, signal, thinking = false, jsonSchema = null }) {
+  async chatOllama(text, { onText, signal, maxTokens = 400, thinking = false, jsonSchema = null }) {
     const sampling = thinking ? THINKING_SAMPLING : SAMPLING;
     const res = await fetch(`${OLLAMA}/api/chat`, {
       method: 'POST',
@@ -276,7 +276,7 @@ class Brain {
         stream: true,
         think: Boolean(thinking), // Ollama returns thinking in a separate field, never in content
         ...(jsonSchema && { format: jsonSchema }),
-        options: { num_predict: 400, temperature: sampling.temperature, top_p: sampling.topP, top_k: sampling.topK },
+        options: { num_predict: maxTokens, temperature: sampling.temperature, top_p: sampling.topP, top_k: sampling.topK },
         messages: [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: text }],
       }),
     });
