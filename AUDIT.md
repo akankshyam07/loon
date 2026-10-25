@@ -45,6 +45,10 @@ with the global hotkeys left alone (`LOON_NO_HOTKEYS=1`). The model files are sh
 | Plain shop pages, no structured data | ✅ **faster** | page-layout guess before the model: 4 s → 0.7 s, no model call |
 | First run without a model | ✅ permanent check | selftest `fresh` part (8/8) |
 | "Lightest" on a menu with sides | ✅ **fixed** | answered a side of bread; mains now rank first |
+| Performance (hidden real launch) | ✅ measured | bridge ready 1.3 s; idle CPU about 1% (lower bound, since hidden windows draw less); about 420 MB RSS over 5 processes |
+| History: search, continue, delete | ✅ verified | full-text, case-insensitive, empty state, Continue carries context |
+| Model hedging on easy facts | ✅ **fixed** | "I don't know who wrote Pride and Prejudice": about 11/20 hedged → 1/20 with the new prompt wording, facts checked |
+| Routines phrasing | ✅ **fixed** | "brief me", "watch this price", "below $30", "stop/restart X" |
 | Model offering lookups it can't do | ✅ **fixed** | prompt rule plus trimming "would you like me to check…" and "I don't know, but…" |
 | Screen look / Teach | ✅ e2e (fixtures) | real permissions need a manual check |
 
@@ -90,18 +94,22 @@ with the global hotkeys left alone (`LOON_NO_HOTKEYS=1`). The model files are sh
     The dead heuristic fallback after model retries is removed; DESIGN.md §3.6 updated.
 22. Selftest `fresh`: the input stays usable, math works in code, and a model question waits.
 23. Menu sections: sides, drinks and desserts rank after mains.
+24. System prompt: "state it plainly when you know" instead of "honest about uncertainty". Measured A/B over 20
+    samples; temperature ruled out as the cause.
+25. Routines: "brief me" / "morning briefing" → day briefing; price watches without a schedule (every 6 h) and with
+    a target price (one alert on crossing); "stop" / "restart" pause and resume, except focus and timers.
 
 ## Test results
 
-- Unit: 230/230 (was 213).
+- Unit: 231/231 (was 213).
 - End-to-end after the changes: core 42/42 (with voice), features 32/32, browser 45/45, fresh 8/8, migrate 7/7.
 - End-to-end baseline before changes: core 36/36, features 32/32, browser 44/44.
 - Explore sessions: 3 rounds; timings and results are in the commit messages above.
 
 ## Prioritized next
 
-1. History and notes: search and continue flows as a power user.
-2. Routines (price watch, daily brief): create, run now, failure states.
-3. Teach me on screen with an unfamiliar app layout (fixture capture).
-4. Packaged .dmg build and the `smoke` part (native modules in the bundle).
-5. Performance: cold start time, memory at idle, CPU while idle (the cat's animation loop).
+1. Teach me on screen with an unfamiliar app layout (fixture capture).
+2. Packaged .dmg build and the `smoke` part (native modules in the bundle).
+3. Notes: save, find and reuse (do saved notes come back in answers?).
+4. Writing tools on longer drafts: tone options, and Replace in a textarea vs contenteditable.
+5. Settings: does every toggle take effect without a restart?
