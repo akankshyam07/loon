@@ -60,6 +60,8 @@ with the global hotkeys left alone (`LOON_NO_HOTKEYS=1`). The model files are sh
 | Reply placeholders | ✅ **fixed** | "[bracket:$500]" → "[price]" / "[…]" |
 | Saved diet used in menu picks | ✅ **fixed** | "I don't eat meat" ignored (chicken suggested); vegan treated as vegetarian |
 | Basket: stale prices, clear, remove one | ✅ **improved** | items saved ≥7 days ago are flagged; "clear my basket"; "remove the Oatly from my basket" (asks which when ambiguous) |
+| Menu labels (V)/(VG)/(GF), pescatarian | ✅ **new** | a "GF bun" was skipped for celiacs; "fish but not meat" wasn't a diet |
+| Full first-user regression (cycle 12) | ✅ | every answer from cycle 1 re-run: code 8–250 ms, actions right, no regressions |
 | Allergies and intolerances in menu picks | ✅ **new** | nuts, gluten/celiac, dairy/lactose, shellfish, eggs, soy, fish; conservative skip + "tell the staff" |
 | Model offering lookups it can't do | ✅ **fixed** | prompt rule plus trimming "would you like me to check…" and "I don't know, but…" |
 | Screen look / Teach | ✅ e2e (fixtures) | real permissions need a manual check |
@@ -135,10 +137,11 @@ with the global hotkeys left alone (`LOON_NO_HOTKEYS=1`). The model files are sh
     picks skip dishes whose wording mentions the allergen or a common source (pesto, miso, tortillas); the answer
     always says to tell the staff.
 36. Basket: `removeFromBasket` with all-words matching and a "which one?" reply.
+37. Menu labels beat ingredient guessing; `pescatarian` diet (no land meat; fish and vegetarian kept).
 
 ## Test results
 
-- Unit: 243/243 (was 213).
+- Unit: 244/244 (was 213).
 - Watch: the `features` check "duo: each cat captures clicks…" failed 2 of 11 runs on this branch and 0 of 10 on the
   original code. Interleaved reruns all passed, and nothing on this branch touches cat input, so it looks
   timing-sensitive, but it's worth a look if CI shows it. Two unit tests timed out once while a model run competed for CPU; they passed on three
@@ -150,8 +153,8 @@ with the global hotkeys left alone (`LOON_NO_HOTKEYS=1`). The model files are sh
 ## Prioritized next
 
 1. Packaged .dmg build and the `smoke` part.
-2. Pescatarian ("I eat fish but not meat") isn't a diet yet.
-3. A menu's own allergen markers ("(GF)", "(V)", "contains nuts") could beat ingredient guessing.
+2. Merge plan: this branch and the cloud routine's `claude/feedback-loop` both touch `brain/commands.js`; merge
+   that PR first, then rebase this branch.
 4. Polite prefixes ("please remind me…", "can you set a timer…") are fixed on the cloud routine's
    `claude/feedback-loop` branch (PR #1), not here, to avoid merge conflicts.
 5. Speed: follow-ups take 4–11 s on the 4B model; streaming makes it bearable, but "Quick take" defaults deserve a
