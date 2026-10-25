@@ -58,6 +58,8 @@ with the global hotkeys left alone (`LOON_NO_HOTKEYS=1`). The model files are sh
 | Compare basket across product pages | ✅ **fixed** | "Add to compare" failed on any product page without structured data; typed "compare my basket" went to the model |
 | Settings toggles | ✅ verified | all 14 take effect live; Screen sight off→on goes to "when-asked" (re-enabling counts as consent) |
 | Reply placeholders | ✅ **fixed** | "[bracket:$500]" → "[price]" / "[…]" |
+| Saved diet used in menu picks | ✅ **fixed** | "I don't eat meat" ignored (chicken suggested); vegan treated as vegetarian |
+| Basket: stale prices, "clear my basket" | ✅ **improved** | items saved ≥7 days ago are flagged; typed clear works. Removing one item isn't supported yet |
 | Model offering lookups it can't do | ✅ **fixed** | prompt rule plus trimming "would you like me to check…" and "I don't know, but…" |
 | Screen look / Teach | ✅ e2e (fixtures) | real permissions need a manual check |
 
@@ -125,10 +127,13 @@ with the global hotkeys left alone (`LOON_NO_HOTKEYS=1`). The model files are sh
 31. Reply placeholders: the instruction asks for [price]/[day]; leftover "[bracket…]" becomes "[…]".
 32. Shopping: `mainProduct` (h1 + first standalone price, skipping related blocks) for "Add to compare"; typed
     "compare my basket" and "add this to compare" route to the basket tasks.
+33. Diets: `dietFrom` reads "vegan", "plant-based", "no meat", "don't eat meat", "meat-free"; the vegan filter skips
+    dairy and eggs unless the menu says vegan.
+34. Basket: stale-price note for items saved 7+ days ago; "clear my basket" routes to the clear task.
 
 ## Test results
 
-- Unit: 239/239 (was 213).
+- Unit: 241/241 (was 213).
 - Watch: the `features` check "duo: each cat captures clicks…" failed 2 of 11 runs on this branch and 0 of 10 on the
   original code. Interleaved reruns all passed, and nothing on this branch touches cat input, so it looks
   timing-sensitive, but it's worth a look if CI shows it. Two unit tests timed out once while a model run competed for CPU; they passed on three
@@ -140,7 +145,9 @@ with the global hotkeys left alone (`LOON_NO_HOTKEYS=1`). The model files are sh
 ## Prioritized next
 
 1. Packaged .dmg build and the `smoke` part.
-2. Basket management: remove one item, clear, and items saved weeks ago (stale prices).
-3. Onboarding answers actually used later (role, diet: does "vegetarian" filter menu picks?).
-4. Speed: follow-ups take 4–11 s on the 4B model; streaming makes it bearable, but "Quick take" defaults deserve a
+2. Remove a single item from the compare basket ("remove the Oatly").
+3. Pescatarian and allergy diets ("no nuts", "gluten-free") are not understood; the menu reader could flag them.
+4. Polite prefixes ("please remind me…", "can you set a timer…") are fixed on the cloud routine's
+   `claude/feedback-loop` branch (PR #1), not here, to avoid merge conflicts.
+5. Speed: follow-ups take 4–11 s on the 4B model; streaming makes it bearable, but "Quick take" defaults deserve a
    look.
