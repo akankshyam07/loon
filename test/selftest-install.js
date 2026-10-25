@@ -24,13 +24,20 @@ async function fresh(ctx, check, h) {
   check('fresh: first launch says hello with "Get to know you" in the bubble (Luna asks, Soju beside her)', welcomed && (await h.bubble(`document.querySelectorAll('#onboard canvas.ob-cat').length`)) === 2);
   const offer = await waitFor(() => h.bubble(`!document.getElementById('setup').hidden && /^Download /.test(document.getElementById('download').textContent)`), 5000);
   const offerText = await h.bubble(`document.getElementById('setupText').textContent`);
-  check('fresh: the bubble offers the model download (one click, nothing starts by itself)', offer && /downloads once/.test(offerText) && (await h.bubble(`document.getElementById('input').disabled`)), offerText.slice(0, 80));
+  check('fresh: the bubble offers the model download (one click, nothing starts by itself), and typing still works', offer && /downloads once/.test(offerText) && !(await h.bubble(`document.getElementById('input').disabled`)), offerText.slice(0, 80));
   const models = path.join(data, 'models');
   const downloaded = fs.existsSync(models) ? fs.readdirSync(models) : [];
   check('fresh: no model download started', !(await ctx.brain.status()).downloading && downloaded.length === 0, downloaded.join(', '));
   const saved = await waitFor(() => { try { return JSON.parse(fs.readFileSync(path.join(data, 'settings.json'), 'utf8')).welcomed === true; } catch { return false; } }, 5000);
   check('fresh: settings are saved, so the welcome shows only once', saved && /^[A-Z0-9]{6}$/.test(ctx.settings.pairingCode || ''));
   await getToKnowYou(ctx, check, h);
+  // No model yet: code answers still work, and a question that needs the model waits instead of erroring.
+  await h.openBubble();
+  const math = await h.askHere('what is 12 * 12', 5000);
+  await h.submit('explain how vaccines work');
+  const waiting = await waitFor(() => h.bubble(`/answer it as soon as it's ready/.test(document.querySelector('.a.waiting')?.textContent || '')`), 5000);
+  check('fresh: without a model, math answers in code and a model question waits for the download', /= \*?\*?144/.test(math.text || '') && waiting, (math.text || '').slice(0, 40));
+  await h.closeBubble();
   const stats = await h.cat('window.__loon.canvasStats()');
   check('fresh: the pixel cat (Luna) is the default look', stats.visible && stats.opaque > 500 && (await h.cat('window.__loon.companion')) === 'luna', JSON.stringify(stats));
 }
