@@ -117,3 +117,9 @@ test('"remind me what/who…" is a question, not a reminder', () => {
   assert.strictEqual(parseCommand('remind me who the landlord is'), null);
   assert.strictEqual(parseCommand('remind me to call mom at 5').action, 'reminder');
 });
+
+test('"[bracket: guess]" placeholders become a plain […], never a guessed value', () => {
+  const { tidyModelAnswer: t } = require('../brain/resolve');
+  assert.strictEqual(t('Hi Jordan, the price is [bracket:$500] for 20 seats.'), 'Hi Jordan, the price is […] for 20 seats.');
+  assert.strictEqual(t('Hi Jordan, can we meet on [day]?'), 'Hi Jordan, can we meet on [day]?');
+});

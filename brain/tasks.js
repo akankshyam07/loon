@@ -14,7 +14,7 @@ function replyInstruction(text = '') {
   const me = user || 'the user';
   return [
     `${user ? `You are writing as ${user}. ` : ''}Below is a message ${me} received${sender ? ` from ${sender}` : ''}.`,
-    `Write ${me}'s reply${sender ? ` to ${sender}` : ''}: answer every question and request in it, briefly and warmly, and put [brackets] where ${me} must fill in a detail (a price, a time).`,
+    `Write ${me}'s reply${sender ? ` to ${sender}` : ''}: answer every question and request in it, briefly and warmly, and where ${me} must fill in a detail, write a placeholder such as [price] or [day] instead of guessing it.`,
     `Do not repeat the received message. Start the reply with "Hi ${sender || 'there'}," and reply with only the reply.`,
   ].join(' ');
 }

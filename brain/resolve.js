@@ -137,7 +137,7 @@ const TRAILING_FILLER = /(?:^|(?<=[.!?)\]]\s+)|\n+)(?:(?:let me know|feel free t
 // "I don't know the answer, but I can tell you that the capital is Paris": the hedge contradicts the answer after it.
 const CONTRADICTED_HEDGE = /^\s*i (?:don['’]t|do not) know(?: the answer| for sure| exactly)?,?\s+but\s+(?:i can tell you(?: that)?\s+)?/i;
 function tidyModelAnswer(text) {
-  let trimmed = text.replace(TRAILING_FILLER, '').trim().replace(/^(?:here(?:'s| is) (?:your|the|a) (?:reply|draft|rewrite|rewritten text|response)\s*:\s*)/i, '');
+  let trimmed = text.replace(TRAILING_FILLER, '').trim().replace(/\[bracket(?::\s*[^\]]*)?\]/gi, '[…]').replace(/^(?:here(?:'s| is) (?:your|the|a) (?:reply|draft|rewrite|rewritten text|response)\s*:\s*)/i, '');
   const hedged = trimmed.replace(CONTRADICTED_HEDGE, '');
   if (hedged !== trimmed && hedged.length >= 8) trimmed = hedged.charAt(0).toUpperCase() + hedged.slice(1);
   return trimmed.length >= 8 ? trimmed : text;
