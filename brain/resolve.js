@@ -26,15 +26,15 @@ const MOODS = ['happy', 'curious', 'judgy', 'sleepy', 'suspicious', 'focused', '
 // T1: answers that need no model. Time/date change, so these never go in the cache.
 const CODE_ANSWERS = [
   {
-    match: /^(what('?s| is) the )?(current )?time( is it)?( now)?\??$|^what time is it\??$/,
+    match: /^(what('?s| is) the |tell me the )?(current )?time( is it)?( now)?$|^what time is it$/,
     answer: () => ({ mood: 'happy', text: `It's ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.` }),
   },
   {
-    match: /^(what('?s| is) (the |today'?s )?date|what day is (it|today))( today)?\??$/,
+    match: /^(what('?s| is) (the |today'?s )?date|today'?s date|date|what day is (it|today))( today)?$/,
     answer: () => ({ mood: 'happy', text: `It's ${new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}.` }),
   },
   {
-    match: /^(what can you do|help|what do you do|how do (i|you) use (you|this))\??$/,
+    match: /^(what can (you|u) do( for me)?|help( me)?|what do you do|how do (i|you) use (you|this))$/,
     answer: () => ({
       mood: 'happy',
       text: [
@@ -50,13 +50,22 @@ const CODE_ANSWERS = [
     }),
   },
   {
-    match: /^(who|what) are you\??$/,
+    match: /^(who|what) are you$/,
     answer: () => ({ mood: 'happy', text: "I'm Loon, a small black cat who lives on your screen. I run on your Mac, and nothing you ask leaves it unless you switch on Smarter answers in Settings." }),
   },
 ];
 
 function normalize(text) {
   return text.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+// Typed questions arrive with smart quotes, "?!", "hey loon," and "right now"; strip those so the instant answers match.
+function instantKey(text) {
+  return normalize(text)
+    .replace(/[’‘]/g, "'")
+    .replace(/^(?:(?:hey |hi |ok |okay )?loon|please|pls)[,:]?\s+/, '')
+    .replace(/\s+(?:right now|please|pls)(?=[\s?!.]*$)/, '')
+    .replace(/[\s?!.]+$/, '');
 }
 
 function isoWeek(date = new Date()) {
@@ -223,7 +232,7 @@ class Resolver {
     let prefix = '';
 
     if (taskId === 'ask' && !packet.text) {
-      const template = CODE_ANSWERS.find((c) => c.match.test(normalize(packet.question)));
+      const template = CODE_ANSWERS.find((c) => c.match.test(instantKey(packet.question)));
       if (template) {
         const { text, mood } = template.answer();
         onText(text);
