@@ -7,6 +7,18 @@ const HEAVY = { fried: 3, 'deep-fried': 4, crispy: 2, battered: 3, breaded: 2, c
 const LIGHT = { grilled: -2, steamed: -3, baked: -1, roasted: -1, poached: -2, salad: -2, broth: -2, 'raw': -1, sashimi: -2, vinaigrette: -1, greens: -1, vegetable: -1, veggie: -1, lean: -2 };
 const PROTEIN = /\b(chicken|turkey|salmon|tuna|shrimp|prawns?|beef|steak|pork|tofu|tempeh|egg whites?|eggs?|lentils?|chickpeas?|beans|edamame|greek yogurt|cod|fish|seitan)\b/gi;
 const MEAT = /\b(chicken|turkey|beef|steak|pork|bacon|ham|sausage|salami|pepperoni|lamb|veal|venison|duck|prosciutto|chorizo|meatballs?|burger|anchov(y|ies)|fish|salmon|tuna|shrimp|prawns?|cod|crab|lobster|clams?|mussels|oysters?|scallops?|squid|calamari|octopus|gelatin)\b/i;
+// Animal products a vegan skips; an item the menu itself calls vegan wins ("vegan ranch").
+const NOT_VEGAN = /\b(cheese|parmesan|feta|mozzarella|cheddar|ricotta|goat cheese|cream|creamy|butter|egg|eggs|mayo|aioli|ranch|yogurt|honey|milk|ghee|caesar)\b/i;
+
+// "vegan" | "vegetarian" | null, from what the user asked Loon to remember.
+function dietFrom(memory = []) {
+  const text = memory.join(' ');
+  if (/\bnot (?:a )?(?:vegetarian|vegan)\b/i.test(text)) return null;
+  if (/\bvegan\b|plant[- ]based/i.test(text)) return 'vegan';
+  if (/\bvegetarian\b|\b(?:don'?t|do not|never|can'?t) eat (?:any )?meat\b|\bno meat\b|\bmeat[- ]free\b/i.test(text)) return 'vegetarian';
+  return null;
+}
+
 const TIPS = [
   [/\bdressing\b/i, 'Ask for the dressing on the side.'],
   [/\baioli|mayo\b/i, 'Skip or halve the aioli/mayo.'],
@@ -75,7 +87,7 @@ function score(item) {
   }
   let proteins = [...new Set((text.match(PROTEIN) || []).map((p) => p.toLowerCase()))];
   if (proteins.some((p) => /salmon|tuna|cod/.test(p))) proteins = proteins.filter((p) => p !== 'fish'); // "fish" + "salmon" is one protein
-  return { ...item, heaviness, reasons, proteins, likelyVegetarian: !MEAT.test(text), tips: TIPS.filter(([re]) => re.test(text)).map(([, tip]) => tip) };
+  return { ...item, heaviness, reasons, proteins, likelyVegetarian: !MEAT.test(text), likelyVegan: !MEAT.test(text) && (/\bvegan\b/i.test(text) || !NOT_VEGAN.test(text)), tips: TIPS.filter(([re]) => re.test(text)).map(([, tip]) => tip) };
 }
 
 const GOALS = {
@@ -84,9 +96,9 @@ const GOALS = {
   vegetarian: { title: 'Likely vegetarian', sort: (a, b) => a.heaviness - b.heaviness, filter: (i) => i.likelyVegetarian },
 };
 
-function recommend(items, goal = 'lightest', { count = 3, vegetarianOnly = false, judgmental = true } = {}) {
+function recommend(items, goal = 'lightest', { count = 3, vegetarianOnly = false, veganOnly = false, judgmental = true } = {}) {
   const { title, sort, filter } = GOALS[goal];
-  const picks = items.map(score).filter(filter || (() => true)).filter((i) => !vegetarianOnly || i.likelyVegetarian)
+  const picks = items.map(score).filter(filter || (() => true)).filter((i) => (!vegetarianOnly || i.likelyVegetarian) && (!veganOnly || i.likelyVegan))
     .sort((a, b) => Boolean(a.extra) - Boolean(b.extra) || sort(a, b)).slice(0, count);
   if (!picks.length) return { text: `Nothing on this menu looks ${goal === 'vegetarian' ? 'vegetarian' : 'like a match'}.`, mood: 'confused' };
   const lines = picks.map((p) => {
@@ -102,8 +114,9 @@ function recommend(items, goal = 'lightest', { count = 3, vegetarianOnly = false
       : '\n\nFrom menu wording only: no numbers here. Tap "Estimate calories" for rough estimates.';
   const heavy = items.map(score).sort((a, b) => b.heaviness - a.heaviness)[0];
   const quip = judgmental && goal === 'lightest' && heavy && heavy.heaviness >= 5 && (!vegetarianOnly || heavy.likelyVegetarian) ? `\n\nTiny warning: ${heavy.name} is probably doing crimes.` : '';
-  const filtered = vegetarianOnly && goal !== 'vegetarian' ? '\n\n_Only vegetarian picks, because you asked me to remember that._' : '';
+  const filtered = veganOnly ? '\n\n_Only vegan picks (no meat, dairy or eggs listed), because you asked me to remember that._'
+    : vegetarianOnly && goal !== 'vegetarian' ? '\n\n_Only vegetarian picks, because you asked me to remember that._' : '';
   return { text: `**${title}**\n${lines.join('\n')}${note}${filtered}${quip}`, mood: quip ? 'judgy' : 'happy' };
 }
 
-module.exports = { extractMenu, score, recommend };
+module.exports = { extractMenu, score, recommend, dietFrom };

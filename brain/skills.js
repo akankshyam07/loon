@@ -152,9 +152,9 @@ class Skills {
         if (!items.length) return { text: "I couldn't read menu items with prices here. A screenshot (⌥⇧S) can help with menu images.", mood: 'confused' };
         const goal = { food_lightest: 'lightest', food_protein: 'protein', food_veg: 'vegetarian' }[taskId];
         // Memory without a model: a saved "I'm vegetarian" filters every menu answer.
-        const vegetarian = memory.some((m) => /\b(vegetarian|vegan)\b/i.test(m)) && !/\bnot (vegetarian|vegan)\b/i.test(memory.join(' '));
-        const result = food.recommend(items, goal, { vegetarianOnly: vegetarian, judgmental });
-        return { ...result, detail: `${items.length} menu items · keywords, no model${vegetarian ? ' · using your saved diet' : ''}` };
+        const diet = food.dietFrom(memory);
+        const result = food.recommend(items, goal, { vegetarianOnly: Boolean(diet), veganOnly: diet === 'vegan', judgmental });
+        return { ...result, detail: `${items.length} menu items · keywords, no model${diet ? ' · using your saved diet' : ''}` };
       }
       case 'errors': {
         const text = lookupKnown(packet.text || '');

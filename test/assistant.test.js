@@ -198,3 +198,13 @@ test('grammar fixes pick the closest spelling, not Harper\'s first guess', async
   assert.strictEqual((await fixGrammar('we should probly ship it')).fixed, 'we should probably ship it');
   assert.strictEqual((await fixGrammar('i definately agree')).fixed, 'I definitely agree');
 });
+
+test('saved diets in everyday words filter menu picks; vegan skips dairy and eggs', () => {
+  const { dietFrom } = require('../brain/food');
+  assert.deepStrictEqual([["I'm vegetarian"], ['I am vegan'], ["I don't eat meat"], ['no meat for me'], ["I'm not vegetarian anymore"], ['I love steak']].map(dietFrom), ['vegetarian', 'vegan', 'vegetarian', 'vegetarian', null, null]);
+  const items = extractMenu('Shroomami\nroasted tofu, kale, miso sesame ginger dressing\n$13.95 655 cal\nCaprese\ntomato, mozzarella, basil, olive oil\n$11 400 cal\nChicken Bowl\ngrilled chicken, rice, greens\n$12 500 cal');
+  const vegan = recommend(items, 'lightest', { vegetarianOnly: true, veganOnly: true }).text;
+  assert.match(vegan, /Shroomami/);
+  assert.doesNotMatch(vegan, /Caprese|Chicken/);
+  assert.match(recommend(items, 'lightest', { vegetarianOnly: true }).text, /Caprese/);
+});
