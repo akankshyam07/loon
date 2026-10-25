@@ -75,3 +75,12 @@ test('short phrases get the right language before franc guesses', () => {
   assert.strictEqual(shortTextLanguage('sushi'), null);
   assert.strictEqual(shortTextLanguage('x'.repeat(100)), null);
 });
+
+test('model answers lose the trailing "let me know if…" filler, never the answer', () => {
+  const { stripTrailingFiller: f } = require('../brain/resolve');
+  assert.strictEqual(f('15% of 84 is 12.6. Let me know if you need help with anything else!'), '15% of 84 is 12.6.');
+  assert.strictEqual(f('TCP is reliable. UDP is fast. Hope this helps! 😊'), 'TCP is reliable. UDP is fast.');
+  assert.strictEqual(f('Video calls use UDP.\n\nIf you have any more questions, feel free to ask!'), 'Video calls use UDP.');
+  assert.strictEqual(f('Let me know if you need anything.'), 'Let me know if you need anything.');
+  assert.strictEqual(f('Feel free to ask about the weather of Paris; it is sunny.'), 'Feel free to ask about the weather of Paris; it is sunny.');
+});

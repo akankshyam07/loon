@@ -132,6 +132,13 @@ function createLeadFilter(onText) {
   };
 }
 
+// Small models end half their answers with an offer of more help; the answer is better without it.
+const TRAILING_FILLER = /(?:^|(?<=[.!?)\]]\s+)|\n+)(?:(?:let me know|feel free to (?:ask|reach out)|i(?:'m| am) (?:here|happy) to help|i can help (?:you )?with (?:more|anything)|hope (?:this|that) helps|is there anything else|if you (?:have|need) (?:any )?(?:more|other|further)? ?(?:questions|help))[^.!?\n]*[.!?]?\s*(?:😊|🐾|😸)?\s*)+$/i;
+function stripTrailingFiller(text) {
+  const trimmed = text.replace(TRAILING_FILLER, '').trim();
+  return trimmed.length >= 8 ? trimmed : text;
+}
+
 // Streams model text while pulling the leading "[mood:x]" tag (and any <think> block) and leading flattery out of it.
 function createMoodParser(onAnswer) {
   const lead = createLeadFilter(onAnswer);
@@ -405,7 +412,7 @@ class Resolver {
         else await this.cli.ask(cli, { ...request, level: hard ? 'hard' : 'medium', models: this.settings.planModels?.[cli], warm: planFirst });
       } else await this.brain.chat(prompt, { onText: onChunk, signal, maxTokens, smart: target === 'smart', thinking, onConfidence: (c) => { confidence = c; } });
       const mood = parser.finish(); // flushes the held first clause into `text`
-      return { text: stripThink(text).trim(), mood, target, confidence, hard };
+      return { text: stripTrailingFiller(stripThink(text).trim()), mood, target, confidence, hard };
     };
     // Clears the streamed answer so a different one can take its place.
     const restart = () => {
@@ -521,4 +528,4 @@ class Resolver {
   }
 }
 
-module.exports = { Resolver, createMoodParser, stripFlattery, normalize, isoWeek };
+module.exports = { stripTrailingFiller, Resolver, createMoodParser, stripFlattery, normalize, isoWeek };
