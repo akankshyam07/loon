@@ -44,7 +44,8 @@ function normalizeSpoken(text) {
 function parseCommand(input, now = new Date()) {
   const text = input.trim();
   let m;
-  if ((m = text.match(/^remind me (?:to |about )?(.+)$/i))) {
+  // "Remind me what our budget was" is a question about the chat, not a reminder.
+  if ((m = text.match(/^remind me (?:to |about )?(.+)$/i)) && !/^(?:what|who|whom|where|when|why|how|which|whether|if)\b/i.test(m[1])) {
     const { date, rest } = extractWhen(m[1], now);
     return { action: 'reminder', title: tidy(rest) || tidy(m[1]), when: date };
   }

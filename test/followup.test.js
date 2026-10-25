@@ -254,3 +254,13 @@ test('mid-conversation, "the window" is the topic, not the screen', async () => 
   assert.strictEqual(t.calls.length, before + 1, 'answered from the chat, no screen look');
   assert.match(t.last().prompt, /compare TCP and UDP/);
 });
+
+test('a long thread keeps its first message when older turns are dropped', () => {
+  const { historyBlock } = require('../brain/tasks');
+  const turns = [{ question: "I'm planning a trip to Japan in April, budget about $4000", answer: 'Sounds fun.' }, ...Array.from({ length: 12 }, (_, i) => ({ question: `question ${i}`, answer: 'x'.repeat(300) }))];
+  const block = historyBlock(turns);
+  assert.match(block, /User \(first message\): I'm planning a trip to Japan in April, budget about \$4000/);
+  assert.match(block, /question 11/);
+  assert.doesNotMatch(block, /question 0\b/);
+  assert.doesNotMatch(historyBlock(turns.slice(0, 2)), /first message/);
+});

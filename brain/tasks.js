@@ -168,6 +168,9 @@ function historyBlock(turns, budget = FOLLOW_UP_BUDGET) {
     entries.unshift(entry);
     used += entry.length + 2;
   }
+  // The first message usually sets the whole thread up ("a trip to Japan in April, $4000"); it stays when older turns
+  // are dropped, and it never changes, so the prompt prefix stays reusable.
+  if (entries.length < turns.length) entries.unshift(`User (first message): ${clip(oneLine(turns[0].question), budget.question)}\n…`);
   return `Conversation so far (oldest first):\n<conversation>\n${entries.join('\n\n')}\n</conversation>`;
 }
 

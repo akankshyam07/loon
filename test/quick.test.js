@@ -110,3 +110,10 @@ test('spoken numbers work too (voice transcripts spell them out)', () => {
   assert.match(text('Twenty percent off a hundred and twenty.'), /\*\*96\*\*/);
   assert.match(text('What is twelve times twelve?'), /\*\*144\*\*/);
 });
+
+test('"remind me what/who…" is a question, not a reminder', () => {
+  const { parseCommand } = require('../brain/commands');
+  assert.strictEqual(parseCommand('remind me what our total budget was'), null);
+  assert.strictEqual(parseCommand('remind me who the landlord is'), null);
+  assert.strictEqual(parseCommand('remind me to call mom at 5').action, 'reminder');
+});
