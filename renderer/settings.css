@@ -94,11 +94,11 @@ ul { list-style: none; padding: 0; margin: 0 0 10px; display: grid; gap: 8px; }
 .field { display: grid; gap: 4px; margin: 10px 0; position: relative; }
 .field.inline { grid-template-columns: auto 1fr; align-items: center; gap: 10px; }
 .field b, .segments b { font-weight: 700; }
-textarea, .field input, .field select, #memory input, #profile input, #brainFacts input, #brainFind, #historySearch {
+textarea, .field input, .field select, #memory input, #profile input, #brainFacts input, #brainFind, #historySearch, #settingsFilter {
   font: inherit; color: var(--ink); background: var(--field); padding: 6px 10px; border: 2px solid var(--line); border-radius: 10px;
 }
 textarea { resize: vertical; min-height: 48px; }
-textarea:focus, .field input:focus, .field select:focus, #memory input:focus, #profile input:focus, #brainFacts input:focus, #brainFind:focus, #historySearch:focus {
+textarea:focus, .field input:focus, .field select:focus, #memory input:focus, #profile input:focus, #brainFacts input:focus, #brainFind:focus, #historySearch:focus, #settingsFilter:focus {
   outline: none; box-shadow: 0 0 0 3px var(--lav);
 }
 .count { position: absolute; right: 10px; bottom: 8px; font-size: 11px; color: var(--muted); }
@@ -165,3 +165,12 @@ textarea:focus, .field input:focus, .field select:focus, #memory input:focus, #p
 .conv-q { color: var(--muted); font-weight: 700; }
 .conv-q::before { content: 'you: '; color: var(--sage); }
 .conv-a { white-space: pre-wrap; }
+
+/* jump bar: sticky so any card is one click away */
+#jump { position: sticky; top: 0; z-index: 5; margin: 0 -22px 16px; padding: 10px 22px; background: var(--paper); border-bottom: 3px solid var(--line); }
+#settingsFilter { width: 100%; box-sizing: border-box; margin-bottom: 8px; }
+#jumpLinks { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+#jumpLinks button { flex: none; padding: 3px 10px; font-size: 12px; border-radius: 999px; }
+#jumpLinks button[hidden], section[hidden] { display: none; }
+section { scroll-margin-top: 110px; }
+#jumpLinks button.here { background: var(--pink); color: #2b2238; }

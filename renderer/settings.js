@@ -476,3 +476,34 @@ refreshHistory();
 
 window.loon.onSettingsChanged((s) => { render(s); refreshHistory(); });
 window.loon.getSettings().then(render);
+
+// 17 cards in one scroll: a sticky row of jump links and a filter, built from the cards' own headings.
+(function sectionNav() {
+  const sections = [...document.querySelectorAll('section')].filter((sct) => sct.querySelector('h2'));
+  $('jumpLinks').replaceChildren(...sections.map((sct) => {
+    const b = Object.assign(document.createElement('button'), { type: 'button', textContent: sct.querySelector('h2').textContent.trim() });
+    b.addEventListener('click', () => sct.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    return b;
+  }));
+  // The chip for the card at the top of the view lights up and stays visible in the row.
+  const seen = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      const chip = $('jumpLinks').children[sections.indexOf(entry.target)];
+      for (const c of $('jumpLinks').children) c.classList.toggle('here', c === chip);
+      chip.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
+  }, { rootMargin: '-120px 0px -70% 0px' });
+  sections.forEach((sct) => seen.observe(sct));
+  $('settingsFilter').addEventListener('input', (e) => {
+    const q = e.target.value.trim().toLowerCase();
+    let shown = 0;
+    sections.forEach((sct, i) => {
+      const match = !q || sct.textContent.toLowerCase().includes(q);
+      sct.hidden = !match;
+      $('jumpLinks').children[i].hidden = !match;
+      shown += match;
+    });
+    $('noMatch').hidden = shown > 0;
+  });
+})();
