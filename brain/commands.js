@@ -53,6 +53,11 @@ function parseCommand(input, now = new Date()) {
       return { action: 'event', title: title || 'Event', start: date, end: end || new Date(date.getTime() + 60 * 60 * 1000) };
     }
   }
+  // Loon has no live data (it stays offline), so weather becomes a forecast page to open, behind the usual confirm card.
+  if ((m = text.match(/^(?:(?:what'?s|what is|how'?s|how is) the (?:weather|forecast)(?: like)?|weather|forecast|(?:is it|will it)(?: going to)? (?:rain|snow)(?:ing)?)(?: (today|tonight|tomorrow|now|this week(?:end)?))?(?: (?:in|for) ([a-z][a-z .'-]+?))?(?: (today|tonight|tomorrow|now|this week(?:end)?))?\??$/i))) {
+    const query = ['weather', m[2], m[1] || m[3]].filter(Boolean).join(' ');
+    return { action: 'open', target: `https://www.google.com/search?q=${encodeURIComponent(query)}`, kind: 'url', label: `Open a forecast (I stay offline, so no live weather here): ${query}` };
+  }
   if ((m = text.match(/^open (.+)$/i))) {
     const target = tidy(m[1]);
     const isUrl = /^(https?:\/\/)?[\w-]+(\.[\w-]+)+(\/\S*)?$/i.test(target);
@@ -99,7 +104,8 @@ function describe(command) {
   switch (command.action) {
     case 'reminder': return `Reminder: ${command.title}${command.when ? `, ${at(command.when)}` : ' (no time)'}`;
     case 'event': return `Calendar event: ${command.title}, ${at(command.start)}`;
-    case 'open': return `Open ${command.kind === 'url' ? command.target : `the ${command.target} app`}`;
+    case 'open': if (command.label) return command.label;
+      return `Open ${command.kind === 'url' ? command.target : `the ${command.target} app`}`;
     case 'find': return `Find files matching "${command.query}"`;
     case 'briefing': return command.project ? `Catch up on ${command.project}` : 'Catch up on your projects';
     case 'shortcut': return `Run the Shortcut "${command.name}"`;

@@ -84,3 +84,10 @@ test('model answers lose the trailing "let me know if…" filler, never the answ
   assert.strictEqual(f('Let me know if you need anything.'), 'Let me know if you need anything.');
   assert.strictEqual(f('Feel free to ask about the weather of Paris; it is sunny.'), 'Feel free to ask about the weather of Paris; it is sunny.');
 });
+
+test('weather is an offer to open a forecast, behind a confirm card', () => {
+  const { parseCommand } = require('../brain/commands');
+  assert.match(parseCommand("what's the weather like in Boston tomorrow").target, /q=weather%20Boston%20tomorrow$/);
+  assert.match(parseCommand('will it rain today?').target, /q=weather%20today$/);
+  assert.strictEqual(parseCommand('what is the weather of my mood'), null);
+});
