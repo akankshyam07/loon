@@ -227,11 +227,13 @@ function describeSchedule(s) {
 }
 
 // ---------- actions ----------
+const PRICE_WATCH = /\b(?:check|watch|track|monitor)\b.*\bprices?\b|\bprice (?:watch|drop|check)\b|\bwhen (?:this|it|the price) (?:drops|goes down|falls|gets cheaper)\b|\b(?:below|under|less than) \$\d/i;
+const TARGET = /\b(?:below|under|less than)\s*\$?(\d+(?:\.\d{1,2})?)/i;
 const ACTION_RULES = [
   ['weekSummary', /\b(?:summari[sz]e|recap|review)\b.*\b(?:week|worked on|did)\b|\bweek(?:ly)?\s+(?:summary|recap|review)\b|\bwhat i (?:worked on|did)\b/i],
-  ['today', /\b(?:my|the)\s+(?:day|calendar|schedule|agenda)\b|\bplan (?:for )?(?:my |the )?day\b|\bwhat'?s on (?:my )?(?:calendar|schedule|agenda)\b|\bgood morning\b/i],
+  ['today', /\bbrief me\b|\b(?:morning|daily)\s+brief(?:ing)?\b|\b(?:my|the)\s+(?:day|calendar|schedule|agenda)\b|\bplan (?:for )?(?:my |the )?day\b|\bwhat'?s on (?:my )?(?:calendar|schedule|agenda)\b|\bgood morning\b/i],
   ['briefing', /\b(?:catch me up|where (?:did )?i (?:leave|left) off|briefing|my projects)\b/i],
-  ['priceWatch', /\b(?:check|watch|track|monitor)\b.*\bprices?\b|\bprice (?:watch|drop|check)\b/i],
+  ['priceWatch', PRICE_WATCH],
 ];
 
 // The action part of a routine: { action, payload, understood }.
@@ -242,7 +244,10 @@ function parseAction(rest, { pageUrl = null } = {}) {
   if ((m = text.match(/^(?:tell|ask) me to (.+)$/i))) return { action: 'notify', payload: { message: `Time to ${tidyMessage(m[1])}` }, understood: true };
   for (const [action, re] of ACTION_RULES) {
     if (!re.test(text)) continue;
-    if (action === 'priceWatch') return { action, payload: { url: pageUrl || '' }, understood: Boolean(pageUrl) };
+    if (action === 'priceWatch') {
+      const below = text.match(TARGET);
+      return { action, payload: { url: pageUrl || '', ...(below ? { below: Number(below[1]) } : {}) }, understood: Boolean(pageUrl) };
+    }
     if (action === 'briefing') {
       const project = text.match(/\b(?:on|in|with)\s+(?:my\s+|the\s+)?(.+?)(?:\s+project)?$/i);
       return { action, payload: { project: project ? project[1] : '' }, understood: true };
@@ -276,7 +281,7 @@ function labelFor(action, payload = {}) {
     case 'today': return 'My day';
     case 'briefing': return payload.project ? `Catch-up · ${payload.project}` : 'Catch-up';
     case 'weekSummary': return 'Week summary';
-    case 'priceWatch': return `Price watch${hostOf(payload.url) ? ` · ${hostOf(payload.url)}` : ''}`;
+    case 'priceWatch': return `Price watch${hostOf(payload.url) ? ` · ${hostOf(payload.url)}` : ''}${payload.below != null ? ` · under $${payload.below}` : ''}`;
     case 'ask': return (payload.question || 'Question').slice(0, 60);
     default: return 'Routine';
   }
@@ -288,8 +293,13 @@ function parseRoutine(input, { now = new Date(), pageUrl = null } = {}) {
   const text = String(input).trim().replace(/[.!]+$/, '');
   // Questions about schedules ("what runs every day at 9?") stay questions.
   if (/^(?:what|how|why|when|where|who|which|is|are|does|do|can|could|should|would|explain|define)\b/i.test(text)) return null;
-  const { schedule, rest } = parseSchedule(text, now);
+  let { schedule, rest } = parseSchedule(text, now);
   let leftover = rest;
+  // "Watch this price" / "tell me when this drops below $30" name no schedule: a price watch checks every 6 hours.
+  if (!schedule && PRICE_WATCH.test(text) && /\b(?:this|it|the price|this page)\b/i.test(text)) {
+    schedule = { type: 'interval', minutes: 360, window: null, days: ALL_DAYS };
+    leftover = text;
+  }
   if (!schedule) {
     // "every blue moon tell me…": clearly meant as a routine, so it gets a card to fix; anything else isn't one.
     const m = text.match(/^(?:every|each)\b.*?\b((?:tell|remind) me\b.*)$/i);
@@ -369,8 +379,10 @@ function parseRoutineCommand(input) {
   const text = String(input).trim().replace(/[.!?]+$/, '');
   if (/^(?:(?:show|list|see|view)(?: me)?(?: all)?(?: of)? my routines|(?:what are )?my routines|(?:show|list) (?:all )?routines|what routines do i have)$/i.test(text)) return { action: 'routines' };
   let m;
-  if ((m = text.match(/^(pause|resume|unpause|disable|enable|turn off|turn on|switch off|switch on|mute|unmute) (.+)$/i))) {
-    return { action: 'routinePause', on: /^(?:resume|unpause|enable|turn on|switch on|unmute)$/i.test(m[1]), query: m[2] };
+  // "Stop the morning briefing" pauses it: easy to undo, unlike delete.
+  if ((m = text.match(/^(pause|resume|unpause|disable|enable|turn off|turn on|switch off|switch on|mute|unmute|stop|restart) (.+)$/i))
+    && !(/^(?:stop|restart)$/i.test(m[1]) && /^(?:the |my |all )?(?:focus|timers?)\b/i.test(m[2]))) { // "stop focus" / "stop the timer" are commands
+    return { action: 'routinePause', on: /^(?:resume|unpause|enable|turn on|switch on|unmute|restart)$/i.test(m[1]), query: m[2] };
   }
   if ((m = text.match(/^(?:delete|remove) (.+)$/i))) return { action: 'routineDelete', query: m[1] };
   return null;
@@ -396,7 +408,8 @@ const mentionsRoutine = (text) => /\b(?:routines?|reminders?)\b/i.test(text);
 
 // ---------- price watch ----------
 // Picks the watched product from a page's products and compares with the last run, unit price when both have one.
-function priceCheck(items, previous = null, name = '') {
+// below: the user's target price; crossing it alerts once, like a drop does.
+function priceCheck(items, previous = null, name = '', below = null) {
   const item = (name && items.find((i) => i.name === name)) || items[0];
   if (!item || item.price == null) return null;
   const q = parseQuantity(item.sizeText || item.name);
@@ -410,6 +423,8 @@ function priceCheck(items, previous = null, name = '') {
     after = byUnit ? current.unitPrice : current.price;
     drop = after < before * (1 - DROP_MIN);
   }
+  const hitTarget = below != null && current.price <= below && !(previous && previous.price <= below);
+  if (hitTarget) return { current, drop: true, text: `**Under your ${money({ ...current, price: below })} target:** ${short(current.name)} is ${money(current)} now.` };
   const text = drop
     ? `**Price drop:** ${short(current.name)} is ${money(current)} now, down from ${money(previous)} (${Math.round((1 - after / before) * 100)}% less${previous.unit && previous.unit === current.unit && current.unitPrice ? ' per unit' : ''}).`
     : `${short(current.name)}: ${money(current)}${previous ? ` (was ${money(previous)})` : ' (first check)'}.`;

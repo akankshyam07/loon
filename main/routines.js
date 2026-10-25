@@ -91,7 +91,7 @@ function createRoutines({ memory, settings, tasks, ui, audit = () => {}, now = (
         if (!tasks.connected()) return { defer: "Chrome with the Loon extension isn't connected" };
         const items = await tasks.products(p.url);
         if (items == null) return { defer: `Open ${hostOf(p.url) || 'the page'} in Chrome and I'll check it then` };
-        const check = priceCheck(items, r.state.price || null, r.state.price?.name);
+        const check = priceCheck(items, r.state.price || null, r.state.price?.name, p.below ?? null);
         if (!check) throw new Error("I couldn't find a price on that page");
         return { text: check.text, silent: !check.drop, state: { price: check.current }, kind: 'priceDrop' };
       }

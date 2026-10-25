@@ -421,3 +421,19 @@ test('companion: routine phrasings reach the routine card before Apple Reminders
   assert.strictEqual((await say('remind me to call mom at 5')).command.action, 'reminder');
   assert.match((await say('show my routines')).message, /No routines yet/);
 });
+
+test('routines people phrase loosely: "brief me", price watches without a schedule, a target price, stop and restart', () => {
+  const r = require('../brain/routines');
+  assert.strictEqual(r.parseRoutine('every morning at 9 brief me').action, 'today');
+  const watch = r.parseRoutine('tell me when this drops below $30', { pageUrl: 'https://shop.example/oil' });
+  assert.deepStrictEqual([watch.action, watch.schedule.minutes, watch.payload.below, watch.label], ['priceWatch', 360, 30, 'Price watch · shop.example · under $30']);
+  assert.strictEqual(r.parseRoutine('watch this price', { pageUrl: 'https://shop.example/oil' }).action, 'priceWatch');
+  assert.strictEqual(r.parseRoutine('watch your tone'), null);
+  assert.deepStrictEqual(r.parseRoutineCommand('stop the morning briefing'), { action: 'routinePause', on: false, query: 'the morning briefing' });
+  assert.strictEqual(r.parseRoutineCommand('restart the morning briefing').on, true);
+  assert.strictEqual(r.parseRoutineCommand('stop focus'), null);
+  assert.strictEqual(r.parseRoutineCommand('stop the timer'), null);
+  const items = [{ name: 'Olive oil 1 L', price: 28, currency: 'USD' }];
+  assert.match(r.priceCheck(items, { name: 'Olive oil 1 L', price: 34, currency: 'USD' }, '', 30).text, /Under your \$30\.00 target/);
+  assert.strictEqual(r.priceCheck(items, { name: 'Olive oil 1 L', price: 28, currency: 'USD' }, '', 30).drop, false); // already under: no repeat alert
+});
