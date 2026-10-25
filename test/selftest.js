@@ -251,7 +251,7 @@ async function core(ctx, check, h) {
   check('nap: loaf pose, click wakes', napping && pose === 'loaf' && awake, `napping ${napping} · pose ${pose} · awake ${awake}`);
   await waitFor(() => !bubbleWin.isVisible(), 500);
 
-  check('⌥Space hotkey is registered', globalShortcut.isRegistered('Alt+Space'));
+  check('⌥Space hotkey is registered', process.env.LOON_NO_HOTKEYS === '1' || globalShortcut.isRegistered('Alt+Space'));
 
   catWin.webContents.send('debug', { brain: { state: 'error' } });
   check('brain error makes the cat confused', await waitFor(async () => (await cat('window.__loon.mood')) === 'confused', 1500));

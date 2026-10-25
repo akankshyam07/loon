@@ -1230,6 +1230,8 @@ app.whenReady().then(() => {
   powerMonitor.on('suspend', () => setPaused(true));
   powerMonitor.on('unlock-screen', () => { setPaused(false); routines.poke(); });
   powerMonitor.on('resume', () => { setPaused(false); routines.poke(); }); // catch up on runs missed while asleep
+  // LOON_NO_HOTKEYS=1: a background run on a machine someone is using must not take their ⌥Space and friends.
+  if (process.env.LOON_NO_HOTKEYS === '1') return;
   if (!globalShortcut.register('Alt+Space', onAskHotkey)) console.warn('Loon: ⌥Space is taken by another app; open the bubble by clicking the cat.');
   if (!globalShortcut.register('Alt+Shift+S', onScreenshotHotkey)) console.warn('Loon: ⌥⇧S is taken by another app.');
   if (!globalShortcut.register('Alt+Shift+V', onVoiceHotkey)) console.warn('Loon: ⌥⇧V is taken by another app.');
