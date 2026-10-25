@@ -243,7 +243,12 @@ class Resolver {
     if (!privacy) await this.memory?.warm?.(request); // embeds the request so recall can match by meaning
     const scope = scopeOf(packet);
     const recalled = privacy || !this.memory ? [] : this.memory.recall({ group: memoryGroup(taskId), query: request, scope, domain: domainForTask(taskId, scope) || domain });
-    const memory = recalled.map((r) => r.text);
+    // A typed question that matches most of a saved note's words ("when is my dentist appointment?") gets the note as
+    // context, so the answer comes from what the user wrote instead of a guess.
+    const noted = taskId === 'ask' && !packet.text && !privacy && this.notes
+      ? this.notes.search(request).filter((e) => e.hits >= Math.min(2, e.of)).slice(0, 3).map((e) => `From their notes (${e.day}): ${e.body.replace(/\s+/g, ' ').slice(0, 240)}`)
+      : [];
+    const memory = [...recalled.map((r) => r.text), ...noted];
     this.lastMemory = recalled; // [{ id, text }]: the bubble's "Forget what you used" lists these
     // Custom instructions and reply style (Settings): a fixed block right after the system prompt; length also sets
     // the token cap and how many dictionary senses a definition shows.
@@ -365,7 +370,7 @@ class Resolver {
     // A first turn caches as before (not a typed question about a selection). A follow-up is only cacheable under a key
     // that includes its conversation, so it can never get a first turn's answer, and never by meaning.
     const thread = followUp ? ResponseCache.key(historyBlock(history)) : null;
-    const cacheable = !privacy && !image && (followUp || (firstInThread && !question));
+    const cacheable = !privacy && !image && !noted.length && (followUp || (firstInThread && !question)); // notes change
     // Errors cache by fingerprint so the same error with different paths/values reuses one answer.
     const identity = task.cacheByFingerprint ? fingerprint(packet.text || '').hash : normalize(prompt);
     // Routed and upgraded answers share the plain key, so a question that needed a stronger tier is instant next time.

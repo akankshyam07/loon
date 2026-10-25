@@ -65,6 +65,9 @@ function parseCommand(input, now = new Date()) {
     const isUrl = /^(https?:\/\/)?[\w-]+(\.[\w-]+)+(\/\S*)?$/i.test(target);
     return { action: 'open', target: isUrl && !/^https?:/i.test(target) ? `https://${target}` : target, kind: isUrl ? 'url' : 'app' };
   }
+  // Notes come before "find …", which searches files.
+  if (/^(?:show|list|open|see)(?: me)? (?:all )?my (?:saved )?notes\??$|^my notes\??$/i.test(text)) return { action: 'notes', query: '' };
+  if ((m = text.match(/^(?:what (?:did|have) i (?:note|noted|write|written|jot(?:ted)?(?: down)?|save|saved)|(?:find|search|show|check)(?: me)? (?:in )?my notes|what(?:'s| is) in my notes) (?:about |on |for |down about )?(.+?)\??$/i))) return { action: 'notes', query: tidy(m[1]) };
   if ((m = text.match(/^(?:find|search for|look for|where is|where's)(?: my)? (.+?)(?: files?)?\??$/i))) {
     return { action: 'find', query: tidy(m[1]) };
   }

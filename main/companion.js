@@ -467,7 +467,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
       parsed.name = match;
     }
     // Read-only or append-only actions run straight away; everything else gets a confirm card.
-    if (['note', 'find', 'briefing', 'today', 'focus', 'timer', 'recall'].includes(parsed.action)) {
+    if (['note', 'notes', 'find', 'briefing', 'today', 'focus', 'timer', 'recall'].includes(parsed.action)) {
       bubble('action-done', { id, ...(await actions.execute(parsed)) });
       return true;
     }

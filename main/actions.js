@@ -184,7 +184,8 @@ class Actions {
       let results;
       switch (command.action) {
         case 'note':
-          message = `Saved to ${this.notes.save({ title: 'Quick note', text: command.text })}.`;
+          this.notes.save({ title: 'Quick note', text: command.text });
+          message = 'Saved to your notes. Ask "what did I note about …" to find it again.';
           break;
         case 'remember':
           this.memory.add(command.text);
@@ -218,6 +219,8 @@ class Actions {
           const [events, reminders] = await Promise.all([settle(this.executors.events()), settle(this.executors.dueReminders())]);
           return { ok: true, message: formatDay({ events, reminders }), markdown: true };
         }
+        case 'notes':
+          return { ok: true, message: formatNotes(command.query ? this.notes.search(command.query) : this.notes.entries(14).slice(0, 8), command.query), markdown: true };
         case 'recall':
           if (command.about) return { ok: true, message: require('../brain/graph').formatAbout(this.memory.about(command.about), command.about), markdown: true };
           return { ok: true, message: command.facts ? formatFacts(this.memory.all()) : formatHistory(this.memory.searchEpisodes(command.query), command.query), markdown: true };
@@ -304,6 +307,13 @@ function formatHistory(episodes, query, now = Date.now()) {
     if (e.text) lines.push(`  ${e.text.replace(/\s+/g, ' ').slice(0, 140)}${e.text.length > 140 ? '…' : ''}`);
   }
   return lines.join('\n');
+}
+
+function formatNotes(entries, query) {
+  if (!entries.length) return query ? `No notes mention "${query}".` : 'No notes yet. Say "note: …" or tap "Save to notes" under any answer.';
+  const day = (d) => new Date(`${d}T12:00`).toLocaleDateString([], { month: 'short', day: 'numeric' });
+  const lines = entries.map((e) => `- **${day(e.day)}** · ${e.body.replace(/\s+/g, ' ').slice(0, 160)}`);
+  return `${query ? `**Notes about ${query}**` : '**Recent notes**'}\n${lines.join('\n')}`;
 }
 
 module.exports = { Actions, appleDate, formatDay, formatHistory, menuRef, permissionHint };

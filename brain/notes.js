@@ -2,6 +2,8 @@
 const fs = require('fs');
 const path = require('path');
 
+const STOPWORDS = new Set(['the', 'and', 'what', 'when', 'where', 'who', 'why', 'how', 'did', 'does', 'was', 'were', 'are', 'for', 'about', 'with', 'from', 'that', 'this', 'have', 'has', 'can', 'you', 'your', 'note', 'notes', 'noted', 'saved', 'find', 'show', 'tell', 'any', 'all', 'mine', 'there']);
+
 class Notes {
   constructor(dir) {
     this.dir = dir;
@@ -48,10 +50,12 @@ class Notes {
     return out;
   }
 
+  // Entries matching the query's words, best first. hits counts matched words; of is how many words the query had,
+  // so callers can ask for "most of them". Question words never count ("what did I note about…").
   search(query, days = 365) {
-    const words = query.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
+    const words = [...new Set(query.toLowerCase().match(/[\p{L}\p{N}']+/gu) || [])].filter((w) => w.length > 2 && !STOPWORDS.has(w));
     return this.entries(days)
-      .map((e) => ({ ...e, hits: words.filter((w) => `${e.heading} ${e.body}`.toLowerCase().includes(w)).length }))
+      .map((e) => ({ ...e, of: words.length, hits: words.filter((w) => `${e.heading} ${e.body}`.toLowerCase().includes(w)).length }))
       .filter((e) => e.hits > 0)
       .sort((a, b) => b.hits - a.hits)
       .slice(0, 8);

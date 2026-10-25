@@ -175,3 +175,19 @@ test('menus with the name, description, price and calories on separate lines', (
   assert.doesNotMatch(veg, /Harvest Bowl/);
   assert.match(veg, /Shroomami/);
 });
+
+test('notes come back: "what did I note about…", "show my notes", and a search that ignores question words', () => {
+  const { Notes } = require('../brain/notes');
+  const { parseCommand } = require('../brain/commands');
+  const notes = new Notes(fs.mkdtempSync(path.join(os.tmpdir(), 'loon-notes-')));
+  notes.save({ title: 'Quick note', text: 'dentist appointment is Nov 12 at 3pm' });
+  notes.save({ title: 'Quick note', text: 'Sam likes oat milk lattes' });
+  assert.deepStrictEqual(parseCommand('what did I note about the dentist?'), { action: 'notes', query: 'the dentist' });
+  assert.deepStrictEqual(parseCommand('find my notes about wifi'), { action: 'notes', query: 'wifi' });
+  assert.deepStrictEqual(parseCommand('show my notes'), { action: 'notes', query: '' });
+  assert.strictEqual(parseCommand('find my resume').action, 'find');
+  const [hit] = notes.search('when is my dentist appointment');
+  assert.deepStrictEqual([hit.body, hit.hits, hit.of], ['dentist appointment is Nov 12 at 3pm', 2, 2]);
+  assert.strictEqual(notes.search('what does sam like')[0].body, 'Sam likes oat milk lattes');
+  assert.deepStrictEqual(notes.search('what did I note'), []);
+});
