@@ -91,3 +91,10 @@ test('weather is an offer to open a forecast, behind a confirm card', () => {
   assert.match(parseCommand('will it rain today?').target, /q=weather%20today$/);
   assert.strictEqual(parseCommand('what is the weather of my mood'), null);
 });
+
+test('offers to look things up are trimmed: Loon cannot browse', () => {
+  const { stripTrailingFiller: f } = require('../brain/resolve');
+  assert.strictEqual(f('Shroomami has tofu. Would you like me to check nutritional info?'), 'Shroomami has tofu.');
+  assert.strictEqual(f('Kale Caesar is light. Would you like more details on any of them?'), 'Kale Caesar is light.');
+  assert.strictEqual(f('Pick the salad. Would you like a recipe for it?'), 'Pick the salad. Would you like a recipe for it?');
+});

@@ -133,7 +133,7 @@ function createLeadFilter(onText) {
 }
 
 // Small models end half their answers with an offer of more help; the answer is better without it.
-const TRAILING_FILLER = /(?:^|(?<=[.!?)\]]\s+)|\n+)(?:(?:let me know|feel free to (?:ask|reach out)|i(?:'m| am) (?:here|happy) to help|i can help (?:you )?with (?:more|anything)|hope (?:this|that) helps|is there anything else|if you (?:have|need) (?:any )?(?:more|other|further)? ?(?:questions|help))[^.!?\n]*[.!?]?\s*(?:😊|🐾|😸)?\s*)+$/i;
+const TRAILING_FILLER = /(?:^|(?<=[.!?)\]]\s+)|\n+)(?:(?:let me know|feel free to (?:ask|reach out)|i(?:'m| am) (?:here|happy) to help|i can help (?:you )?with (?:more|anything)|hope (?:this|that) helps|is there anything else|if you (?:have|need) (?:any )?(?:more|other|further)? ?(?:questions|help)|would you like (?:me to |more )?(?:check|look|search|find|browse|details|info)\w*)[^.!?\n]*[.!?]?\s*(?:😊|🐾|😸)?\s*)+$/i;
 function stripTrailingFiller(text) {
   const trimmed = text.replace(TRAILING_FILLER, '').trim();
   return trimmed.length >= 8 ? trimmed : text;
