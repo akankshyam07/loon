@@ -110,4 +110,10 @@ class Translator {
   }
 }
 
-module.exports = { Translator, languageName, shortTextLanguage };
+// "spanish" → 'es', for "translate … to Spanish". Only languages the translator knows.
+function languageCode(name) {
+  const wanted = name.trim().toLowerCase();
+  return [...new Set(Object.values(ISO3_TO_1))].find((code) => languageName(code).toLowerCase() === wanted) || null;
+}
+
+module.exports = { Translator, languageName, languageCode, shortTextLanguage };

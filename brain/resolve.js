@@ -11,7 +11,7 @@ const { scopeOf } = require('./memory');
 const { domainForTask } = require('./graph');
 const { cleanPersonal, instructionsBlock, maxTokensFor, sensesFor } = require('./personal');
 const { keySentences, trimForModel } = require('./textrank');
-const { languageName } = require('./translate');
+const { languageName, languageCode } = require('./translate');
 const { quickAnswer } = require('./quick');
 const { fingerprint } = require('./errors');
 const shopping = require('./shopping');
@@ -65,10 +65,12 @@ function typedDefinition(question) {
   return word.split(' ').length <= 3 && !/^(?:this|that|it|these|those)$/.test(word) ? word : null;
 }
 
+// → { text, to } or null. "translate X" means into English; "translate X to Spanish" names the target.
 function typedTranslation(question) {
-  const m = question.trim().match(/^translate:?\s+["“]?([\s\S]+?)["”]?(?:\s+(?:in)?to\s+english)?\s*\??$/i);
-  if (!m || /\s(?:in)?to\s+(?!english)[a-z]+\s*\??$/i.test(question.trim())) return null;
-  return /^(?:this|that|it)$/i.test(m[1].trim()) ? null : m[1].trim();
+  const m = question.trim().match(/^translate:?\s+["“]?([\s\S]+?)["”]?(?:\s+(?:in)?to\s+([a-z]+))?\s*\??$/i);
+  if (!m || /^(?:this|that|it)$/i.test(m[1].trim())) return null;
+  const to = m[2] ? languageCode(m[2]) : 'en';
+  return to ? { text: m[1].trim(), to } : null;
 }
 
 function normalize(text) {
@@ -260,7 +262,7 @@ class Resolver {
         return { text: defined, mood: 'curious', tier: 'code', detail: 'WordNet dictionary' };
       }
       const foreign = this.translator && typedTranslation(packet.question);
-      const translated = foreign && (await this.translator.translate(foreign).catch(() => null));
+      const translated = foreign && (await this.translator.translate(foreign.text, { to: foreign.to }).catch(() => null));
       if (translated && !translated.sameLanguage) {
         onText(translated.text);
         this.count('code');
