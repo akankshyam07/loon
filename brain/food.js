@@ -2,6 +2,7 @@
 // and those are labelled estimated. Allergens are never promised.
 
 const PRICE = /[$€£]\s?(\d+(?:\.\d{2})?)/;
+const CALORIES = /\b(\d{2,4})\s*(?:k?cals?|calories)\b/i;
 const HEAVY = { fried: 3, 'deep-fried': 4, crispy: 2, battered: 3, breaded: 2, creamy: 2, cream: 2, cheese: 1.5, cheesy: 2, alfredo: 3, aioli: 2, mayo: 2, butter: 1.5, bacon: 2, sausage: 2, loaded: 2, smothered: 2, gravy: 2, carbonara: 3, ranch: 1.5, fries: 2, 'double': 1.5, pastry: 2, 'pork belly': 3 };
 const LIGHT = { grilled: -2, steamed: -3, baked: -1, roasted: -1, poached: -2, salad: -2, broth: -2, 'raw': -1, sashimi: -2, vinaigrette: -1, greens: -1, vegetable: -1, veggie: -1, lean: -2 };
 const PROTEIN = /\b(chicken|turkey|salmon|tuna|shrimp|prawns?|beef|steak|pork|tofu|tempeh|egg whites?|eggs?|lentils?|chickpeas?|beans|edamame|greek yogurt|cod|fish|seitan)\b/gi;
@@ -16,18 +17,41 @@ const TIPS = [
   [/\bbun|bread|brioche\b/i, 'Lettuce wrap instead of the bun.'],
 ];
 
-// Menu items from plain text: a line with a price, optionally followed by a description line.
+const isDescription = (line) => line.length > 25 || line.includes(',');
+
+// Menu items from plain text. Two layouts: "Name ..... $12" with the description on the next line, or the name and
+// description on their own lines above a lone price. Printed calories ("640 cal") on the price line or the line
+// after it are kept.
 function extractMenu(text) {
   const lines = text.split('\n').map((l) => l.replace(/\s+/g, ' ').trim()).filter(Boolean);
   const items = [];
+  let used = -1; // last line that belongs to an item already
   for (let i = 0; i < lines.length; i++) {
     const m = lines[i].match(PRICE);
     if (!m) continue;
-    const name = lines[i].replace(PRICE, '').replace(/[.·…\-–|]+\s*$/, '').replace(/^[.·…\-–|\s]+/, '').trim();
+    let name = lines[i].replace(PRICE, '').replace(CALORIES, '').replace(/[.·…\-–|]+\s*$/, '').replace(/^[.·…\-–|\s]+/, '').trim();
+    let description = '';
+    let last = i;
+    if (name) {
+      const next = lines[i + 1];
+      if (next && !PRICE.test(next) && !CALORIES.test(next) && next.length > 15) {
+        description = next;
+        last = i + 1;
+      }
+    } else {
+      const above = lines.slice(Math.max(used + 1, i - 2), i).filter((l) => !PRICE.test(l) && !CALORIES.test(l));
+      if (!above.length) continue;
+      // Two lines above: name + description, unless the second is short (then the first was a section heading).
+      if (above.length === 2 && isDescription(above[1])) [name, description] = above;
+      else name = above[above.length - 1];
+      if (isDescription(name) && !description) continue; // a description with no name: not an item we can name
+    }
     if (!name || name.length > 80) continue;
-    const next = lines[i + 1];
-    const description = next && !PRICE.test(next) && next.length > 15 ? next : '';
-    items.push({ name, price: Number(m[1]), description });
+    const calorieLine = [lines[i], lines[last + 1]].find((l) => l && CALORIES.test(l) && !PRICE.test(l.replace(lines[i], '')));
+    const calories = calorieLine ? Number(calorieLine.match(CALORIES)[1]) : null;
+    if (calorieLine && calorieLine !== lines[i]) last += 1;
+    items.push({ name, price: Number(m[1]), description, ...(calories ? { calories } : {}) });
+    used = last;
   }
   return items;
 }
@@ -42,12 +66,13 @@ function score(item) {
       reasons.push(word);
     }
   }
-  const proteins = [...new Set((text.match(PROTEIN) || []).map((p) => p.toLowerCase()))];
+  let proteins = [...new Set((text.match(PROTEIN) || []).map((p) => p.toLowerCase()))];
+  if (proteins.some((p) => /salmon|tuna|cod/.test(p))) proteins = proteins.filter((p) => p !== 'fish'); // "fish" + "salmon" is one protein
   return { ...item, heaviness, reasons, proteins, likelyVegetarian: !MEAT.test(text), tips: TIPS.filter(([re]) => re.test(text)).map(([, tip]) => tip) };
 }
 
 const GOALS = {
-  lightest: { title: 'Lightest picks', sort: (a, b) => a.heaviness - b.heaviness },
+  lightest: { title: 'Lightest picks', sort: (a, b) => (a.calories && b.calories ? a.calories - b.calories : a.heaviness - b.heaviness) },
   protein: { title: 'Probably highest protein', sort: (a, b) => b.proteins.length - a.proteins.length || a.heaviness - b.heaviness, filter: (i) => i.proteins.length },
   vegetarian: { title: 'Likely vegetarian', sort: (a, b) => a.heaviness - b.heaviness, filter: (i) => i.likelyVegetarian },
 };
@@ -57,12 +82,16 @@ function recommend(items, goal = 'lightest', { count = 3, vegetarianOnly = false
   const picks = items.map(score).filter(filter || (() => true)).filter((i) => !vegetarianOnly || i.likelyVegetarian).sort(sort).slice(0, count);
   if (!picks.length) return { text: `Nothing on this menu looks ${goal === 'vegetarian' ? 'vegetarian' : 'like a match'}.`, mood: 'confused' };
   const lines = picks.map((p) => {
-    const why = p.reasons.length ? ` (${p.reasons.join(', ')})` : '';
+    const why = p.calories ? ` · ${p.calories} cal` : p.reasons.length ? ` (${p.reasons.join(', ')})` : '';
     const protein = goal === 'protein' ? ` · protein from ${p.proteins.join(', ')}` : '';
     const tip = p.tips[0] ? `\n  _Tip: ${p.tips[0]}_` : '';
     return `- **${p.name}**${p.price ? ` $${p.price.toFixed(2)}` : ''}${why}${protein}${tip}`;
   });
-  const note = goal === 'vegetarian' ? '\n\nBased on ingredients listed; ask the restaurant about allergens and hidden meat stocks.' : '\n\nFrom menu wording only: no numbers here. Tap "Estimate calories" for rough estimates.';
+  const listed = picks.every((p) => p.calories);
+  const note = goal === 'vegetarian' ? '\n\nBased on ingredients listed; ask the restaurant about allergens and hidden meat stocks.'
+    : listed && goal === 'lightest' ? '\n\nCalories as printed on the menu.'
+      : listed ? '\n\nProtein guessed from the ingredients; calories as printed on the menu.'
+      : '\n\nFrom menu wording only: no numbers here. Tap "Estimate calories" for rough estimates.';
   const heavy = items.map(score).sort((a, b) => b.heaviness - a.heaviness)[0];
   const quip = judgmental && goal === 'lightest' && heavy && heavy.heaviness >= 5 && (!vegetarianOnly || heavy.likelyVegetarian) ? `\n\nTiny warning: ${heavy.name} is probably doing crimes.` : '';
   const filtered = vegetarianOnly && goal !== 'vegetarian' ? '\n\n_Only vegetarian picks, because you asked me to remember that._' : '';

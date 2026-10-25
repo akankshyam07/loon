@@ -80,3 +80,11 @@ test('terminal and build errors count as errors, even on one line', () => {
   }
   assert.strictEqual(c('I have no such file or directory of memories in the attic'), 'sentence');
 });
+
+test('page text keeps prices and calories that sit in bare spans and divs', async () => {
+  const { pagePacket } = require('../main/context');
+  const html = '<html><body><nav>Home Menu Cart</nav><main><h1>Menu</h1><div class="item"><h3>Harvest Bowl</h3><p>roasted chicken, wild rice, goat cheese</p><span>$14.95</span><small>705 cal</small></div><div class="item"><h3>Focaccia</h3><span>$2.95</span></div><div hidden>secret promo</div></main></body></html>';
+  const { text } = await pagePacket({ html, url: 'https://example.com/menu', title: 'Menu' }, 1);
+  assert.match(text, /Harvest Bowl\nroasted chicken, wild rice, goat cheese\n\$14\.95 705 cal\nFocaccia\n\$2\.95/);
+  assert.doesNotMatch(text, /Home Menu Cart|secret promo/);
+});

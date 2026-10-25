@@ -161,3 +161,14 @@ test('memory store: profile, BM25 recall with site boost, budget, history search
   assert.deepStrictEqual(parseCommand('What do you know about me?'), { action: 'recall', facts: true });
   assert.deepStrictEqual(parseCommand('what did I ask today'), { action: 'recall', query: '' });
 });
+
+test('menus with the name, description, price and calories on separate lines', () => {
+  const text = 'Bowls\nHarvest Bowl\nroasted chicken, wild rice, apples, goat cheese, balsamic vinaigrette\n$14.95\n705 cal\nShroomami\nroasted tofu, portobello mix, kale, miso sesame ginger dressing\n$13.95\n655 cal\nSalads\nSuper Green Goddess\nchickpeas, cucumbers, broccoli, cabbage, green goddess ranch, vegan\n$12.75\n385 cal\nSides\nRosemary Focaccia\n$2.95\n270 cal';
+  const items = extractMenu(text);
+  assert.deepStrictEqual(items.map((i) => [i.name, i.price, i.calories]), [['Harvest Bowl', 14.95, 705], ['Shroomami', 13.95, 655], ['Super Green Goddess', 12.75, 385], ['Rosemary Focaccia', 2.95, 270]]);
+  const lightest = recommend(items, 'lightest').text;
+  assert.match(lightest, /Rosemary Focaccia\*\* \$2\.95 · 270 cal[\s\S]*Super Green Goddess[\s\S]*Calories as printed/);
+  const veg = recommend(items, 'vegetarian').text;
+  assert.doesNotMatch(veg, /Harvest Bowl/);
+  assert.match(veg, /Shroomami/);
+});

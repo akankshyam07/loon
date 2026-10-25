@@ -46,16 +46,26 @@ async function pagePacket(reply, tabId) {
   };
 }
 
+// Every visible text node, with a line break at each block element. Prices and calories often sit in bare <span>,
+// <small> or <div> elements, so collecting only paragraphs and headings lost them.
+const BLOCK = new Set(['ADDRESS', 'ARTICLE', 'BLOCKQUOTE', 'BR', 'DD', 'DIV', 'DL', 'DT', 'FIGCAPTION', 'FIGURE', 'FORM', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'HR', 'LI', 'MAIN', 'OL', 'P', 'PRE', 'SECTION', 'TABLE', 'TD', 'TH', 'TR', 'UL']);
 function textFromHtml(parseHTML, html) {
   const { document } = parseHTML(`<!doctype html><html><body>${html}</body></html>`);
-  for (const el of document.querySelectorAll('script, style, noscript, svg, nav, footer, header, aside')) el.remove();
-  const BLOCKS = 'h1, h2, h3, h4, p, li, pre, blockquote, td';
-  const blocks = [...document.querySelectorAll(BLOCKS)]
-    .filter((el) => !el.querySelector(BLOCKS)) // innermost blocks only, so nested text isn't repeated
-    .map((el) => el.textContent.replace(/\s+/g, ' ').trim())
-    .filter(Boolean);
-  const text = blocks.length ? blocks.join('\n') : document.body.textContent;
-  return text.replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+  for (const el of document.querySelectorAll('script, style, noscript, svg, nav, footer, header, aside, template, [hidden], [aria-hidden="true"]')) el.remove();
+  const out = [];
+  const walk = (node) => {
+    if (node.nodeType === 3) {
+      out.push(node.textContent);
+      return;
+    }
+    if (node.nodeType !== 1) return;
+    const block = BLOCK.has(node.tagName);
+    if (block) out.push('\n');
+    for (const child of node.childNodes) walk(child);
+    out.push(block ? '\n' : ' ');
+  };
+  walk(document.body);
+  return out.join('').split('\n').map((l) => l.replace(/\s+/g, ' ').trim()).filter(Boolean).join('\n').trim();
 }
 
 module.exports = { selectionPacket, pagePacket };

@@ -323,6 +323,21 @@ async function run(ctx, check) {
     } finally {
       settings.cameos = savedCameos;
     }
+    // Typed, not tapped: the question names the page task, and a follow-up stays on the page's data.
+    {
+      await openAsk();
+      before = localCalls();
+      const typed = async (text) => {
+        const n = await tierCount();
+        await bubble(`(() => { const i = document.getElementById('input'); i.value = ${JSON.stringify(text)}; i.dispatchEvent(new Event('input')); document.getElementById('askForm').requestSubmit(); })()`);
+        await waitFor(async () => (await tierCount()) > n, 20000, 200);
+        return lastAnswer();
+      };
+      const light = await typed("what's the lightest thing here?");
+      const veg = await typed("and if I'm vegetarian?");
+      check('menu: typed "lightest" and a vegetarian follow-up answer from the page in code', /Lightest picks/.test(light?.text) && /Likely vegetarian/.test(veg?.text) && localCalls() === before, `${light?.text.slice(0, 30)} · ${veg?.text.slice(0, 30)}`);
+      await closeBubble();
+    }
 
     await page.goto(`${base}/code.html`);
     await selectAndWait('#json');
