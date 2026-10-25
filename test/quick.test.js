@@ -77,7 +77,7 @@ test('short phrases get the right language before franc guesses', () => {
 });
 
 test('model answers lose the trailing "let me know if…" filler, never the answer', () => {
-  const { stripTrailingFiller: f } = require('../brain/resolve');
+  const { tidyModelAnswer: f } = require('../brain/resolve');
   assert.strictEqual(f('15% of 84 is 12.6. Let me know if you need help with anything else!'), '15% of 84 is 12.6.');
   assert.strictEqual(f('TCP is reliable. UDP is fast. Hope this helps! 😊'), 'TCP is reliable. UDP is fast.');
   assert.strictEqual(f('Video calls use UDP.\n\nIf you have any more questions, feel free to ask!'), 'Video calls use UDP.');
@@ -93,14 +93,14 @@ test('weather is an offer to open a forecast, behind a confirm card', () => {
 });
 
 test('offers to look things up are trimmed: Loon cannot browse', () => {
-  const { stripTrailingFiller: f } = require('../brain/resolve');
+  const { tidyModelAnswer: f } = require('../brain/resolve');
   assert.strictEqual(f('Shroomami has tofu. Would you like me to check nutritional info?'), 'Shroomami has tofu.');
   assert.strictEqual(f('Kale Caesar is light. Would you like more details on any of them?'), 'Kale Caesar is light.');
   assert.strictEqual(f('Pick the salad. Would you like a recipe for it?'), 'Pick the salad. Would you like a recipe for it?');
 });
 
 test('a hedge the answer contradicts is dropped', () => {
-  const { stripTrailingFiller: f } = require('../brain/resolve');
+  const { tidyModelAnswer: f } = require('../brain/resolve');
   assert.strictEqual(f("I don't know the answer, but I can tell you that the capital of France is Paris."), 'The capital of France is Paris.');
   assert.strictEqual(f("I don't know who won the 2031 cup."), "I don't know who won the 2031 cup.");
 });
