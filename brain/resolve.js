@@ -134,8 +134,12 @@ function createLeadFilter(onText) {
 
 // Small models end half their answers with an offer of more help; the answer is better without it.
 const TRAILING_FILLER = /(?:^|(?<=[.!?)\]]\s+)|\n+)(?:(?:let me know|feel free to (?:ask|reach out)|i(?:'m| am) (?:here|happy) to help|i can help (?:you )?with (?:more|anything)|hope (?:this|that) helps|is there anything else|if you (?:have|need) (?:any )?(?:more|other|further)? ?(?:questions|help)|would you like (?:me to |more )?(?:check|look|search|find|browse|details|info)\w*)[^.!?\n]*[.!?]?\s*(?:😊|🐾|😸)?\s*)+$/i;
+// "I don't know the answer, but I can tell you that the capital is Paris": the hedge contradicts the answer after it.
+const CONTRADICTED_HEDGE = /^\s*i (?:don['’]t|do not) know(?: the answer| for sure| exactly)?,?\s+but\s+(?:i can tell you(?: that)?\s+)?/i;
 function stripTrailingFiller(text) {
-  const trimmed = text.replace(TRAILING_FILLER, '').trim();
+  let trimmed = text.replace(TRAILING_FILLER, '').trim();
+  const hedged = trimmed.replace(CONTRADICTED_HEDGE, '');
+  if (hedged !== trimmed && hedged.length >= 8) trimmed = hedged.charAt(0).toUpperCase() + hedged.slice(1);
   return trimmed.length >= 8 ? trimmed : text;
 }
 

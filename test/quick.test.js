@@ -98,3 +98,9 @@ test('offers to look things up are trimmed: Loon cannot browse', () => {
   assert.strictEqual(f('Kale Caesar is light. Would you like more details on any of them?'), 'Kale Caesar is light.');
   assert.strictEqual(f('Pick the salad. Would you like a recipe for it?'), 'Pick the salad. Would you like a recipe for it?');
 });
+
+test('a hedge the answer contradicts is dropped', () => {
+  const { stripTrailingFiller: f } = require('../brain/resolve');
+  assert.strictEqual(f("I don't know the answer, but I can tell you that the capital of France is Paris."), 'The capital of France is Paris.');
+  assert.strictEqual(f("I don't know who won the 2031 cup."), "I don't know who won the 2031 cup.");
+});
