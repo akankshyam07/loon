@@ -8,7 +8,7 @@ const text = (q) => quickAnswer(q, now)?.text ?? null;
 test('arithmetic and percentages in code, never eval', () => {
   assert.match(text("what's 15% of 84"), /\*\*12\.6\*\*/);
   assert.match(text('20% off 80'), /\*\*64\*\*.*save 16/);
-  assert.match(text('18% tip on $42.50'), /\*\*7\.65\*\*.*\*\*50\.15\*\*/);
+  assert.match(text('18% tip on $42.50'), /^An 18% tip.*\*\*7\.65\*\*.*\*\*50\.15\*\*/);
   assert.match(text('12 * 7'), /= \*\*84\*\*/);
   assert.match(text('what is 2 + 3 * 4'), /\*\*14\*\*/);
   assert.match(text('(2+3)*4'), /\*\*20\*\*/);
@@ -25,14 +25,14 @@ test('arithmetic and percentages in code, never eval', () => {
 });
 
 test('unit conversions', () => {
-  assert.match(text('convert 5 miles to km'), /5 mi = \*\*8\.04672 km\*\*/);
-  assert.match(text('72 f in c'), /72 °F = \*\*22\.222222 °C\*\*/);
+  assert.match(text('convert 5 miles to km'), /5 mi = \*\*8\.05 km\*\*/);
+  assert.match(text('72 f in c'), /72 °F = \*\*22\.2 °C\*\*/);
   assert.match(text('100 celsius to fahrenheit'), /\*\*212 °F\*\*/);
   assert.match(text('10 in to cm'), /\*\*25\.4 cm\*\*/);
   assert.match(text('5 ft in cm'), /\*\*152\.4 cm\*\*/);
-  assert.match(text('8 oz to ml'), /\*\*236\.588237 ml\*\*/);
-  assert.match(text('how many grams in a pound'), /1 lb = \*\*453\.59237 g\*\*/);
-  assert.match(text('60 mph to km/h'), /\*\*96\.56064 km\/h\*\*/);
+  assert.match(text('8 oz to ml'), /\*\*236\.59 ml\*\*/);
+  assert.match(text('how many grams in a pound'), /1 lb = \*\*453\.59 g\*\*/);
+  assert.match(text('60 mph to km/h'), /\*\*96\.56 km\/h\*\*/);
   assert.strictEqual(text('5 miles to kg'), null);
   assert.strictEqual(text('5 apples to oranges'), null);
 });

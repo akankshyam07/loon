@@ -297,7 +297,7 @@ function startFocus(minutes) {
 
 // "set a timer for 5 minutes": rings with the cat's notice. seconds 0 cancels all, null reports what's left.
 const timers = new Set();
-const spell = (s) => (s >= 3600 ? `${+(s / 3600).toFixed(1)} hour${s === 3600 ? '' : 's'}` : s >= 60 ? `${Math.round(s / 60)} minute${Math.round(s / 60) === 1 ? '' : 's'}` : `${s} second${s === 1 ? '' : 's'}`);
+const spell = (s) => (s >= 3600 ? `${+(s / 3600).toFixed(1)} hour${s === 3600 ? '' : 's'}` : s >= 120 || s % 60 === 0 ? `${Math.round(s / 60)} minute${Math.round(s / 60) === 1 ? '' : 's'}` : `${s} second${s === 1 ? '' : 's'}`);
 function startTimer(seconds, label) {
   if (seconds === null) {
     if (!timers.size) return 'No timers running.';
@@ -318,7 +318,7 @@ function startTimer(seconds, label) {
   }, seconds * 1000);
   timers.add(timer);
   const at = new Date(timer.ends).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', ...(seconds < 120 ? { second: '2-digit' } : {}) });
-  return `⏱️ ${spell(seconds)} timer${label ? ` for ${label}` : ''} started. I'll ping you at ${at}.`;
+  return `⏱️ ${spell(seconds).replace(/s$/, '').replace(' ', '-')} timer${label ? ` for ${label}` : ''} started. I'll ping you at ${at}.`;
 }
 
 // Gentle rhythm: one "your day" nudge on the first morning activity and a stretch nudge after ~an hour of non-stop use.

@@ -89,7 +89,7 @@ function math(q) {
   }
   if ((m = q.match(new RegExp(`^(?:what(?:'?s| is)\\s+(?:a\\s+)?)?${N}\\s*(?:%|percent)\\s+tip\\s+on\\s+\\$?${N}\\??$`)))) {
     const tip = (num(m[1]) * num(m[2])) / 100;
-    return { text: `A ${m[1]}% tip on ${m[2]} is **${format(tip)}**, so **${format(num(m[2]) + tip)}** in total.` };
+    return { text: `${/^(8|11|18)(\D|$)|^8\d/.test(m[1]) ? 'An' : 'A'} ${m[1]}% tip on ${m[2]} is **${format(tip)}**, so **${format(num(m[2]) + tip)}** in total.` };
   }
   let body = q.replace(/^(?:what(?:'?s| is)|calculate|compute|solve|how much is)\s+/, '').replace(/\s*=\s*\??$|\?$/g, '').trim();
   for (const [re, op] of WORD_OPS) body = body.replace(re, op);
@@ -150,7 +150,9 @@ function convert(value, fromName, toName) {
   if (from.name === 'oz' && to.dim === 'volume') from = UNITS['fl oz'];
   if (to.name === 'oz' && from.dim === 'volume') to = UNITS['fl oz'];
   if (from.dim !== to.dim || from.name === to.name) return null;
-  const result = from.dim === 'temp' ? fromC[to.name](toC[from.name](value)) : (value * from.factor) / to.factor;
+  const exact = from.dim === 'temp' ? fromC[to.name](toC[from.name](value)) : (value * from.factor) / to.factor;
+  // People want 22.2 °C, not 22.222222; tiny amounts keep 3 significant digits.
+  const result = from.dim === 'temp' ? Math.round(exact * 10) / 10 : Math.abs(exact) >= 1 ? Math.round(exact * 100) / 100 : Number(exact.toPrecision(3));
   const plural = (u, v) => (u.dim === 'temp' || /^(?:fl oz|[a-z/]{1,4})$/.test(u.name) ? u.name : `${u.name}${v === 1 ? '' : 's'}`);
   return { text: `${format(value)} ${plural(from, value)} = **${format(result)} ${plural(to, result)}**` };
 }
