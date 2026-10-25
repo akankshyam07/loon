@@ -52,6 +52,9 @@ with the global hotkeys left alone (`LOON_NO_HOTKEYS=1`). The model files are sh
 | Notes: find and reuse | ✅ **fixed** | notes were write-only; "when is my dentist appointment?" got an invented date |
 | Writing tools in a textarea (Fix grammar, Shorter, Warmer → Replace) | ✅ verified | Replace works in textarea and contenteditable |
 | Fix grammar spelling choice | ✅ **fixed** | "probly" → "poly"; now "probably" |
+| Long conversations (15 turns) | ✅ **fixed** | forgot the opening ("I don't recall the budget"); first message now kept. 4–11 s per turn, prompt capped near 1.6k chars |
+| "Remind me what our budget was" | ✅ **fixed** | became a reminder card |
+| Email: thread summary, draft reply | ✅ **new** | mail pages had only generic chips; drafts echoed the sender's email |
 | Model offering lookups it can't do | ✅ **fixed** | prompt rule plus trimming "would you like me to check…" and "I don't know, but…" |
 | Screen look / Teach | ✅ e2e (fixtures) | real permissions need a manual check |
 
@@ -111,10 +114,16 @@ with the global hotkeys left alone (`LOON_NO_HOTKEYS=1`). The model files are sh
     questions matching a note's words get the note as context, never cached; question words ignored; no file path
     in "Saved".
 27. Grammar: spelling suggestions picked by typo distance (swaps count once), then shared start.
+28. History budget keeps the first message when older turns are dropped.
+29. "Remind me" + a question word is a question, not a reminder.
+30. Email: `email_summary`, `email_reply` (mail pages), `draft_reply` (selections, first in Work mode); the reply
+    instruction names the writer and recipient from the greeting and sign-off and starts the reply; a leading
+    "Here's your reply:" is trimmed.
 
 ## Test results
 
-- Unit: 233/233 (was 213).
+- Unit: 237/237 (was 213). Two unit tests timed out once while a model run competed for CPU; they passed on three
+  reruns.
 - End-to-end after the changes: core 42/42 (with voice), features 32/32, browser 45/45, fresh 8/8, migrate 7/7.
 - End-to-end baseline before changes: core 36/36, features 32/32, browser 44/44.
 - Explore sessions: 3 rounds; timings and results are in the commit messages above.
@@ -123,6 +132,8 @@ with the global hotkeys left alone (`LOON_NO_HOTKEYS=1`). The model files are sh
 
 1. Settings: does every toggle take effect without a restart?
 2. Packaged .dmg build and the `smoke` part.
-3. Email drafting on a webmail-like page (reply chips, thread summary).
-4. Compare across tabs (the basket) as a shopper with three real-looking pages.
-5. Long-session behavior: 20+ follow-ups in one thread (context budget, speed).
+3. Compare across tabs (the basket) as a shopper with three real-looking pages.
+4. Reply drafts invent placeholder values inside brackets ("[bracket:$500]"); a tidy pass could normalize them to
+   "[price]".
+5. Speed: follow-ups take 4–11 s on the 4B model; streaming makes it bearable, but "Quick take" defaults deserve a
+   look.
