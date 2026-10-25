@@ -7,7 +7,7 @@ const MODES = {
   shopping: { name: 'Shopping Cat', badge: 'shop', domain: 'shopping', chips: ['shop_value', 'shop_reviews', 'shop_take', 'shop_add', 'shop_basket'] },
   food: { name: 'Food Cat', badge: 'food', domain: 'food', chips: ['food_lightest', 'food_protein', 'food_veg', 'food_estimate'] },
   study: { name: 'Study Cat', badge: 'study', domain: 'study', chips: ['summarize', 'explain', 'quiz', 'simplify', 'page_summary', 'page_notes'] },
-  work: { name: 'Work Cat', badge: 'work', domain: 'work', chips: ['professional', 'shorter', 'fix_grammar', 'rewrite', 'summarize', 'page_checklist'] },
+  work: { name: 'Work Cat', badge: 'work', domain: 'work', chips: ['email_reply', 'email_summary', 'draft_reply', 'professional', 'shorter', 'fix_grammar', 'rewrite', 'summarize', 'page_checklist'] },
 };
 
 const SITES = [

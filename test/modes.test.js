@@ -93,3 +93,21 @@ test('JSON → DTO with quicktype; grammar fixes with Harper', async () => {
   assert.strictEqual(fixed, 'There is an issue with the report.');
   assert.strictEqual(changes.length, 3);
 });
+
+test('email: thread chips on mail pages, and Draft reply first for a selection in Work mode', () => {
+  const { pageChipsFor, SELECTION_CHIPS } = require('../brain/tasks');
+  const { orderChips } = require('../brain/modes');
+  assert.deepStrictEqual(pageChipsFor('email'), ['email_summary', 'email_reply', 'page_checklist']);
+  const chips = SELECTION_CHIPS.paragraph.map((id) => ({ id }));
+  assert.strictEqual(orderChips(chips, 'work')[0].id, 'draft_reply');
+});
+
+test('reply drafts name who writes to whom, read from the greeting and sign-off', () => {
+  const { replyInstruction } = require('../brain/tasks');
+  const full = replyInstruction("Hi Akankshya, thanks for the demo yesterday. Could you send over the pricing for 20 seats? Best, Jordan");
+  assert.match(full, /You are writing as Akankshya\. Below is a message Akankshya received from Jordan\./);
+  assert.match(full, /Start the reply with "Hi Jordan,"/);
+  const none = replyInstruction('can you send me the file? thanks for everything');
+  assert.match(none, /Below is a message the user received\./);
+  assert.match(none, /Start the reply with "Hi there,"/);
+});

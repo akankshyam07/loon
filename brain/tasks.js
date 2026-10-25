@@ -2,6 +2,23 @@
 // Chips in the bubble map 1:1 to these ids.
 const { keySentences } = require('./textrank');
 
+// Small models lose track of who is writing to whom and rewrite the received message instead of answering it. Code
+// reads the names from the greeting and sign-off, and the reply is started for the model ("Hi Jordan,").
+function replyInstruction(text = '') {
+  const body = String(text).trim();
+  // "…Best, Jordan": a capitalized last word right after a sign-off.
+  const signed = body.match(/\b(?:best|thanks|thank you|regards|cheers|sincerely|warmly|talk soon)\b[^\n]{0,15}?[,!.]?\s+([A-Z][a-z]+)\s*[.!]?\s*$/i);
+  const sender = signed && /^[A-Z][a-z]+$/.test(signed[1]) ? signed[1] : null;
+  const greeted = body.match(/^(?:hi|hello|hey|dear)\s+(\S+)/i)?.[1].replace(/[,.!:]+$/, '');
+  const user = greeted && /^[A-Z][a-z]+$/.test(greeted) ? greeted : null;
+  const me = user || 'the user';
+  return [
+    `${user ? `You are writing as ${user}. ` : ''}Below is a message ${me} received${sender ? ` from ${sender}` : ''}.`,
+    `Write ${me}'s reply${sender ? ` to ${sender}` : ''}: answer every question and request in it, briefly and warmly, and put [brackets] where ${me} must fill in a detail (a price, a time).`,
+    `Do not repeat the received message. Start the reply with "Hi ${sender || 'there'}," and reply with only the reply.`,
+  ].join(' ');
+}
+
 const TASKS = {
   ask: { label: 'Ask', instruction: (p) => p.question, maxTokens: 400 },
   define: { label: 'Define', tiers: ['define'], instruction: (p) => `Define "${p.text}" briefly.`, maxTokens: 200 },
@@ -82,6 +99,25 @@ const TASKS = {
   page_summary: { label: 'Summarize page', tiers: ['keypoints'], instruction: () => 'Summarize this page in 3-5 short bullet points.', maxTokens: 380, page: true },
   page_notes: { label: 'Notes', instruction: () => 'Turn this page into concise study notes with short headings and bullets.', maxTokens: 600, page: true },
   page_checklist: { label: 'Checklist', instruction: () => 'Turn this page into a practical checklist of steps or action items.', maxTokens: 500, page: true },
+  // Email (CLAUDE.md "Writing assistant": summarize threads, draft replies). The page versions read the open thread;
+  // draft_reply works on selected text, e.g. an email selected in Mail with ⌥Space.
+  email_summary: {
+    label: 'Summarize thread',
+    instruction: () => 'Summarize this email thread in short bullets: who wants what, what was decided, and anything the user needs to do or answer.',
+    maxTokens: 320,
+    page: true,
+  },
+  email_reply: {
+    label: 'Draft reply',
+    instruction: (p) => replyInstruction(p.text),
+    maxTokens: 320,
+    page: true,
+  },
+  draft_reply: {
+    label: 'Draft reply',
+    instruction: (p) => replyInstruction(p.text),
+    maxTokens: 320,
+  },
   page_todo: {
     label: 'What do I do here?',
     instruction: () => 'Based on this page, what is the user supposed to do here? Give the next steps in order, briefly.',
@@ -96,7 +132,7 @@ const TASKS = {
 const SELECTION_CHIPS = {
   word: ['define', 'meaning_here', 'translate', 'explain'],
   sentence: ['explain', 'simplify', 'translate', 'rewrite', 'examples', 'fact_check'],
-  paragraph: ['explain', 'summarize', 'simplify', 'translate', 'rewrite', 'fact_check', 'quiz'],
+  paragraph: ['explain', 'summarize', 'simplify', 'translate', 'rewrite', 'fact_check', 'quiz', 'draft_reply'],
   code: ['explain_code', 'find_bug', 'explain'],
   json: ['explain_json', 'make_dto_java', 'make_dto_ts'],
   stacktrace: ['explain_error', 'likely_fix'],
@@ -111,6 +147,7 @@ const MODE_CHIPS = {
   shopping: ['shop_value', 'shop_reviews', 'shop_add', 'shop_basket', 'shop_take', 'page_summary'],
   menu: ['food_lightest', 'food_protein', 'food_veg', 'food_estimate', 'page_summary'],
   leetcode: ['leetcode_companies', 'page_summary', 'quiz'],
+  email: ['email_summary', 'email_reply', 'page_checklist'],
 };
 const pageChipsFor = (kind) => MODE_CHIPS[kind] || PAGE_CHIPS;
 
@@ -199,4 +236,4 @@ function handoffPrompt(taskId, packet, question) {
   return packet.text ? `${instruction}\n\nHere is the text${where}:\n"""\n${packet.text}\n"""` : instruction;
 }
 
-module.exports = { TASKS, SELECTION_CHIPS, PAGE_CHIPS, MODE_CHIPS, pageChipsFor, MAX_CONTEXT_CHARS, FOLLOW_UP_BUDGET, buildPrompt, historyBlock, followUpContext, handoffPrompt, memoryGroup };
+module.exports = { replyInstruction, TASKS, SELECTION_CHIPS, PAGE_CHIPS, MODE_CHIPS, pageChipsFor, MAX_CONTEXT_CHARS, FOLLOW_UP_BUDGET, buildPrompt, historyBlock, followUpContext, handoffPrompt, memoryGroup };
