@@ -412,3 +412,12 @@ test('compare basket: items saved a week or more ago are flagged as possibly sta
   assert.match(text, /price may have changed: Oat milk 1 L \(10 days ago\)/);
   assert.doesNotMatch(text, /Oat milk 2 L \(\d+ days ago\)/);
 });
+
+test('compare basket: remove one item by name, or ask which one', () => {
+  const skills = new Skills({ dataDir: fs.mkdtempSync(path.join(os.tmpdir(), 'loon-skills-')), brain: { chat: async () => {}, resetThread: () => {} } });
+  skills.saveBasket([{ name: 'Oatly Oat Milk 32 fl oz', price: 4.99 }, { name: 'Califia Oat Barista 1 L', price: 5.49 }, { name: 'Planet Oat Original 6 x 32 fl oz', price: 21.99 }]);
+  assert.match(skills.removeFromBasket('oat'), /^Which one\?/);
+  assert.match(skills.removeFromBasket('the oatly'), /Removed \*\*Oatly Oat Milk 32 fl oz\*\*.*2 items left/);
+  assert.match(skills.removeFromBasket('soy milk'), /Nothing in your compare basket matches "soy milk"/);
+  assert.strictEqual(skills.basket().length, 2);
+});

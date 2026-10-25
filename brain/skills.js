@@ -108,6 +108,17 @@ class Skills {
     fs.writeFileSync(this.basketFile, JSON.stringify(items, null, 2));
   }
 
+  // "remove the Oatly": every word of the query must appear in the product name; more than one match asks which.
+  removeFromBasket(query) {
+    const words = query.toLowerCase().replace(/^(?:the|my|that|this)\s+/, '').split(/\s+/).filter(Boolean);
+    const basket = this.basket();
+    const hits = basket.filter((b) => words.every((w) => b.name.toLowerCase().includes(w)));
+    if (!hits.length) return `Nothing in your compare basket matches "${query}". It has: ${basket.map((b) => shopping.short(b.name)).join(', ') || 'nothing yet'}.`;
+    if (hits.length > 1) return `Which one? ${hits.map((b) => `"${shopping.short(b.name)}"`).join(', ')}.`;
+    this.saveBasket(basket.filter((b) => b !== hits[0]));
+    return `Removed **${shopping.short(hits[0].name)}** from your compare basket. ${basket.length - 1} item${basket.length - 1 === 1 ? '' : 's'} left.`;
+  }
+
   // ---------- dispatcher ----------
   async run(tier, taskId, packet, { memory = [], judgmental = true } = {}) {
     switch (tier) {

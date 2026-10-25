@@ -447,6 +447,11 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
   }
 
   async function command(id, question, bubble, signal) {
+    const removal = question.trim().match(/^(?:remove|delete|take out|drop) (.+?) (?:from|out of|off) (?:my |the )?(?:compare |comparison )?basket\??$/i);
+    if (removal && resolver.skills) {
+      bubble('action-done', { id, ok: true, markdown: true, message: resolver.skills.removeFromBasket(removal[1]) });
+      return true;
+    }
     if (teacher && (await teachRequest(id, question, bubble, signal))) return true;
     if (await connectorRequest(id, question, bubble)) return true;
     if (await mcpRequest(id, question, bubble, signal)) return true;
