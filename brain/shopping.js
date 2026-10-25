@@ -1,5 +1,6 @@
 // Shopping Cat (DESIGN.md §3.6): numbers are computed in code, never by a model.
-// Extraction order: structured data (JSON-LD / microdata / price meta) → a cached per-domain CSS extractor.
+// Extraction order: structured data (JSON-LD / microdata / price meta) → a cached per-domain CSS extractor →
+// a page-layout guess (no model) → selectors written once by the model.
 
 // Exact conversion constants to base units (g, ml).
 const UNITS = {
@@ -135,8 +136,10 @@ function outlineForExtractor(doc) {
   return lines;
 }
 
-// Fallback when the model's selectors don't work: the card is the largest ancestor of a price that holds no other
-// price, and the name is the card's longest non-price text.
+// The card is the largest ancestor of a price that holds no other price, and the name is the card's longest text
+// that is neither a price nor a button ("Add to cart" is never a product name). Tried before the model; a guess
+// only counts when it names every product differently.
+const CTA = /^(?:add to (?:cart|bag|basket)|buy(?: it)? now|add|buy|shop now|view|details|quick view|in stock|out of stock|sold out)$/i;
 // ponytail: tries the first 10 prices only; a page whose first prices sit outside the listing falls through to null.
 function guessExtractor(doc) {
   const prices = [...doc.querySelectorAll('body *')].filter((el) => PRICE_TEXT.test(ownText(el))).slice(0, 200);
@@ -149,11 +152,11 @@ function guessExtractor(doc) {
     let card = price;
     while (card.parentElement && card.parentElement.tagName !== 'BODY' && prices.filter((p) => card.parentElement.contains(p)).length === 1) card = card.parentElement;
     if (card === price) continue;
-    const names = [...card.querySelectorAll('*')].filter((el) => !el.contains(price) && ownText(el) && !PRICE_TEXT.test(ownText(el)));
+    const names = [...card.querySelectorAll('*')].filter((el) => !el.contains(price) && ownText(el) && !PRICE_TEXT.test(ownText(el)) && el.tagName !== 'BUTTON' && !CTA.test(ownText(el)));
     const name = names.sort((a, b) => ownText(b).length - ownText(a).length)[0];
     if (!name) continue;
     const extractor = { item: cssStep(card), name: relative(card, name), price: relative(card, price) };
-    if (validExtractor(doc, extractor)) return extractor;
+    if (validExtractor(doc, extractor) && new Set(applyExtractor(doc, extractor).map((i) => i.name)).size >= 2) return extractor;
   }
   return null;
 }

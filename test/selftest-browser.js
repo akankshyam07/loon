@@ -259,8 +259,8 @@ async function run(ctx, check) {
     await waitFor(() => companion.activePage?.url?.includes('shop-plain'), 5000);
     await openAsk();
     before = localCalls();
-    const plain = await clickChip('shop_value', 300000); // up to two CPU model calls before the page heuristic
-    check('no structured data: a site extractor is written once (model, or page heuristic if its selectors fail)', /Espresso/.test(plain?.text) && /on your Mac.*new site extractor/.test(plain?.tier), plain?.tier);
+    const plain = await clickChip('shop_value', 300000);
+    check('no structured data: the page layout gives the products with no model call', /Espresso/.test(plain?.text) && /page layout \(no model\)/.test(plain?.tier) && localCalls() === before, plain?.tier);
     await closeBubble();
     await openAsk();
     before = localCalls();

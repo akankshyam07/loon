@@ -51,16 +51,22 @@ class Skills {
     }
     if (structured.length === 1) return { items: structured, via: 'structured data' };
     if (!allowGenerate || !file) return { items: [], via: 'none' };
+    // Cheapest first: a page heuristic that names every product differently needs no model at all.
+    const guessed = shopping.guessExtractor(doc);
+    if (guessed) {
+      fs.mkdirSync(this.extractorsDir, { recursive: true });
+      fs.writeFileSync(file, JSON.stringify({ ...guessed, source: 'heuristic' }, null, 2));
+      return { items: shopping.applyExtractor(doc, guessed), via: 'page layout (no model)' };
+    }
     const { extractor, modelCalls } = await this.generateExtractor(doc);
     if (!extractor) return { items: [], via: 'none', modelCalls };
     fs.mkdirSync(this.extractorsDir, { recursive: true });
     fs.writeFileSync(file, JSON.stringify(extractor, null, 2));
-    const via = extractor.source === 'model' ? 'new site extractor (one-time model call)' : 'new site extractor (page heuristic; the model\'s selectors failed)';
-    return { items: shopping.applyExtractor(doc, extractor), via, modelCalls };
+    return { items: shopping.applyExtractor(doc, extractor), via: 'new site extractor (one-time model call)', modelCalls };
   }
 
   // The model writes selectors from the outline; selectors that don't find products get one retry with the reason,
-  // then a deterministic guess. Returns { extractor (with its source) | null, modelCalls }.
+  // only after the page heuristic found nothing. Returns { extractor (with its source) | null, modelCalls }.
   async generateExtractor(doc) {
     const outline = shopping.outlineForExtractor(doc).map((l) => ({ ...l, text: redact(l.text).text }));
     if (outline.length < 2) return { extractor: null, modelCalls: 0 };
@@ -87,8 +93,7 @@ class Skills {
       console.warn(`[skills] site extractor rejected (${reason}): ${reply.slice(0, 200)}`);
       feedback = `\n\nYour previous answer ${reply.slice(0, 200)} did not work: ${reason}. Reply with corrected selectors.`;
     }
-    const guess = shopping.guessExtractor(doc);
-    return { extractor: guess && { ...guess, source: 'heuristic' }, modelCalls };
+    return { extractor: null, modelCalls };
   }
 
   basket() {

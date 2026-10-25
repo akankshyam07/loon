@@ -299,7 +299,7 @@ Each one slots into T2/T3 when enabled and available.
 | Explain screenshot | OCR text → text pipeline | chart/diagram (little text) → open vision model (e.g. Qwen-VL, loaded on demand) |
 | Page kind | DOM/regex heuristics (§2.4) | ambiguous → T3; never cloud |
 | Dense-text nudge | Flesch-Kincaid grade >12 and >300 words | never |
-| Product extraction | JSON-LD/microdata/OpenGraph → cached per-domain extractor | no structured data and no extractor → T4 writes an extractor once per domain (§3.6) |
+| Product extraction | JSON-LD/microdata/OpenGraph → cached per-domain extractor → page-layout guess | none of these → T4 writes an extractor once per domain (§3.6) |
 | Unit price, cheapest, ranking | `parseQuantity` + js-quantities | never |
 | Shopping verdict | template lines from computed facts (§3.6) | "Why?" / "Loon's take" → T4 |
 | Review summary | star distribution + aspect lexicon + LexRank quotes | "Summarize in words" → T4 |
@@ -415,11 +415,13 @@ Each feature is described by its flow, how it works, which parts are code and wh
   1. **Extract items** into `{name, price, currency, sizeText, rating, reviewCount, shipping, sponsored}`, trying in this order:
      1. **Structured data:** JSON-LD/microdata `Product`/`Offer`/`ItemList`, OpenGraph, and price `<meta>` tags. Product detail pages usually have these; listing pages often don't.
      2. **Cached per-domain extractor:** a stored set of CSS selectors for that site (`extractors/<domain>.json`), run in the content script.
-     3. **Generate the extractor once:** if the site has neither, T4 receives a **flattened JSON outline of the DOM** and returns CSS selectors. Those are checked (they must yield ≥2 items with parseable prices) and then cached.
+     3. **Guess from the page layout:** the largest price-holding card and its longest non-price, non-button text. Used
+        and cached when every product gets a different name; no model call.
+     4. **Generate the extractor once:** if the guess fails too, T4 receives a **flattened JSON outline of the DOM** and returns CSS selectors. Those are checked (they must yield ≥2 items with parseable prices) and then cached.
         - Research basis: having an LLM write a reusable extractor kept 96.5% accuracy while using 95.8% fewer LLM calls than extracting every page (arXiv 2506.21585).
         - Input format matters more than the model: the same LLM reached F1 0.96 on flat JSON but hallucinated on slimmed HTML (NEXT-EVAL).
         - The classic repeated-structure heuristic (MDR) scored F1 0.08, so don't hand-build one.
-     4. If the site changes and the selectors stop yielding items, delete the cached extractor and generate it again.
+     5. If the site changes and the selectors stop yielding items, delete the cached extractor and generate it again.
   2. **Code:** `parseQuantity(sizeText)` uses a regex pre-pass for multipacks ("12 x 330ml", "pack of 6") and compound amounts ("2 lb 4 oz"), then js-quantities to normalize to g / ml / count. No existing library handles multipacks. Code computes unit price per 100g, 100ml, or item, and sorts by total price and by unit price.
   3. **Code:** "best value" is a fixed formula: unit-price rank with a rating adjustment (a penalty below 4.0★ or under 20 reviews). Warnings come from rules:
      - shipping or minimum-order text present
