@@ -142,7 +142,11 @@ class Skills {
         const analysis = shopping.analyze(basket);
         const { text: line, mood } = shopping.verdict(analysis);
         packet.analysis = analysis;
-        return { text: `${line}\n\n${shopping.renderTable(analysis)}\n\nFrom: ${[...new Set(basket.map((b) => b.site))].join(', ')}`, mood, detail: `${basket.length} saved products` };
+        // Prices are as saved; one saved a week or more ago may have changed since.
+        const old = basket.filter((b) => b.savedAt && Date.now() - b.savedAt >= 7 * 24 * 3600 * 1000)
+          .map((b) => `${shopping.short(b.name)} (${Math.floor((Date.now() - b.savedAt) / (24 * 3600 * 1000))} days ago)`);
+        const stale = old.length ? `\n\n_Saved a while back, so the price may have changed: ${old.join(', ')}. Open the page and "Add to compare" again to refresh it._` : '';
+        return { text: `${line}\n\n${shopping.renderTable(analysis)}\n\nFrom: ${[...new Set(basket.map((b) => b.site))].join(', ')}${stale}`, mood, detail: `${basket.length} saved products` };
       }
       case 'basket-clear':
         this.saveBasket([]);

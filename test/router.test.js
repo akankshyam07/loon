@@ -399,3 +399,16 @@ test('kNN escalation memory: questions like ones that escalated start one tier u
   await off.record('What is a monad?', true);
   assert.deepStrictEqual([off.entries.length, await off.likelyHard('What is a monad?')], [0, false]);
 });
+
+test('compare basket: items saved a week or more ago are flagged as possibly stale', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-skills-'));
+  const skills = new Skills({ dataDir: dir, brain: { chat: async () => {}, resetThread: () => {} } });
+  const day = 24 * 3600 * 1000;
+  skills.saveBasket([
+    { name: 'Oat milk 1 L', price: 5.49, currency: 'USD', sizeText: 'Oat milk 1 L', site: 'a.test', savedAt: Date.now() - 10 * day },
+    { name: 'Oat milk 2 L', price: 9.49, currency: 'USD', sizeText: 'Oat milk 2 L', site: 'b.test', savedAt: Date.now() },
+  ]);
+  const { text } = await skills.run('basket-compare', 'shop_basket', {});
+  assert.match(text, /price may have changed: Oat milk 1 L \(10 days ago\)/);
+  assert.doesNotMatch(text, /Oat milk 2 L \(\d+ days ago\)/);
+});

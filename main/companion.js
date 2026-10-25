@@ -590,6 +590,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
       const again = Boolean(onScreen && question && LOOK_AGAIN.test(question));
       // The compare basket lives across pages, so "compare my basket" needs no page at all.
       if (!task && question && /^(?:compare|show|check)(?: me)? (?:my |the )?(?:compare |comparison )?basket\b|^compare (?:what i saved|my saved (?:items|products|stuff))\b/i.test(question.trim())) { task = 'shop_basket'; question = undefined; }
+      if (!task && question && /^(?:clear|empty|reset)(?: out)? (?:my |the )?(?:compare |comparison )?basket\b/i.test(question.trim())) { task = 'shop_clear'; question = undefined; }
       // A page task named on a menu or shop page is unmistakable even mid-conversation; "cheapest" on any page only at the start.
       const pageTask = !task && question && bridge.clients.size && activePage && !activePage.sensitive ? pageTaskFor(question, activePage.kind) : null;
       const namesPageTask = Boolean(pageTask && (['menu', 'shopping'].includes(activePage.kind) || !session.turns.length));
