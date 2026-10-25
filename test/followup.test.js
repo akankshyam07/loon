@@ -244,3 +244,13 @@ test('mid-conversation, "which one…?" is a follow-up, not a question about the
   assert.strictEqual(t.calls.length, before + 1);
   assert.match(t.last().prompt, /compare TCP and UDP/);
 });
+
+test('mid-conversation, "the window" is the topic, not the screen', async () => {
+  const t = setup({ cloudCli: 'off' });
+  t.companion.openAsk();
+  await t.ask('compare TCP and UDP');
+  const before = t.calls.length;
+  assert.ok(await t.ask('how big is the window?'));
+  assert.strictEqual(t.calls.length, before + 1, 'answered from the chat, no screen look');
+  assert.match(t.last().prompt, /compare TCP and UDP/);
+});

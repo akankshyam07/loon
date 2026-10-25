@@ -49,7 +49,8 @@ const TEACH_NEXT = /^(?:next(?: step)?|ok(?:ay)?,? next|what'?s next|continue)$/
 // Questions that point at what's on screen, and the subset that just means "tell me what this is".
 const PAGE_QUESTION = /\b(this|the|my|that) (page|site|website|tab|listing|product|item|article|post|shop|store|screen|menu)\b|\bwhat (do|can) you see\b|\bcan you see\b|\b(see|read|look at) (this|it|that)\b|\bwhat'?s (on here|here|on (the |my )?screen)\b|\bwhich (one|of these)\b|\b(these|those) (items|products|ones|options)\b|\bis (this|it) (a )?(good|worth)/i;
 // Mid-conversation, "which one?" or "these" refer to the chat, not the screen; only an unmistakable reference counts.
-const CLEAR_SCREEN = /\b(this|the|my|that) (page|site|website|tab|listing|screen|window)\b|\bwhat (do|can) you see\b|\bcan you see\b|\blook at (this|it|my screen)\b|\bon (my|the) screen\b/i;
+// "the window" is often the topic itself (a TCP window, a window function), so only this/my/that count.
+const CLEAR_SCREEN = /\b(this|my|that) (page|site|website|tab|listing|screen|window|product|item|article|menu)\b|\bwhat (do|can) you see\b|\bcan you see\b|\blook at (this|it|my screen)\b|\bon (my|the) screen\b/i;
 const GENERIC_LOOK = /^\s*(what (do|can) you see|can you see( this| it| my screen)?|see this( page)?|look at this( page)?|what'?s on (this|the|my) (page|screen)|what'?s this( page)?|(summari[sz]e|explain) (this|the) page)\s*[?.!]*\s*$/i;
 // Seeing the screen (§3.20): only when asked, only the window in front, and only with the user's say-so once.
 const CANT_SEE = "I can't see your screen right now 🙈\n\nTurn on **Look at my screen when I ask** in Settings, or allow Loon in System Settings → Privacy & Security → **Screen Recording**.";
@@ -457,7 +458,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
       parsed.name = match;
     }
     // Read-only or append-only actions run straight away; everything else gets a confirm card.
-    if (['note', 'find', 'briefing', 'today', 'focus', 'recall'].includes(parsed.action)) {
+    if (['note', 'find', 'briefing', 'today', 'focus', 'timer', 'recall'].includes(parsed.action)) {
       bubble('action-done', { id, ...(await actions.execute(parsed)) });
       return true;
     }

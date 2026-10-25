@@ -164,6 +164,7 @@ async function run(ctx) {
       if (part === 'core') await core(ctx, check, h);
       else if (part === 'features') await require('./selftest-features').run(ctx, check, h);
       else if (part === 'browser') await require('./selftest-browser').run(ctx, check);
+      else if (part === 'explore') await require(process.env.LOON_EXPLORE)(ctx, check, h, withTempData); // ad-hoc scenario scripts
       else if (['fresh', 'migrate', 'smoke'].includes(part)) await require('./selftest-install')[part](ctx, check, h);
       else check(`known part "${part}"`, false);
     } catch (err) {

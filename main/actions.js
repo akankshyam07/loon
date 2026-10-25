@@ -137,10 +137,11 @@ const realExecutors = {
 
 class Actions {
   // routines: the scheduler (main/routines.js), set by main.js once it exists.
-  constructor({ auditFile, notes, memory, openExternal, projects = () => [], hub = null, mcp = null, onFocus = () => '', routines = null, executors = realExecutors }) {
+  constructor({ auditFile, notes, memory, openExternal, projects = () => [], hub = null, mcp = null, onFocus = () => '', onTimer = () => '', routines = null, executors = realExecutors }) {
     this.routines = routines;
     this.mcp = mcp;
     this.onFocus = onFocus;
+    this.onTimer = onTimer;
     this.projects = projects;
     this.hub = hub;
     this.auditFile = auditFile;
@@ -222,6 +223,9 @@ class Actions {
           return { ok: true, message: command.facts ? formatFacts(this.memory.all()) : formatHistory(this.memory.searchEpisodes(command.query), command.query), markdown: true };
         case 'focus':
           message = this.onFocus(command.minutes);
+          break;
+        case 'timer':
+          message = this.onTimer(command.seconds, command.label);
           break;
         // Routines (§3.19): created and deleted only from a confirm card; pause/resume are reversible.
         case 'routine': {

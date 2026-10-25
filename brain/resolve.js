@@ -12,6 +12,7 @@ const { domainForTask } = require('./graph');
 const { cleanPersonal, instructionsBlock, maxTokensFor, sensesFor } = require('./personal');
 const { keySentences, trimForModel } = require('./textrank');
 const { languageName } = require('./translate');
+const { quickAnswer } = require('./quick');
 const { fingerprint } = require('./errors');
 const shopping = require('./shopping');
 const food = require('./food');
@@ -42,6 +43,7 @@ const CODE_ANSWERS = [
         '- **Highlight text** in Chrome: define, translate, explain, rewrite',
         '- **"Summarize this page"**, shopping tables, menu picks, error help',
         '- **"Remind me to… at 5"**, "add … Friday 3pm", "open Spotify", "find my resume"',
+        '- **Quick math** ("18% tip on 42"), **"5 miles to km"**, **"days until Christmas"**, **"set a timer for 10 minutes"**',
         '- **"Where did I leave off?"** on projects you allow in Settings',
         '- **⌥⇧S** read a screenshot · **⌥⇧V** talk to me · **drop a file** on me',
         '- **⌥⇧T** or **"where is the … button?"**: I point at it on your screen, and follow along with video tutorials',
@@ -54,6 +56,20 @@ const CODE_ANSWERS = [
     answer: () => ({ mood: 'happy', text: "I'm Loon, a small black cat who lives on your screen. I run on your Mac, and nothing you ask leaves it unless you switch on Smarter answers in Settings." }),
   },
 ];
+
+// Typed "define X" / "what does X mean" and "translate …" use the same free tiers as a selection does.
+function typedDefinition(question) {
+  const m = normalize(question).match(/^(?:define|definition of|meaning of|what(?:'s| is) the (?:meaning|definition) of|what does) ["“']?([a-z][a-z' -]*?)["”']?(?: mean)?\??$/);
+  if (!m || (/^what does/.test(normalize(question)) && !/ mean\??$/.test(normalize(question)))) return null;
+  const word = m[1].trim();
+  return word.split(' ').length <= 3 && !/^(?:this|that|it|these|those)$/.test(word) ? word : null;
+}
+
+function typedTranslation(question) {
+  const m = question.trim().match(/^translate:?\s+["“]?([\s\S]+?)["”]?(?:\s+(?:in)?to\s+english)?\s*\??$/i);
+  if (!m || /\s(?:in)?to\s+(?!english)[a-z]+\s*\??$/i.test(question.trim())) return null;
+  return /^(?:this|that|it)$/i.test(m[1].trim()) ? null : m[1].trim();
+}
 
 function normalize(text) {
   return text.trim().replace(/\s+/g, ' ').toLowerCase();
@@ -229,6 +245,26 @@ class Resolver {
         onText(text);
         this.count('code');
         return { text, mood, tier: 'code' };
+      }
+      const quick = quickAnswer(packet.question);
+      if (quick) {
+        onText(quick.text);
+        this.count('code');
+        return { text: quick.text, mood: quick.mood, tier: 'code', detail: 'worked out in code' };
+      }
+      const word = typedDefinition(packet.question);
+      const defined = word && (await define(word, { maxSenses: sensesFor(personal.length) }));
+      if (defined) {
+        onText(defined);
+        this.count('code');
+        return { text: defined, mood: 'curious', tier: 'code', detail: 'WordNet dictionary' };
+      }
+      const foreign = this.translator && typedTranslation(packet.question);
+      const translated = foreign && (await this.translator.translate(foreign).catch(() => null));
+      if (translated && !translated.sameLanguage) {
+        onText(translated.text);
+        this.count('code');
+        return { text: translated.text, mood: 'happy', tier: 'code', detail: `offline translator · ${translated.fromName} → ${translated.toName}` };
       }
     }
 

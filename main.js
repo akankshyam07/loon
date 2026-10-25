@@ -295,6 +295,32 @@ function startFocus(minutes) {
   return `Focus on until ${until}. I'll nap and keep quiet. Say "stop focus" to end early.`;
 }
 
+// "set a timer for 5 minutes": rings with the cat's notice. seconds 0 cancels all, null reports what's left.
+const timers = new Set();
+const spell = (s) => (s >= 3600 ? `${+(s / 3600).toFixed(1)} hour${s === 3600 ? '' : 's'}` : s >= 60 ? `${Math.round(s / 60)} minute${Math.round(s / 60) === 1 ? '' : 's'}` : `${s} second${s === 1 ? '' : 's'}`);
+function startTimer(seconds, label) {
+  if (seconds === null) {
+    if (!timers.size) return 'No timers running.';
+    return [...timers].map((t) => `${t.label ? `${t.label}: ` : ''}${spell(Math.max(1, Math.round((t.ends - Date.now()) / 1000)))} left`).join('\n');
+  }
+  if (seconds === 0) {
+    const count = timers.size;
+    for (const t of timers) clearTimeout(t.handle);
+    timers.clear();
+    return count ? `Cancelled ${count === 1 ? 'the timer' : `${count} timers`}.` : 'No timers running.';
+  }
+  const timer = { label, ends: Date.now() + seconds * 1000 };
+  timer.handle = setTimeout(() => {
+    timers.delete(timer);
+    companion.showNotice(`⏰ Time's up${label ? `: ${label}` : ''}! (${spell(seconds)})`);
+    showBubble();
+    catWin.webContents.send('brain', { state: 'done', mood: 'happy' });
+  }, seconds * 1000);
+  timers.add(timer);
+  const at = new Date(timer.ends).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', ...(seconds < 120 ? { second: '2-digit' } : {}) });
+  return `⏱️ ${spell(seconds)} timer${label ? ` for ${label}` : ''} started. I'll ping you at ${at}.`;
+}
+
 // Gentle rhythm: one "your day" nudge on the first morning activity and a stretch nudge after ~an hour of non-stop use.
 // The nudge is the cat's small "?" (ignored in 8 s, skipped in Focus and Privacy), never a popup.
 let dailyNudge = null;
@@ -1007,7 +1033,7 @@ app.whenReady().then(() => {
   const allowedProjects = () => (settings.projects || []).filter((p) => fs.existsSync(p));
   hub = new ConnectorHub({ settings, save: saveSettings });
   mcpHub = new McpHub({ settings, save: saveSettings, secrets: new apiProvider.KeyStore(path.join(app.getPath('userData'), 'mcp-secrets.json'), safeStorage) });
-  actions = new Actions({ auditFile: path.join(app.getPath('userData'), 'audit.jsonl'), notes, memory, hub, mcp: mcpHub, projects: allowedProjects, onFocus: startFocus, openExternal: (url) => hooks.openExternal(url) });
+  actions = new Actions({ auditFile: path.join(app.getPath('userData'), 'audit.jsonl'), notes, memory, hub, mcp: mcpHub, projects: allowedProjects, onFocus: startFocus, onTimer: startTimer, openExternal: (url) => hooks.openExternal(url) });
   // Tidy memory at most once a day: merges duplicate facts only, logged as a count (no content).
   if (!settings.privacy && !SELFTEST && settings.lastTidy !== new Date().toDateString()) {
     settings.lastTidy = new Date().toDateString();

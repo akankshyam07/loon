@@ -81,6 +81,15 @@ function parseCommand(input, now = new Date()) {
   }
   if (/^(?:start (?:a )?focus(?: timer| session)?|pomodoro)$/i.test(text)) return { action: 'focus', minutes: 25 };
   if (/^(?:stop|end|cancel) (?:the )?focus(?: mode| timer| session)?$/i.test(text)) return { action: 'focus', minutes: 0 };
+  // Timers ring inside Loon (no other app is touched), so they start without a confirm card.
+  const DURATION = '(\\d+(?:\\.\\d+)?)[- ]?(seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h)';
+  const seconds = (n, u) => Math.round(Number(n) * (/^h/i.test(u) ? 3600 : /^m/i.test(u) ? 60 : 1));
+  if ((m = text.match(new RegExp(`^(?:set |start )?(?:a |an |the )?timer (?:for |of )?${DURATION}(?: (?:for|called|named|to) (.+))?$`, 'i')))
+    || (m = text.match(new RegExp(`^(?:set |start )?(?:a |an )?${DURATION} timer(?: (?:for|called|named|to) (.+))?$`, 'i')))) {
+    return { action: 'timer', seconds: Math.min(seconds(m[1], m[2]), 24 * 3600), label: m[3] ? tidy(m[3]) : null };
+  }
+  if (/^(?:stop|cancel|clear|end) (?:the |my |all )?timers?$/i.test(text)) return { action: 'timer', seconds: 0 };
+  if (/^(?:how (?:long|much time) (?:is )?left(?: on (?:the |my )?timer)?|timer status|check (?:the |my )?timer)\??$/i.test(text)) return { action: 'timer', seconds: null };
   return null;
 }
 
