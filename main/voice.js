@@ -305,7 +305,9 @@ function createVoiceController({ engine, ui, session, setToggle, settings }) {
       return;
     }
     if (type === 'action-done' && payload.message) {
-      if (voiceTurn || payload.id === confirmedByVoice) say(payload.ok ? 'Done.' : "That didn't work.");
+      // Say what happened ("10-second timer started…") when it is short prose; a bare "Done." tells you nothing.
+      const { text } = speakable(String(payload.message), payload.ok ? 1 : 2);
+      if (voiceTurn || payload.id === confirmedByVoice) say(text && text.length <= 140 ? text : payload.ok ? 'Done.' : "That didn't work.");
       voiceTurn = null;
       confirmedByVoice = null;
       return;

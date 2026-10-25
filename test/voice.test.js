@@ -75,3 +75,12 @@ test('speech → end of turn → text, all on this Mac', { skip: !engine.modelsR
   assert.match(text, /remind me to call mom at five/i);
   assert.strictEqual(route(text).type, 'command');
 });
+
+test('spoken answers keep decimals and say math, units and degrees as words', () => {
+  const { speakable } = require('../brain/intents');
+  assert.strictEqual(speakable('15% of 84 is **12.6**.').text, '15% of 84 is 12.6.');
+  assert.strictEqual(speakable('5 mi = **8.05 km**').text, '5 miles is 8.05 kilometers');
+  assert.strictEqual(speakable('72 °F = **22.2 °C**').text, '72 degrees Fahrenheit is 22.2 degrees Celsius');
+  assert.strictEqual(speakable('12*12 = **144**').text, '12 times 12 is 144');
+  assert.strictEqual(speakable('🪙 **Tails.**').text, 'Tails.');
+});

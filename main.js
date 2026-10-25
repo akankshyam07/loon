@@ -313,6 +313,8 @@ function startTimer(seconds, label) {
   timer.handle = setTimeout(() => {
     timers.delete(timer);
     companion.showNotice(`⏰ Time's up${label ? `: ${label}` : ''}! (${spell(seconds)})`);
+    // A timer you can't hear is easy to miss; the built-in Glass sound, never in test runs.
+    if (!SELFTEST) require('child_process').execFile('afplay', ['/System/Library/Sounds/Glass.aiff'], () => {});
     showBubble();
     catWin.webContents.send('brain', { state: 'done', mood: 'happy' });
   }, seconds * 1000);

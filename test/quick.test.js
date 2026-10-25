@@ -104,3 +104,9 @@ test('a hedge the answer contradicts is dropped', () => {
   assert.strictEqual(f("I don't know the answer, but I can tell you that the capital of France is Paris."), 'The capital of France is Paris.');
   assert.strictEqual(f("I don't know who won the 2031 cup."), "I don't know who won the 2031 cup.");
 });
+
+test('spoken numbers work too (voice transcripts spell them out)', () => {
+  assert.match(text("What's fifteen percent of eighty-four?"), /\*\*12\.6\*\*/);
+  assert.match(text('Twenty percent off a hundred and twenty.'), /\*\*96\*\*/);
+  assert.match(text('What is twelve times twelve?'), /\*\*144\*\*/);
+});

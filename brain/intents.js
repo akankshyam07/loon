@@ -86,6 +86,8 @@ function createSentenceSplitter(onSentence) {
   };
 }
 
+const SPOKEN_UNITS = { mi: 'miles', km: 'kilometers', kg: 'kilograms', lb: 'pounds', lbs: 'pounds', oz: 'ounces', ml: 'milliliters', ft: 'feet', cm: 'centimeters', mm: 'millimeters', g: 'grams', l: 'liters', 'fl oz': 'fluid ounces', 'km/h': 'kilometers per hour', mph: 'miles per hour' };
+
 // What is worth saying aloud: prose only (no tables, code or lists), at most two sentences.
 function speakable(markdown, maxSentences = 2) {
   const prose = markdown
@@ -93,11 +95,19 @@ function speakable(markdown, maxSentences = 2) {
     .split('\n')
     .filter((l) => !/^\s*(\||>|[-*•]\s|\d+\.\s|#)/.test(l))
     .join(' ')
+    .replace(/(\d)\s*\*\s*(?=\d)/g, '$1 times ')
     .replace(/[*_`[\]]/g, '')
     .replace(/\(https?:\/\/\S+\)/g, '')
+    .replace(/\p{Extended_Pictographic}\uFE0F?/gu, '')
+    .replace(/(\d)\s*\/\s*(?=\d)/g, '$1 divided by ')
+    .replace(/(\d)\s*\^\s*(?=\d)/g, '$1 to the power of ')
+    .replace(/\s=\s/g, ' is ')
+    .replace(/(\d) ?°([CF])\b/g, (m, d, u) => `${d} degrees ${u === 'C' ? 'Celsius' : 'Fahrenheit'}`)
+    .replace(/(\d) (mi|km|kg|lbs?|oz|ml|ft|cm|mm|g|l|fl oz|km\/h|mph)\b/g, (m, d, u) => `${d} ${SPOKEN_UNITS[u] || u}`)
     .replace(/\s+/g, ' ')
     .trim();
-  const sentences = prose.match(/[^.!?]+[.!?]+/g) || (prose ? [prose] : []);
+  // A decimal point is not the end of a sentence ("12.6").
+  const sentences = prose.match(/(?:\d\.\d|[^.!?])+(?:[.!?]+|$)/g)?.filter((x) => x.trim()) || [];
   return { text: sentences.slice(0, maxSentences).map((x) => x.trim()).join(' '), truncated: sentences.length > maxSentences || prose.length < markdown.trim().length * 0.6 };
 }
 

@@ -3,6 +3,7 @@
 // quickAnswer(question) → { text, mood, detail } or null (null falls through to the next tier).
 const crypto = require('crypto');
 const chrono = require('chrono-node');
+const { normalizeSpoken } = require('./commands');
 
 // ---------- arithmetic: a tiny recursive-descent parser (never eval) ----------
 
@@ -239,7 +240,8 @@ function chance(q) {
 }
 
 function quickAnswer(question, now = new Date()) {
-  const q = question.trim().toLowerCase().replace(/\s+/g, ' ').replace(/[!.]+$/, '');
+  // Voice transcripts spell numbers out ('fifteen percent of eighty-four').
+  const q = normalizeSpoken(question).toLowerCase().replace(/\s+/g, ' ').replace(/[!.]+$/, '');
   if (!q || q.length > 200) return null;
   const answer = chance(q) || daysUntil(q, now) || units(q) || math(q);
   return answer ? { mood: 'happy', ...answer } : null;
