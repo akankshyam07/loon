@@ -231,13 +231,14 @@ function answerActions({ id, canGoDeeper, replaceText, text, question, quiz, tie
   const list = Object.assign(document.createElement('div'), { className: 'menu-list', hidden: true });
   // "Remember this" uses the sentence selected in this answer, so it is read before the click can clear it.
   let selected = '';
-  const toggle = add(menu, '⋯', () => { list.hidden = !list.hidden; requestAnimationFrame(reportHeight); });
+  const toggle = add(menu, '⋯', () => { list.hidden = !list.hidden; toggle.setAttribute('aria-expanded', String(!list.hidden)); requestAnimationFrame(reportHeight); });
   toggle.title = 'More actions';
+  toggle.setAttribute('aria-expanded', 'false');
   toggle.addEventListener('mousedown', () => {
     const sel = window.getSelection();
     selected = sel && !sel.isCollapsed && answerEl()?.contains(sel.anchorNode) ? sel.toString() : '';
   });
-  const item = (label, onClick) => add(list, label, (e) => { list.hidden = true; onClick(e); requestAnimationFrame(reportHeight); });
+  const item = (label, onClick) => add(list, label, (e) => { list.hidden = true; toggle.setAttribute('aria-expanded', 'false'); onClick(e); requestAnimationFrame(reportHeight); });
   for (const chip of (context.chips || []).filter((c) => c.id !== lastTask)) item(chip.label, () => runChip(chip.id, chip.label));
   if (context.mode === 'screen') item('Look again', () => runChip('screen_look', 'Look again'));
   if ($('askForm').hidden) item('Ask a follow-up', () => { showInput = true; $('askForm').hidden = false; focused = true; window.loon.focusBubble(); input.focus(); reportHeight(); });
@@ -278,6 +279,10 @@ function answerActions({ id, canGoDeeper, replaceText, text, question, quiz, tie
   }
   const icon = Object.assign(document.createElement('span'), { className: 'tier-icon', textContent: tier === 'local' ? '🐾' : tier === 'cloud' ? '☁️' : '⚡' });
   icon.title = tierLabel({ tier, model, detail, estimated }) + (fromScreen ? '\n👀 read from your screen' : '') + (memoryUsed.length ? `\nRemembered: ${memoryUsed.map((f) => f.text).join('; ')}` : '');
+  // Where the answer came from is trust information, so keyboard and screen-reader users get it too, not only on hover.
+  Object.assign(icon, { tabIndex: 0 });
+  icon.setAttribute('role', 'img');
+  icon.setAttribute('aria-label', icon.title.replace(/\n/g, '. '));
   row.append(icon, list);
   return row;
 }
