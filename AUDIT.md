@@ -40,6 +40,11 @@ with the global hotkeys left alone (`LOON_NO_HOTKEYS=1`). The model files are sh
 | Writing: rewrite → Replace in a contenteditable editor | ✅ verified | 2 s, text replaced in place |
 | Bubble keyboard / screen reader | ✅ **improved** | ⋯ has aria-expanded; answer source readable without hover |
 | Voice (Silero, Moonshine, Kokoro) | ✅ e2e 42/42 | voice models shared read-only |
+| Voice instant answers ("fifteen percent of eighty-four", timers) | ✅ **fixed** | number words stopped at 50; decimals were read as sentence breaks; "12*12" read as "1212" |
+| Voice action results | ✅ **fixed** | said "Done." instead of what happened; timers now play the Glass sound |
+| Plain shop pages, no structured data | ✅ **faster** | page-layout guess before the model: 4 s → 0.7 s, no model call |
+| First run without a model | ✅ permanent check | selftest `fresh` part (8/8) |
+| "Lightest" on a menu with sides | ✅ **fixed** | answered a side of bread; mains now rank first |
 | Model offering lookups it can't do | ✅ **fixed** | prompt rule plus trimming "would you like me to check…" and "I don't know, but…" |
 | Screen look / Teach | ✅ e2e (fixtures) | real permissions need a manual check |
 
@@ -78,19 +83,25 @@ with the global hotkeys left alone (`LOON_NO_HOTKEYS=1`). The model files are sh
     follow-ups; page tasks read the page whatever window is in front. Permanent browser selftest check added.
 17. Accessibility: aria-expanded on ⋯, and the tier icon is focusable with an aria-label.
 18. No false offers: prompt rule, trailing-offer trim, contradicted-hedge trim (`tidyModelAnswer`).
+19. Voice: number words up to 90 and hundreds; quick answers take spoken numbers; `speakable` keeps decimals and says
+    operators, units and degrees in words, skipping emoji.
+20. Spoken action results ("10-second timer started"); a finished timer plays the system Glass sound (never in tests).
+21. Shopping: the page-layout extractor guess runs before the model, rejects button text, and requires distinct names.
+    The dead heuristic fallback after model retries is removed; DESIGN.md §3.6 updated.
+22. Selftest `fresh`: the input stays usable, math works in code, and a model question waits.
+23. Menu sections: sides, drinks and desserts rank after mains.
 
 ## Test results
 
-- Unit: 227/227 (was 213).
-- End-to-end after the changes: core 42/42 (with voice), features 32/32, browser 45/45 (one new check).
+- Unit: 230/230 (was 213).
+- End-to-end after the changes: core 42/42 (with voice), features 32/32, browser 45/45, fresh 8/8, migrate 7/7.
 - End-to-end baseline before changes: core 36/36, features 32/32, browser 44/44.
 - Explore sessions: 3 rounds; timings and results are in the commit messages above.
 
 ## Prioritized next
 
-1. Make the no-model first-run flow a permanent check (selftest `fresh` part).
-2. Shopping on plain pages: now that prices reach the page text, the code extractor may work without a model-written
-   site extractor. Check it and drop that one-time model call where possible.
-3. Voice with the new instant answers ("what's 15 percent of 84", "set a timer for ten minutes").
-4. "Lightest" can pick a side dish (focaccia) over a meal. Possibly prefer mains unless the user asks for sides.
-5. History and notes: search and continue flows as a power user.
+1. History and notes: search and continue flows as a power user.
+2. Routines (price watch, daily brief): create, run now, failure states.
+3. Teach me on screen with an unfamiliar app layout (fixture capture).
+4. Packaged .dmg build and the `smoke` part (native modules in the bundle).
+5. Performance: cold start time, memory at idle, CPU while idle (the cat's animation loop).
