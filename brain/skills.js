@@ -169,7 +169,7 @@ class Skills {
         // Memory without a model: a saved "I'm vegetarian" filters every menu answer.
         const diet = food.dietFrom(memory);
         const avoid = food.allergiesFrom(memory);
-        const result = food.recommend(items, goal, { vegetarianOnly: Boolean(diet), veganOnly: diet === 'vegan', avoid, judgmental });
+        const result = food.recommend(items, goal, { vegetarianOnly: ['vegetarian', 'vegan'].includes(diet), veganOnly: diet === 'vegan', pescatarianOnly: diet === 'pescatarian', avoid, judgmental });
         return { ...result, detail: `${items.length} menu items · keywords, no model${diet || avoid.length ? ' · using your saved diet' : ''}` };
       }
       case 'errors': {

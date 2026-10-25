@@ -7,6 +7,12 @@ const HEAVY = { fried: 3, 'deep-fried': 4, crispy: 2, battered: 3, breaded: 2, c
 const LIGHT = { grilled: -2, steamed: -3, baked: -1, roasted: -1, poached: -2, salad: -2, broth: -2, 'raw': -1, sashimi: -2, vinaigrette: -1, greens: -1, vegetable: -1, veggie: -1, lean: -2 };
 const PROTEIN = /\b(chicken|turkey|salmon|tuna|shrimp|prawns?|beef|steak|pork|tofu|tempeh|egg whites?|eggs?|lentils?|chickpeas?|beans|edamame|greek yogurt|cod|fish|seitan)\b/gi;
 const MEAT = /\b(chicken|turkey|beef|steak|pork|bacon|ham|sausage|salami|pepperoni|lamb|veal|venison|duck|prosciutto|chorizo|meatballs?|burger|anchov(y|ies)|fish|salmon|tuna|shrimp|prawns?|cod|crab|lobster|clams?|mussels|oysters?|scallops?|squid|calamari|octopus|gelatin)\b/i;
+// Meat that isn't fish or seafood, for pescatarians.
+const LAND_MEAT = /\b(chicken|turkey|beef|steak|pork|bacon|ham|sausage|salami|pepperoni|lamb|veal|venison|duck|prosciutto|chorizo|meatballs?|burger|gelatin)\b/i;
+// The menu's own labels beat guessing from ingredients: "(V)", "(VG)", "(GF)", "gluten-free".
+const MARKED_VEGAN = /\(\s*vg\s*\)|\bvegan\b/i;
+const MARKED_VEGETARIAN = /\(\s*v\s*\)|\bvegetarian\b/i;
+const MARKED_GLUTEN_FREE = /\(\s*gf\s*\)|\bgluten[- ]free\b/i;
 // Animal products a vegan skips; an item the menu itself calls vegan wins ("vegan ranch").
 const NOT_VEGAN = /\b(cheese|parmesan|feta|mozzarella|cheddar|ricotta|goat cheese|cream|creamy|butter|egg|eggs|mayo|aioli|ranch|yogurt|honey|milk|ghee|caesar)\b/i;
 
@@ -38,6 +44,7 @@ function dietFrom(memory = []) {
   const text = memory.join(' ');
   if (/\bnot (?:a )?(?:vegetarian|vegan)\b/i.test(text)) return null;
   if (/\bvegan\b|plant[- ]based/i.test(text)) return 'vegan';
+  if (/\bpesc[ae]tarian\b|\b(?:only|just) (?:eat )?(?:fish|seafood)\b|\bfish but (?:no|not) meat\b/i.test(text)) return 'pescatarian';
   if (/\bvegetarian\b|\b(?:don'?t|do not|never|can'?t) eat (?:any )?meat\b|\bno meat\b|\bmeat[- ]free\b/i.test(text)) return 'vegetarian';
   return null;
 }
@@ -110,7 +117,8 @@ function score(item) {
   }
   let proteins = [...new Set((text.match(PROTEIN) || []).map((p) => p.toLowerCase()))];
   if (proteins.some((p) => /salmon|tuna|cod/.test(p))) proteins = proteins.filter((p) => p !== 'fish'); // "fish" + "salmon" is one protein
-  return { ...item, heaviness, reasons, proteins, likelyVegetarian: !MEAT.test(text), likelyVegan: !MEAT.test(text) && (/\bvegan\b/i.test(text) || !NOT_VEGAN.test(text)), tips: TIPS.filter(([re]) => re.test(text)).map(([, tip]) => tip) };
+  return { ...item, heaviness, reasons, proteins, likelyVegetarian: MARKED_VEGETARIAN.test(text) || MARKED_VEGAN.test(text) || !MEAT.test(text),
+    likelyVegan: MARKED_VEGAN.test(text) || (!MEAT.test(text) && !NOT_VEGAN.test(text)), likelyPescatarian: MARKED_VEGETARIAN.test(text) || MARKED_VEGAN.test(text) || !LAND_MEAT.test(text), markedGlutenFree: MARKED_GLUTEN_FREE.test(text), tips: TIPS.filter(([re]) => re.test(text)).map(([, tip]) => tip) };
 }
 
 const GOALS = {
@@ -119,10 +127,11 @@ const GOALS = {
   vegetarian: { title: 'Likely vegetarian', sort: (a, b) => a.heaviness - b.heaviness, filter: (i) => i.likelyVegetarian },
 };
 
-function recommend(items, goal = 'lightest', { count = 3, vegetarianOnly = false, veganOnly = false, avoid = [], judgmental = true } = {}) {
+function recommend(items, goal = 'lightest', { count = 3, vegetarianOnly = false, veganOnly = false, pescatarianOnly = false, avoid = [], judgmental = true } = {}) {
   const { title, sort, filter } = GOALS[goal];
   const picks = items.map(score).filter(filter || (() => true)).filter((i) => (!vegetarianOnly || i.likelyVegetarian) && (!veganOnly || i.likelyVegan))
-    .filter((i) => !avoid.some((a) => a.re.test(`${i.name} ${i.description}`)))
+    .filter((i) => !pescatarianOnly || i.likelyPescatarian)
+    .filter((i) => !avoid.some((a) => a.re.test(`${i.name} ${i.description}`) && !(a.label === 'gluten' && i.markedGlutenFree)))
     .sort((a, b) => Boolean(a.extra) - Boolean(b.extra) || sort(a, b)).slice(0, count);
   if (!picks.length) {
     const skipping = avoid.length ? ` once I skip anything that mentions ${avoid.map((a) => a.label).join(' or ')}. Ask the staff what they can make for you` : '';
@@ -142,7 +151,7 @@ function recommend(items, goal = 'lightest', { count = 3, vegetarianOnly = false
   const heavy = items.map(score).sort((a, b) => b.heaviness - a.heaviness)[0];
   const quip = judgmental && goal === 'lightest' && heavy && heavy.heaviness >= 5 && (!vegetarianOnly || heavy.likelyVegetarian) ? `\n\nTiny warning: ${heavy.name} is probably doing crimes.` : '';
   const allergy = avoid.length ? `\n\n**Skipping anything that mentions ${avoid.map((a) => a.label).join(' or ')}**, going by the menu's wording. Menus leave things out, so tell the staff about your allergy.` : '';
-  const filtered = veganOnly ? '\n\n_Only vegan picks (no meat, dairy or eggs listed), because you asked me to remember that._'
+  const filtered = pescatarianOnly ? '\n\n_No meat, fish is fine, because you asked me to remember that._' : veganOnly ? '\n\n_Only vegan picks (no meat, dairy or eggs listed), because you asked me to remember that._'
     : vegetarianOnly && goal !== 'vegetarian' ? '\n\n_Only vegetarian picks, because you asked me to remember that._' : '';
   return { text: `**${title}**\n${lines.join('\n')}${note}${allergy}${filtered}${quip}`, mood: quip ? 'judgy' : 'happy' };
 }

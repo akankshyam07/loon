@@ -219,3 +219,16 @@ test('allergies saved in memory skip dishes that mention them, with a tell-the-s
   assert.match(text, /tell the staff about your allergy/);
   assert.match(recommend(items.slice(0, 1), 'lightest', { avoid: allergiesFrom(['allergic to nuts']) }).text, /Nothing on this menu looks like a match once I skip anything that mentions nuts/);
 });
+
+test("the menu's own (V)/(VG)/(GF) labels beat ingredient guessing; pescatarian keeps fish", () => {
+  const { dietFrom, allergiesFrom } = require('../brain/food');
+  assert.strictEqual(dietFrom(['I eat fish but not meat']), 'pescatarian');
+  const items = extractMenu('Smash Burger\nbeef patty, cheddar, brioche bun\n$15 900 cal\nGF Smash Burger (GF)\nbeef patty, cheddar, gluten-free bun\n$16 880 cal\nVeggie Burger (V)\nblack bean patty, brioche bun\n$14 700 cal\nSalmon Bowl\nsalmon, rice, greens\n$17 600 cal');
+  const celiac = recommend(items, 'lightest', { avoid: allergiesFrom(["I'm celiac"]) }).text;
+  assert.match(celiac, /GF Smash Burger/);
+  assert.doesNotMatch(celiac, /Veggie Burger|\*\*Smash Burger/);
+  const pesc = recommend(items, 'lightest', { pescatarianOnly: true }).text;
+  assert.match(pesc, /Salmon Bowl[\s\S]*Veggie Burger/);
+  assert.doesNotMatch(pesc, /Smash Burger/);
+  assert.match(recommend(items, 'lightest', { vegetarianOnly: true }).text, /Veggie Burger/);
+});
