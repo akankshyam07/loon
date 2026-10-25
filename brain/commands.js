@@ -40,11 +40,17 @@ function normalizeSpoken(text) {
 }
 
 function parseCommand(input, now = new Date()) {
-  const text = input.trim();
+  // Politeness doesn't change the command: "please remind me…", "can you open Spotify", "…, thanks".
+  const text = input.trim()
+    .replace(/^(?:(?:hey|ok|okay) )?(?:loon[,\s]+)?(?:(?:please|can you|could you|would you|will you)\s+)+/i, '')
+    .replace(/[,\s]+(?:please|thanks|thank you)[.!?]*$/i, '')
+    .trim();
   let m;
   if ((m = text.match(/^remind me (?:to |about )?(.+)$/i))) {
     const { date, rest } = extractWhen(m[1], now);
-    return { action: 'reminder', title: tidy(rest) || tidy(m[1]), when: date };
+    // "remind me tomorrow to buy milk" leaves the "to" in front of the task.
+    const title = tidy(rest.replace(/^to\s+/i, '')) || tidy(m[1]);
+    return /^(?:to|about)$/i.test(title) ? null : { action: 'reminder', title, when: date };
   }
   if ((m = text.match(/^(?:add|create|schedule|put|book) (?:an? )?(.+)$/i))) {
     const { date, rest, end } = extractWhen(m[1], now);

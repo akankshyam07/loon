@@ -21,6 +21,10 @@ test('commands: reminders, events, open, find, notes, memory; questions fall thr
   assert.strictEqual(at5.when.getHours(), 17);
   assert.strictEqual(at5.when.getDate(), 30); // today, since 5pm hasn't happened yet
   assert.strictEqual(parseCommand('remind me to water plants', NOW).when, null);
+  assert.strictEqual(parseCommand('remind me tomorrow to buy milk', NOW).title, 'buy milk');
+  assert.strictEqual(parseCommand('remind me to', NOW), null);
+  assert.strictEqual(parseCommand('Could you please remind me to call mom at 5, thanks!', NOW).title, 'call mom');
+  assert.deepStrictEqual(parseCommand('can you open Spotify', NOW), { action: 'open', target: 'Spotify', kind: 'app' });
   const event = parseCommand('schedule meeting with Sam next Tuesday 10am', NOW);
   assert.deepStrictEqual([event.action, event.title, event.start.getDay(), event.start.getHours()], ['event', 'meeting with Sam', 2, 10]);
   assert.deepStrictEqual(parseCommand('open github.com', NOW), { action: 'open', target: 'https://github.com', kind: 'url' });
