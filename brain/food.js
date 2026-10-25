@@ -18,6 +18,8 @@ const TIPS = [
 ];
 
 const isDescription = (line) => line.length > 25 || line.includes(',');
+// Section headings for things that aren't a meal: "lightest" shouldn't answer "a side of bread".
+const EXTRAS_SECTION = /^(?:sides?|side dishes|drinks?|beverages|desserts?|sweets|extras|add[- ]ons|sauces|dips|kids(?: menu)?|breads?)$/i;
 
 // Menu items from plain text. Two layouts: "Name ..... $12" with the description on the next line, or the name and
 // description on their own lines above a lone price. Printed calories ("640 cal") on the price line or the line
@@ -26,7 +28,12 @@ function extractMenu(text) {
   const lines = text.split('\n').map((l) => l.replace(/\s+/g, ' ').trim()).filter(Boolean);
   const items = [];
   let used = -1; // last line that belongs to an item already
+  let extras = false; // inside a sides / drinks / desserts section
   for (let i = 0; i < lines.length; i++) {
+    if (!PRICE.test(lines[i]) && lines[i].length < 30) {
+      if (EXTRAS_SECTION.test(lines[i])) extras = true;
+      else if (/^[A-Z][\w &'-]*$/.test(lines[i]) && !lines[i + 1]?.match(PRICE) && /^[A-Z]/.test(lines[i + 1] || '')) extras = false; // another heading
+    }
     const m = lines[i].match(PRICE);
     if (!m) continue;
     let name = lines[i].replace(PRICE, '').replace(CALORIES, '').replace(/[.·…\-–|]+\s*$/, '').replace(/^[.·…\-–|\s]+/, '').trim();
@@ -50,7 +57,7 @@ function extractMenu(text) {
     const calorieLine = [lines[i], lines[last + 1]].find((l) => l && CALORIES.test(l) && !PRICE.test(l.replace(lines[i], '')));
     const calories = calorieLine ? Number(calorieLine.match(CALORIES)[1]) : null;
     if (calorieLine && calorieLine !== lines[i]) last += 1;
-    items.push({ name, price: Number(m[1]), description, ...(calories ? { calories } : {}) });
+    items.push({ name, price: Number(m[1]), description, ...(calories ? { calories } : {}), ...(extras ? { extra: true } : {}) });
     used = last;
   }
   return items;
@@ -79,7 +86,8 @@ const GOALS = {
 
 function recommend(items, goal = 'lightest', { count = 3, vegetarianOnly = false, judgmental = true } = {}) {
   const { title, sort, filter } = GOALS[goal];
-  const picks = items.map(score).filter(filter || (() => true)).filter((i) => !vegetarianOnly || i.likelyVegetarian).sort(sort).slice(0, count);
+  const picks = items.map(score).filter(filter || (() => true)).filter((i) => !vegetarianOnly || i.likelyVegetarian)
+    .sort((a, b) => Boolean(a.extra) - Boolean(b.extra) || sort(a, b)).slice(0, count);
   if (!picks.length) return { text: `Nothing on this menu looks ${goal === 'vegetarian' ? 'vegetarian' : 'like a match'}.`, mood: 'confused' };
   const lines = picks.map((p) => {
     const why = p.calories ? ` · ${p.calories} cal` : p.reasons.length ? ` (${p.reasons.join(', ')})` : '';

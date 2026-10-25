@@ -167,7 +167,10 @@ test('menus with the name, description, price and calories on separate lines', (
   const items = extractMenu(text);
   assert.deepStrictEqual(items.map((i) => [i.name, i.price, i.calories]), [['Harvest Bowl', 14.95, 705], ['Shroomami', 13.95, 655], ['Super Green Goddess', 12.75, 385], ['Rosemary Focaccia', 2.95, 270]]);
   const lightest = recommend(items, 'lightest').text;
-  assert.match(lightest, /Rosemary Focaccia\*\* \$2\.95 · 270 cal[\s\S]*Super Green Goddess[\s\S]*Calories as printed/);
+  // A side of bread is not a meal: mains rank first, even when a side has fewer calories.
+  assert.match(lightest, /^\*\*Lightest picks\*\*\n- \*\*Super Green Goddess\*\* \$12\.75 · 385 cal[\s\S]*Calories as printed/);
+  assert.doesNotMatch(lightest, /Focaccia/);
+  assert.match(recommend(items.filter((i) => i.extra), 'lightest').text, /Rosemary Focaccia/);
   const veg = recommend(items, 'vegetarian').text;
   assert.doesNotMatch(veg, /Harvest Bowl/);
   assert.match(veg, /Shroomami/);
