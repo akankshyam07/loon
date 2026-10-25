@@ -55,6 +55,9 @@ with the global hotkeys left alone (`LOON_NO_HOTKEYS=1`). The model files are sh
 | Long conversations (15 turns) | ✅ **fixed** | forgot the opening ("I don't recall the budget"); first message now kept. 4–11 s per turn, prompt capped near 1.6k chars |
 | "Remind me what our budget was" | ✅ **fixed** | became a reminder card |
 | Email: thread summary, draft reply | ✅ **new** | mail pages had only generic chips; drafts echoed the sender's email |
+| Compare basket across product pages | ✅ **fixed** | "Add to compare" failed on any product page without structured data; typed "compare my basket" went to the model |
+| Settings toggles | ✅ verified | all 14 take effect live; Screen sight off→on goes to "when-asked" (re-enabling counts as consent) |
+| Reply placeholders | ✅ **fixed** | "[bracket:$500]" → "[price]" / "[…]" |
 | Model offering lookups it can't do | ✅ **fixed** | prompt rule plus trimming "would you like me to check…" and "I don't know, but…" |
 | Screen look / Teach | ✅ e2e (fixtures) | real permissions need a manual check |
 
@@ -119,10 +122,16 @@ with the global hotkeys left alone (`LOON_NO_HOTKEYS=1`). The model files are sh
 30. Email: `email_summary`, `email_reply` (mail pages), `draft_reply` (selections, first in Work mode); the reply
     instruction names the writer and recipient from the greeting and sign-off and starts the reply; a leading
     "Here's your reply:" is trimmed.
+31. Reply placeholders: the instruction asks for [price]/[day]; leftover "[bracket…]" becomes "[…]".
+32. Shopping: `mainProduct` (h1 + first standalone price, skipping related blocks) for "Add to compare"; typed
+    "compare my basket" and "add this to compare" route to the basket tasks.
 
 ## Test results
 
-- Unit: 237/237 (was 213). Two unit tests timed out once while a model run competed for CPU; they passed on three
+- Unit: 239/239 (was 213).
+- Watch: the `features` check "duo: each cat captures clicks…" failed 2 of 11 runs on this branch and 0 of 10 on the
+  original code. Interleaved reruns all passed, and nothing on this branch touches cat input, so it looks
+  timing-sensitive, but it's worth a look if CI shows it. Two unit tests timed out once while a model run competed for CPU; they passed on three
   reruns.
 - End-to-end after the changes: core 42/42 (with voice), features 32/32, browser 45/45, fresh 8/8, migrate 7/7.
 - End-to-end baseline before changes: core 36/36, features 32/32, browser 44/44.
@@ -130,10 +139,8 @@ with the global hotkeys left alone (`LOON_NO_HOTKEYS=1`). The model files are sh
 
 ## Prioritized next
 
-1. Settings: does every toggle take effect without a restart?
-2. Packaged .dmg build and the `smoke` part.
-3. Compare across tabs (the basket) as a shopper with three real-looking pages.
-4. Reply drafts invent placeholder values inside brackets ("[bracket:$500]"); a tidy pass could normalize them to
-   "[price]".
-5. Speed: follow-ups take 4–11 s on the 4B model; streaming makes it bearable, but "Quick take" defaults deserve a
+1. Packaged .dmg build and the `smoke` part.
+2. Basket management: remove one item, clear, and items saved weeks ago (stale prices).
+3. Onboarding answers actually used later (role, diet: does "vegetarian" filter menu picks?).
+4. Speed: follow-ups take 4–11 s on the 4B model; streaming makes it bearable, but "Quick take" defaults deserve a
    look.
