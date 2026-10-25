@@ -61,6 +61,9 @@ with the global hotkeys left alone (`LOON_NO_HOTKEYS=1`). The model files are sh
 | Saved diet used in menu picks | ✅ **fixed** | "I don't eat meat" ignored (chicken suggested); vegan treated as vegetarian |
 | Basket: stale prices, clear, remove one | ✅ **improved** | items saved ≥7 days ago are flagged; "clear my basket"; "remove the Oatly from my basket" (asks which when ambiguous) |
 | Menu labels (V)/(VG)/(GF), pescatarian | ✅ **new** | a "GF bun" was skipped for celiacs; "fish but not meat" wasn't a diet |
+| Dropped files: CSV, PDF, image, text | ✅ verified | chips per kind; follow-up questions use the file |
+| Dropped Word / RTF / ODT | ✅ **new** | .docx was refused; now read via macOS textutil |
+| CSV sums, counts, averages | ✅ **new** | was model arithmetic; now added up in code |
 | Full first-user regression (cycle 12) | ✅ | every answer from cycle 1 re-run: code 8–250 ms, actions right, no regressions |
 | Allergies and intolerances in menu picks | ✅ **new** | nuts, gluten/celiac, dairy/lactose, shellfish, eggs, soy, fish; conservative skip + "tell the staff" |
 | Model offering lookups it can't do | ✅ **fixed** | prompt rule plus trimming "would you like me to check…" and "I don't know, but…" |
@@ -138,10 +141,12 @@ with the global hotkeys left alone (`LOON_NO_HOTKEYS=1`). The model files are sh
     always says to tell the staff.
 36. Basket: `removeFromBasket` with all-words matching and a "which one?" reply.
 37. Menu labels beat ingredient guessing; `pescatarian` diet (no land meat; fish and vegetarian kept).
+38. Files: `.docx/.doc/.rtf/.odt/.pages` via `textutil`; friendly missing-file message; `csvAnswer` for "how much …
+    on X", "how many …", "average …" on dropped CSVs.
 
 ## Test results
 
-- Unit: 244/244 (was 213).
+- Unit: 245/245 (was 213).
 - Watch: the `features` check "duo: each cat captures clicks…" failed 2 of 11 runs on this branch and 0 of 10 on the
   original code. Interleaved reruns all passed, and nothing on this branch touches cat input, so it looks
   timing-sensitive, but it's worth a look if CI shows it. Two unit tests timed out once while a model run competed for CPU; they passed on three
