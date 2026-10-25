@@ -208,3 +208,14 @@ test('saved diets in everyday words filter menu picks; vegan skips dairy and egg
   assert.doesNotMatch(vegan, /Caprese|Chicken/);
   assert.match(recommend(items, 'lightest', { vegetarianOnly: true }).text, /Caprese/);
 });
+
+test('allergies saved in memory skip dishes that mention them, with a tell-the-staff note', () => {
+  const { allergiesFrom } = require('../brain/food');
+  assert.deepStrictEqual([['I am allergic to nuts'], ["I'm celiac"], ['lactose intolerant'], ['I love nuts']].map((m) => allergiesFrom(m).map((a) => a.label)), [['nuts'], ['gluten'], ['dairy'], []]);
+  const items = extractMenu('Harvest Bowl\nroasted chicken, wild rice, goat cheese, almonds, balsamic vinaigrette\n$14.95 705 cal\nGreen Bowl\nquinoa, kale, cucumber, lemon tahini\n$12 400 cal\nFish Tacos\nblackened salmon, flour tortillas, slaw\n$16 560 cal');
+  const text = recommend(items, 'lightest', { avoid: allergiesFrom(['allergic to nuts', 'celiac']) }).text;
+  assert.match(text, /Green Bowl/);
+  assert.doesNotMatch(text, /Harvest Bowl|Fish Tacos/);
+  assert.match(text, /tell the staff about your allergy/);
+  assert.match(recommend(items.slice(0, 1), 'lightest', { avoid: allergiesFrom(['allergic to nuts']) }).text, /Nothing on this menu looks like a match once I skip anything that mentions nuts/);
+});

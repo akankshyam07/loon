@@ -157,8 +157,9 @@ class Skills {
         const goal = { food_lightest: 'lightest', food_protein: 'protein', food_veg: 'vegetarian' }[taskId];
         // Memory without a model: a saved "I'm vegetarian" filters every menu answer.
         const diet = food.dietFrom(memory);
-        const result = food.recommend(items, goal, { vegetarianOnly: Boolean(diet), veganOnly: diet === 'vegan', judgmental });
-        return { ...result, detail: `${items.length} menu items · keywords, no model${diet ? ' · using your saved diet' : ''}` };
+        const avoid = food.allergiesFrom(memory);
+        const result = food.recommend(items, goal, { vegetarianOnly: Boolean(diet), veganOnly: diet === 'vegan', avoid, judgmental });
+        return { ...result, detail: `${items.length} menu items · keywords, no model${diet || avoid.length ? ' · using your saved diet' : ''}` };
       }
       case 'errors': {
         const text = lookupKnown(packet.text || '');

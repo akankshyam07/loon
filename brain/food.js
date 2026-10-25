@@ -10,6 +10,29 @@ const MEAT = /\b(chicken|turkey|beef|steak|pork|bacon|ham|sausage|salami|peppero
 // Animal products a vegan skips; an item the menu itself calls vegan wins ("vegan ranch").
 const NOT_VEGAN = /\b(cheese|parmesan|feta|mozzarella|cheddar|ricotta|goat cheese|cream|creamy|butter|egg|eggs|mayo|aioli|ranch|yogurt|honey|milk|ghee|caesar)\b/i;
 
+// Allergies and intolerances the user saved ("allergic to nuts", "I'm celiac"). Conservative on purpose: a dish is
+// skipped when its listed ingredients mention the allergen or a common source of it, and the answer always says to
+// tell the staff, because menus leave things out.
+const ALLERGENS = [
+  { label: 'nuts', said: /\b(?:tree )?nuts?\b|\bpeanuts?\b|\balmonds?\b|\bcashews?\b/i, re: /\b(nuts?|almonds?|cashews?|peanuts?|pecans?|walnuts?|pistachios?|hazelnuts?|macadamia|pine nuts?|praline|pesto|satay|marzipan)\b/i },
+  { label: 'gluten', said: /\bgluten\b|\bc[oe]liac\b|\bwheat\b/i, re: /\b(bread|breads|focaccia|buns?|brioche|pasta|noodles?|ramen|udon|flour|croutons?|tortillas?|wheat|barley|rye|soy sauce|breaded|battered|tempura|seitan|couscous|pita|wraps?|dumplings?|crust|pastry|beer|miso)\b/i },
+  { label: 'dairy', said: /\bdairy\b|\blactose\b|\bmilk\b/i, re: /\b(cheese|cheesy|parmesan|feta|mozzarella|cheddar|ricotta|burrata|cream|creamy|butter|milk|yogurt|ranch|caesar|ghee|alfredo)\b/i },
+  { label: 'shellfish', said: /\bshellfish\b|\bshrimp\b|\bprawns?\b/i, re: /\b(shrimp|prawns?|crab|lobster|clams?|mussels|oysters?|scallops?|crawfish)\b/i },
+  { label: 'eggs', said: /\beggs?\b/i, re: /\b(eggs?|mayo|mayonnaise|aioli|caesar|hollandaise|meringue)\b/i },
+  { label: 'soy', said: /\bsoy\b/i, re: /\b(soy|tofu|edamame|miso|tempeh)\b/i },
+  { label: 'fish', said: /\bfish\b/i, re: /\b(fish|salmon|tuna|cod|anchov(?:y|ies)|sardines?|halibut|tilapia|trout)\b/i },
+];
+
+// [{ label, re }] for every allergy or intolerance in the saved memory.
+function allergiesFrom(memory = []) {
+  const found = [];
+  for (const fact of memory) {
+    if (!/\ballerg|\bintoleran|\bc[oe]liac\b|\bcan'?t (?:have|eat)\b|\b(?:no|avoid|without)\b|-free\b/i.test(fact)) continue;
+    for (const a of ALLERGENS) if (a.said.test(fact) && !found.includes(a)) found.push(a);
+  }
+  return found;
+}
+
 // "vegan" | "vegetarian" | null, from what the user asked Loon to remember.
 function dietFrom(memory = []) {
   const text = memory.join(' ');
@@ -96,11 +119,15 @@ const GOALS = {
   vegetarian: { title: 'Likely vegetarian', sort: (a, b) => a.heaviness - b.heaviness, filter: (i) => i.likelyVegetarian },
 };
 
-function recommend(items, goal = 'lightest', { count = 3, vegetarianOnly = false, veganOnly = false, judgmental = true } = {}) {
+function recommend(items, goal = 'lightest', { count = 3, vegetarianOnly = false, veganOnly = false, avoid = [], judgmental = true } = {}) {
   const { title, sort, filter } = GOALS[goal];
   const picks = items.map(score).filter(filter || (() => true)).filter((i) => (!vegetarianOnly || i.likelyVegetarian) && (!veganOnly || i.likelyVegan))
+    .filter((i) => !avoid.some((a) => a.re.test(`${i.name} ${i.description}`)))
     .sort((a, b) => Boolean(a.extra) - Boolean(b.extra) || sort(a, b)).slice(0, count);
-  if (!picks.length) return { text: `Nothing on this menu looks ${goal === 'vegetarian' ? 'vegetarian' : 'like a match'}.`, mood: 'confused' };
+  if (!picks.length) {
+    const skipping = avoid.length ? ` once I skip anything that mentions ${avoid.map((a) => a.label).join(' or ')}. Ask the staff what they can make for you` : '';
+    return { text: `Nothing on this menu looks ${goal === 'vegetarian' ? 'vegetarian' : 'like a match'}${skipping}.`, mood: 'confused' };
+  }
   const lines = picks.map((p) => {
     const why = p.calories ? ` · ${p.calories} cal` : p.reasons.length ? ` (${p.reasons.join(', ')})` : '';
     const protein = goal === 'protein' ? ` · protein from ${p.proteins.join(', ')}` : '';
@@ -114,9 +141,10 @@ function recommend(items, goal = 'lightest', { count = 3, vegetarianOnly = false
       : '\n\nFrom menu wording only: no numbers here. Tap "Estimate calories" for rough estimates.';
   const heavy = items.map(score).sort((a, b) => b.heaviness - a.heaviness)[0];
   const quip = judgmental && goal === 'lightest' && heavy && heavy.heaviness >= 5 && (!vegetarianOnly || heavy.likelyVegetarian) ? `\n\nTiny warning: ${heavy.name} is probably doing crimes.` : '';
+  const allergy = avoid.length ? `\n\n**Skipping anything that mentions ${avoid.map((a) => a.label).join(' or ')}**, going by the menu's wording. Menus leave things out, so tell the staff about your allergy.` : '';
   const filtered = veganOnly ? '\n\n_Only vegan picks (no meat, dairy or eggs listed), because you asked me to remember that._'
     : vegetarianOnly && goal !== 'vegetarian' ? '\n\n_Only vegetarian picks, because you asked me to remember that._' : '';
-  return { text: `**${title}**\n${lines.join('\n')}${note}${filtered}${quip}`, mood: quip ? 'judgy' : 'happy' };
+  return { text: `**${title}**\n${lines.join('\n')}${note}${allergy}${filtered}${quip}`, mood: quip ? 'judgy' : 'happy' };
 }
 
-module.exports = { extractMenu, score, recommend, dietFrom };
+module.exports = { extractMenu, score, recommend, dietFrom, allergiesFrom };
