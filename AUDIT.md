@@ -35,7 +35,12 @@ with the global hotkeys left alone (`LOON_NO_HOTKEYS=1`). The model files are sh
 | Weather | ✅ **new** | was a false offer; now a confirm card that opens a forecast |
 | Error selections (npm, git, tsc, gcc, rustc, shell) | ✅ **fixed** | were "code" → paw; now instant error-table answers |
 | "Best value?" on any page with prices | ✅ **fixed** | model guessed with no numbers; now the unit-price table |
-| Voice | ⚠️ not run | voice models not in the test data folder |
+| Menus with stacked layouts (name / description / price / calories) | ✅ **fixed** | prices and calories were dropped from page text; the model called chicken bowls vegetarian |
+| Typed menu questions ("lightest?", "if I'm vegetarian?"), incl. follow-ups | ✅ **fixed** | went to the model without the page |
+| Writing: rewrite → Replace in a contenteditable editor | ✅ verified | 2 s, text replaced in place |
+| Bubble keyboard / screen reader | ✅ **improved** | ⋯ has aria-expanded; answer source readable without hover |
+| Voice (Silero, Moonshine, Kokoro) | ✅ e2e 42/42 | voice models shared read-only |
+| Model offering lookups it can't do | ✅ **fixed** | prompt rule plus trimming "would you like me to check…" and "I don't know, but…" |
 | Screen look / Teach | ✅ e2e (fixtures) | real permissions need a manual check |
 
 ## Broken or weak (open)
@@ -67,18 +72,25 @@ with the global hotkeys left alone (`LOON_NO_HOTKEYS=1`). The model files are sh
 11. Weather becomes an "open a forecast" confirm card.
 12. Terminal error classification and two new error-table entries.
 13. Value questions on any page with prices go to the unit-price code.
+14. Page text keeps all visible text (prices and calories in bare spans and divs), with a regression test.
+15. Menu reader: stacked layouts, printed calories rank "lightest", "fish + salmon" counted once.
+16. One table maps typed phrasing to page tasks (lightest, protein, vegetarian, best value), for first questions and
+    follow-ups; page tasks read the page whatever window is in front. Permanent browser selftest check added.
+17. Accessibility: aria-expanded on ⋯, and the tier icon is focusable with an aria-label.
+18. No false offers: prompt rule, trailing-offer trim, contradicted-hedge trim (`tidyModelAnswer`).
 
 ## Test results
 
-- Unit: 223/223 (was 213).
-- End-to-end after the changes: core 36/36, features 32/32, browser 44/44.
+- Unit: 227/227 (was 213).
+- End-to-end after the changes: core 42/42 (with voice), features 32/32, browser 45/45 (one new check).
 - End-to-end baseline before changes: core 36/36, features 32/32, browser 44/44.
 - Explore sessions: 3 rounds; timings and results are in the commit messages above.
 
 ## Prioritized next
 
-1. Turn the explore scenarios (no-model flow, value question on a plain page) into permanent selftest checks.
-2. Voice: download the voice models into a test folder and walk through "remind me", "timer" and math by voice.
-3. Food/menu pages that aren't fixtures (a real restaurant layout), as a user.
-4. Writing in a text field: the rewrite → Replace flow on an unfamiliar editor (contenteditable).
-5. Accessibility pass on the bubble: keyboard-only use, focus order, screen-reader labels.
+1. Make the no-model first-run flow a permanent check (selftest `fresh` part).
+2. Shopping on plain pages: now that prices reach the page text, the code extractor may work without a model-written
+   site extractor. Check it and drop that one-time model call where possible.
+3. Voice with the new instant answers ("what's 15 percent of 84", "set a timer for ten minutes").
+4. "Lightest" can pick a side dish (focaccia) over a meal. Possibly prefer mains unless the user asks for sides.
+5. History and notes: search and continue flows as a power user.
