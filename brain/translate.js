@@ -12,6 +12,25 @@ const ISO3_TO_1 = {
 const LANGUAGE_NAMES = new Intl.DisplayNames(['en'], { type: 'language' });
 const languageName = (code) => LANGUAGE_NAMES.of(code) || code;
 
+// franc guesses badly on a few words ("Ich bin müde heute" → Turkish, "hola amigo, ¿cómo estás?" → nothing), and short
+// phrases are most of what people translate. Common words and letters settle those; longer text goes to franc.
+const HINTS = {
+  en: /(?<!\p{L})(the|and|is|are|you|what|this|with|have|hello|thanks|please|how|my|i'm|it's)(?!\p{L})/gu,
+  es: /[¿¡ñ]|(?<!\p{L})(hola|gracias|cómo|como|estás|qué|por favor|amigo|amiga|buenos|buenas|dónde|el|los|las|una|es|está|muy|pero|yo|tengo|quiero)(?!\p{L})/gu,
+  fr: /[çœ]|(?<!\p{L})(bonjour|bonsoir|merci|je|tu|vous|est|le|les|une|et|très|où|oui|non|suis|c'est|j'ai|avec|pour)(?!\p{L})/gu,
+  de: /[ß]|(?<!\p{L})(ich|bin|und|nicht|danke|bitte|heute|ist|der|die|das|ein|eine|guten|morgen|müde|wie|geht|es|mir|sehr)(?!\p{L})/gu,
+  it: /(?<!\p{L})(ciao|grazie|sono|che|non|il|della|buongiorno|buonasera|come|stai|sei|molto|perché|anche|questo)(?!\p{L})/gu,
+  pt: /[ãõ]|(?<!\p{L})(olá|obrigado|obrigada|você|não|está|bom|dia|tudo|bem|muito|eu|sou|também)(?!\p{L})/gu,
+  nl: /(?<!\p{L})(hallo|dank|je|ik|niet|het|een|goedemorgen|hoe|gaat|met|jij|ben|heel)(?!\p{L})/gu,
+};
+function shortTextLanguage(text) {
+  if (text.length > 80) return null;
+  const lower = text.toLowerCase();
+  const scores = Object.entries(HINTS).map(([lang, re]) => [lang, (lower.match(re) || []).length]).sort((a, b) => b[1] - a[1]);
+  const [[best, top], [, second]] = scores;
+  return top >= 1 && top > second ? best : null;
+}
+
 class Translator {
   constructor({ cacheDir }) {
     this.cacheDir = cacheDir;
@@ -21,6 +40,8 @@ class Translator {
   }
 
   async detect(text) {
+    const hinted = shortTextLanguage(text);
+    if (hinted) return hinted;
     const { franc } = await import('franc-min');
     const code3 = franc(text, { minLength: 3 });
     return ISO3_TO_1[code3] || null;
@@ -89,4 +110,4 @@ class Translator {
   }
 }
 
-module.exports = { Translator, languageName };
+module.exports = { Translator, languageName, shortTextLanguage };

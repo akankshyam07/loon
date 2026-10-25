@@ -67,3 +67,11 @@ test('timers parse as internal commands', () => {
   assert.deepStrictEqual(parseCommand('how long is left on my timer?'), { action: 'timer', seconds: null });
   assert.strictEqual(parseCommand('what is a timer'), null);
 });
+
+test('short phrases get the right language before franc guesses', () => {
+  const { shortTextLanguage } = require('../brain/translate');
+  const cases = { 'hola amigo, ¿cómo estás?': 'es', 'Ich bin müde heute': 'de', 'olá você está bem': 'pt', 'très bien merci': 'fr', 'ciao come stai': 'it', 'hello how are you': 'en' };
+  for (const [text, lang] of Object.entries(cases)) assert.strictEqual(shortTextLanguage(text), lang, text);
+  assert.strictEqual(shortTextLanguage('sushi'), null);
+  assert.strictEqual(shortTextLanguage('x'.repeat(100)), null);
+});
