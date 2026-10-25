@@ -105,12 +105,12 @@ with the global hotkeys left alone (`LOON_NO_HOTKEYS=1`). The model files are sh
 23. Menu sections: sides, drinks and desserts rank after mains.
 24. System prompt: "state it plainly when you know" instead of "honest about uncertainty". Measured A/B over 20
     samples; temperature ruled out as the cause.
+25. Routines: "brief me" / "morning briefing" → day briefing; price watches without a schedule (every 6 h) and with
+    a target price (one alert on crossing); "stop" / "restart" pause and resume, except focus and timers.
 26. Notes: "what did I note about…", "find my notes about…", "show my notes" (read-only, before file search); typed
     questions matching a note's words get the note as context, never cached; question words ignored; no file path
     in "Saved".
 27. Grammar: spelling suggestions picked by typo distance (swaps count once), then shared start.
-25. Routines: "brief me" / "morning briefing" → day briefing; price watches without a schedule (every 6 h) and with
-    a target price (one alert on crossing); "stop" / "restart" pause and resume, except focus and timers.
 
 ## Test results
 
