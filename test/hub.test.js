@@ -120,3 +120,13 @@ test('daily assistant: day and focus commands, and a day summary that survives m
   assert.match(text, /\*\*Reminders\*\*: needs permission/);
   assert.match(formatDay({ events: { value: [] }, reminders: { value: [] } }, now), /nothing left today[\s\S]*nothing due/);
 });
+
+test('questions about a dropped CSV that are sums, counts or averages are added up in code', () => {
+  const { csvAnswer } = require('../brain/files');
+  const csv = 'date,category,amount\n2026-10-01,groceries,82.10\n2026-10-03,rent,1800\n2026-10-05,coffee,4.50\n2026-10-09,coffee,5.10\n';
+  assert.match(csvAnswer(csv, 'how much did I spend on coffee?'), /^\*\*\$9\.60\*\* in amount for "coffee", across 2 rows/);
+  assert.match(csvAnswer(csv, 'how much did I spend in total?'), /\*\*\$1,891\.70\*\*/);
+  assert.match(csvAnswer(csv, 'how many rows are coffee'), /^\*\*2\*\* rows for "coffee"/);
+  assert.match(csvAnswer(csv, 'how much on pizza'), /No rows in this file mention "pizza"/);
+  assert.strictEqual(csvAnswer(csv, 'what is this file about'), null);
+});

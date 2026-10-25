@@ -480,7 +480,7 @@ async function openDroppedFile(file) {
       return showBubble();
     }
     if (read.kind === 'image') return openScreenshot(file, read.name);
-    const kind = read.kind === 'csv' ? 'csv' : read.kind === 'pdf' ? 'document' : classifyText(read.text);
+    const kind = read.kind === 'csv' ? 'csv' : ['pdf', 'document'].includes(read.kind) ? 'document' : classifyText(read.text);
     companion.fromCapture({ text: read.text, source: 'file', kind, title: read.name, note: read.note });
     showBubble();
   } catch (err) {

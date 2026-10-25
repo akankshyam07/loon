@@ -13,6 +13,7 @@ const { cleanPersonal, instructionsBlock, maxTokensFor, sensesFor } = require('.
 const { keySentences, trimForModel } = require('./textrank');
 const { languageName, languageCode } = require('./translate');
 const { quickAnswer } = require('./quick');
+const { csvAnswer } = require('./files');
 const { fingerprint } = require('./errors');
 const shopping = require('./shopping');
 const food = require('./food');
@@ -284,6 +285,15 @@ class Resolver {
         this.count('code');
         return { text: translated.text, mood: 'happy', tier: 'code', detail: `offline translator · ${translated.fromName} → ${translated.toName}` };
       }
+    }
+
+    // A question about a dropped CSV that is really a sum, count or average gets added up in code.
+    const csvQuestion = !deeper && packet.selectionKind === 'csv' && (question || (taskId === 'ask' && packet.question));
+    const added = csvQuestion && csvAnswer(packet.text || '', csvQuestion);
+    if (added) {
+      onText(added);
+      this.count('code');
+      return { text: added, mood: 'focused', tier: 'code', detail: 'added up from the file' };
     }
 
     if (!deeper && !question && tiers.includes('define')) {

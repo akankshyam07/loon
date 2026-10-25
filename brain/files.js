@@ -14,7 +14,16 @@ function kindOf(file) {
   if (ext === '.csv' || ext === '.tsv') return 'csv';
   if (IMAGE_EXT.has(ext)) return 'image';
   if (TEXT_EXT.has(ext)) return 'text';
+  if (DOCUMENT_EXT.has(ext)) return 'document';
   return null;
+}
+
+// Word, RTF and OpenDocument files through macOS's own textutil: no extra dependency.
+const DOCUMENT_EXT = new Set(['.docx', '.doc', '.rtf', '.odt', '.pages']);
+function documentText(file) {
+  return new Promise((resolve, reject) => {
+    require('child_process').execFile('textutil', ['-convert', 'txt', '-stdout', file], { timeout: 20_000, maxBuffer: 20 * 1024 * 1024 }, (err, stdout) => (err ? reject(err) : resolve(stdout.trim())));
+  });
 }
 
 async function pdfText(file, maxPages = 60) {
@@ -75,7 +84,8 @@ function csvOverview(text, name = 'file.csv') {
 async function readDropped(file) {
   const name = path.basename(file);
   const kind = kindOf(file);
-  if (!kind) return { kind: null, name, error: `I can read PDFs, images, CSVs and text or code files, not ${path.extname(file) || 'this kind of file'}.` };
+  if (!kind) return { kind: null, name, error: `I can read PDFs, Word documents, images, CSVs and text or code files, not ${path.extname(file) || 'this kind of file'}.` };
+  if (!fs.existsSync(file)) return { kind, name, error: `${name} isn't there anymore. It may have been moved or deleted.` };
   const { size } = fs.statSync(file);
   if (size > MAX_BYTES) return { kind, name, error: `${name} is larger than 25 MB.` };
   if (kind === 'image') return { kind, name };
@@ -84,8 +94,43 @@ async function readDropped(file) {
     if (!text) return { kind, name, error: `${name} has no selectable text (it may be scanned). Try ⌥⇧S on a page of it.` };
     return { kind, name, text, note: `${pages} page${pages > 1 ? 's' : ''}${truncated ? ', first 60 read' : ''}` };
   }
+  if (kind === 'document') {
+    const text = await documentText(file).catch(() => '');
+    if (!text) return { kind, name, error: `I couldn't read the text in ${name}. Saving it as a PDF and dropping that usually works.` };
+    return { kind, name, text };
+  }
   const text = fs.readFileSync(file, 'utf8');
   return { kind, name, text };
 }
 
-module.exports = { readDropped, csvOverview, kindOf, pdfText };
+// "How much did I spend on coffee?", "how many rows are groceries?", "average amount": answered by adding up the CSV
+// in code (DESIGN.md §0 rule 1). null when the question isn't one of these or the file has no number column.
+function csvAnswer(text, question) {
+  const q = question.toLowerCase();
+  const op = /\b(average|avg|mean)\b/.test(q) ? 'average' : /\b(how many|count|number of)\b/.test(q) ? 'count' : /\b(how much|total|sum|spent|spend|spending|cost|paid)\b/.test(q) ? 'sum' : null;
+  if (!op) return null;
+  const lines = text.split(/\r?\n/).filter((l) => l.trim());
+  if (lines.length < 2) return null;
+  const sep = (lines[0].match(/\t/g) || []).length > (lines[0].match(/,/g) || []).length ? '\t' : ',';
+  const header = splitCsvLine(lines[0], sep);
+  const rows = lines.slice(1).map((l) => splitCsvLine(l, sep));
+  const num = (v) => Number(String(v ?? '').replace(/[$€£,%\s]/g, ''));
+  const numeric = header.map((_, i) => rows.filter((r) => r[i] !== '' && r[i] != null).every((r) => Number.isFinite(num(r[i]))) && rows.some((r) => r[i]));
+  const columns = header.map((h, i) => ({ h, i })).filter((c) => numeric[c.i]);
+  const column = columns.find((c) => /amount|total|price|cost|spent|value|sum|usd|\$/i.test(c.h)) || columns.find((c) => !/year|id|date|qty|quantity/i.test(c.h)) || null;
+  if (!column && op !== 'count') return null;
+  const term = q.match(/\b(?:on|for|in|at|are|is|of)\s+([a-z][\w &'-]{1,30}?)\s*\??$/)?.[1].replace(/^(?:the|my|all)\s+/, '').trim();
+  const generic = !term || /^(?:total|everything|all|them|it|this|the file|rows?|average|amount)$/.test(term);
+  const hits = generic ? rows : rows.filter((r) => r.some((cell, i) => !numeric[i] && cell.toLowerCase().includes(term)));
+  if (!generic && !hits.length) return `No rows in this file mention "${term}".`;
+  const values = column ? hits.map((r) => num(r[column.i])).filter(Number.isFinite) : [];
+  const money = column && rows.some((r) => /[$€£]/.test(r[column.i] || '')) || /\$|usd|amount|price|cost|spent/i.test(column?.h || '') ? '$' : '';
+  const fmt = (n) => `${money}${n.toLocaleString('en-US', { minimumFractionDigits: money ? 2 : 0, maximumFractionDigits: 2 })}`;
+  const what = generic ? '' : ` for "${term}"`;
+  const rowsWord = `${hits.length} row${hits.length === 1 ? '' : 's'}`;
+  if (op === 'count') return `**${hits.length}** row${hits.length === 1 ? '' : 's'}${what}.`;
+  if (op === 'average') return `Average ${column.h}${what}: **${fmt(values.reduce((a, b) => a + b, 0) / (values.length || 1))}** over ${rowsWord}.`;
+  return `**${fmt(values.reduce((a, b) => a + b, 0))}** in ${column.h}${what}, across ${rowsWord}. _Added up from the file, no model._`;
+}
+
+module.exports = { readDropped, csvOverview, csvAnswer, kindOf, pdfText };
