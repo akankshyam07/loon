@@ -9,6 +9,16 @@
     /\b\w+(Error|Exception)\b[:\s].{3,}/,
     /^\s*panic: /m, // Go
   ];
+  // Terminal and build output: unmistakable on their own, even on one line.
+  const TERMINAL_ERROR = [
+    /^npm (?:ERR!|error) /m,
+    /^fatal: /m, // git
+    /^error(?:\[E\d{4}\])?: /m, // rustc, cargo, yarn
+    /^\S+\.\w+:\d+(?::\d+)?: (?:fatal )?error: /m, // gcc, clang, go build
+    /\(\d+,\d+\): error TS\d+/, // tsc
+    /\b(?:command not found|No such file or directory|Permission denied|Segmentation fault)\b/,
+    /^(?:ModuleNotFoundError|ImportError|SyntaxError): /m,
+  ];
 
   function looksLikeJson(text) {
     const t = text.trim();
@@ -33,6 +43,7 @@
     const t = text.trim();
     if (editable) return 'editable';
     if (looksLikeJson(t)) return 'json';
+    if (TERMINAL_ERROR.some((re) => re.test(t))) return 'stacktrace';
     if (STACK_TRACE.some((re) => re.test(t)) && (t.includes('\n') || /(Error|Exception)/.test(t))) return 'stacktrace';
     if (looksLikeCode(t, { monospace })) return 'code';
     const words = t.split(/\s+/).filter(Boolean);

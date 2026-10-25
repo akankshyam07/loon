@@ -158,6 +158,18 @@ const KNOWN = [
     fix: ['Open the files with `<<<<<<<` markers, keep the right code, delete the markers.', '`git add` the files, then `git commit` (or `git rebase --continue`).'],
   },
   {
+    match: /command not found: (\S+)|(\S+): command not found/,
+    title: 'Command not found',
+    explain: 'The shell has no program by that name: a typo, or the tool isn\'t installed or isn\'t on your PATH.',
+    fix: ['Check the spelling (`pyhton` → `python`).', 'Installed it just now? Open a new terminal tab, or run `hash -r`.', 'Still missing: install it (e.g. `brew install <name>`) or add its folder to PATH.'],
+  },
+  {
+    match: /error TS2322|is not assignable to type/,
+    title: 'TypeScript type mismatch (TS2322)',
+    explain: 'A value of one type is being put where another type is expected.',
+    fix: ['Look at the two types in the message: fix the value, or widen the declared type if both are valid.', 'Avoid `as any`: it silences the check rather than fixing it.'],
+  },
+  {
     match: /fatal: not a git repository/,
     title: 'Not a git repository',
     explain: 'The command ran outside a git repo.',

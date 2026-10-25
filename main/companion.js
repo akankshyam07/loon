@@ -51,6 +51,8 @@ const PAGE_QUESTION = /\b(this|the|my|that) (page|site|website|tab|listing|produ
 // Mid-conversation, "which one?" or "these" refer to the chat, not the screen; only an unmistakable reference counts.
 // "the window" is often the topic itself (a TCP window, a window function), so only this/my/that count.
 const CLEAR_SCREEN = /\b(this|my|that) (page|site|website|tab|listing|screen|window|product|item|article|menu)\b|\bwhat (do|can) you see\b|\bcan you see\b|\blook at (this|it|my screen)\b|\bon (my|the) screen\b/i;
+// "Which is the best value?" on any page with prices: the unit-price code answers, not the model guessing.
+const VALUE_QUESTION = /\b(best value|best deal|better deal|cheapest|cheaper|price per|unit price|most for (my|the) money|bang for (the|my) buck)\b/i;
 const GENERIC_LOOK = /^\s*(what (do|can) you see|can you see( this| it| my screen)?|see this( page)?|look at this( page)?|what'?s on (this|the|my) (page|screen)|what'?s this( page)?|(summari[sz]e|explain) (this|the) page)\s*[?.!]*\s*$/i;
 // Seeing the screen (§3.20): only when asked, only the window in front, and only with the user's say-so once.
 const CANT_SEE = "I can't see your screen right now 🙈\n\nTurn on **Look at my screen when I ask** in Settings, or allow Loon in System Settings → Privacy & Security → **Screen Recording**.";
@@ -578,13 +580,13 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
       const onScreen = session.packet?.source === 'screen';
       const lookChip = task === LOOK_CHIP;
       const again = Boolean(onScreen && question && LOOK_AGAIN.test(question));
-      const aboutScreen = Boolean(!task && question && session.mode === 'ask' && !session.packet && (session.turns.length ? CLEAR_SCREEN.test(question) : PAGE_QUESTION.test(question)));
+      const aboutScreen = Boolean(!task && question && session.mode === 'ask' && !session.packet && (session.turns.length ? CLEAR_SCREEN.test(question) : PAGE_QUESTION.test(question) || VALUE_QUESTION.test(question)));
       let image = null;
       if (lookChip || again || aboutScreen || (onScreen && !task && question && (await frontChanged()))) {
         const generic = lookChip || again || (aboutScreen && GENERIC_LOOK.test(question));
         if ((await chooseEyes()) === 'page') {
           session.mode = 'page';
-          if (generic) { task = 'page_summary'; question = undefined; }
+          if (generic) { task = 'page_summary'; question = undefined; } else if (question && VALUE_QUESTION.test(question)) { task = 'shop_value'; question = undefined; }
         } else {
           const seen = await lookAtScreen(id, bubble, { id, task, deeper, question });
           if (!seen) return;
