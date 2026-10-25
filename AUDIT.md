@@ -49,6 +49,9 @@ with the global hotkeys left alone (`LOON_NO_HOTKEYS=1`). The model files are sh
 | History: search, continue, delete | ✅ verified | full-text, case-insensitive, empty state, Continue carries context |
 | Model hedging on easy facts | ✅ **fixed** | "I don't know who wrote Pride and Prejudice": about 11/20 hedged → 1/20 with the new prompt wording, facts checked |
 | Routines phrasing | ✅ **fixed** | "brief me", "watch this price", "below $30", "stop/restart X" |
+| Notes: find and reuse | ✅ **fixed** | notes were write-only; "when is my dentist appointment?" got an invented date |
+| Writing tools in a textarea (Fix grammar, Shorter, Warmer → Replace) | ✅ verified | Replace works in textarea and contenteditable |
+| Fix grammar spelling choice | ✅ **fixed** | "probly" → "poly"; now "probably" |
 | Model offering lookups it can't do | ✅ **fixed** | prompt rule plus trimming "would you like me to check…" and "I don't know, but…" |
 | Screen look / Teach | ✅ e2e (fixtures) | real permissions need a manual check |
 
@@ -63,7 +66,13 @@ with the global hotkeys left alone (`LOON_NO_HOTKEYS=1`). The model files are sh
 3. **The streamed answer shows the filler, then it disappears** at the end. It's a short flash. Removing it would
    mean holding back the last sentence while streaming.
 4. **Mode badge** for a selection ignores the page kind (an article selection shows the site's mode). Low impact.
-5. **Unknown-language translation** makes things up (e.g. Klingon "ju'va"). Low impact.
+5. **Pinned memories show on every answer** (design question). "Remember that…" facts are pinned, so they go into
+   every prompt and "Remembered: …" appears under unrelated answers. Proposal: pinned facts stay in the prompt but
+   show in the label only when the answer mentions them.
+6. **Grammar agreement** ("there is a lot of bugs") isn't caught by Harper. The rewrite chips fix it.
+7. **Packaged .dmg not rebuilt this session.** `build.files` includes `brain/**`, so the new modules ship; run
+   `npm run dist` plus the `smoke` part before a release.
+8. **Unknown-language translation** makes things up (e.g. Klingon "ju'va"). Low impact.
 
 ## Improvements made (commits on the branch)
 
@@ -96,20 +105,24 @@ with the global hotkeys left alone (`LOON_NO_HOTKEYS=1`). The model files are sh
 23. Menu sections: sides, drinks and desserts rank after mains.
 24. System prompt: "state it plainly when you know" instead of "honest about uncertainty". Measured A/B over 20
     samples; temperature ruled out as the cause.
+26. Notes: "what did I note about…", "find my notes about…", "show my notes" (read-only, before file search); typed
+    questions matching a note's words get the note as context, never cached; question words ignored; no file path
+    in "Saved".
+27. Grammar: spelling suggestions picked by typo distance (swaps count once), then shared start.
 25. Routines: "brief me" / "morning briefing" → day briefing; price watches without a schedule (every 6 h) and with
     a target price (one alert on crossing); "stop" / "restart" pause and resume, except focus and timers.
 
 ## Test results
 
-- Unit: 231/231 (was 213).
+- Unit: 233/233 (was 213).
 - End-to-end after the changes: core 42/42 (with voice), features 32/32, browser 45/45, fresh 8/8, migrate 7/7.
 - End-to-end baseline before changes: core 36/36, features 32/32, browser 44/44.
 - Explore sessions: 3 rounds; timings and results are in the commit messages above.
 
 ## Prioritized next
 
-1. Teach me on screen with an unfamiliar app layout (fixture capture).
-2. Packaged .dmg build and the `smoke` part (native modules in the bundle).
-3. Notes: save, find and reuse (do saved notes come back in answers?).
-4. Writing tools on longer drafts: tone options, and Replace in a textarea vs contenteditable.
-5. Settings: does every toggle take effect without a restart?
+1. Settings: does every toggle take effect without a restart?
+2. Packaged .dmg build and the `smoke` part.
+3. Email drafting on a webmail-like page (reply chips, thread summary).
+4. Compare across tabs (the basket) as a shopper with three real-looking pages.
+5. Long-session behavior: 20+ follow-ups in one thread (context budget, speed).
