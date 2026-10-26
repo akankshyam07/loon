@@ -4,9 +4,15 @@
 // Exact conversion constants to base units (g, ml).
 const UNITS = {
   mg: ['g', 0.001], g: ['g', 1], kg: ['g', 1000], oz: ['g', 28.349523125], lb: ['g', 453.59237], lbs: ['g', 453.59237],
-  ml: ['ml', 1], cl: ['ml', 10], l: ['ml', 1000], floz: ['ml', 29.5735295625],
+  ml: ['ml', 1], cl: ['ml', 10], l: ['ml', 1000], floz: ['ml', 29.5735295625], gal: ['ml', 3785.411784], qt: ['ml', 946.352946],
 };
-const MEASURE = /(\d+(?:[.,]\d+)?)\s*(fl\.?\s?oz|mg|kg|g|lbs?|oz|ml|cl|l)\b/gi;
+const WORDS = {
+  milligram: 'mg', gram: 'g', kilogram: 'kg', ounce: 'oz', pound: 'lb', milliliter: 'ml', millilitre: 'ml', liter: 'l', litre: 'l',
+  fluidounce: 'floz', gallon: 'gal', quart: 'qt',
+};
+const MEASURE = /(\d+(?:[.,]\d+)?)\s*(fl\.?\s?oz|fluid ounces?|(?:milli|kilo)?grams?|milli?lit(?:er|re)s?|lit(?:er|re)s?|ounces?|pounds?|gallons?|quarts?|mg|kg|g|lbs?|oz|ml|cl|l|gal|qt)\b/gi;
+// Two measures add up only when they sit side by side ("2 lb 4 oz"), not in "16 oz (1 lb)".
+const ADJACENT = /^\s*(?:and|,)?\s*$/;
 
 // "12 x 330ml" → 3960 ml · "2 lb 4 oz" → 1020.6 g · "pack of 6" → 6 count. Returns null when nothing parses.
 function parseQuantity(text) {
@@ -15,16 +21,24 @@ function parseQuantity(text) {
   let count = 1;
   const multi = t.match(/(\d+)\s*x\s*\d/) || t.match(/\bpack of (\d+)/) || t.match(/(\d+)\s*[- ]?(?:pack|pk)\b/);
   if (multi) count = Number(multi[1]);
-  const measures = [...t.matchAll(MEASURE)].map(([, value, unit]) => {
-    const key = unit.replace(/[.\s]/g, '');
-    const [base, factor] = UNITS[key] || UNITS[key.replace(/s$/, '')] || [];
-    return base ? { base, amount: Number(value.replace(',', '.')) * factor } : null;
+  const trailing = !multi && t.match(/[a-z.]\s*x\s*(\d+)\b(?!\s*[.,]?\d*\s*[a-z])/);
+  if (trailing) count = Number(trailing[1]);
+  const measures = [...t.matchAll(MEASURE)].map((m) => {
+    const key = m[2].replace(/[.\s]/g, '');
+    const [base, factor] = UNITS[key] || UNITS[WORDS[key.replace(/s$/, '')]] || UNITS[key.replace(/s$/, '')] || [];
+    return base ? { base, amount: Number(m[1].replace(',', '.')) * factor, start: m.index, end: m.index + m[0].length } : null;
   }).filter(Boolean);
   if (measures.length) {
-    const base = measures[0].base;
-    // Consecutive same-kind measures add up ("2 lb 4 oz"); a multipack multiplies the first one.
-    const size = multi && /x/.test(multi[0]) ? measures[0].amount : measures.filter((m) => m.base === base).reduce((sum, m) => sum + m.amount, 0);
-    return { amount: size * count, unit: base };
+    // In "1 kg (2 x 500 g)" the size is the measure after the x.
+    const sized = multi && /x/.test(multi[0]) ? measures.filter((m) => m.start > multi.index) : measures;
+    const first = (sized.length ? sized : measures)[0];
+    const run = [first];
+    for (const m of measures) {
+      const last = run[run.length - 1];
+      if (m.start >= last.end && m.base === first.base && ADJACENT.test(t.slice(last.end, m.start))) run.push(m);
+    }
+    const size = multi && /x/.test(multi[0]) ? first.amount : run.reduce((sum, m) => sum + m.amount, 0);
+    return { amount: size * count, unit: first.base };
   }
   const pieces = t.match(/(\d+)\s*(?:ct|count|pcs|pieces|pods|tablets|capsules|rolls|bags)\b/);
   if (pieces) return { amount: Number(pieces[1]) * (multi && multi[0] !== pieces[0] ? count : 1), unit: 'count' };
@@ -34,7 +48,9 @@ function parseQuantity(text) {
 
 function parsePrice(value) {
   if (value == null) return null;
-  const m = String(value).replace(/,(?=\d{3}\b)/g, '').match(/(\d+(?:[.,]\d{1,2})?)/);
+  // "1.299,99 €" and "1 299,00 €" write the decimal comma after the thousands separator.
+  const text = String(value).replace(/(\d)[.\s](?=\d{3},\d{1,2}\b)/g, '$1');
+  const m = text.replace(/,(?=\d{3}\b)/g, '').match(/(\d+(?:[.,]\d{1,2})?)/);
   return m ? Number(m[1].replace(',', '.')) : null;
 }
 

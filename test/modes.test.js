@@ -22,6 +22,25 @@ test('parseQuantity handles multipacks, compound weights and counts', () => {
   assert.strictEqual(q('no size here'), null);
 });
 
+test('parseQuantity does not double count restated sizes and reads spelled-out units', () => {
+  const q = (s) => shopping.parseQuantity(s);
+  assert.strictEqual(Math.round(q('16 oz (1 lb)').amount), 454);
+  assert.deepStrictEqual(q('Total 1kg (2 x 500g)'), { amount: 1000, unit: 'g' });
+  assert.strictEqual(Math.round(q('Sauce 8 oz x 3').amount), 680);
+  assert.deepStrictEqual(q('500 grams'), { amount: 500, unit: 'g' });
+  assert.deepStrictEqual(q('2 kilograms'), { amount: 2000, unit: 'g' });
+  assert.deepStrictEqual(q('750 millilitres'), { amount: 750, unit: 'ml' });
+  assert.deepStrictEqual(q('1 liter'), { amount: 1000, unit: 'ml' });
+  assert.strictEqual(Math.round(q('1 gallon').amount), 3785);
+});
+
+test('parsePrice reads decimal-comma prices with a thousands separator', () => {
+  assert.strictEqual(shopping.parsePrice('1.299,99 €'), 1299.99);
+  assert.strictEqual(shopping.parsePrice('1 299,00 €'), 1299);
+  assert.strictEqual(shopping.parsePrice('$1,299.99'), 1299.99);
+  assert.strictEqual(shopping.parsePrice('12,5'), 12.5);
+});
+
 test('shop page: structured data → unit prices, best value, warnings, judgy verdict', async () => {
   const doc = await dom(fixture('shop.html'));
   const items = shopping.extractStructured(doc);
