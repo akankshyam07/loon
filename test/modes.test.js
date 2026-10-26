@@ -80,6 +80,13 @@ test('reviews: aspects, stars and quotes without a model', async () => {
   assert.match(summary, /Complaints:.*shipping/);
 });
 
+test('menu: decimal-comma prices and burger words are read correctly', () => {
+  const [pizza] = food.extractMenu('Margherita Pizza €11,50\nTomato and basil');
+  assert.deepStrictEqual([pizza.name, pizza.price], ['Margherita Pizza', 11.5]);
+  assert.strictEqual(food.score({ name: 'Hamburger', description: '' }).likelyVegetarian, false);
+  assert.strictEqual(food.score({ name: 'Cheeseburger', description: '' }).likelyVegetarian, false);
+});
+
 test('menu: lightest, protein and vegetarian picks with tips and a warning', () => {
   const text = fixture('menu.html').replace(/<\/p>/g, '\n').replace(/<[^>]+>/g, '').replace(/&amp;/g, '&');
   const items = food.extractMenu(text);
