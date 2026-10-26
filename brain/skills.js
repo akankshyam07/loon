@@ -180,7 +180,8 @@ class Skills {
         return { text: `**Quiz**: fill in the blanks (${quiz.length} questions).`, mood: 'focused', detail: 'cloze cards from key sentences, no model', quiz };
       }
       case 'grammar': {
-        const { fixed, changes } = await fixGrammar(packet.text || '');
+        const { fixed, changes, notEnglish } = await fixGrammar(packet.text || '');
+        if (notEnglish) return { text: 'This doesn\u2019t look like English, and my grammar checker only knows English. I left it alone.', mood: 'curious', detail: 'Harper grammar checker' };
         if (!changes.length) return { text: 'No grammar or spelling problems found. ✨', mood: 'happy', detail: 'Harper grammar checker' };
         return { text: `${fixed}\n\n_Fixed: ${changes.join(' · ')}_`, mood: 'happy', detail: 'Harper grammar checker', replaceText: fixed };
       }

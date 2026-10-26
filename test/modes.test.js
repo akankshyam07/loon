@@ -124,3 +124,11 @@ test('JSON → DTO with quicktype; grammar fixes with Harper', async () => {
   assert.strictEqual(fixed, 'There is an issue with the report.');
   assert.strictEqual(changes.length, 3);
 });
+
+test('grammar fixer leaves other languages and chat shorthand alone', async () => {
+  const spanish = await fixGrammar('Hola, como estas? Quiero un cafe por favor.');
+  assert.strictEqual(spanish.fixed, 'Hola, como estas? Quiero un cafe por favor.');
+  assert.ok(spanish.notEnglish);
+  const chat = await fixGrammar('can u send me teh report');
+  assert.strictEqual(chat.fixed, 'can u send me the report');
+});

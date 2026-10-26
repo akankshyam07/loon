@@ -30,13 +30,23 @@ function linter() {
   return linterPromise;
 }
 
+// Harper only knows English and "fixes" other languages into nonsense (Hola → Hold), so a text of three or more words
+// with no common English word in it is left alone.
+const ENGLISH_WORDS = new Set('the a an and or but of to in on at for with is are was were be been am i you he she it we they me my your this that these those not no do does did have has had will would can could should there their from as if so what when'.split(' '));
+function looksEnglish(text) {
+  const words = String(text).toLowerCase().match(/[a-z']+/g) || [];
+  return words.length < 3 || words.some((w) => ENGLISH_WORDS.has(w));
+}
+
 // Applies Harper's first suggestion for each problem, re-linting after every change so spans stay valid.
+// Chat shorthand like "u" is skipped: Harper turns it into "uh" and then drops it.
 async function fixGrammar(text) {
+  if (!looksEnglish(text)) return { fixed: text, changes: [], notEnglish: true };
   const harper = await linter();
   let fixed = text;
   const changes = [];
   for (let i = 0; i < 40; i++) {
-    const lint = (await harper.lint(fixed)).find((l) => l.suggestions().length);
+    const lint = (await harper.lint(fixed)).find((l) => l.suggestions().length && !/^u$/i.test(fixed.slice(l.span().start, l.span().end)));
     if (!lint) break;
     const span = lint.span();
     const before = fixed.slice(span.start, span.end);
