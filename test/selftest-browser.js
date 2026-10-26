@@ -364,6 +364,19 @@ async function run(ctx, check) {
     const replaced = await waitFor(async () => /There is an issue with the report\.$/.test(await page.inputValue('#draft')), 5000);
     check('Replace puts the fixed text back into the text box', replaced, await page.inputValue('#draft'));
     await closeBubble();
+    // A general question that shares words with the page offers "Answer from this page"; the page is read only on the tap.
+    await page.goto(`${base}/article.html`);
+    await waitFor(() => companion.activePage?.kind === 'article', 5000);
+    {
+      await openAsk();
+      const ask = async (fn) => { const n = await tierCount(); await bubble(fn); await waitFor(async () => (await tierCount()) > n, 150000, 250); };
+      await ask(`(() => { const i = document.getElementById('input'); i.value = 'why do cats like small boxes?'; i.dispatchEvent(new Event('input')); document.getElementById('askForm').requestSubmit(); })()`);
+      const offered = await bubble(`[...document.querySelectorAll('.answer-tools button')].some((b) => b.textContent === 'Answer from this page')`);
+      const readBefore = companion.session.packet?.source || null;
+      await ask(`[...document.querySelectorAll('.answer-tools button')].find((b) => b.textContent === 'Answer from this page').click()`);
+      check('a question about the page in front offers "Answer from this page", and reads the page only on the tap', offered && readBefore === null && companion.session.packet?.source === 'page' && /<context source="page"/.test(resolver.lastPrompt || ''), `${offered} · before ${readBefore} · after ${companion.session.packet?.source}`);
+      await closeBubble();
+    }
     // Screenshot → OCR (same path as ⌥⇧S, minus the interactive picker)
     await page.goto(`${base}/article.html`);
     const shotFile = path.join(os.tmpdir(), `loon-selftest-shot-${Date.now()}.png`);

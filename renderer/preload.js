@@ -34,7 +34,7 @@ contextBridge.exposeInMainWorld('loon', {
   setBubbleHeight: (height) => ipcRenderer.send('bubble-height', height),
   brainStatus: () => ipcRenderer.invoke('brain-status'),
   downloadModel: () => ipcRenderer.invoke('download-model'),
-  ask: (id, text) => ipcRenderer.send('ask', { id, text }),
+  ask: (id, text, { page = false } = {}) => ipcRenderer.send('ask', { id, text, page }),
   runTask: (id, task, deeper = false) => ipcRenderer.send('run-task', { id, task, deeper }),
   lookAnyway: () => ipcRenderer.invoke('look-anyway'),
   handoff: (opts) => ipcRenderer.invoke('handoff', opts),

@@ -60,6 +60,9 @@ const PAGE_TASK_QUESTIONS = [
   { task: 'shop_add', kinds: null, re: /\b(?:add|save|put) (?:this|it)(?: one)? (?:to|in|into) (?:my |the )?(?:compare|comparison|basket)\b/i },
   { task: 'shop_value', kinds: null, re: /\b(best value|best deal|better deal|cheapest|cheaper|price per|unit price|most for (my|the) money|bang for (the|my) buck)\b/i },
 ];
+// Content words (4+ letters, plural s dropped) in common, e.g. "trail" in a question and "Hiking trails near Boulder".
+const CONTENT = (s) => new Set((String(s || '').toLowerCase().match(/[a-z]{4,}/g) || []).filter((w) => !/^(what|which|when|where|this|that|with|from|have|about|best|good|should|would|could|there|their|your|page|site)$/.test(w)).map((w) => w.replace(/s$/, '')));
+const sharesWords = (a, b) => { const words = CONTENT(b); return [...CONTENT(a)].some((w) => words.has(w)); };
 const pageTaskFor = (question, kind) => PAGE_TASK_QUESTIONS.find((q) => (!q.kinds || q.kinds.includes(kind)) && q.re.test(question))?.task || null;
 const GENERIC_LOOK = /^\s*(what (do|can) you see|can you see( this| it| my screen)?|see this( page)?|look at this( page)?|what'?s on (this|the|my) (page|screen)|what'?s this( page)?|(summari[sz]e|explain) (this|the) page)\s*[?.!]*\s*$/i;
 // Seeing the screen (§3.20): only when asked, only the window in front, and only with the user's say-so once.
@@ -555,7 +558,7 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
     saveSettings();
   }
 
-  async function run({ id, task, deeper = false, question }, bubble) {
+  async function run({ id, task, deeper = false, question, usePage = false }, bubble) {
     active?.controller.abort();
     const controller = new AbortController();
     active = { controller, id };
@@ -599,11 +602,12 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
       // A page task named on a menu or shop page is unmistakable even mid-conversation; "cheapest" on any page only at the start.
       const pageTask = !task && question && bridge.clients.size && activePage && !activePage.sensitive ? pageTaskFor(question, activePage.kind) : null;
       const namesPageTask = Boolean(pageTask && (['menu', 'shopping'].includes(activePage.kind) || !session.turns.length));
-      const aboutScreen = Boolean(!task && question && session.mode === 'ask' && !session.packet && (namesPageTask || (session.turns.length ? CLEAR_SCREEN.test(question) : PAGE_QUESTION.test(question))));
+      // usePage: the user tapped "Answer from this page", which is their go-ahead to read it.
+      const aboutScreen = Boolean(!task && question && session.mode === 'ask' && !session.packet && (namesPageTask || (usePage && bridge.clients.size && activePage && !activePage.sensitive) || (session.turns.length ? CLEAR_SCREEN.test(question) : PAGE_QUESTION.test(question))));
       let image = null;
       if (lookChip || again || aboutScreen || (onScreen && !task && question && (await frontChanged()))) {
         const generic = lookChip || again || (aboutScreen && GENERIC_LOOK.test(question));
-        if (namesPageTask || (await chooseEyes()) === 'page') { // page tasks need the page's data, whatever window is in front
+        if (namesPageTask || usePage || (await chooseEyes()) === 'page') { // page tasks need the page's data, whatever window is in front
           session.mode = 'page';
           if (generic) { task = 'page_summary'; question = undefined; } else if (namesPageTask) { task = pageTask; question = undefined; }
         } else {
@@ -679,7 +683,10 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
       const turn = result.text && { question: question || `${TASKS[effectiveTask]?.label || effectiveTask}${deeper ? ' (go deeper)' : ''}`, answer: result.text, tier: result.tier, target: result.target };
       if (turn) session.turns.push(turn);
       if (result.text) session.answers.set(id, { task: effectiveTask, tier: result.tier, difficulty: result.difficulty || '', chars: result.text.length, text: result.text });
-      bubble('done', { id, ...result, model: brain.modelLabel(deeper || result.smart),counts: resolver.counts, memoryUsed: resolver.lastMemory || [], canGoDeeper: !['code', 'cloud'].includes(result.tier) || task === 'define', fromScreen: packet?.source === 'screen', ...(flavor ? { flavor } : {}) });
+      // A general answer to a question that shares words with the page in front ("which trail…" on a trails page) offers
+      // to answer from the page; nothing is read until the user taps it.
+      const pageOffer = Boolean(!task && question && !packet && result.tier !== 'code' && bridge.clients.size && activePage && !activePage.sensitive && sharesWords(question, activePage.title));
+      bubble('done', { id, ...result, pageOffer, model: brain.modelLabel(deeper || result.smart),counts: resolver.counts, memoryUsed: resolver.lastMemory || [], canGoDeeper: !['code', 'cloud'].includes(result.tier) || task === 'define', fromScreen: packet?.source === 'screen', ...(flavor ? { flavor } : {}) });
       // History ("what did I look up about…", Settings → History → Continue): local only, redacted text, never in Privacy
       // mode or on a private page.
       if (memory && !settings.privacy && !sensitive && turn) {

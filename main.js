@@ -782,7 +782,7 @@ function registerIpc() {
     voice.observe(type, payload);
   };
   toBubbleRef.current = toBubble;
-  ipcMain.on('ask', (_e, { id, text }) => companion.run({ id, question: text }, toBubble));
+  ipcMain.on('ask', (_e, { id, text, page }) => companion.run({ id, question: text, usePage: Boolean(page) }, toBubble));
   ipcMain.on('run-task', (_e, { id, task, deeper }) => companion.run({ id, task, deeper }, toBubble));
   ipcMain.on('ask-cancel', () => companion.cancel());
   ipcMain.handle('look-anyway', () => companion.lookAnyway(toBubble));

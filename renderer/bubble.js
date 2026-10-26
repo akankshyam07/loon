@@ -199,7 +199,7 @@ async function handoff(app) {
   }
 }
 
-function answerActions({ id, canGoDeeper, replaceText, text, question, quiz, tier, model, detail, estimated, fromScreen, memoryUsed = [] }) {
+function answerActions({ id, canGoDeeper, replaceText, text, question, quiz, tier, model, detail, estimated, fromScreen, pageOffer = false, memoryUsed = [] }) {
   const row = document.createElement('div');
   row.className = 'answer-tools';
   const add = (parent, label, onClick) => {
@@ -223,6 +223,7 @@ function answerActions({ id, canGoDeeper, replaceText, text, question, quiz, tie
     });
   }
   add(row, 'Copy', (e) => { navigator.clipboard.writeText(replaceText || text || ''); flash(e.target, 'Copied ✓'); });
+  if (pageOffer && question) add(row, 'Answer from this page', (e) => { e.target.remove(); if (!current) ask(question, { page: true }); });
   if (quiz) add(row, 'Harder questions', () => runChip('quiz_harder', 'Harder questions'));
   if (canGoDeeper && lastTask) add(row, 'Go deeper', () => runChip(lastTask, context.chips.find((c) => c.id === lastTask)?.label || 'Answer', true));
 
@@ -716,11 +717,11 @@ window.loon.onDownloadProgress(({ downloaded, total }) => {
 
 let lastTyped = null;
 let waitingForBrain = null; // a typed question that needs the model, answered once the download finishes
-function ask(text) {
+function ask(text, options) {
   lastTask = null;
   lastTyped = text;
   const id = startAnswer(text);
-  window.loon.ask(id, text);
+  window.loon.ask(id, text, options);
   input.value = '';
   autosize();
 }
