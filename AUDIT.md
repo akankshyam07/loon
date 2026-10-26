@@ -66,6 +66,7 @@ with the global hotkeys left alone (`LOON_NO_HOTKEYS=1`). The model files are sh
 | CSV sums, counts, averages | ✅ **new** | was model arithmetic; now added up in code |
 | Project catch-ups | ✅ **improved** | "the budget project" now matches; "what should I do next on X" leads with the next step |
 | Prompt injection on pages | ✅ **fixed (security)** | hidden injected text was quoted as an instant key point; hidden elements dropped, AI-aimed sentences never key points |
+| "Answer from this page" offer | ✅ **new** | general answers to page-related questions offer a one-tap page answer; page read only on tap (browser check) |
 | Full first-user regression (cycle 12) | ✅ | every answer from cycle 1 re-run: code 8–250 ms, actions right, no regressions |
 | Allergies and intolerances in menu picks | ✅ **new** | nuts, gluten/celiac, dairy/lactose, shellfish, eggs, soy, fish; conservative skip + "tell the staff" |
 | Model offering lookups it can't do | ✅ **fixed** | prompt rule plus trimming "would you like me to check…" and "I don't know, but…" |
@@ -148,6 +149,8 @@ with the global hotkeys left alone (`LOON_NO_HOTKEYS=1`). The model files are sh
 39. Projects: loose names ("the X project", "X app"), a miss lists allowed projects, `next: true` briefings.
 40. Injection: `removeHidden` before Defuddle (display/visibility/opacity/1px/off-screen; not white text, which
     dark sites use legitimately); `AIMED_AT_AI` filter in TextRank; outline line excluded from key points.
+41. "Answer from this page": `pageOffer` on general answers whose question shares content words with the page title;
+    the tap re-asks with `usePage` (the user's consent). Browser selftest 46/46.
 
 ## Test results
 
@@ -163,9 +166,6 @@ with the global hotkeys left alone (`LOON_NO_HOTKEYS=1`). The model files are sh
 ## Prioritized next
 
 1. Packaged .dmg build and the `smoke` part.
-2. Proposal: on an article page, a first question that shares words with the page title ("which trail is best for
-   families?" on a trails page) is answered generically today. Reading the page then would break "ask before reading
-   the full page", so offer a one-tap "Answer from this page" chip instead.
 3. Merge plan: this branch and the cloud routine's `claude/feedback-loop` both touch `brain/commands.js`; merge
    that PR first, then rebase this branch.
 4. Polite prefixes ("please remind me…", "can you set a timer…") are fixed on the cloud routine's
