@@ -38,6 +38,12 @@ test('TextRank returns central sentences in page order', () => {
   assert.ok(text.indexOf(picked[0]) < text.indexOf(picked[1]));
 });
 
+test('selection kinds treat unspaced CJK text by length', () => {
+  assert.strictEqual(classifySelection('人工智能'), 'word');
+  assert.strictEqual(classifySelection('我今天想去公园散步，天气很好。'), 'sentence');
+  assert.strictEqual(classifySelection('你好，今天天气很好。我们去公园玩吧。'), 'paragraph');
+});
+
 test('selection kinds pick the right chips', () => {
   assert.strictEqual(classifySelection('ephemeral'), 'word');
   assert.strictEqual(classifySelection('The cat sat on the warm windowsill all afternoon.'), 'sentence');

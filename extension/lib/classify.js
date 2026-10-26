@@ -35,9 +35,12 @@
     if (looksLikeJson(t)) return 'json';
     if (STACK_TRACE.some((re) => re.test(t)) && (t.includes('\n') || /(Error|Exception)/.test(t))) return 'stacktrace';
     if (looksLikeCode(t, { monospace })) return 'code';
+    // CJK text has no spaces, so count roughly one word per two characters
+    const cjk = (t.match(/[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/g) || []).length;
     const words = t.split(/\s+/).filter(Boolean);
-    if (words.length <= 3) return 'word';
-    const sentences = (t.match(/[.!?](\s|$)/g) || []).length;
+    const wordCount = cjk > 0 ? words.length + Math.floor(cjk / 2) : words.length;
+    if (wordCount <= 3) return 'word';
+    const sentences = (t.match(/[.!?](\s|$)|[。！？]/g) || []).length;
     if (sentences <= 1 && t.length < 260) return 'sentence';
     return 'paragraph';
   }
