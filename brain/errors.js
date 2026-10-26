@@ -24,6 +24,9 @@ function fingerprint(text) {
   return { normalized, hash: crypto.createHash('sha256').update(normalized).digest('hex').slice(0, 16) };
 }
 
+// A status code, not a line number like app.js:404:3 or "line 500".
+const status = (code) => `(?<![:.\\d]|line )\\b${code}\\b(?!:\\d)`;
+
 const KNOWN = [
   {
     match: /NullPointerException/,
@@ -104,7 +107,7 @@ const KNOWN = [
     fix: ['Print the absolute path being used.', 'Paths are relative to the working directory, not the script, unless you use `__dirname`.'],
   },
   {
-    match: /EACCES|permission denied/i,
+    match: /EACCES|permission denied(?! \(publickey)/i,
     title: 'Permission denied',
     explain: 'The process isn’t allowed to read, write, or execute that path or port.',
     fix: ['Check file ownership/permissions (`ls -l`).', 'Avoid `sudo npm install -g`; fix npm’s prefix instead.', 'Ports below 1024 need privileges: use a higher port.'],
@@ -140,7 +143,7 @@ const KNOWN = [
     fix: ['Print the dict’s keys.', 'Use `d.get(key, default)` when the key is optional.'],
   },
   {
-    match: /TypeError: .*'NoneType'/,
+    match: /(TypeError|AttributeError): .*'NoneType'/,
     title: 'NoneType error (Python)',
     explain: 'A value was `None` where an object was expected, often a function that returned nothing.',
     fix: ['Find where the value is assigned; check functions `return` on every path.'],
@@ -170,25 +173,25 @@ const KNOWN = [
     fix: ['Read which peer dependency conflicts and upgrade one side.', '`npm install --legacy-peer-deps` works around it (it hides the conflict rather than fixing it).'],
   },
   {
-    match: /\b(401|Unauthorized)\b/,
+    match: new RegExp(`${status(401)}|\\bUnauthorized\\b`),
     title: '401 Unauthorized',
     explain: 'The request had no valid credentials.',
     fix: ['Check the token is sent (header name, `Bearer ` prefix).', 'Check it hasn’t expired.'],
   },
   {
-    match: /\b(403|Forbidden)\b/,
+    match: new RegExp(`${status(403)}|\\bForbidden\\b`),
     title: '403 Forbidden',
     explain: 'The server knows who you are but won’t allow this action.',
     fix: ['Check the account’s roles/permissions for this resource.'],
   },
   {
-    match: /\b404\b|Not Found/,
+    match: new RegExp(`${status(404)}|Not Found`),
     title: '404 Not Found',
     explain: 'The URL doesn’t match any resource or route.',
     fix: ['Check the path, base URL and HTTP method.', 'For APIs, check the route is registered and the id exists.'],
   },
   {
-    match: /\b500\b|Internal Server Error/,
+    match: new RegExp(`${status(500)}|Internal Server Error`),
     title: '500 Internal Server Error',
     explain: 'The server crashed while handling the request; the real error is in the server logs.',
     fix: ['Open the server logs around that timestamp for the stack trace.'],

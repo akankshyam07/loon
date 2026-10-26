@@ -82,6 +82,11 @@ test('errors: fingerprint ignores paths/values; known errors answer from the tab
   assert.match(lookupKnown('java.lang.NullPointerException\n at com.x.A.run(A.java:3)'), /NullPointerException \(Java\)[\s\S]*Likely fix/);
   assert.match(lookupKnown('Access to fetch at x has been blocked by CORS policy'), /CORS/);
   assert.strictEqual(lookupKnown('SomethingTotallyNewError: flux capacitor'), null);
+  assert.strictEqual(lookupKnown('ValueError: bad input\n  at run (/src/app.js:404:3)'), null, 'a line number is not an HTTP status');
+  assert.strictEqual(lookupKnown('Process failed at line 500'), null);
+  assert.match(lookupKnown('Request failed with status code 404'), /404 Not Found/);
+  assert.match(lookupKnown("AttributeError: 'NoneType' object has no attribute 'foo'"), /NoneType/);
+  assert.strictEqual(lookupKnown('git@github.com: Permission denied (publickey).'), null, 'an SSH key problem is not a file permission problem');
 });
 
 test('JSON → DTO with quicktype; grammar fixes with Harper', async () => {
