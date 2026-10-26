@@ -211,7 +211,7 @@ class Actions {
         }
         case 'briefing': {
           const { briefing } = require('../brain/projects');
-          const result = await briefing(this.projects(), command.project);
+          const result = await briefing(this.projects(), command.project, { next: Boolean(command.next) });
           return { ok: true, message: result.text, markdown: true };
         }
         case 'today': {

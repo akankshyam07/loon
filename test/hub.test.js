@@ -130,3 +130,11 @@ test('questions about a dropped CSV that are sums, counts or averages are added 
   assert.match(csvAnswer(csv, 'how much on pizza'), /No rows in this file mention "pizza"/);
   assert.strictEqual(csvAnswer(csv, 'what is this file about'), null);
 });
+
+test('project catch-up: loose names and "what should I do next" leading with the next step', async () => {
+  const dir = makeRepo();
+  assert.deepStrictEqual(parseCommand('what should I do next on cat tracker?'), { action: 'briefing', project: 'cat tracker', next: true });
+  assert.strictEqual(projects.pick([{ name: 'cat-tracker', path: dir }], 'the cat project').path, dir);
+  const { text } = await projects.briefing([dir], 'cat tracker app', { next: true });
+  assert.match(text, /^\*\*Next up:\*\* finish or commit your 1 uncommitted change, then \*\*add a chart\*\*\./);
+});

@@ -76,6 +76,9 @@ function parseCommand(input, now = new Date()) {
     return { action: 'briefing', project: m[1] ? tidy(m[1]) : null };
   }
   if (/^(?:show |list )?my projects\??$/i.test(text)) return { action: 'briefing', project: null };
+  if ((m = text.match(/^(?:what (?:should|do) i (?:do|work on) next|what'?s next|what is next)(?: (?:on|in|for|with) (.+?))?\??$/i))) {
+    return { action: 'briefing', project: m[1] ? tidy(m[1]) : null, next: true };
+  }
   if (/^what do you (?:know|remember) about me\??$/i.test(text)) return { action: 'recall', facts: true };
   if ((m = text.match(/^what do you (?:know|remember) about (?:my |the )?(.+?)\??$/i))) return { action: 'recall', about: tidy(m[1]) };
   if (/^what (?:did|have) i (?:ask(?:ed)?|look(?:ed)? up|search(?:ed)?(?: for)?|do(?:ne)?) (?:today|recently|lately)\??$/i.test(text)) return { action: 'recall', query: '' };

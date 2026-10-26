@@ -134,25 +134,37 @@ function render(s) {
 function pick(projects, name) {
   if (!name) return null;
   const norm = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
-  const want = norm(name);
+  // "the budget project" → "budget"
+  const want = norm(name.replace(/^(?:the|my)\s+/i, '').replace(/\s+(?:project|repo|repository|codebase|app)$/i, ''));
+  if (!want) return null;
   return projects.find((p) => norm(p.name) === want)
     || projects.find((p) => norm(p.name).startsWith(want) || want.startsWith(norm(p.name)))
     || projects.find((p) => norm(p.name).includes(want) || want.includes(norm(p.name)))
     || null;
 }
 
-async function briefing(allowed, name) {
+// next: "what should I do next?" leads with the first open TODO and any uncommitted work.
+function nextUp(snap) {
+  const todo = snap.todos?.find((t) => !t.partial) || snap.todos?.[0];
+  const lines = [];
+  if (snap.changed) lines.push(`finish or commit your ${snap.changed} uncommitted change${snap.changed > 1 ? 's' : ''}`);
+  if (todo) lines.push(`${lines.length ? 'then ' : ''}**${todo.text}**${todo.partial ? ' (half done)' : ''}`);
+  return lines.length ? `**Next up:** ${lines.join(', ')}.\n\n` : '';
+}
+
+async function briefing(allowed, name, { next = false } = {}) {
   if (!allowed.length) return { text: 'I can only look at projects you allow. Pick some in Settings → Projects.', mood: 'curious' };
   if (name) {
     const project = pick(allowed.map((p) => ({ name: path.basename(p), path: p })), name);
-    if (!project) return { text: `I don't see a project called "${name}" among the ones you allowed.`, mood: 'confused' };
-    return { text: render(await snapshot(project.path)), mood: 'focused' };
+    if (!project) return { text: `I don't see a project called "${name}" among the ones you allowed: ${allowed.map((p) => path.basename(p)).join(', ')}.`, mood: 'confused' };
+    const snap = await snapshot(project.path);
+    return { text: `${next ? nextUp(snap) : ''}${render(snap)}`, mood: 'focused' };
   }
   const snaps = await Promise.all(allowed.map(snapshot));
   snaps.sort((a, b) => b.lastActivity - a.lastActivity);
   const [latest, ...others] = snaps;
   const rest = others.length ? `\n\n**Other projects**\n${others.slice(0, 5).map((s) => `- ${s.title} · ${s.lastActivity ? ago(s.lastActivity) : '—'}`).join('\n')}` : '';
-  return { text: `You were last working on this:\n\n${render(latest)}${rest}`, mood: 'focused' };
+  return { text: `${next ? nextUp(latest) : ''}You were last working on this:\n\n${render(latest)}${rest}`, mood: 'focused' };
 }
 
 module.exports = { discover, snapshot, briefing, render, openTodos, recentFiles, pick };
