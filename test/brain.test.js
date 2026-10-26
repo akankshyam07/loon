@@ -72,6 +72,20 @@ test('ladder: instant answers survive smart quotes, "?!", "right now" and a wake
   }
 });
 
+test('ladder: typed dictionary questions use WordNet, not the model', async () => {
+  const brain = { modelId: () => 'fake', chat: async () => { throw new Error('model should not run'); } };
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));
+  const resolver = new Resolver({ brain, cacheFile: path.join(dir, 'c.json'), countsFile: path.join(dir, 'n.json') });
+  for (const q of ['define ephemeral', 'What does ephemeral mean?', 'meaning of the word ephemeral', 'what’s the definition of ephemeral?']) {
+    const r = await resolver.ask(q, { onText: () => {}, firstInThread: true });
+    assert.strictEqual(r.tier, 'code', q);
+    assert.match(r.text, /lasting a very short time/, q);
+  }
+  for (const q of ['what does that mean', 'what does this error mean', 'what is python']) {
+    await assert.rejects(resolver.ask(q, { onText: () => {}, firstInThread: true }), /model should not run/, q);
+  }
+});
+
 test('ladder: templates skip the model, repeats hit the cache, follow-ups do not', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));
   let modelCalls = 0;
