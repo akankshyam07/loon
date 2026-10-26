@@ -49,11 +49,11 @@ const sensesFor = (length) => ({ short: 1, detailed: 6 }[length] || 4);
 
 // ---------- feedback: "shorter please", "less emoji", "be more formal" ----------
 const FEEDBACK = [
-  [/^(?:be |make (?:it|them|your (?:answers|replies)) |keep (?:it|them|answers|replies) |give (?:me )?)?(?:shorter|more concise|concise|briefer|brief|less wordy|less verbose|short(?: answers| replies)?|(?:that was |that's |thats |it's |its |answers are |you're |youre |way )?too (?:long|wordy|verbose)|tl;?dr|less text|fewer words)(?: answers| replies)?$/,
+  [/^(?:be |make (?:it|them|your (?:answers|replies)) |keep (?:it|them|answers|replies) |give (?:me )?)?(?:shorter|more concise|concise|briefer|brief|less wordy|less verbose|short(?: answers| replies)?|(?:that was |that's |thats |it's |its |answers are |you're |youre |way )?too (?:long|wordy|verbose)|tl;?dr|less text|less words|talk less|fewer words)(?: answers| replies)?$/,
     (p) => ({ length: p.length === 'detailed' ? 'normal' : 'short' })],
   [/^(?:be |give (?:me )?|i want |i need )?(?:more detail(?:ed|s)?|longer(?: answers| replies)?|more thorough|(?:that was |that's |thats |it's |its |answers are |way )?too short|go into more detail|detailed(?: answers| replies)?|more in[- ]depth)(?: answers| replies)?$/,
     (p) => ({ length: p.length === 'short' ? 'normal' : 'detailed' })],
-  [/^(?:(?:use |with )?(?:less|fewer|no)|stop using|stop with the|without|don'?t use|drop the|too many) emojis?$/, () => ({ emoji: false })],
+  [/^(?:(?:use |with )?(?:less|fewer|no(?: more)?)|stop using|stop with the|without|don'?t use|drop the|too many) emojis?$/, () => ({ emoji: false })],
   [/^(?:use|more|add|with) emojis?$/, () => ({ emoji: true })],
   [/^(?:be |sound )?(?:more )?(?:formal|professional)$|^too (?:casual|informal|silly)$/, () => ({ tone: 'formal' })],
   [/^(?:be )?(?:more serious|less playful|less silly|less cute|no jokes|fewer jokes|less jokes|stop joking|plainer|plain)$|^too (?:playful|silly|cute)$/, () => ({ tone: 'plain' })],
@@ -71,7 +71,7 @@ function parseFeedback(text, current = PERSONAL_DEFAULTS) {
   const raw = String(text || '').toLowerCase();
   if (!raw.trim() || raw.length > 80) return null;
   const t = raw.replace(/[!.?]+\s*$/, '')
-    .replace(/\b(?:please|pls|plz|loon|hey|ok(?:ay)?|can you|could you|would you|try to|a bit|a little|much|kinda|slightly|from now on|going forward|in (?:the )?future|always)\b/g, ' ')
+    .replace(/\b(?:please|pls|plz|loon|hey|ok(?:ay)?|can you|could you|would you|try to|a bit|a little|much|kinda|slightly|from now on|going forward|next time|in (?:the )?future|always)\b/g, ' ')
     .replace(/[,]/g, ' ').replace(/\s+/g, ' ').trim();
   const p = cleanPersonal(current);
   for (const [re, patchFor] of FEEDBACK) {
