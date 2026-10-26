@@ -165,3 +165,11 @@ test('memory store: profile, BM25 recall with site boost, budget, history search
   assert.deepStrictEqual(parseCommand('What do you know about me?'), { action: 'recall', facts: true });
   assert.deepStrictEqual(parseCommand('what did I ask today'), { action: 'recall', query: '' });
 });
+
+test('history questions drop time words and "you" instead of searching for them', () => {
+  assert.deepStrictEqual(parseCommand('what did I ask yesterday'), { action: 'recall', query: '' });
+  assert.deepStrictEqual(parseCommand('what did I search for last week'), { action: 'recall', query: '' });
+  assert.deepStrictEqual(parseCommand('what did i read about taxes yesterday'), { action: 'recall', query: 'taxes' });
+  assert.deepStrictEqual(parseCommand('what did i ask you about the laptop'), { action: 'recall', query: 'the laptop' });
+  assert.deepStrictEqual(parseCommand('show my history'), { action: 'recall', query: '' });
+});

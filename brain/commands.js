@@ -75,8 +75,9 @@ function parseCommand(input, now = new Date()) {
   if ((m = text.match(/^what do you (?:know|remember) about (?:my |the )?(.+?)\??$/i))) return { action: 'recall', about: tidy(m[1]) };
   if (/^what (?:did|have) i (?:ask(?:ed)?|look(?:ed)? up|search(?:ed)?(?: for)?|do(?:ne)?) (?:today|recently|lately)\??$/i.test(text)) return { action: 'recall', query: '' };
   if ((m = text.match(/^(?:what did i (?:ask|look up|search(?: for)?|read|learn|find out)|when did i (?:ask|look up|read)|find my (?:question|search)) (?:about |on |for )?(.+?)\??$/i))) {
-    return { action: 'recall', query: tidy(m[1]) };
+    return { action: 'recall', query: recallQuery(m[1]) };
   }
+  if (/^(?:show |open )?(?:my )?(?:history|recent activity)\??$/i.test(text)) return { action: 'recall', query: '' };
   if ((m = text.match(/^run (?:the |my )?(?:shortcut )?(.+?)(?: shortcut)?$/i))) return { action: 'shortcut', name: tidy(m[1]) };
   if ((m = text.match(/^(?:note|take a note|save a note|jot down)[:\s]+(.+)$/i))) return { action: 'note', text: tidy(m[1]) };
   if ((m = text.match(/^remember (?:that )?(.+)$/i))) return { action: 'remember', text: tidy(m[1]) };
@@ -88,6 +89,13 @@ function parseCommand(input, now = new Date()) {
   if (/^(?:start (?:a )?focus(?: timer| session)?|pomodoro)$/i.test(text)) return { action: 'focus', minutes: 25 };
   if (/^(?:stop|end|cancel) (?:the )?focus(?: mode| timer| session)?$/i.test(text)) return { action: 'focus', minutes: 0 };
   return null;
+}
+
+// History search has no date filter, so "yesterday" or "last week" as a search word only finds nothing. Drop the
+// time words and the "you (about)" of "what did I ask you about X".
+function recallQuery(raw) {
+  return tidy(raw.replace(/\b(?:today|yesterday|recently|lately|earlier|before|(?:last|this) (?:week|month|night|morning|time))\b/gi, ' ')
+    .replace(/^\s*you(?: (?:about|on|for))?\b/i, ' ').replace(/\s+/g, ' '));
 }
 
 // Plain-language summary for confirm cards and voice ("Reminder to call mom, today at 5:00 PM").
