@@ -60,7 +60,7 @@ const DAY_WORD = String.raw`(?:mon|tues?|wed(?:nes)?|thu(?:rs?)?|fri|sat(?:ur)?|
 const DAY_LIST = new RegExp(String.raw`\b(?:every|each|on)\s+(${DAY_WORD}(?:\s*(?:,|and|&)\s*${DAY_WORD})*)\b`, 'i');
 const DAY_PLURAL = new RegExp(String.raw`\b((?:mon|tues|wednes|thurs|fri|satur|sun)days(?:\s*(?:,|and|&)\s*(?:mon|tues|wednes|thurs|fri|satur|sun)days)*)\b`, 'i');
 const dayIndex = (word) => ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].indexOf(word.toLowerCase().slice(0, 3));
-const RECURRING = /\b(?:every|each|daily|nightly|hourly|weekdays?|weekends?|weekly|monthly|(?:mon|tues|wednes|thurs|fri|satur|sun)days)\b/i;
+const RECURRING = /\b(?:every|each|everyday|daily|nightly|hourly|weekdays?|weekends?|weekly|monthly|(?:mon|tues|wednes|thurs|fri|satur|sun)days)\b/i;
 
 // Cuts the first match out of state.text (so what's left is the action) and returns it.
 function take(state, re) {
@@ -98,8 +98,8 @@ function parseSchedule(input, now = new Date(), { allowOnce = false } = {}) {
     if (list) days = [...new Set(list[1].split(/\s*(?:,|and|&)\s*/).map(dayIndex).filter((d) => d >= 0))].sort();
   }
   const weekly = take(state, /\b(?:every\s+week|weekly)\b/i);
-  const daily = take(state, /\b(?:every|each)\s+(day|morning|afternoon|evening|night)\b/i) || take(state, /\b(daily|nightly)\b/i);
-  if (daily) part = { nightly: 'night', daily: null, day: null }[daily[1].toLowerCase()] ?? daily[1].toLowerCase();
+  const daily = take(state, /\b(?:every|each)\s+(day|morning|afternoon|evening|night)\b/i) || take(state, /\b(daily|nightly|everyday)\b/i);
+  if (daily) part = { nightly: 'night', daily: null, everyday: null, day: null }[daily[1].toLowerCase()] ?? daily[1].toLowerCase();
   const partWord = take(state, /\b(?:in\s+the\s+|at\s+)?(morning|afternoon|evening|night)s?\b/i);
   if (partWord && !part) part = partWord[1].toLowerCase();
   const timeMatch = take(state, new RegExp(String.raw`\bat\s+(${TIME})(?![\w:])`, 'i')) || take(state, /\b(\d{1,2}(?::\d{2})?\s*(?:am|pm)|noon|midnight)\b/i);
@@ -238,7 +238,10 @@ const ACTION_RULES = [
 function parseAction(rest, { pageUrl = null } = {}) {
   const text = rest.trim().replace(/^(?:to|and|then)\s+/i, '');
   let m;
-  if ((m = text.match(/^remind me (?:to |about |of )?(.+)$/i))) return { action: 'reminder', payload: { message: tidyMessage(m[1]) }, understood: true };
+  if ((m = text.match(/^remind me (?:to |about |of )?(.+)$/i))) {
+    const message = /^(?:to|about|of)$/i.test(m[1]) ? '' : tidyMessage(m[1]); // "remind me to" with nothing after it
+    return { action: 'reminder', payload: { message }, understood: Boolean(message) };
+  }
   if ((m = text.match(/^(?:tell|ask) me to (.+)$/i))) return { action: 'notify', payload: { message: `Time to ${tidyMessage(m[1])}` }, understood: true };
   for (const [action, re] of ACTION_RULES) {
     if (!re.test(text)) continue;

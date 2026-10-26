@@ -56,6 +56,9 @@ test('routines: ~20 phrasings parse in code, and their wording reads back to the
   assert.deepStrictEqual(R.parseRoutine('every Monday check the price of this page', { now: NOW, pageUrl: PAGE }).payload, { url: PAGE });
   assert.strictEqual(R.parseRoutine('every Monday check the price of this page', { now: NOW }).understood, false); // no page open
   assert.strictEqual(R.parseRoutine('on weekends at 10am catch me up on Loon', { now: NOW }).payload.project, 'Loon');
+  assert.strictEqual(R.describeSchedule(R.parseRoutine('everyday at 8 remind me to take meds', { now: NOW }).schedule), 'every day at 8:00 AM'); // one-word spelling
+  const empty = R.parseRoutine('every day at 9 remind me to', { now: NOW }); // the card asks what to say, not a reminder called "To"
+  assert.deepStrictEqual([empty.payload.message, empty.understood], ['', false]);
 
   // one-offs: "in 20 minutes"
   const stretch = R.parseRoutine('in 20 minutes remind me to stretch', { now: NOW });
