@@ -125,6 +125,15 @@ test('JSON → DTO with quicktype; grammar fixes with Harper', async () => {
   assert.strictEqual(changes.length, 3);
 });
 
+test('JSON → DTO handles top-level arrays, plain values and multi-class Java', async () => {
+  const list = await jsonToDto('[{"id": 1}, {"id": 2, "name": "x"}]', 'java');
+  assert.match(list, /one per item/);
+  assert.match(list, /class Root[\s\S]*private String name;/);
+  assert.match(await jsonToDto('42', 'java'), /no fields/);
+  const nested = await jsonToDto('{"user": {"id": 1}, "items": [{"sku": "a"}]}', 'java');
+  assert.ok(!/package io\.quicktype/.test(nested), 'no package line left in the extra classes');
+});
+
 test('grammar fixer leaves other languages and chat shorthand alone', async () => {
   const spanish = await fixGrammar('Hola, como estas? Quiero un cafe por favor.');
   assert.strictEqual(spanish.fixed, 'Hola, como estas? Quiero un cafe por favor.');

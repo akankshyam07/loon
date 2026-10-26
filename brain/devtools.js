@@ -10,13 +10,19 @@ const DTO_LANGUAGES = {
 async function jsonToDto(json, language = 'java', name = 'Root') {
   const { quicktype, InputData, jsonInputForTargetLanguage } = await import('quicktype-core');
   const { lang, options, label } = DTO_LANGUAGES[language];
+  // A top-level array (a typical API response) means "one of these"; Java renders nothing for it, so type the elements.
+  const parsed = JSON.parse(json);
+  const samples = Array.isArray(parsed) ? parsed : [parsed];
+  const objects = samples.filter((v) => v && typeof v === 'object' && !Array.isArray(v));
+  if (!objects.length) return "That JSON has no fields (just plain values), so there are no types to make from it.";
   const input = jsonInputForTargetLanguage(lang);
-  await input.addSource({ name, samples: [json] });
+  await input.addSource({ name, samples: objects.map((v) => JSON.stringify(v)) });
   const inputData = new InputData();
   inputData.addInput(input);
   const result = await quicktype({ inputData, lang, rendererOptions: options });
-  const code = result.lines.join('\n').replace(/^\/\/ .*\n\n?/m, '').replace(/^package io\.quicktype;\n\n?/m, '').trim();
-  return `**${label} types**\n\`\`\`${lang}\n${code}\n\`\`\``;
+  const code = result.lines.join('\n').replace(/^\/\/ .*\n\n?/m, '').replace(/^package io\.quicktype;\n\n?/gm, '').trim();
+  const each = Array.isArray(parsed) ? ' (one per item in the array)' : '';
+  return `**${label} types**${each}\n\`\`\`${lang}\n${code}\n\`\`\``;
 }
 
 let linterPromise = null;

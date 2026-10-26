@@ -154,13 +154,15 @@ class Skills {
         return text ? { text, mood: 'focused', detail: 'known-error table' } : null;
       }
       case 'dto': {
+        // JSON copied from a README or chat usually arrives inside a ``` fence.
+        const json = String(packet.text).replace(/^\s*```\w*\s*\n?|\n?\s*```\s*$/g, '');
         try {
-          JSON.parse(packet.text);
+          JSON.parse(json);
         } catch {
           return { text: "That isn't valid JSON, so I can't make types from it.", mood: 'confused' };
         }
         const language = taskId === 'make_dto_ts' ? 'typescript' : 'java';
-        return { text: await jsonToDto(packet.text, language), mood: 'happy', detail: 'quicktype' };
+        return { text: await jsonToDto(json, language), mood: 'happy', detail: 'quicktype' };
       }
       case 'leetcode': {
         const { LeetcodeIndex, looksLikeRepo } = require('./leetcode');
