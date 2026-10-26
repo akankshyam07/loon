@@ -33,10 +33,11 @@ const RULES = [
   { kind: 'api-key', re: /\bxox[abprs]-[A-Za-z0-9-]{10,}\b/g },
   { kind: 'api-key', re: /\bAIza[0-9A-Za-z_-]{35}\b/g },
   { kind: 'token', re: /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g },
+  { kind: 'token', re: /\bBearer\s+[A-Za-z0-9._~+\/=-]{16,}/g },
   { kind: 'connection-string', re: /\b[a-z][a-z0-9+.-]*:\/\/[^\s:/@]+:[^\s@/]+@[^\s]+/gi },
   {
     kind: 'secret',
-    re: /\b(password|passwd|pwd|secret|token|api[_-]?key|access[_-]?key|client[_-]?secret)(\s*[:=]\s*)(["']?)([^\s"',;]{4,})\3/gi,
+    re: /\b([\w.-]*(?:password|passwd|pwd|secret|token|api[_-]?key|access[_-]?key|client[_-]?secret)[\w-]*)(\s*[:=]\s*)(["']?)([^\s"',;]{4,})\3/gi,
     replace: (m, name, sep, quote) => `${name}${sep}${quote}[redacted:secret]${quote}`,
   },
   { kind: 'iban', re: /\b[A-Z]{2}\d{2}(?: ?[A-Z0-9]{4}){3,7}(?: ?[A-Z0-9]{1,3})?\b/g, valid: ibanValid },
