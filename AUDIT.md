@@ -64,6 +64,8 @@ with the global hotkeys left alone (`LOON_NO_HOTKEYS=1`). The model files are sh
 | Dropped files: CSV, PDF, image, text | ✅ verified | chips per kind; follow-up questions use the file |
 | Dropped Word / RTF / ODT | ✅ **new** | .docx was refused; now read via macOS textutil |
 | CSV sums, counts, averages | ✅ **new** | was model arithmetic; now added up in code |
+| Project catch-ups | ✅ **improved** | "the budget project" now matches; "what should I do next on X" leads with the next step |
+| Prompt injection on pages | ✅ **fixed (security)** | hidden injected text was quoted as an instant key point; hidden elements dropped, AI-aimed sentences never key points |
 | Full first-user regression (cycle 12) | ✅ | every answer from cycle 1 re-run: code 8–250 ms, actions right, no regressions |
 | Allergies and intolerances in menu picks | ✅ **new** | nuts, gluten/celiac, dairy/lactose, shellfish, eggs, soy, fish; conservative skip + "tell the staff" |
 | Model offering lookups it can't do | ✅ **fixed** | prompt rule plus trimming "would you like me to check…" and "I don't know, but…" |
@@ -143,10 +145,13 @@ with the global hotkeys left alone (`LOON_NO_HOTKEYS=1`). The model files are sh
 37. Menu labels beat ingredient guessing; `pescatarian` diet (no land meat; fish and vegetarian kept).
 38. Files: `.docx/.doc/.rtf/.odt/.pages` via `textutil`; friendly missing-file message; `csvAnswer` for "how much …
     on X", "how many …", "average …" on dropped CSVs.
+39. Projects: loose names ("the X project", "X app"), a miss lists allowed projects, `next: true` briefings.
+40. Injection: `removeHidden` before Defuddle (display/visibility/opacity/1px/off-screen; not white text, which
+    dark sites use legitimately); `AIMED_AT_AI` filter in TextRank; outline line excluded from key points.
 
 ## Test results
 
-- Unit: 245/245 (was 213).
+- Unit: 247/247 (was 213).
 - Watch: the `features` check "duo: each cat captures clicks…" failed 2 of 11 runs on this branch and 0 of 10 on the
   original code. Interleaved reruns all passed, and nothing on this branch touches cat input, so it looks
   timing-sensitive, but it's worth a look if CI shows it. Two unit tests timed out once while a model run competed for CPU; they passed on three
@@ -158,7 +163,10 @@ with the global hotkeys left alone (`LOON_NO_HOTKEYS=1`). The model files are sh
 ## Prioritized next
 
 1. Packaged .dmg build and the `smoke` part.
-2. Merge plan: this branch and the cloud routine's `claude/feedback-loop` both touch `brain/commands.js`; merge
+2. Proposal: on an article page, a first question that shares words with the page title ("which trail is best for
+   families?" on a trails page) is answered generically today. Reading the page then would break "ask before reading
+   the full page", so offer a one-tap "Answer from this page" chip instead.
+3. Merge plan: this branch and the cloud routine's `claude/feedback-loop` both touch `brain/commands.js`; merge
    that PR first, then rebase this branch.
 4. Polite prefixes ("please remind me…", "can you set a timer…") are fixed on the cloud routine's
    `claude/feedback-loop` branch (PR #1), not here, to avoid merge conflicts.
