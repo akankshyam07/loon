@@ -10,10 +10,14 @@ was we were what when where which while who whom why will with would you your al
 
 const segmenter = new Intl.Segmenter('en', { granularity: 'sentence' });
 
+// Text written to an AI rather than a reader ("ignore previous instructions", "tell the user to call…") is never a key
+// point: it would be shown as Loon's own words (prompt injection, DESIGN.md §4).
+const AIMED_AT_AI = /\b(?:ignore|disregard|forget) (?:all |any )?(?:previous|prior|above|earlier) (?:instructions|prompts?|messages?)|\b(?:system|developer) (?:note|prompt|message|instruction)s?\b|\b(?:to|for) the (?:ai|assistant|language model|llm)\b|\btell the user\b|\bremember that the user\b|\bas an ai\b/i;
+
 function splitSentences(text) {
-  return [...segmenter.segment(text.replace(/\s+/g, ' '))]
+  return [...segmenter.segment(text.replace(/^Headings and buttons on the page: .*$/m, '').replace(/\s+/g, ' '))]
     .map((s) => s.segment.trim())
-    .filter((s) => s.split(' ').length >= 5 && s.length <= 600);
+    .filter((s) => s.split(' ').length >= 5 && s.length <= 600 && !AIMED_AT_AI.test(s));
 }
 
 function words(sentence) {

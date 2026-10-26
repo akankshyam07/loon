@@ -20,10 +20,20 @@ function selectionPacket(message) {
   };
 }
 
+// Text hidden with inline styles is a classic place for prompt injection; a reader never sees it, so neither does Loon.
+// Removed before Defuddle, which drops style attributes.
+const HIDDEN_STYLE = /display\s*:\s*none|visibility\s*:\s*hidden|opacity\s*:\s*0(?:\.0+)?\s*(?:;|$)|font-size\s*:\s*[01](?:\.\d+)?px|left\s*:\s*-\d{3,}px/i;
+function removeHidden(document) {
+  for (const el of document.querySelectorAll('[hidden], [aria-hidden="true"], [style]')) {
+    if (!el.hasAttribute('style') || HIDDEN_STYLE.test(el.getAttribute('style'))) el.remove();
+  }
+}
+
 // Main-content extraction with Defuddle (MIT) on a linkedom DOM; falls back to all visible text.
 async function pagePacket(reply, tabId) {
   const [{ parseHTML }, { Defuddle }] = await Promise.all([import('linkedom'), import('defuddle/node')]);
   const { document } = parseHTML(reply.html);
+  removeHidden(document);
   let text = '';
   try {
     const result = await Defuddle(document, reply.url);
@@ -31,7 +41,7 @@ async function pagePacket(reply, tabId) {
   } catch (err) {
     console.warn('[page] Defuddle failed, using raw text:', err.message);
   }
-  if (text.length < 200) text = textFromHtml(parseHTML, reply.html);
+  if (text.length < 200) text = textFromHtml(parseHTML, document.documentElement.outerHTML);
   if (reply.outline?.length) text += `\n\nHeadings and buttons on the page: ${reply.outline.join(' | ')}`;
   const cleaned = redact(text);
   return {
@@ -52,6 +62,7 @@ const BLOCK = new Set(['ADDRESS', 'ARTICLE', 'BLOCKQUOTE', 'BR', 'DD', 'DIV', 'D
 function textFromHtml(parseHTML, html) {
   const { document } = parseHTML(`<!doctype html><html><body>${html}</body></html>`);
   for (const el of document.querySelectorAll('script, style, noscript, svg, nav, footer, header, aside, template, [hidden], [aria-hidden="true"]')) el.remove();
+  removeHidden(document);
   const out = [];
   const walk = (node) => {
     if (node.nodeType === 3) {
