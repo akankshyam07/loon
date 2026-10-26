@@ -59,6 +59,12 @@ test('page kinds: sensitive wins, shops and articles are recognized', async () =
   const page = (html, url = 'https://example.com/') => detectPage(parseHTML(`<!doctype html><html><body>${html}</body></html>`).document, new URL(url));
   assert.strictEqual(page('<form><input type="password"></form>').kind, 'sensitive');
   assert.strictEqual(page('<p>hi</p>', 'https://www.chase.com/login').sensitive, true);
+  for (const url of ['https://www.hsbc.com/', 'https://secure.login.gov/', 'https://mychart.stanfordhealthcare.org/']) {
+    assert.strictEqual(page('<p>hi</p>', url).sensitive, true, url);
+  }
+  const euro = (items) => items.map((x) => `<p>${x} grilled chicken sauce</p>`).join('');
+  assert.strictEqual(page(euro(['Pizza 11,50 €', 'Pasta 9,00 €', 'Soup 6,50 €', 'Salad 7,00 €', 'Tiramisu 5,50 €'])).kind, 'menu');
+  assert.strictEqual(page('<p>Mug 9,99 €</p><p>Cup 7,99 €</p><p>Pot 19,99 €</p><button>Add to cart</button>').kind, 'shopping');
   const shop = '<script type="application/ld+json">{"@type":"Product","name":"Mug","offers":{"@type":"Offer","price":"9.99"}}</script><p>$9.99</p>';
   assert.strictEqual(page(shop).kind, 'shopping');
   assert.strictEqual(page('<pre>a</pre><pre>b</pre>', 'https://github.com/x/y').kind, 'code');

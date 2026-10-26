@@ -7,11 +7,13 @@
     'paypal.com', 'venmo.com', 'wise.com', 'revolut.com', 'coinbase.com', 'kraken.com', 'binance.com',
     '1password.com', 'lastpass.com', 'bitwarden.com', 'dashlane.com', 'keepersecurity.com',
     'accounts.google.com', 'login.microsoftonline.com', 'login.live.com', 'appleid.apple.com', 'id.apple.com',
-    'mychart.com', 'healthcare.gov', 'irs.gov', 'ssa.gov',
+    'mychart.com', 'healthcare.gov', 'irs.gov', 'ssa.gov', 'login.gov', 'hsbc.com', 'tdbank.com', 'ally.com',
+    'sofi.com', 'okta.com', 'anthem.com', 'kp.org', 'myuhc.com',
   ];
+  const SENSITIVE_LABELS = /(^|\.)(mychart|myhealth|patientportal)[\w-]*\./;
   const CODE_DOMAINS = ['github.com', 'gitlab.com', 'bitbucket.org', 'stackoverflow.com', 'stackexchange.com', 'developer.mozilla.org'];
   const EMAIL_HOSTS = ['mail.google.com', 'outlook.live.com', 'outlook.office.com', 'outlook.office365.com', 'mail.yahoo.com'];
-  const PRICE = /(?:[$€£¥₹]\s?\d[\d,]*(?:\.\d{2})?|\d[\d,]*(?:\.\d{2})?\s?(?:USD|EUR|GBP))/g;
+  const PRICE = /(?:[$€£¥₹]\s?\d[\d,]*(?:\.\d{2})?|\d[\d,.]*(?:[.,]\d{2})?\s?(?:USD|EUR|GBP|[€£])(?!\w))/g;
   const FOOD_WORDS = /\b(entr[ée]es?|appetizers?|starters?|sides|desserts?|grilled|fried|roasted|sauce|salad|burger|sandwich|pasta|pizza|tacos?|soup|vegan|vegetarian|gluten|aioli|chicken|beef|tofu|dressing)\b/gi;
 
   const hostMatches = (host, list) => list.some((d) => host === d || host.endsWith(`.${d}`));
@@ -61,7 +63,7 @@
     const host = location.hostname.replace(/^www\./, '');
     const passwordField = doc.querySelector('input[type="password"]');
     const cardField = doc.querySelector('input[autocomplete^="cc-"], input[name*="card" i][inputmode="numeric"]');
-    if (hostMatches(host, SENSITIVE_DOMAINS) || passwordField || cardField) {
+    if (hostMatches(host, SENSITIVE_DOMAINS) || SENSITIVE_LABELS.test(host) || passwordField || cardField) {
       return { kind: 'sensitive', sensitive: true, reason: passwordField ? 'password field' : cardField ? 'card field' : 'sensitive site' };
     }
 
