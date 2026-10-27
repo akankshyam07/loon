@@ -87,6 +87,11 @@ test('menu: decimal-comma prices and burger words are read correctly', () => {
   assert.strictEqual(food.score({ name: 'Cheeseburger', description: '' }).likelyVegetarian, false);
 });
 
+test('menu: bare and trailing-symbol prices count, promos and add-ons do not', () => {
+  const items = food.extractMenu('$5 off any entree today\nFree delivery over $25\nGrilled Chicken Wrap - 13.50\nPad Thai 14.00 €\nAdd bacon +$2');
+  assert.deepStrictEqual(items.map((i) => [i.name, i.price]), [['Grilled Chicken Wrap', 13.5], ['Pad Thai', 14]]);
+});
+
 test('menu: lightest, protein and vegetarian picks with tips and a warning', () => {
   const text = fixture('menu.html').replace(/<\/p>/g, '\n').replace(/<[^>]+>/g, '').replace(/&amp;/g, '&');
   const items = food.extractMenu(text);
