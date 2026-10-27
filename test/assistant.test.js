@@ -74,6 +74,13 @@ test('memory: categories, per-task groups, forget', () => {
   assert.strictEqual(memory.all().length, 1);
 });
 
+test('commands: remember with a colon, forget idioms are not deletions, blanket forget is flagged', () => {
+  assert.deepStrictEqual(parseCommand('Remember: my name is Sam'), { action: 'remember', text: 'my name is Sam' });
+  for (const t of ['forget it', 'forget about it', 'forget that']) assert.strictEqual(parseCommand(t), null, t);
+  assert.strictEqual(parseCommand('forget everything you know about me').all, true);
+  assert.strictEqual(parseCommand('forget that I am vegetarian').all, false);
+});
+
 test('actions: executors only via execute, audit keeps metadata not content', async () => {
   const dir = tmp();
   const calls = [];

@@ -80,8 +80,11 @@ function parseCommand(input, now = new Date()) {
   if (/^(?:show |open )?(?:my )?(?:history|recent activity)\??$/i.test(text)) return { action: 'recall', query: '' };
   if ((m = text.match(/^run (?:the |my )?(?:shortcut )?(.+?)(?: shortcut)?$/i))) return { action: 'shortcut', name: tidy(m[1]) };
   if ((m = text.match(/^(?:note|take a note|save a note|jot down)[:\s]+(.+)$/i))) return { action: 'note', text: tidy(m[1]) };
-  if ((m = text.match(/^remember (?:that )?(.+)$/i))) return { action: 'remember', text: tidy(m[1]) };
-  if ((m = text.match(/^forget (?:that )?(.+)$/i))) return { action: 'forget', text: tidy(m[1]) };
+  if ((m = text.match(/^remember[:,]?\s+(?:that )?(.+)$/i))) return { action: 'remember', text: tidy(m[1]) };
+  // "forget it" and "forget about it" are idioms, not a request to delete a memory.
+  if ((m = text.match(/^forget[:,]?\s+(?:that )?(.+)$/i)) && !/^(?:about )?(?:it|that|this|me not)$/i.test(tidy(m[1]))) {
+    return { action: 'forget', text: tidy(m[1]), all: /^(?:about )?(?:everything|all|all of it)\b/i.test(tidy(m[1])) };
+  }
   if (/^(?:good morning|(?:what'?s|what is) (?:on )?my (?:day|schedule|agenda)(?: (?:like )?today)?|my day|plan my day|what do i have today)\??$/i.test(text)) return { action: 'today' };
   if ((m = text.match(/^(?:start (?:a )?)?focus(?: mode| timer| session)?(?: for)? (\d+)\s*(m|mins?|minutes?|h|hrs?|hours?)$/i))) {
     return { action: 'focus', minutes: Math.min(Number(m[1]) * (/^h/i.test(m[2]) ? 60 : 1), 240) };

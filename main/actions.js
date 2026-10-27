@@ -190,6 +190,8 @@ class Actions {
           message = "Got it. I'll remember that. (You can edit or delete it in Settings.)";
           break;
         case 'forget': {
+          // A voice command is too easy to say by accident to wipe everything; word matching would also delete odd facts.
+          if (command.all) { message = 'To wipe everything I remember, use Settings → Memory. I can forget one thing at a time here.'; break; }
           const removed = this.memory.forget(command.text);
           message = removed.length ? `Forgot ${removed.length} thing${removed.length > 1 ? 's' : ''}.` : "I didn't have anything like that saved.";
           break;
