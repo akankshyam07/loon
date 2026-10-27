@@ -113,6 +113,14 @@ test('errors: fingerprint ignores paths/values; known errors answer from the tab
   assert.match(lookupKnown('Request failed with status code 404'), /404 Not Found/);
   assert.match(lookupKnown("AttributeError: 'NoneType' object has no attribute 'foo'"), /NoneType/);
   assert.strictEqual(lookupKnown('git@github.com: Permission denied (publickey).'), null, 'an SSH key problem is not a file permission problem');
+  assert.match(lookupKnown("ValueError: invalid literal for int() with base 10: 'abc'"), /isn’t a number/);
+  assert.match(lookupKnown('ZeroDivisionError: division by zero'), /Division by zero/);
+  assert.match(lookupKnown('zsh: command not found: nvm'), /Command not found/);
+  assert.match(lookupKnown('Error: Request failed with status code 429'), /429 Too Many Requests/);
+  assert.match(lookupKnown('HTTP/1.1 503 Service Unavailable'), /503/);
+  assert.match(lookupKnown("TypeError: Cannot set properties of null (setting 'innerHTML')"), /Setting a property of null/);
+  assert.match(lookupKnown("FileNotFoundError: [Errno 2] No such file or directory: 'x.csv'"), /File not found/);
+  assert.match(lookupKnown('npm ERR! code ELIFECYCLE'), /npm script failed/);
 });
 
 test('JSON → DTO with quicktype; grammar fixes with Harper', async () => {

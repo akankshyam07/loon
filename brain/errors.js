@@ -113,6 +113,54 @@ const KNOWN = [
     fix: ['Check file ownership/permissions (`ls -l`).', 'Avoid `sudo npm install -g`; fix npm’s prefix instead.', 'Ports below 1024 need privileges: use a higher port.'],
   },
   {
+    match: /ValueError: invalid literal|NumberFormatException/,
+    title: 'Text isn’t a number',
+    explain: 'Code tried to turn text into a number, but the text (often empty, or with spaces or commas) isn’t one.',
+    fix: ['Print the exact value, with quotes, right before the conversion.', 'Strip whitespace and handle empty input first.', 'Wrap the conversion in try/except (or try/catch) when user input is involved.'],
+  },
+  {
+    match: /ZeroDivisionError|ArithmeticException: \/ by zero/,
+    title: 'Division by zero',
+    explain: 'Code divided a number by zero.',
+    fix: ['Check the divisor on the reported line, it is often an empty list length or a count that never got set.', 'Guard with `if divisor:` before dividing.'],
+  },
+  {
+    match: /RecursionError|StackOverflowError|Maximum call stack size exceeded/,
+    title: 'Infinite recursion',
+    explain: 'A function kept calling itself until the call stack ran out.',
+    fix: ['Check the base case really stops the recursion.', 'Make sure each call moves closer to it (a smaller input).', 'For very deep data, loop with your own stack instead.'],
+  },
+  {
+    match: /FileNotFoundError|No such file or directory/,
+    title: 'File not found',
+    explain: 'The path doesn’t exist from where the program is running.',
+    fix: ['Print the absolute path being opened (`os.path.abspath(path)`).', 'Relative paths depend on the working directory, not the script’s folder.', 'Check spelling and the file extension.'],
+  },
+  {
+    match: /Cannot set propert(y|ies) of (undefined|null)/,
+    title: 'Setting a property of null (JavaScript)',
+    explain: 'Code assigned to `.something` on a value that is `undefined` or `null`. With `innerHTML` it usually means the element wasn’t found.',
+    fix: ['Check `document.querySelector(...)` really returned an element.', 'Run the script after the page has loaded (`defer` or `DOMContentLoaded`).'],
+  },
+  {
+    match: /: command not found|command not found:/,
+    title: 'Command not found',
+    explain: 'The shell can’t find a program with that name: it isn’t installed, or isn’t on your PATH.',
+    fix: ['Check the spelling.', 'Install it (`brew install <name>` on macOS).', 'Tools like nvm or conda need their init lines in `~/.zshrc`, then open a new terminal.'],
+  },
+  {
+    match: /ELIFECYCLE/,
+    title: 'npm script failed',
+    explain: 'ELIFECYCLE only says an npm script exited with an error. The real cause is printed above it.',
+    fix: ['Scroll up to the first error before the `npm ERR!` lines.', 'Try `rm -rf node_modules && npm install` if it started after a dependency change.'],
+  },
+  {
+    match: /ETIMEDOUT|ECONNRESET|ESOCKETTIMEDOUT/,
+    title: 'Network timeout or reset',
+    explain: 'The connection hung or was dropped before a reply arrived.',
+    fix: ['Check you can reach the host (`curl -v <url>`).', 'Check VPN, proxy or firewall settings.', 'Retry with a longer timeout, or with backoff if the server is busy.'],
+  },
+  {
     match: /has been blocked by CORS policy|No 'Access-Control-Allow-Origin' header/,
     title: 'CORS blocked the request',
     explain: 'The browser refused the response because the server didn’t allow your page’s origin.',
@@ -195,6 +243,18 @@ const KNOWN = [
     title: '500 Internal Server Error',
     explain: 'The server crashed while handling the request; the real error is in the server logs.',
     fix: ['Open the server logs around that timestamp for the stack trace.'],
+  },
+  {
+    match: new RegExp(`${status(429)}|Too Many Requests`),
+    title: '429 Too Many Requests',
+    explain: 'You hit the server’s rate limit.',
+    fix: ['Wait and retry; the `Retry-After` header says how long.', 'Slow down or batch your requests, and back off on repeated failures.'],
+  },
+  {
+    match: new RegExp(`${status(503)}|Service Unavailable`),
+    title: '503 Service Unavailable',
+    explain: 'The server is up but can’t take requests right now (overloaded, restarting or down for maintenance).',
+    fix: ['Retry after a short wait.', 'Check the service’s status page.'],
   },
 ];
 
