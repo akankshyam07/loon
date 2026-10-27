@@ -67,7 +67,7 @@ test('ladder: instant answers survive smart quotes, "?!", "right now" and a wake
   const brain = { modelId: () => 'fake', chat: async () => { throw new Error('model should not run'); } };
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));
   const resolver = new Resolver({ brain, cacheFile: path.join(dir, 'c.json'), countsFile: path.join(dir, 'n.json') });
-  for (const q of ['what’s the time?', 'What time is it?!', 'what time is it right now?', 'Hey Loon, what time is it', 'tell me the time', 'today’s date', 'what can u do', 'help me!']) {
+  for (const q of ['what’s the time?', 'What time is it?!', 'what time is it right now?', 'Hey Loon, what time is it', 'tell me the time', 'today’s date', 'what can u do', 'help me!', 'hi', 'Hello!', 'hey loon', 'thanks!', 'thank you', 'Good morning', 'thx']) {
     assert.strictEqual((await resolver.ask(q, { onText: () => {}, firstInThread: true })).tier, 'code', q);
   }
 });
@@ -82,7 +82,7 @@ test('ladder: arithmetic, percentages and unit conversions are answered by code'
     assert.strictEqual(r.tier, 'code', q);
     assert.match(r.text, re, q);
   }
-  for (const q of ['555-1234', '1/0', 'hello', 'what is 3 in']) {
+  for (const q of ['555-1234', '1/0', 'banana', 'what is 3 in']) {
     await assert.rejects(resolver.ask(q, { onText: () => {}, firstInThread: true }), /model should not run/, q);
   }
 });

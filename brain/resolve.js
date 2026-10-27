@@ -51,6 +51,14 @@ const CODE_ANSWERS = [
     }),
   },
   {
+    match: /^(hi|hii+|hey|heya|hello|yo|sup|what'?s up|good (morning|afternoon|evening))( loon)?$/,
+    answer: () => ({ mood: 'happy', text: 'Hi! Highlight something, or ask me anything.' }),
+  },
+  {
+    match: /^(thanks|thank you|thank u|thx|ty|thanks a lot|thank you so much|cheers)( loon)?$/,
+    answer: () => ({ mood: 'happy', text: 'Anytime. *purrs*' }),
+  },
+  {
     match: /^(who|what) are you$/,
     answer: () => ({ mood: 'happy', text: "I'm Loon, a small black cat who lives on your screen. I run on your Mac, and nothing you ask leaves it unless you switch on Smarter answers in Settings." }),
   },
