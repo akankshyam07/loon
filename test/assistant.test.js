@@ -36,6 +36,21 @@ test('commands: reminders, events, open, find, notes, memory; questions fall thr
   assert.match(describe(at5), /^Reminder: call mom, /);
 });
 
+test('commands: timers, alarms and "reminder:" forms become reminders; "focus 90" starts focus', () => {
+  const timer = parseCommand('set a timer for 1 hour 30 minutes', NOW);
+  assert.deepStrictEqual([timer.action, timer.title, timer.when.getTime() - NOW.getTime()], ['reminder', 'Timer is up', 90 * 60000]);
+  assert.strictEqual(parseCommand('timer 10 min', NOW).when.getTime() - NOW.getTime(), 10 * 60000);
+  assert.strictEqual(parseCommand('25 minute timer', NOW).when.getTime() - NOW.getTime(), 25 * 60000);
+  const alarm = parseCommand('wake me at 7', NOW);
+  assert.deepStrictEqual([alarm.title, alarm.when.getHours()], ['Wake up', 7]);
+  assert.strictEqual(parseCommand('set an alarm for 7am', NOW).when.getHours(), 7);
+  const dated = parseCommand('set a reminder for 3pm to call bob', NOW);
+  assert.deepStrictEqual([dated.title, dated.when.getHours()], ['call bob', 15]);
+  assert.strictEqual(parseCommand('reminder: dentist friday 2pm', NOW).title, 'dentist');
+  assert.deepStrictEqual(parseCommand('focus 90', NOW), { action: 'focus', minutes: 90 });
+  assert.strictEqual(parseCommand('timer', NOW), null);
+});
+
 test('notes: markdown per day, entries with sources, search', () => {
   const notes = new Notes(tmp());
   const file = notes.save({ title: 'Why cats love boxes', text: 'Enclosed spaces feel safe.', url: 'https://example.com/cats' });

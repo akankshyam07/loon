@@ -46,6 +46,16 @@ function parseCommand(input, now = new Date()) {
     .replace(/[,\s]+(?:please|thanks|thank you)[.!?]*$/i, '')
     .trim();
   let m;
+  // Loon has no alarm clock of its own. Timers, alarms and "wake me" become Reminders, which the confirm card names.
+  if ((m = text.match(/^(?:set |start )?(?:an? )?(?:timer|countdown)(?: for| of)? (?:in )?(.+)$/i)) || (m = text.match(/^(?:set |start )?(?:an? )?(.+?)[\s-]timer$/i))) {
+    const { date } = extractWhen(`in ${m[1].replace(/^in /i, '')}`, now);
+    return date ? { action: 'reminder', title: 'Timer is up', when: date } : null;
+  }
+  if ((m = text.match(/^(?:set (?:an? )?alarm(?: for| at)?|wake me(?: up)?) (.+)$/i))) {
+    const { date } = extractWhen(m[1], now);
+    return date ? { action: 'reminder', title: 'Wake up', when: date } : null;
+  }
+  if ((m = text.match(/^(?:set (?:an? )?)?reminder(?: for| to| about|:)?\s+(.+)$/i))) return parseCommand(`remind me ${m[1]}`, now);
   if ((m = text.match(/^remind me (?:to |about )?(.+)$/i))) {
     const { date, rest } = extractWhen(m[1], now);
     // "remind me tomorrow to buy milk" leaves the "to" in front of the task.
@@ -86,8 +96,8 @@ function parseCommand(input, now = new Date()) {
     return { action: 'forget', text: tidy(m[1]), all: /^(?:about )?(?:everything|all|all of it)\b/i.test(tidy(m[1])) };
   }
   if (/^(?:good morning|(?:what'?s|what is) (?:on )?my (?:day|schedule|agenda)(?: (?:like )?today)?|my day|plan my day|what do i have today)\??$/i.test(text)) return { action: 'today' };
-  if ((m = text.match(/^(?:start (?:a )?)?focus(?: mode| timer| session)?(?: for)? (\d+)\s*(m|mins?|minutes?|h|hrs?|hours?)$/i))) {
-    return { action: 'focus', minutes: Math.min(Number(m[1]) * (/^h/i.test(m[2]) ? 60 : 1), 240) };
+  if ((m = text.match(/^(?:start (?:a )?)?focus(?: mode| timer| session)?(?: for)? (\d+)\s*(m|mins?|minutes?|h|hrs?|hours?)?$/i))) {
+    return { action: 'focus', minutes: Math.min(Number(m[1]) * (/^h/i.test(m[2] || '') ? 60 : 1), 240) };
   }
   if (/^(?:start (?:a )?focus(?: timer| session)?|pomodoro)$/i.test(text)) return { action: 'focus', minutes: 25 };
   if (/^(?:stop|end|cancel) (?:the )?focus(?: mode| timer| session)?$/i.test(text)) return { action: 'focus', minutes: 0 };
