@@ -212,7 +212,10 @@ const ROLES = {
 };
 const DIETS = { vegetarian: "I'm vegetarian", vegan: "I'm vegan", pescatarian: "I'm pescatarian", gluten_free: "I'm gluten-free", halal: 'I eat halal', kosher: 'I keep kosher', lactose: "I'm lactose intolerant" };
 const tidy = (text, max = 80) => String(text || '').replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
-const list = (text) => tidy(text, 200).split(/\s*(?:,|;|\band\b)\s*/i).map((x) => x.replace(/[.!]+$/, '').trim()).filter(Boolean).slice(0, 6);
+// "None" and "n/a" are answers, not allergies; "I'm allergic to peanuts" is typed often, so the lead-in is dropped.
+const NO_ANSWER = /^(?:none|no|nope|nil|nothing|n\/?a|na|-+|idk)$/i;
+const list = (text) => tidy(text, 200).replace(/^(?:i(?:'m| am)\s+)?(?:allergic to|interested in)\s+/i, '').split(/\s*(?:,|;|\band\b)\s*/i)
+  .map((x) => x.replace(/[.!]+$/, '').trim()).filter((x) => x && !NO_ANSWER.test(x)).slice(0, 6);
 const joinList = (items) => (items.length > 1 ? `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}` : items[0] || '');
 
 // answers: { name, role, length, tone, diets: [], allergies, interests } (every one optional) → what the review screen
