@@ -23,6 +23,13 @@ test('redaction hides secrets and card numbers, keeps ordinary numbers', () => {
   assert.deepStrictEqual(kinds.sort(), ['api-key', 'card', 'connection-string', 'iban', 'secret', 'ssn']);
 });
 
+test('redaction catches spoken passwords, PINs and Basic auth headers', () => {
+  const { text, count } = redact('my password is hunter2, PIN: 4829, Authorization: Basic dXNlcjpwYXNzd29yZA==');
+  assert.doesNotMatch(text, /hunter2|4829|dXNlcjpw/);
+  assert.strictEqual(count, 3);
+  assert.strictEqual(redact('the password reset link is fine').count, 0);
+});
+
 test('TextRank returns central sentences in page order', () => {
   const text = [
     'Cats sleep for most of the day in warm and quiet places around the house.',

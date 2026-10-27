@@ -40,6 +40,12 @@ const RULES = [
     re: /\b([\w.-]*(?:password|passwd|pwd|secret|token|api[_-]?key|access[_-]?key|client[_-]?secret)[\w-]*)(\s*[:=]\s*)(["']?)([^\s"',;]{4,})\3/gi,
     replace: (m, name, sep, quote) => `${name}${sep}${quote}[redacted:secret]${quote}`,
   },
+  { kind: 'token', re: /\bBasic\s+[A-Za-z0-9+\/]{12,}={0,2}/g },
+  {
+    kind: 'secret',
+    re: /\b(password|passcode|passphrase|pin|cvv|cvc)(\s+is\s+|\s*[:=]\s*)(["']?)(?!\[redacted)([^\s"',;]{3,})\3/gi,
+    replace: (m, name, sep, quote) => `${name}${sep}${quote}[redacted:secret]${quote}`,
+  },
   { kind: 'iban', re: /\b[A-Z]{2}\d{2}(?: ?[A-Z0-9]{4}){3,7}(?: ?[A-Z0-9]{1,3})?\b/g, valid: ibanValid },
   { kind: 'card', re: /\b(?:\d[ -]?){12,18}\d\b/g, valid: (m) => luhnValid(m.replace(/\D/g, '')) },
   { kind: 'ssn', re: /\b(?!000|666|9\d\d)\d{3}-(?!00)\d{2}-(?!0000)\d{4}\b/g },
