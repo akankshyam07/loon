@@ -16,7 +16,7 @@ const TEMPLATES = [
   { re: /^make (this|that|it) (more )?(professional|formal)$/, route: { type: 'task', task: 'professional', needs: 'selection' } },
   { re: /^make (this|that|it) (sound )?(warmer|friendlier|nicer)$/, route: { type: 'task', task: 'warmer', needs: 'selection' } },
   { re: /^(summari[sz]e|sum up) (this|that|it|the selection)$/, route: { type: 'task', task: 'summarize', needs: 'selection' } },
-  { re: /^translate (this|that)( to english)?$/, route: { type: 'task', task: 'translate', needs: 'selection' } },
+  { re: /^translate (this|that|it)( for me)?( (to|into) english)?$/, route: { type: 'task', task: 'translate', needs: 'selection' } },
   { re: /^(summari[sz]e|sum up) (this|the) page$|^what'?s on (this|the) page$|^what is this page( about)?$/, route: { type: 'task', task: 'page_summary' } },
   { re: /^what (do|should) i do (here|on this page)$/, route: { type: 'task', task: 'page_todo' } },
   { re: /^(which (one )?is (the )?(cheapest|best value)|what'?s the best (deal|value))( here)?$/, route: { type: 'task', task: 'shop_value' } },
