@@ -4,13 +4,13 @@
 // Exact conversion constants to base units (g, ml).
 const UNITS = {
   mg: ['g', 0.001], g: ['g', 1], kg: ['g', 1000], oz: ['g', 28.349523125], lb: ['g', 453.59237], lbs: ['g', 453.59237],
-  ml: ['ml', 1], cl: ['ml', 10], l: ['ml', 1000], floz: ['ml', 29.5735295625], gal: ['ml', 3785.411784], qt: ['ml', 946.352946],
+  ml: ['ml', 1], cl: ['ml', 10], l: ['ml', 1000], floz: ['ml', 29.5735295625], gal: ['ml', 3785.411784], qt: ['ml', 946.352946], pt: ['ml', 473.176473], gr: ['g', 1],
 };
 const WORDS = {
   milligram: 'mg', gram: 'g', kilogram: 'kg', ounce: 'oz', pound: 'lb', milliliter: 'ml', millilitre: 'ml', liter: 'l', litre: 'l',
-  fluidounce: 'floz', gallon: 'gal', quart: 'qt',
+  fluidounce: 'floz', gallon: 'gal', quart: 'qt', pint: 'pt',
 };
-const MEASURE = /(\d+(?:[.,]\d+)?)\s*(fl\.?\s?oz|fluid ounces?|(?:milli|kilo)?grams?|milli?lit(?:er|re)s?|lit(?:er|re)s?|ounces?|pounds?|gallons?|quarts?|mg|kg|g|lbs?|oz|ml|cl|l|gal|qt)\b/gi;
+const MEASURE = /(\d+(?:[.,]\d+)?)[\s-]?(fl\.?\s?oz|fluid ounces?|(?:milli|kilo)?grams?|milli?lit(?:er|re)s?|lit(?:er|re)s?|ounces?|pounds?|gallons?|quarts?|pints?|mg|kg|gr|g|lbs?|oz|ml|cl|l|gal|qt)\b/gi;
 // Two measures add up only when they sit side by side ("2 lb 4 oz"), not in "16 oz (1 lb)".
 const ADJACENT = /^\s*(?:and|,)?\s*$/;
 
@@ -49,7 +49,8 @@ function parseQuantity(text) {
 function parsePrice(value) {
   if (value == null) return null;
   // "1.299,99 €" and "1 299,00 €" write the decimal comma after the thousands separator.
-  const text = String(value).replace(/(\d)[.\s](?=\d{3},\d{1,2}\b)/g, '$1');
+  // "Was $20 Now $15" is the sale price.
+  const text = String(value).replace(/^.*\bnow\b/i, '').replace(/(\d)[.\s](?=\d{3},\d{1,2}\b)/g, '$1');
   const m = text.replace(/,(?=\d{3}\b)/g, '').match(/(\d+(?:[.,]\d{1,2})?)/);
   return m ? Number(m[1].replace(',', '.')) : null;
 }

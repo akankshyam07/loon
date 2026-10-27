@@ -34,6 +34,14 @@ test('parseQuantity does not double count restated sizes and reads spelled-out u
   assert.strictEqual(Math.round(q('1 gallon').amount), 3785);
 });
 
+test('parseQuantity reads hyphenated sizes, pints and "gr"; parsePrice takes the sale price', () => {
+  const q = (s) => shopping.parseQuantity(s);
+  assert.strictEqual(Math.round(q('32-oz bottle').amount), 907);
+  assert.strictEqual(Math.round(q('1 pint').amount), 473);
+  assert.deepStrictEqual(q('500 gr'), { amount: 500, unit: 'g' });
+  assert.strictEqual(shopping.parsePrice('Was $20.00 Now $15.00'), 15);
+});
+
 test('parsePrice reads decimal-comma prices with a thousands separator', () => {
   assert.strictEqual(shopping.parsePrice('1.299,99 €'), 1299.99);
   assert.strictEqual(shopping.parsePrice('1 299,00 €'), 1299);
