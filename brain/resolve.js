@@ -7,6 +7,7 @@ const path = require('path');
 const { ResponseCache } = require('./cache');
 const { TASKS, MAX_CONTEXT_CHARS, buildPrompt, historyBlock, followUpContext, memoryGroup } = require('./tasks');
 const { define, dictionaryTerm } = require('./define');
+const { calc } = require('./calc');
 const { scopeOf } = require('./memory');
 const { domainForTask } = require('./graph');
 const { cleanPersonal, instructionsBlock, maxTokensFor, sensesFor } = require('./personal');
@@ -238,6 +239,12 @@ class Resolver {
         onText(text);
         this.count('code');
         return { text, mood, tier: 'code' };
+      }
+      const sum = calc(packet.question);
+      if (sum) {
+        onText(sum);
+        this.count('code');
+        return { text: sum, mood: 'focused', tier: 'code' };
       }
       const term = firstInThread && dictionaryTerm(packet.question);
       const entry = term && await define(term, { maxSenses: sensesFor(personal.length) });

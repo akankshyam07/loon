@@ -72,6 +72,21 @@ test('ladder: instant answers survive smart quotes, "?!", "right now" and a wake
   }
 });
 
+test('ladder: arithmetic, percentages and unit conversions are answered by code', async () => {
+  const brain = { modelId: () => 'fake', chat: async () => { throw new Error('model should not run'); } };
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));
+  const resolver = new Resolver({ brain, cacheFile: path.join(dir, 'c.json'), countsFile: path.join(dir, 'n.json') });
+  const cases = [['what is 15% of 80?', /^12\./], ['2+2', /= 4$/], ["what's 12 x 12", /144/], ['(3+4)*2', /= 14/], ['5 miles in km', /8\.0467 km/], ['100 f to c', /37\.7778 c/], ['convert 3 cups to ml', /709\.7647 ml/]];
+  for (const [q, re] of cases) {
+    const r = await resolver.ask(q, { onText: () => {}, firstInThread: true });
+    assert.strictEqual(r.tier, 'code', q);
+    assert.match(r.text, re, q);
+  }
+  for (const q of ['555-1234', '1/0', 'hello', 'what is 3 in']) {
+    await assert.rejects(resolver.ask(q, { onText: () => {}, firstInThread: true }), /model should not run/, q);
+  }
+});
+
 test('ladder: typed dictionary questions use WordNet, not the model', async () => {
   const brain = { modelId: () => 'fake', chat: async () => { throw new Error('model should not run'); } };
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));
