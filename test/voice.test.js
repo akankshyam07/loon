@@ -75,3 +75,13 @@ test('speech → end of turn → text, all on this Mac', { skip: !engine.modelsR
   assert.match(text, /remind me to call mom at five/i);
   assert.strictEqual(route(text).type, 'command');
 });
+
+test('spoken confirmations, focus and define phrasings route to the right intent', () => {
+  assert.strictEqual(route('Yes, do it.', { awaitingConfirmation: true }).type, 'yes');
+  assert.strictEqual(route('No thanks', { awaitingConfirmation: true }).type, 'no');
+  assert.strictEqual(route('not now', { awaitingConfirmation: true }).type, 'no');
+  assert.deepStrictEqual(route('turn off focus'), { type: 'toggle', key: 'focus', value: false });
+  assert.deepStrictEqual(route('go to sleep, Loon'), { type: 'toggle', key: 'focus', value: true });
+  assert.deepStrictEqual(route('define: ephemeral'), { type: 'task', task: 'define', slot: 'text', text: 'ephemeral' });
+  assert.strictEqual(route('define the word ephemeral').text, 'ephemeral');
+});
