@@ -24,6 +24,18 @@ test('common voice phrases route to templates or commands, never the model', () 
   assert.deepStrictEqual(leaked, []);
 });
 
+test('spoken edits and explanations of a selection are templates', () => {
+  const expected = {
+    'Explain this to me': 'explain', 'explain it': 'explain', 'Make this shorter': 'shorter', 'shorten it': 'shorter',
+    'Simplify it': 'simplify', 'make it easier': 'simplify', 'Rewrite this': 'rewrite',
+    'Make this more professional': 'professional', 'make it friendlier': 'warmer', 'Summarize this': 'summarize',
+  };
+  for (const [said, task] of Object.entries(expected)) {
+    assert.deepStrictEqual(route(said), { type: 'task', task, needs: 'selection' }, said);
+  }
+  assert.strictEqual(route('Summarize this page').task, 'page_summary');
+});
+
 test('open questions still go to the model; yes/no only count while confirming', () => {
   assert.strictEqual(route('Why is the sky blue?').type, 'question');
   assert.strictEqual(route('What is a black hole?').text, 'What is a black hole?');

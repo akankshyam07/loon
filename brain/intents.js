@@ -9,8 +9,13 @@ const NO = /^(no|nope|nah|don't|do not|cancel|stop|never ?mind|wrong|no thanks|n
 
 // Fixed phrases → task/toggle. Alternatives written as regex; matched on the normalized utterance.
 const TEMPLATES = [
-  { re: /^(explain|what does) (this|that|the selection)( mean)?$|^what does this mean$/, route: { type: 'task', task: 'explain', needs: 'selection' } },
-  { re: /^(simplify( this| that)?|make (this|that) simpler)$/, route: { type: 'task', task: 'simplify', needs: 'selection' } },
+  { re: /^(explain|what does) (this|that|it|the selection)( to me)?( mean)?$|^what does this mean$/, route: { type: 'task', task: 'explain', needs: 'selection' } },
+  { re: /^(simplify( this| that| it)?|make (this|that|it) (simpler|easier))$|^explain (this|that|it) simply$/, route: { type: 'task', task: 'simplify', needs: 'selection' } },
+  { re: /^(make (this|that|it) (shorter|more concise)|shorten (this|that|it))$/, route: { type: 'task', task: 'shorter', needs: 'selection' } },
+  { re: /^(rewrite|reword) (this|that|it)$/, route: { type: 'task', task: 'rewrite', needs: 'selection' } },
+  { re: /^make (this|that|it) (more )?(professional|formal)$/, route: { type: 'task', task: 'professional', needs: 'selection' } },
+  { re: /^make (this|that|it) (sound )?(warmer|friendlier|nicer)$/, route: { type: 'task', task: 'warmer', needs: 'selection' } },
+  { re: /^(summari[sz]e|sum up) (this|that|it|the selection)$/, route: { type: 'task', task: 'summarize', needs: 'selection' } },
   { re: /^translate (this|that)( to english)?$/, route: { type: 'task', task: 'translate', needs: 'selection' } },
   { re: /^(summari[sz]e|sum up) (this|the) page$|^what'?s on (this|the) page$|^what is this page( about)?$/, route: { type: 'task', task: 'page_summary' } },
   { re: /^what (do|should) i do (here|on this page)$/, route: { type: 'task', task: 'page_todo' } },
