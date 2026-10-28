@@ -78,6 +78,8 @@ test('page kinds: sensitive wins, shops and articles are recognized', async () =
   assert.strictEqual(page('<input type="PASSWORD">').sensitive, true);
   assert.strictEqual(page('<input type="text" autocomplete="current-password">').sensitive, true);
   assert.strictEqual(page('<input type="text" autocomplete="one-time-code">').sensitive, true);
+  // A sign-up page is not private, only its password field is (the screen-control selftest clicks buttons on one)
+  assert.notStrictEqual(page('<input type="text" autocomplete="new-password"><button>Sign up</button>').sensitive, true);
   assert.strictEqual(page('<p>hi</p>', 'https://online.citibank.com/').sensitive, true);
   const euro = (items) => items.map((x) => `<p>${x} grilled chicken sauce</p>`).join('');
   assert.strictEqual(page(euro(['Pizza 11,50 €', 'Pasta 9,00 €', 'Soup 6,50 €', 'Salad 7,00 €', 'Tiramisu 5,50 €'])).kind, 'menu');

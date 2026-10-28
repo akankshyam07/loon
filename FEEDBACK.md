@@ -331,3 +331,7 @@ As a user, the worst problem was that Loon did not look away on a login form who
 Fixed: password detection also matches `type="PASSWORD"`, `autocomplete=*-password` and `one-time-code`, and a few more banks are on the sensitive list. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: country variants such as wellsfargo.com.au and login.gov.uk are still not on the list, and non-English menus stay "other". The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-28 — CI repair, sign-up pages were treated as private
+
+CI on the PR failed four screen-control checks because the Tea Club sign-up fixture was treated as a private page. An earlier change made any `autocomplete="...-password"` field mark the whole page sensitive, which also caught `new-password` on sign-up forms. The page-kind rule now only looks at `current-password` (a login form) next to `type="password"` and one-time codes. A test now keeps sign-up pages non-sensitive.

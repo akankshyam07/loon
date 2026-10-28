@@ -62,7 +62,7 @@
 
   function detectPage(doc, location) {
     const host = location.hostname.replace(/^www\./, '');
-    const passwordField = doc.querySelector('input[type="password" i], input[autocomplete$="-password"], input[autocomplete="one-time-code"]');
+    const passwordField = doc.querySelector('input[type="password" i], input[autocomplete="current-password"], input[autocomplete="one-time-code"]');
     const cardField = doc.querySelector('input[autocomplete^="cc-"], input[name*="card" i][inputmode="numeric"]');
     if (hostMatches(host, SENSITIVE_DOMAINS) || SENSITIVE_LABELS.test(host) || passwordField || cardField) {
       return { kind: 'sensitive', sensitive: true, reason: passwordField ? 'password field' : cardField ? 'card field' : 'sensitive site' };
