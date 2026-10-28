@@ -291,3 +291,13 @@ As a user, the worst problem was that shell commands and SQL were treated as pla
 Fixed: classifySelection now treats SQL statements and lines that start with a known tool plus a flag, path or subcommand as code. Common abbreviations no longer count as sentence ends. Tests added in test/browser.test.js.
 
 Left for later: a lone "x = 5" is still a word. Spanish questions starting with "¿" count as a word when short. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-28 — writing tools, fix grammar (second pass)
+
+Tried 23 texts such as "Dear Sam, I hope your well.", "They're going to there house", "Ill be there at 5 and im bringing cake", "Wich one is better?", "lol thx 4 the help", "I recieved the package" and "He dont know".
+
+As a user, the worst problems were wrong edits on good text. A name like Sam was changed to SAM and later to something else. "im bringing cake" lost its "am" because the checker offered the single letter "i". "They're going to there house" cycled through 40 changes before it stopped.
+
+Fixed: fixGrammar tries each span once, skips turning a capitalized word into all caps, and skips cutting a word to one letter. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: the first suggestion is sometimes wrong ("Wich" becomes "Wish", "adress" becomes "a dress", "untill" becomes "distill", "thx" becomes "the"). "your welcome" and "Ill" are not flagged. These need a better way to pick among suggestions. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.

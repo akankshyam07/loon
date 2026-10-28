@@ -51,11 +51,23 @@ async function fixGrammar(text) {
   const harper = await linter();
   let fixed = text;
   const changes = [];
+  // Some of Harper's suggestions are wrong or undo each other, so a span is tried once and a few kinds are skipped:
+  // an already capitalized word "fixed" to ALL CAPS (Sam → SAM) and a word cut to one letter (im → i, which loses the "am").
+  const tried = new Set();
+  const usable = (l) => {
+    const { start, end } = l.span();
+    const word = fixed.slice(start, end);
+    const first = l.suggestions()[0];
+    if (!first || /^u$/i.test(word) || tried.has(`${start}:${word}`)) return false;
+    const to = first.get_replacement_text();
+    return !(/^[A-Z][a-z]/.test(word) && to === word.toUpperCase()) && !(word.length > 1 && to.length === 1);
+  };
   for (let i = 0; i < 40; i++) {
-    const lint = (await harper.lint(fixed)).find((l) => l.suggestions().length && !/^u$/i.test(fixed.slice(l.span().start, l.span().end)));
+    const lint = (await harper.lint(fixed)).find(usable);
     if (!lint) break;
     const span = lint.span();
     const before = fixed.slice(span.start, span.end);
+    tried.add(`${span.start}:${before}`);
     const next = await harper.applySuggestion(fixed, lint, lint.suggestions()[0]);
     if (next === fixed) break;
     changes.push(`${before} → ${next.slice(span.start, span.end + (next.length - fixed.length)) || '∅'}`);

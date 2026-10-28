@@ -162,3 +162,11 @@ test('grammar fixer leaves other languages and chat shorthand alone', async () =
   const chat = await fixGrammar('can u send me teh report');
   assert.strictEqual(chat.fixed, 'can u send me the report');
 });
+
+test('grammar fixer keeps names, does not shrink words to one letter and does not loop', async () => {
+  assert.strictEqual((await fixGrammar('Dear Sam, I hope your well.')).fixed, 'Dear Sam, I hope your well.');
+  assert.strictEqual((await fixGrammar('Ill be there at 5 and im bringing cake')).fixed, 'Ill be there at 5 and im bringing cake');
+  const loop = await fixGrammar("They're going to there house");
+  assert.ok(loop.changes.length < 5, `${loop.changes.length} changes`);
+  assert.strictEqual(loop.fixed, "They're going to their house");
+});
