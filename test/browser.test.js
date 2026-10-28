@@ -110,3 +110,11 @@ test('redaction catches env-style secret names and bearer tokens', () => {
   assert.equal(count, 3);
   assert.ok(!/supersecret|wJalrXUtn|abcdef1234567890/.test(text));
 });
+
+test('redaction catches quoted phrases, "is:", pw, bare PIN/CVV and session cookies', () => {
+  const input = 'password: "my secret phrase", my password is: hunter2, pw: hunter22, pin 4829, cvv 123, Cookie: sessionid=abc123def456';
+  const { text, count } = redact(input);
+  for (const leaked of ['secret phrase', 'hunter2', 'hunter22', '4829', 'cvv 123', 'abc123def456']) assert.ok(!text.includes(leaked), leaked);
+  assert.strictEqual(count, 6);
+  assert.strictEqual(redact('the pin code is fine, enter your password to continue').count, 0);
+});

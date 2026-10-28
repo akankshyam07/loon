@@ -365,3 +365,13 @@ As a user, recurring reminders are handled well by routines, so the earlier worr
 Fixed in parseCommand. A reminder with a time but no task is titled "Reminder", and focus accepts the length before the word or "an hour". Test added in test/assistant.test.js.
 
 Left for later. "remindme to…", "timer 1h30", "set timer 5" and "cancel my timer" are not matched. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-28 — memory and privacy, redaction (third pass)
+
+Tried 31 snippets such as "password: 'my secret phrase'", "my password is: hunter2", "pw: hunter22", "pin 4829", "cvv 123", "Cookie: sessionid=…", "passport number: X1234567" and "enter your password to continue".
+
+As a user, the worst problem was that a quoted password with spaces went through whole, because the value stopped at the first space. "password is: x", "pw: x" and a PIN or CVV typed without a colon were also left in place, and so was a session cookie value.
+
+Fixed: the password, PIN and CVV rule now reads quoted values with spaces, accepts "is:" and "pw", and a second rule covers "pin 4829" and "cvv 123". The secret-name rule also knows sessionid. Test added in test/browser.test.js. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+Left for later: a bare nine digit SSN, SSNs with spaces, "token: abc" and other short values, Set-Cookie with "session=", bank account and routing numbers, and passport numbers are still not redacted.
