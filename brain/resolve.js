@@ -36,6 +36,8 @@ const CODE_ANSWERS = [
   },
   {
     match: /^(what can (you|u) do( for me)?|help( me)?|what do you do|how do (i|you) use (you|this))$/,
+    // A bare "help" inside a conversation asks for help with that conversation, not for this list.
+    openingOnly: /^help( me)?$/,
     answer: () => ({
       mood: 'happy',
       text: [
@@ -241,7 +243,8 @@ class Resolver {
     let prefix = '';
 
     if (taskId === 'ask' && !packet.text) {
-      const template = CODE_ANSWERS.find((c) => c.match.test(instantKey(packet.question)));
+      const key = instantKey(packet.question);
+      const template = CODE_ANSWERS.find((c) => c.match.test(key) && !(!firstInThread && c.openingOnly?.test(key)));
       if (template) {
         const { text, mood } = template.answer();
         onText(text);

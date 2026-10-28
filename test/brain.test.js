@@ -72,6 +72,17 @@ test('ladder: instant answers survive smart quotes, "?!", "right now" and a wake
   }
 });
 
+test('ladder: a bare "help" inside a conversation goes to the model with the thread, not the feature list', async () => {
+  const brain = { modelId: () => 'fake', chat: async (_p, { onText }) => onText('Sure, what part?') };
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));
+  const resolver = new Resolver({ brain, cacheFile: path.join(dir, 'c.json'), countsFile: path.join(dir, 'n.json') });
+  const history = [{ question: 'explain bloom filters', answer: 'They test set membership.' }];
+  for (const q of ['help', 'help me!']) {
+    assert.notStrictEqual((await resolver.ask(q, { onText: () => {}, firstInThread: false, history })).tier, 'code', q);
+  }
+  assert.strictEqual((await resolver.ask('what can you do', { onText: () => {}, firstInThread: false, history })).tier, 'code');
+});
+
 test('ladder: arithmetic, percentages and unit conversions are answered by code', async () => {
   const brain = { modelId: () => 'fake', chat: async () => { throw new Error('model should not run'); } };
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));

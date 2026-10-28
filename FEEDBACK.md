@@ -301,3 +301,13 @@ As a user, the worst problems were wrong edits on good text. A name like Sam was
 Fixed: fixGrammar tries each span once, skips turning a capitalized word into all caps, and skips cutting a word to one letter. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: the first suggestion is sometimes wrong ("Wich" becomes "Wish", "adress" becomes "a dress", "untill" becomes "distill", "thx" becomes "the"). "your welcome" and "Ill" are not flagged. These need a better way to pick among suggestions. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-28 — follow-up conversations (second pass)
+
+Tried 17 typed messages inside a bubble thread, such as "thanks", "help", "ok", "yes", "date", "2+2", "what is 15% of 80", "shorter", "explain more" and "cheers", with and without a selection as context.
+
+As a user, the worst problem was that typing "help" or "help me!" after an answer returned the list of Loon features instead of helping with the conversation. With a selection every message correctly went to the model with the thread.
+
+Fixed: a bare "help" or "help me" only gets the feature list on the first turn of a thread. Later it goes to the model with the history. "what can you do" still shows the list. Test added in test/brain.test.js and checked to fail before the change.
+
+Left for later: "ok", "yes" and "no" mid-thread cost a full model call. Time, date, sums and greetings still answer instantly mid-thread, which seems right. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
