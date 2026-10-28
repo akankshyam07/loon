@@ -179,3 +179,12 @@ test('grammar fixer keeps names, does not shrink words to one letter and does no
   assert.ok(loop.changes.length < 5, `${loop.changes.length} changes`);
   assert.strictEqual(loop.fixed, "They're going to their house");
 });
+
+test('menu: veggie burgers count as vegetarian, two prices on one line name one dish, currency is kept', () => {
+  const items = food.extractMenu('Soup $6 | Bowl $8\nVeggie Burger $11\nHamburger $12\nFish & Chips £13.50');
+  assert.strictEqual(items[0].name, 'Soup');
+  const picks = food.recommend(items, 'vegetarian').text;
+  assert.match(picks, /Veggie Burger/);
+  assert.doesNotMatch(picks, /\*\*Hamburger/);
+  assert.match(food.recommend(items, 'protein').text, /£13\.50/);
+});

@@ -375,3 +375,13 @@ As a user, the worst problem was that a quoted password with spaces went through
 Fixed: the password, PIN and CVV rule now reads quoted values with spaces, accepts "is:" and "pw", and a second rule covers "pin 4829" and "cvv 123". The secret-name rule also knows sessionid. Test added in test/browser.test.js. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
 
 Left for later: a bare nine digit SSN, SSNs with spaces, "token: abc" and other short values, Set-Cookie with "session=", bank account and routing numbers, and passport numbers are still not redacted.
+
+## 2026-10-28 — food and menu (third pass)
+
+Tried a 16 line menu with "Soup $6 | Bowl $8", a veggie burger, a hamburger, pound and euro prices, "Chicken-free Pad Thai", "MP" prices and a price with a note after it.
+
+As a user, the worst problems were that the Veggie Burger was left out of the vegetarian picks because "burger" counts as meat, that a euro or pound price was shown with a dollar sign, and that "Soup $6 | Bowl $8" became one dish named "Soup | Bowl $8".
+
+Fixed: meat-free qualifiers such as veggie, vegan, plant-based and meatless before burger, sausage and similar words no longer count as meat. Menu items keep their currency sign and the recommendation shows it. A line with two prices names the dish from the text before the first price. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: "Soup $6 | Bowl $8" should really be two dishes, "Margherita 12 / 16" is dropped, and "MP" lines are taken as the description of the dish above. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
