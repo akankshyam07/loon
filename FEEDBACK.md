@@ -335,3 +335,13 @@ Left for later: country variants such as wellsfargo.com.au and login.gov.uk are 
 ## 2026-10-28 — CI repair, sign-up pages were treated as private
 
 CI on the PR failed four screen-control checks because the Tea Club sign-up fixture was treated as a private page. An earlier change made any `autocomplete="...-password"` field mark the whole page sensitive, which also caught `new-password` on sign-up forms. The page-kind rule now only looks at `current-password` (a login form) next to `type="password"` and one-time codes. A test now keeps sign-up pages non-sensitive.
+
+## 2026-10-28 — translation and definitions (third pass)
+
+Tried 25 dictionary phrasings such as "define: ennui", "define ephemeral please", "ephemeral meaning", "ephemeral definition", "DEFINE Ephemeral!", "what does 'ephemeral' mean in this context" and "what do you mean".
+
+As a user, "define ephemeral please" looked up the term "ephemeral please" and found nothing, and the one-word forms "X meaning" and "X definition" went to the model although WordNet answers them offline.
+
+Fixed: dictionaryTerm in brain/define.js now drops a trailing "please", "pls" or "for me", accepts "define:" with a colon, and matches "X meaning" and "X definition". Pronoun forms such as "this meaning" still go to the model. Test added in test/brain.test.js.
+
+Left for later: "pls define X" with a leading polite word, "what does X mean in english" and "synonym for X" still go to the model. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.

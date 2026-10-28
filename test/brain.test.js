@@ -131,3 +131,12 @@ test('ladder: templates skip the model, repeats hit the cache, follow-ups do not
   assert.strictEqual(modelCalls, 2);
   assert.deepStrictEqual(resolver.counts.tiers, { code: 1, cache: 1, local: 2 });
 });
+
+test('dictionaryTerm accepts a colon, a polite tail and "X meaning"', () => {
+  const { dictionaryTerm } = require('../brain/define');
+  assert.strictEqual(dictionaryTerm('define: ennui'), 'ennui');
+  assert.strictEqual(dictionaryTerm('define ephemeral please'), 'ephemeral');
+  assert.strictEqual(dictionaryTerm('ephemeral meaning'), 'ephemeral');
+  assert.strictEqual(dictionaryTerm('Ephemeral definition?'), 'Ephemeral');
+  assert.strictEqual(dictionaryTerm('this meaning'), null);
+});
