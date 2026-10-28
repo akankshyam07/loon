@@ -48,6 +48,12 @@ test('TextRank returns central sentences in page order', () => {
 test('selection kinds treat unspaced CJK text by length', () => {
   assert.strictEqual(classifySelection('人工智能'), 'word');
   assert.strictEqual(classifySelection('我今天想去公园散步，天气很好。'), 'sentence');
+  assert.strictEqual(classifySelection('npm install express'), 'code');
+  assert.strictEqual(classifySelection('sudo apt-get update'), 'code');
+  assert.strictEqual(classifySelection("git commit -m 'fix'"), 'code');
+  assert.strictEqual(classifySelection('SELECT * FROM users WHERE id = 1;'), 'code');
+  assert.strictEqual(classifySelection('git is great'), 'word');
+  assert.strictEqual(classifySelection('Mr. Jones arrived at 5 p.m. today.'), 'sentence');
   assert.strictEqual(classifySelection('你好，今天天气很好。我们去公园玩吧。'), 'paragraph');
 });
 

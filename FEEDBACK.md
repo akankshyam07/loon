@@ -281,3 +281,13 @@ As a user, the worst problem was that "every 2 weeks on friday remind me to subm
 Fixed: parseSchedule now reads "every N weeks", "every other week", "biweekly" and "fortnightly" for a single weekday, starting on the next such day, and describes it as "every other Friday". Two weekdays with a multi-week cycle are not understood, so the card asks instead of drifting. Test added in test/routines.test.js.
 
 Left for later: "twice a day", "every first monday of the month", "stop the gym reminder" and "cancel my routines" are not routine commands. "delete all routines" answers that no routine is named "all routines", which is honest but not helpful. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-28 — selection chips and classification (second pass)
+
+Tried 28 selections such as "npm install express", "git commit -m 'fix'", "sudo apt-get update", "ls -la /tmp", SQL queries, "git is great", "Mr. Jones arrived at 5 p.m. today.", URLs, emails, prices and emoji.
+
+As a user, the worst problem was that shell commands and SQL were treated as plain words or sentences. Selecting "npm install express" offered Define, and a SQL query got prose chips instead of the code ones. A short sentence with "Mr." and "p.m." was offered paragraph chips.
+
+Fixed: classifySelection now treats SQL statements and lines that start with a known tool plus a flag, path or subcommand as code. Common abbreviations no longer count as sentence ends. Tests added in test/browser.test.js.
+
+Left for later: a lone "x = 5" is still a word. Spanish questions starting with "¿" count as a word when short. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
