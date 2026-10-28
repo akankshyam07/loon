@@ -155,6 +155,15 @@ test('JSON → DTO handles top-level arrays, plain values and multi-class Java',
   assert.ok(!/package io\.quicktype/.test(nested), 'no package line left in the extra classes');
 });
 
+test('Java DTOs keep JSON names that getters would not bind, without the converter boilerplate', async () => {
+  const java = await jsonToDto('{"created_at": "x", "first-name": "A", "userId": 3}', 'java');
+  assert.match(java, /@JsonProperty\("created_at"\)/);
+  assert.match(java, /@JsonProperty\("userId"\)/);
+  assert.ok(!/Converter/.test(java), 'no Converter class');
+  const plain = await jsonToDto('{"id": 7, "name": "Loon"}', 'java');
+  assert.ok(!/JsonProperty/.test(plain), 'simple keys stay annotation free');
+});
+
 test('grammar fixer leaves other languages and chat shorthand alone', async () => {
   const spanish = await fixGrammar('Hola, como estas? Quiero un cafe por favor.');
   assert.strictEqual(spanish.fixed, 'Hola, como estas? Quiero un cafe por favor.');

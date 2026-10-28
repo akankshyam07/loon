@@ -311,3 +311,13 @@ As a user, the worst problem was that typing "help" or "help me!" after an answe
 Fixed: a bare "help" or "help me" only gets the feature list on the first turn of a thread. Later it goes to the model with the history. "what can you do" still shows the list. Test added in test/brain.test.js and checked to fail before the change.
 
 Left for later: "ok", "yes" and "no" mid-thread cost a full model call. Time, date, sums and greetings still answer instantly mid-thread, which seems right. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-28 — developer help, JSON to DTO (second pass)
+
+Tried 8 JSON inputs such as keys like "first-name", "created_at", "2fa" and "userId", nested arrays with optional fields, mixed types, nulls only, empty arrays, empty objects and large ids, as Java and TypeScript.
+
+As a user, the worst problem was that a Java DTO from an API response with snake_case keys had no way to bind them. `created_at` became `createdAt` with plain getters, so in Spring Boot the field would stay null with no error. The same went for `userId`, whose getter is `getUserID`.
+
+Fixed: when any key is not a plain lowercase word, Java output uses Jackson `@JsonProperty` names and the generated Converter class is dropped. Simple keys still give the short plain classes. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: the `// Address.java` separators stay between classes, "2fa" becomes `the2Fa`, and mixed-type arrays give an odd class in Java. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
