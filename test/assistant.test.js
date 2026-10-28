@@ -194,4 +194,8 @@ test('history questions drop time words and "you" instead of searching for them'
   assert.deepStrictEqual(parseCommand('what did i read about taxes yesterday'), { action: 'recall', query: 'taxes' });
   assert.deepStrictEqual(parseCommand('what did i ask you about the laptop'), { action: 'recall', query: 'the laptop' });
   assert.deepStrictEqual(parseCommand('show my history'), { action: 'recall', query: '' });
+  assert.deepStrictEqual(parseCommand('did I look up kubernetes'), { action: 'recall', query: 'kubernetes' });
+  assert.deepStrictEqual(parseCommand('have I looked up docker before?'), { action: 'recall', query: 'docker' });
+  assert.deepStrictEqual(parseCommand('what did i search for'), { action: 'recall', query: '' });
+  assert.deepStrictEqual(parseCommand('what did I ask last'), { action: 'recall', query: '' });
 });

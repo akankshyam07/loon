@@ -88,6 +88,9 @@ function parseCommand(input, now = new Date()) {
     return { action: 'recall', query: recallQuery(m[1]) };
   }
   if (/^(?:show |open )?(?:my )?(?:history|recent activity)\??$/i.test(text)) return { action: 'recall', query: '' };
+  if ((m = text.match(/^(?:did i|have i) (?:ever )?(?:look(?:ed)? up|search(?:ed)?(?: for)?|ask(?:ed)?(?: about)?|read about) (.+?)(?: before)?\??$/i))) {
+    return { action: 'recall', query: recallQuery(m[1]) };
+  }
   if ((m = text.match(/^run (?:the |my )?(?:shortcut )?(.+?)(?: shortcut)?$/i))) return { action: 'shortcut', name: tidy(m[1]) };
   if ((m = text.match(/^(?:note|take a note|save a note|jot down)[:\s]+(.+)$/i))) return { action: 'note', text: tidy(m[1]) };
   if ((m = text.match(/^remember[:,]?\s+(?:that )?(.+)$/i))) return { action: 'remember', text: tidy(m[1]) };
@@ -107,8 +110,8 @@ function parseCommand(input, now = new Date()) {
 // History search has no date filter, so "yesterday" or "last week" as a search word only finds nothing. Drop the
 // time words and the "you (about)" of "what did I ask you about X".
 function recallQuery(raw) {
-  return tidy(raw.replace(/\b(?:today|yesterday|recently|lately|earlier|before|(?:last|this) (?:week|month|night|morning|time))\b/gi, ' ')
-    .replace(/^\s*you(?: (?:about|on|for))?\b/i, ' ').replace(/\s+/g, ' '));
+  return tidy(raw.replace(/\b(?:today|yesterday|recently|lately|earlier|before|(?:last|this) (?:week|month|night|morning|time)|last)\b/gi, ' ')
+    .replace(/^\s*(?:you(?: (?:about|on|for))?|for)\b/i, ' ').replace(/\s+/g, ' '));
 }
 
 // Plain-language summary for confirm cards and voice ("Reminder to call mom, today at 5:00 PM").
