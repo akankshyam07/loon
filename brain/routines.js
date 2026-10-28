@@ -90,6 +90,7 @@ function parseSchedule(input, now = new Date(), { allowOnce = false } = {}) {
     || take(state, /\b(?:every|each)\s+month\s+on\s+the\s+(\d{1,2})(?:st|nd|rd|th)?\b/i)
     || take(state, /\bmonthly\s+on\s+the\s+(\d{1,2})(?:st|nd|rd|th)?\b/i);
   const everyN = take(state, /\bevery\s+(other|second|\d+)\s+days?\b/i);
+  const everyWeeks = take(state, /\bevery\s+(other|second|\d+)\s+weeks?\b/i) || take(state, /\b(?:bi-?weekly|fortnightly)\b/i);
   let days = null;
   if (take(state, /\b(?:every\s+|on\s+)?(?:weekdays?|work\s?days?)\b/i)) days = WEEKDAYS;
   else if (take(state, /\b(?:every\s+|on\s+)?weekends?\b/i)) days = WEEKEND;
@@ -105,7 +106,7 @@ function parseSchedule(input, now = new Date(), { allowOnce = false } = {}) {
   const timeMatch = take(state, new RegExp(String.raw`\bat\s+(${TIME})(?![\w:])`, 'i')) || take(state, /\b(\d{1,2}(?::\d{2})?\s*(?:am|pm)|noon|midnight)\b/i);
   const time = timeMatch ? parseTime(timeMatch[1], part) : PART_TIMES[part] || '09:00';
 
-  const recurring = window || interval || monthDay || everyN || days || weekly || daily;
+  const recurring = window || interval || monthDay || everyN || everyWeeks || days || weekly || daily;
   if (!recurring) {
     if (!allowOnce) return { schedule: null, rest: tidyRest(input) };
     const [found] = chrono.parse(String(input), now, { forwardDate: true });
@@ -133,6 +134,14 @@ function parseSchedule(input, now = new Date(), { allowOnce = false } = {}) {
     const d = Number(monthDay[1]);
     if (d < 1 || d > 31) return { schedule: null, rest: tidyRest(state.text) };
     return done({ type: 'daily', time, days: ALL_DAYS, monthDay: d });
+  }
+  if (everyWeeks) {
+    // One weekday only: the 14-day cycle starts on the next such day, so a second day would drift off it.
+    const weeks = /^\d+$/.test(everyWeeks[1] || '') ? Number(everyWeeks[1]) : 2;
+    if (days && days.length > 1) return { schedule: null, rest: tidyRest(state.text) };
+    const first = new Date(now.getFullYear(), now.getMonth(), now.getDate(), ...hm(time));
+    while (first.getTime() <= at || first.getDay() !== (days ? days[0] : now.getDay())) first.setDate(first.getDate() + 1);
+    return done({ type: 'daily', time, days: [first.getDay()], every: weeks * 7, anchor: isoDay(first) });
   }
   if (everyN) {
     const every = /^(?:other|second)$/i.test(everyN[1]) ? 2 : Number(everyN[1]);
@@ -222,6 +231,7 @@ function describeSchedule(s) {
   }
   const at = ` at ${formatTime(s.time)}`;
   if (s.monthDay) return `the ${ordinal(s.monthDay)} of every month${at}`;
+  if (s.every > 1 && s.every % 7 === 0) return `every ${s.every === 14 ? 'other' : `${s.every / 7} weeks on`} ${DAY_NAMES[s.days[0]]}${at}`;
   if (s.every > 1) return `${s.every === 2 ? 'every other day' : `every ${s.every} days`}${at}`;
   return `${describeDays(s.days || ALL_DAYS)}${at}`;
 }

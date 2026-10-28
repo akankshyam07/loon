@@ -424,3 +424,14 @@ test('companion: routine phrasings reach the routine card before Apple Reminders
   assert.strictEqual((await say('remind me to call mom at 5')).command.action, 'reminder');
   assert.match((await say('show my routines')).message, /No routines yet/);
 });
+
+test('every N weeks keeps its cycle instead of turning into a weekly routine', () => {
+  const p = R.parseRoutine('every 2 weeks on friday remind me to submit timesheet', { now: NOW });
+  assert.strictEqual(R.describeSchedule(p.schedule), 'every other Friday at 9:00 AM');
+  assert.strictEqual(p.payload.message, 'submit timesheet');
+  const first = R.nextRun(p.schedule, NOW.getTime());
+  assert.strictEqual(new Date(first).getDay(), 5);
+  assert.strictEqual(new Date(R.nextRun(p.schedule, first) - first).getTime(), 14 * 864e5);
+  assert.strictEqual(R.describeSchedule(R.parseRoutine('biweekly remind me to pay', { now: NOW }).schedule), 'every other Monday at 9:00 AM');
+  assert.strictEqual(R.parseSchedule('every 2 weeks on mon and wed', NOW).schedule, null); // two days would drift off one cycle
+});
