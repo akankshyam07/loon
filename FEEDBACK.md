@@ -321,3 +321,13 @@ As a user, the worst problem was that a Java DTO from an API response with snake
 Fixed: when any key is not a plain lowercase word, Java output uses Jackson `@JsonProperty` names and the generated Converter class is dropped. Simple keys still give the short plain classes. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: the `// Address.java` separators stay between classes, "2fa" becomes `the2Fa`, and mixed-type arrays give an odd class in Java. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-28 — page kinds (second pass)
+
+Tried 19 pages such as a look-alike host (chase.com.evil.com), citibank.com, wellsfargo.com.au, a checkout with a card field, an uppercase password type, and login forms that hide the password behind a text input with autocomplete hints.
+
+As a user, the worst problem was that Loon did not look away on a login form whose password box is a plain text input marked `current-password` or `one-time-code`, and on citibank.com. The look-alike host was correctly not treated as the bank.
+
+Fixed: password detection also matches `type="PASSWORD"`, `autocomplete=*-password` and `one-time-code`, and a few more banks are on the sensitive list. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: country variants such as wellsfargo.com.au and login.gov.uk are still not on the list, and non-English menus stay "other". The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.

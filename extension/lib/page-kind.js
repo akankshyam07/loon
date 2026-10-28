@@ -9,6 +9,7 @@
     'accounts.google.com', 'login.microsoftonline.com', 'login.live.com', 'appleid.apple.com', 'id.apple.com',
     'mychart.com', 'healthcare.gov', 'irs.gov', 'ssa.gov', 'login.gov', 'hsbc.com', 'tdbank.com', 'ally.com',
     'sofi.com', 'okta.com', 'anthem.com', 'kp.org', 'myuhc.com',
+    'citibank.com', 'chime.com', 'monzo.com', 'barclays.co.uk', 'lloydsbank.com', 'natwest.com',
   ];
   const SENSITIVE_LABELS = /(^|\.)(mychart|myhealth|patientportal)[\w-]*\./;
   const CODE_DOMAINS = ['github.com', 'gitlab.com', 'bitbucket.org', 'stackoverflow.com', 'stackexchange.com', 'developer.mozilla.org'];
@@ -61,7 +62,7 @@
 
   function detectPage(doc, location) {
     const host = location.hostname.replace(/^www\./, '');
-    const passwordField = doc.querySelector('input[type="password"]');
+    const passwordField = doc.querySelector('input[type="password" i], input[autocomplete$="-password"], input[autocomplete="one-time-code"]');
     const cardField = doc.querySelector('input[autocomplete^="cc-"], input[name*="card" i][inputmode="numeric"]');
     if (hostMatches(host, SENSITIVE_DOMAINS) || SENSITIVE_LABELS.test(host) || passwordField || cardField) {
       return { kind: 'sensitive', sensitive: true, reason: passwordField ? 'password field' : cardField ? 'card field' : 'sensitive site' };
