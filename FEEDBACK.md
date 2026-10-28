@@ -355,3 +355,13 @@ As a user, typing a region code like "pt-BR" in the reply language box saved "pt
 Fixed: cleanPersonal in brain/personal.js now keeps hyphens, collapses spaces and trims the language. Test added in test/personal.test.js.
 
 Left for later: a base URL typed without a scheme such as "localhost:11434/v1" gets an https:// message that does not suggest adding http://. A corrupted settings file with an object in "about" would save "[object Object]". The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-28 — reminders, timers and focus (third pass)
+
+Tried 32 phrasings such as "remind me every day at 9 to take meds", "remind me in half an hour", "remind me on friday", "remindme to call bob", "timer 1h30", "start a 25 minute focus", "focus for an hour" and "cancel my timer". I also ran the recurring ones through the routine parser.
+
+As a user, recurring reminders are handled well by routines, so the earlier worry about "every day" was already solved. The annoyances were that "remind me on friday" made a reminder titled "on friday", and that "start a 25 minute focus" and "focus for an hour" did nothing.
+
+Fixed in parseCommand. A reminder with a time but no task is titled "Reminder", and focus accepts the length before the word or "an hour". Test added in test/assistant.test.js.
+
+Left for later. "remindme to…", "timer 1h30", "set timer 5" and "cancel my timer" are not matched. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.

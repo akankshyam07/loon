@@ -59,7 +59,8 @@ function parseCommand(input, now = new Date()) {
   if ((m = text.match(/^remind me (?:to |about )?(.+)$/i))) {
     const { date, rest } = extractWhen(m[1], now);
     // "remind me tomorrow to buy milk" leaves the "to" in front of the task.
-    const title = tidy(rest.replace(/^to\s+/i, '')) || tidy(m[1]);
+    // "remind me on friday" has no task; a reminder titled "on friday" would be noise.
+    const title = tidy(rest.replace(/^to\s+/i, '')) || (date ? 'Reminder' : tidy(m[1]));
     return /^(?:to|about)$/i.test(title) ? null : { action: 'reminder', title, when: date };
   }
   if ((m = text.match(/^(?:add|create|schedule|put|book) (?:an? )?(.+)$/i))) {
@@ -99,8 +100,10 @@ function parseCommand(input, now = new Date()) {
     return { action: 'forget', text: tidy(m[1]), all: /^(?:about )?(?:everything|all|all of it)\b/i.test(tidy(m[1])) };
   }
   if (/^(?:good morning|(?:what'?s|what is) (?:on )?my (?:day|schedule|agenda)(?: (?:like )?today)?|my day|plan my day|what do i have today)\??$/i.test(text)) return { action: 'today' };
-  if ((m = text.match(/^(?:start (?:a )?)?focus(?: mode| timer| session)?(?: for)? (\d+)\s*(m|mins?|minutes?|h|hrs?|hours?)?$/i))) {
-    return { action: 'focus', minutes: Math.min(Number(m[1]) * (/^h/i.test(m[2] || '') ? 60 : 1), 240) };
+  if ((m = text.match(/^(?:start (?:a )?)?focus(?: mode| timer| session)?(?: for)? (\d+|an?)\s*(m|mins?|minutes?|h|hrs?|hours?)?$/i)) || (m = text.match(/^(?:start |set )?(?:a |an )?(\d+)[\s-]*(m|mins?|minutes?|h|hrs?|hours?)? focus(?: mode| timer| session)?$/i))) {
+    const n = /^an?$/i.test(m[1]) ? 1 : Number(m[1]);
+    if (/^an?$/i.test(m[1]) && !/^h/i.test(m[2] || '')) return null; // "focus a" is not a duration
+    return { action: 'focus', minutes: Math.min(n * (/^h/i.test(m[2] || '') ? 60 : 1), 240) };
   }
   if (/^(?:start (?:a )?focus(?: timer| session)?|pomodoro)$/i.test(text)) return { action: 'focus', minutes: 25 };
   if (/^(?:stop|end|cancel) (?:the )?focus(?: mode| timer| session)?$/i.test(text)) return { action: 'focus', minutes: 0 };

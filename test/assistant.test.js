@@ -51,6 +51,13 @@ test('commands: timers, alarms and "reminder:" forms become reminders; "focus 90
   assert.strictEqual(parseCommand('timer', NOW), null);
 });
 
+test('commands: focus with the length first, and a reminder with only a day gets a plain title', () => {
+  assert.deepStrictEqual(parseCommand('start a 25 minute focus', NOW), { action: 'focus', minutes: 25 });
+  assert.deepStrictEqual(parseCommand('focus for an hour', NOW), { action: 'focus', minutes: 60 });
+  assert.strictEqual(parseCommand('focus a', NOW), null);
+  assert.strictEqual(parseCommand('remind me on friday', NOW).title, 'Reminder');
+});
+
 test('notes: markdown per day, entries with sources, search', () => {
   const notes = new Notes(tmp());
   const file = notes.save({ title: 'Why cats love boxes', text: 'Enclosed spaces feel safe.', url: 'https://example.com/cats' });
