@@ -153,6 +153,8 @@ test('custom instructions sit right after the fixed system prompt, identical acr
   assert.doesNotMatch(instructionsBlock(settings.personal, { privacy: true }), /CS student/);
   assert.strictEqual(cleanPersonal({ about: 'x'.repeat(2000), length: 'huge', tone: 1 }).about.length, 600);
   assert.deepStrictEqual([cleanPersonal({ length: 'huge' }).length, cleanPersonal({ tone: 1 }).tone], ['normal', 'playful']);
+  // a language typed with an emoji, a region code or extra spaces stays readable in "Reply in X."
+  assert.deepStrictEqual(['Español 🇪🇸', 'pt-BR', '  Brazilian   Portuguese '].map((language) => cleanPersonal({ language }).language), ['Español', 'pt-BR', 'Brazilian Portuguese']);
 });
 
 test('"Remember this?" detection: stated preferences and facts only', () => {

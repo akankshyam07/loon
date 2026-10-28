@@ -345,3 +345,13 @@ As a user, "define ephemeral please" looked up the term "ephemeral please" and f
 Fixed: dictionaryTerm in brain/define.js now drops a trailing "please", "pls" or "for me", accepts "define:" with a colon, and matches "X meaning" and "X definition". Pronoun forms such as "this meaning" still go to the model. Test added in test/brain.test.js.
 
 Left for later: "pls define X" with a leading polite word, "what does X mean in english" and "synonym for X" still go to the model. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-28 — settings UI (custom instructions and API settings)
+
+Tried 20 inputs on the Settings validators in plain Node, such as a long "About you" with newlines, a reply language typed as "Español 🇪🇸", "pt-BR", "Brazilian   Portuguese", non-string values, model names with spaces or a leading dash, and custom base URLs with and without a scheme.
+
+As a user, typing a region code like "pt-BR" in the reply language box saved "ptBR", and an emoji after the language left a trailing space so the prompt read "Reply in Español .".
+
+Fixed: cleanPersonal in brain/personal.js now keeps hyphens, collapses spaces and trims the language. Test added in test/personal.test.js.
+
+Left for later: a base URL typed without a scheme such as "localhost:11434/v1" gets an https:// message that does not suggest adding http://. A corrupted settings file with an object in "about" would save "[object Object]". The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.

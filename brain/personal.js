@@ -19,7 +19,7 @@ function cleanPersonal(input = {}) {
     length: CHOICES.length.includes(p.length) ? p.length : PERSONAL_DEFAULTS.length,
     tone: CHOICES.tone.includes(p.tone) ? p.tone : PERSONAL_DEFAULTS.tone,
     emoji: p.emoji !== false,
-    language: clip(p.language, LIMITS.language).replace(/[^\p{L} ]/gu, ''),
+    language: clip(p.language, LIMITS.language).replace(/[^\p{L}\- ]/gu, '').replace(/\s+/g, ' ').trim(),
   };
 }
 
