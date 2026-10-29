@@ -465,3 +465,13 @@ As a user, the worst problem was that a selected "import React from "react"" got
 Fixed: classifySelection now treats one-line import, include, using and package statements as code. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: a lone "x = 5" and "x => x*2" are still words, a bare stack frame line such as "at Object.<anonymous> (/a/b.js:1:1)" is a word, and URLs, emails and Windows paths get word chips with no link or copy action.
+
+## 2026-10-29 — history (third pass)
+
+Tried 22 phrasings such as "what was my last question", "show me my history", "what have I asked", "recent searches", "my recent questions", "what did I ask earlier about spring boot" and "what did I ask about".
+
+As a user, the worst problem was that several natural ways to ask for recent history were not understood and went to the language model, which cannot see my history. "what did I ask earlier about spring boot" also searched for "about spring boot", and a bare "what did I ask about" searched for the word "about".
+
+Fixed: more recent-history phrasings now open the history list, and a leading "about" or "on" is dropped from the search words. Tests added in test/assistant.test.js.
+
+Left for later: "clear my history" and "wipe history" are still not spoken commands, since deleting needs a confirm card. "what did we talk about" is not matched.

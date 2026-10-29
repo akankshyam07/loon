@@ -88,7 +88,7 @@ function parseCommand(input, now = new Date()) {
   if ((m = text.match(/^(?:what did i (?:ask|look up|search(?: for)?|read|learn|find out)|when did i (?:ask|look up|read)|find my (?:question|search)) (?:about |on |for )?(.+?)\??$/i))) {
     return { action: 'recall', query: recallQuery(m[1]) };
   }
-  if (/^(?:show |open )?(?:my )?(?:history|recent activity)\??$/i.test(text)) return { action: 'recall', query: '' };
+  if (/^(?:(?:show|open)(?: me)? )?(?:my )?(?:(?:recent|past|previous) (?:questions|searches|lookups)|history|recent activity)\??$/i.test(text) || /^what (?:was|were) my (?:last|latest|recent|previous) (?:questions?|searches|lookups?)\??$/i.test(text) || /^what (?:have|did) i (?:asked?|looked up|searched)\??$/i.test(text)) return { action: 'recall', query: '' };
   if ((m = text.match(/^(?:did i|have i) (?:ever )?(?:look(?:ed)? up|search(?:ed)?(?: for)?|ask(?:ed)?(?: about)?|read about) (.+?)(?: before)?\??$/i))) {
     return { action: 'recall', query: recallQuery(m[1]) };
   }
@@ -114,7 +114,7 @@ function parseCommand(input, now = new Date()) {
 // time words and the "you (about)" of "what did I ask you about X".
 function recallQuery(raw) {
   return tidy(raw.replace(/\b(?:today|yesterday|recently|lately|earlier|before|(?:last|this) (?:week|month|night|morning|time)|last)\b/gi, ' ')
-    .replace(/^\s*(?:you(?: (?:about|on|for))?|for)\b/i, ' ').replace(/\s+/g, ' '));
+    .replace(/^\s*(?:you(?: (?:about|on|for))?|about|on|for)\b/i, ' ').replace(/\s+/g, ' '));
 }
 
 // Plain-language summary for confirm cards and voice ("Reminder to call mom, today at 5:00 PM").
