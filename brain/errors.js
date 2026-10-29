@@ -149,6 +149,48 @@ const KNOWN = [
     fix: ['Check the spelling.', 'Install it (`brew install <name>` on macOS).', 'Tools like nvm or conda need their init lines in `~/.zshrc`, then open a new terminal.'],
   },
   {
+    match: /ERESOLVE/,
+    title: 'npm dependency conflict',
+    explain: 'Two packages need versions of a dependency that cannot both be installed. The lines under ERESOLVE name the packages that disagree.',
+    fix: ['Read which package wants which version and update the older one.', 'If you trust the mismatch, `npm install --legacy-peer-deps` skips the peer check.'],
+  },
+  {
+    match: /ENOSPC|No space left on device/i,
+    title: 'Disk full',
+    explain: 'The disk has no free space left. (Watchers can also report ENOSPC when Linux runs out of inotify watches.)',
+    fix: ['Check space with `df -h` and clear caches, old builds or downloads.', 'If `df` shows free space, raise `fs.inotify.max_user_watches`.'],
+  },
+  {
+    match: /EMFILE|too many open files/i,
+    title: 'Too many open files',
+    explain: 'The process hit the limit on open file handles, often a file watcher or a loop that opens files without closing them.',
+    fix: ['Close files or streams when done, or limit how many run at once.', 'Raise the limit for the shell with `ulimit -n 10240`.'],
+  },
+  {
+    match: /Segmentation fault|SIGSEGV/i,
+    title: 'Segmentation fault',
+    explain: 'The program touched memory it does not own and the OS killed it. It is almost always a bug in native code (C, C++, Rust unsafe, a native addon).',
+    fix: ['Run it in a debugger (`lldb` or `gdb`) or with AddressSanitizer to see the line.', 'Check for null pointers, freed memory and out of range array access.', 'If it comes from a package, update it or try another version.'],
+  },
+  {
+    match: /CERTIFICATE_VERIFY_FAILED|unable to verify the first certificate|UNABLE_TO_VERIFY_LEAF_SIGNATURE|self[- ]signed certificate/i,
+    title: 'Certificate not trusted',
+    explain: 'The TLS certificate could not be verified. Common causes are a company proxy, a self-signed certificate or a missing CA bundle.',
+    fix: ['Point the tool at the right CA file (`NODE_EXTRA_CA_CERTS` or `SSL_CERT_FILE`).', 'Do not turn verification off except for a local test server.'],
+  },
+  {
+    match: /failed to push some refs/,
+    title: 'Git push rejected',
+    explain: 'The remote has commits you do not have, so git refused to overwrite them.',
+    fix: ['Run `git pull --rebase` and push again.', 'Never force push to a shared branch unless you are sure.'],
+  },
+  {
+    match: /cannot find symbol/,
+    title: 'Cannot find symbol (Java)',
+    explain: 'The compiler found a name it does not know. It is usually a typo, a missing import, or a method that does not exist on that type.',
+    fix: ['Read the `symbol:` and `location:` lines under the error.', 'Check the spelling, the import and the type of the variable.'],
+  },
+  {
     match: /ELIFECYCLE/,
     title: 'npm script failed',
     explain: 'ELIFECYCLE only says an npm script exited with an error. The real cause is printed above it.',

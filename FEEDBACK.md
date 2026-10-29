@@ -395,3 +395,13 @@ As a user, the worst problems were wrong numbers stated with confidence. "1/2 ga
 Fixed: parseQuantity reads simple fractions before a unit, a count noun before the x in a multipack, and a hyphen in "12-ct". parsePrice divides "N for $P". Test added in test/modes.test.js.
 
 Left for later: "1 dozen", "half gallon", "Set of 4" and "100 sheets" are not parsed. "Save $5 $20" takes the saving, "$5.00 - $7.00" takes the low end, and Indian lakh grouping ("₹1,29,999") reads as 1.29. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-29 — developer help, error table (third pass)
+
+Tried 30 pasted errors such as segfaults, Rust borrow errors, React key and hydration warnings, ClassCastException, UnicodeDecodeError, "x is not iterable", EMFILE, ENOSPC, certificate failures, ERESOLVE, rejected git pushes and "cannot find symbol".
+
+As a user, the errors I hit most in a normal week still waited on the language model. An npm ERESOLVE wall of text, a full disk and a rejected push are all quick lookups.
+
+Fixed: added table entries for ERESOLVE, disk full, too many open files, segmentation fault, untrusted certificates, rejected git push and Java "cannot find symbol". Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: Rust borrow errors, React key and hydration warnings, ClassCastException, UnicodeDecodeError and "x is not iterable" still go to the model. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
