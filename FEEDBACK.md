@@ -425,3 +425,13 @@ As a user, the worst problem was that people type and say math in words. "What's
 Fixed: calc now reads percent, times, plus, minus, divided by, to the power of and squared between numbers. Cases added in test/brain.test.js. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
 
 Left for later: "how many cups in a gallon" and "how many ounces in a pound" are not parsed, "3 ft 2 in to cm" is not supported, and sqrt, "half of 50", "20% off 80", tip questions and "$20 - $5.50" with currency signs still go to the model.
+
+## 2026-10-29 — routines (third pass)
+
+Tried 29 routine phrasings such as "every weekday at 8:30am open github", "remind me every monday to water plants", "every 30 minutes remind me to stand", "on the 15th of every month remind me to pay bills", "twice a day remind me to drink water", "every day at 9am and 5pm remind me to stretch" and "every last friday remind me to x".
+
+As a user, most phrasings gave the right card. The worst problem was "every day at 9am and 5pm remind me to stretch". The card showed a daily 9:00 AM routine with the message "5pm remind me to stretch", so the 5pm run was silently lost and the text was garbled.
+
+Fixed: parseSchedule now refuses a schedule with a second time of day, so the card asks for the missing piece instead of showing a wrong one. Test added in test/routines.test.js and checked to fail before the change.
+
+Left for later: a routine holds one time of day, so "twice a day" and "9am and 5pm" need either two routines or multi-time support. "every last friday" is not understood. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
