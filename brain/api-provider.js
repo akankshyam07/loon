@@ -95,7 +95,13 @@ const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
 function checkBaseUrl(raw) {
   let url;
   try {
-    url = new URL(String(raw || '').trim());
+    let text = String(raw || '').trim();
+    // "localhost:11434/v1" has no scheme: assume http for this Mac and https for anything else.
+    if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(text)) {
+      const host = new URL(`http://${text}`).hostname;
+      text = `${LOCAL_HOSTS.has(host) ? 'http' : 'https'}://${text}`;
+    }
+    url = new URL(text);
   } catch {
     throw new Error('That base URL doesn\'t look right. Example: https://openrouter.ai/api/v1');
   }

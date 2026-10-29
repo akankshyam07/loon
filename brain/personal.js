@@ -8,7 +8,7 @@ const LANGUAGES = ['english', 'spanish', 'french', 'german', 'italian', 'portugu
   'turkish', 'arabic', 'hebrew', 'hindi', 'bengali', 'odia', 'tamil', 'telugu', 'urdu', 'chinese', 'mandarin', 'japanese', 'korean',
   'vietnamese', 'thai', 'indonesian', 'greek', 'czech'];
 
-const clip = (value, max) => String(value ?? '').replace(/\s+\n/g, '\n').trim().slice(0, max);
+const clip = (value, max) => (typeof value === 'string' ? value : '').replace(/\s+\n/g, '\n').trim().slice(0, max);
 
 // Settings come from disk and from the Settings window: keep only known keys, valid choices and capped text.
 function cleanPersonal(input = {}) {

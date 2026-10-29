@@ -485,3 +485,13 @@ As a user, the worst problem was that "remember my wifi password is hunter2" sav
 Fixed: the remember action refuses text the redactor flags as a secret. "remember to buy milk" becomes a reminder. Bare "remember to", "remember me" and "remember:" save nothing. "clear your memory", "delete my memories" and "wipe memory" now point to Settings → Memory, like "forget everything". Tests added in test/assistant.test.js.
 
 Left for later: "don't forget I'm vegan", "I'm vegetarian, remember that", "call me Sam" and "what did I tell you about food" are not parsed and go to the model, which may claim it saved something. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-29 — settings UI (second pass)
+
+Tried 18 inputs on the Settings validators in plain Node, such as base URLs typed as "localhost:11434/v1", "127.0.0.1:1234", "openrouter.ai/api/v1", "[::1]" with a port and "localhost.evil.com", plus damaged settings values (an object or array in "about", an object in the reply language, control characters).
+
+As a user, pasting "localhost:11434/v1" for a local model server was rejected with a message about https, and "127.0.0.1:1234" said the URL did not look right. Both are the most common way to type a local address. A damaged settings file turned an object into "[object Object]" in the prompt, and an object in the language box saved "object Object".
+
+Fixed: checkBaseUrl in brain/api-provider.js now assumes http for this Mac and https for any other host when no scheme is typed. cleanPersonal in brain/personal.js keeps only strings. Tests added in test/api-provider.test.js and test/personal.test.js.
+
+Left for later: a base URL with a query string such as "?key=abc" is accepted and the key would sit in a stored setting outside the key store. Control characters and bidi marks in "About you" are kept. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
