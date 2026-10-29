@@ -186,6 +186,8 @@ class Actions {
           message = `Saved to ${this.notes.save({ title: 'Quick note', text: command.text })}.`;
           break;
         case 'remember':
+          // Every memory goes into later prompts, so a password or key must not be saved.
+          if (redact(command.text).count) { message = "That looks like a password or secret, so I won't keep it. Tell me something else to remember."; break; }
           this.memory.add(command.text);
           message = "Got it. I'll remember that. (You can edit or delete it in Settings.)";
           break;

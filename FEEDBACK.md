@@ -475,3 +475,13 @@ As a user, the worst problem was that several natural ways to ask for recent his
 Fixed: more recent-history phrasings now open the history list, and a leading "about" or "on" is dropped from the search words. Tests added in test/assistant.test.js.
 
 Left for later: "clear my history" and "wipe history" are still not spoken commands, since deleting needs a confirm card. "what did we talk about" is not matched.
+
+## 2026-10-29 — memory commands (second pass)
+
+Tried 32 phrasings such as "remember to buy milk", "remember to", "remember me", "remember my wifi password is hunter2", "clear your memory", "delete my memories", "wipe memory" and "don't forget I'm vegan".
+
+As a user, the worst problem was that "remember my wifi password is hunter2" saved the password as a memory, and memories go into later prompts. "remember to" and "remember me" saved a fact called "to" or "me". "clear your memory" and "delete my memories" went to the language model, which may say it cleared them when it did nothing.
+
+Fixed: the remember action refuses text the redactor flags as a secret. "remember to buy milk" becomes a reminder. Bare "remember to", "remember me" and "remember:" save nothing. "clear your memory", "delete my memories" and "wipe memory" now point to Settings → Memory, like "forget everything". Tests added in test/assistant.test.js.
+
+Left for later: "don't forget I'm vegan", "I'm vegetarian, remember that", "call me Sam" and "what did I tell you about food" are not parsed and go to the model, which may claim it saved something. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.

@@ -103,6 +103,22 @@ test('commands: remember with a colon, forget idioms are not deletions, blanket 
   assert.strictEqual(parseCommand('forget that I am vegetarian').all, false);
 });
 
+test('commands: remember to is a reminder, empty remembers save nothing, clearing memory is flagged', () => {
+  assert.strictEqual(parseCommand('remember to buy milk').action, 'reminder');
+  assert.strictEqual(parseCommand('remember to buy milk').title, 'buy milk');
+  for (const t of ['remember to', 'remember me', 'remember:']) assert.strictEqual(parseCommand(t), null, t);
+  for (const t of ['clear your memory', 'delete my memories', 'wipe all memory']) assert.strictEqual(parseCommand(t).all, true, t);
+});
+
+test('actions: remember refuses a password', async () => {
+  const dir = tmp();
+  const memory = new Memory(path.join(dir, 'memory.json'));
+  const actions = new Actions({ auditFile: path.join(dir, 'audit.jsonl'), notes: new Notes(path.join(dir, 'notes')), memory, executors: {} });
+  const result = await actions.execute({ action: 'remember', text: 'my wifi password is hunter2' });
+  assert.match(result.message, /won't keep/);
+  assert.strictEqual(memory.all().length, 0);
+});
+
 test('actions: executors only via execute, audit keeps metadata not content', async () => {
   const dir = tmp();
   const calls = [];
