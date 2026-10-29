@@ -435,3 +435,13 @@ As a user, most phrasings gave the right card. The worst problem was "every day 
 Fixed: parseSchedule now refuses a schedule with a second time of day, so the card asks for the missing piece instead of showing a wrong one. Test added in test/routines.test.js and checked to fail before the change.
 
 Left for later: a routine holds one time of day, so "twice a day" and "9am and 5pm" need either two routines or multi-time support. "every last friday" is not understood. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-29 — writing tools by voice
+
+Tried 36 spoken edit phrasings such as "make this a bit shorter", "tighten this up", "make it sound professional", "rewrite this more professionally", "fix the grammar", "proofread this", "rephrase this", "say this differently", "make it concise" and "fix typos".
+
+As a user, the worst problem was that Fix grammar exists as a chip but could not be asked for by voice. "Fix the grammar" and "proofread this" went to the model as plain questions with no selection attached. Small variations of the edits that did work ("a bit shorter", "sound professional", "more professionally") missed their templates for the same reason.
+
+Fixed: new voice templates send grammar, spelling and proofread requests to the fix grammar task, and the shorter, rewrite and professional templates accept the common variations. Test added in test/voice.test.js.
+
+Left for later: "eli5", "tl;dr", "give me examples", "make this longer", "make this more polite" and "less formal" have no task behind them, so they still go to the model. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
