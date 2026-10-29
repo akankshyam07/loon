@@ -415,3 +415,13 @@ As a user, the worst problem was that a natural "no" answer to the allergy quest
 Fixed: the no-answer check in brain/personal.js now accepts the longer phrasings, and the feedback rules accept "make it longer", "answer in more detail" and plain "be casual". Tests added in test/conversations.test.js and test/personal.test.js and checked to fail before the change.
 
 Left for later: "rock and roll" and "R&B, jazz" style names still split on "and". A list of more than six items is cut silently. "less detail", "respond in hinglish" and "explain like I'm five" are not understood as style feedback. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-29 — typed questions, math in words
+
+Tried 39 inputs such as "15 percent of 80", "what's 8 times 9", "100 minus 37", "100 divided by 4", "what is 2 to the power of 10", "what's 7 squared", "how many cups in a gallon", "tip on 45 at 18%" and "20% off 80".
+
+As a user, the worst problem was that people type and say math in words. "What's 8 times 9" and "15 percent of 80" went to the language model, which is slower and can get arithmetic wrong.
+
+Fixed: calc now reads percent, times, plus, minus, divided by, to the power of and squared between numbers. Cases added in test/brain.test.js. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+Left for later: "how many cups in a gallon" and "how many ounces in a pound" are not parsed, "3 ft 2 in to cm" is not supported, and sqrt, "half of 50", "20% off 80", tip questions and "$20 - $5.50" with currency signs still go to the model.

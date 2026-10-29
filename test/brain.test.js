@@ -87,7 +87,7 @@ test('ladder: arithmetic, percentages and unit conversions are answered by code'
   const brain = { modelId: () => 'fake', chat: async () => { throw new Error('model should not run'); } };
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));
   const resolver = new Resolver({ brain, cacheFile: path.join(dir, 'c.json'), countsFile: path.join(dir, 'n.json') });
-  const cases = [['what is 15% of 80?', /^12\./], ['2+2', /= 4$/], ["what's 12 x 12", /144/], ['(3+4)*2', /= 14/], ['5 miles in km', /8\.0467 km/], ['100 f to c', /37\.7778 c/], ['convert 3 cups to ml', /709\.7647 ml/]];
+  const cases = [['what is 15% of 80?', /^12\./], ['2+2', /= 4$/], ["what's 12 x 12", /144/], ['(3+4)*2', /= 14/], ['5 miles in km', /8\.0467 km/], ['100 f to c', /37\.7778 c/], ['convert 3 cups to ml', /709\.7647 ml/], ['15 percent of 80', /^12\./], ["what's 8 times 9", /= 72/], ['100 minus 37', /= 63/], ['100 divided by 4', /= 25/], ['what is 2 to the power of 10', /1,024/], ["what's 7 squared", /= 49/]];
   for (const [q, re] of cases) {
     const r = await resolver.ask(q, { onText: () => {}, firstInThread: true });
     assert.strictEqual(r.tier, 'code', q);

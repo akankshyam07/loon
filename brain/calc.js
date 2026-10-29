@@ -79,7 +79,10 @@ function convert(value, from, to) {
 function calc(question) {
   const q = question.toLowerCase().replace(/[’‘]/g, "'").replace(/(\d),(?=\d{3}\b)/g, '$1').replace(/[\s?!.=]+$/, '').trim();
   const lead = q.match(LEAD)[0];
-  const body = q.slice(lead.length).replace(/^to\s+/, '').replace(/°/g, '').trim();
+  const body = q.slice(lead.length).replace(/^to\s+/, '').replace(/°/g, '').replace(/\bpercent\b/g, '%')
+    .replace(/(\d)\s*(?:times|multiplied by)\s*(?=[\d(])/g, '$1*').replace(/(\d)\s*plus\s*(?=[\d(])/g, '$1+')
+    .replace(/(\d)\s*minus\s*(?=[\d(])/g, '$1 - ').replace(/(\d)\s*(?:divided by|over)\s*(?=[\d(])/g, '$1/')
+    .replace(/(\d)\s*to the power of\s*(?=[\d(])/g, '$1^').replace(/(\d)\s*squared\b/g, '$1^2').trim();
 
   let m = body.match(/^(\d+(?:\.\d+)?)\s*%\s*of\s+(\d+(?:\.\d+)?)$/);
   if (m) return `${fmt(m[1] * m[2] / 100)}.`;
