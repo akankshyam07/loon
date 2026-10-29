@@ -10,7 +10,12 @@
     'mychart.com', 'healthcare.gov', 'irs.gov', 'ssa.gov', 'login.gov', 'hsbc.com', 'tdbank.com', 'ally.com',
     'sofi.com', 'okta.com', 'anthem.com', 'kp.org', 'myuhc.com',
     'citibank.com', 'chime.com', 'monzo.com', 'barclays.co.uk', 'lloydsbank.com', 'natwest.com',
+    'medicare.gov', 'commbank.com.au', 'rabobank.nl', 'hdfcbank.com', 'icicibank.com', 'login.gov.uk',
+    'myaccount.google.com', 'signin.aws.amazon.com',
   ];
+  // Country sites of the same banks (wellsfargo.com.au, hsbc.co.uk, chase.co.uk); a look-alike such as
+  // bankofamerica.com.evil.com does not match because only a two or three letter suffix may follow.
+  const SENSITIVE_BRANDS = /(^|\.)(wellsfargo|chase|barclays|hsbc|paypal|citibank|bankofamerica|capitalone|americanexpress|revolut|coinbase)\.(com?\.)?[a-z]{2,3}$/;
   const SENSITIVE_LABELS = /(^|\.)(mychart|myhealth|patientportal)[\w-]*\./;
   const CODE_DOMAINS = ['github.com', 'gitlab.com', 'bitbucket.org', 'stackoverflow.com', 'stackexchange.com', 'developer.mozilla.org'];
   const EMAIL_HOSTS = ['mail.google.com', 'outlook.live.com', 'outlook.office.com', 'outlook.office365.com', 'mail.yahoo.com'];
@@ -64,7 +69,7 @@
     const host = location.hostname.replace(/^www\./, '');
     const passwordField = doc.querySelector('input[type="password" i], input[autocomplete="current-password"], input[autocomplete="one-time-code"]');
     const cardField = doc.querySelector('input[autocomplete^="cc-"], input[name*="card" i][inputmode="numeric"]');
-    if (hostMatches(host, SENSITIVE_DOMAINS) || SENSITIVE_LABELS.test(host) || passwordField || cardField) {
+    if (hostMatches(host, SENSITIVE_DOMAINS) || SENSITIVE_BRANDS.test(host) || SENSITIVE_LABELS.test(host) || passwordField || cardField) {
       return { kind: 'sensitive', sensitive: true, reason: passwordField ? 'password field' : cardField ? 'card field' : 'sensitive site' };
     }
 

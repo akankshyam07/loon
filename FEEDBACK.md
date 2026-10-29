@@ -445,3 +445,13 @@ As a user, the worst problem was that Fix grammar exists as a chip but could not
 Fixed: new voice templates send grammar, spelling and proofread requests to the fix grammar task, and the shorter, rewrite and professional templates accept the common variations. Test added in test/voice.test.js.
 
 Left for later: "eli5", "tl;dr", "give me examples", "make this longer", "make this more polite" and "less formal" have no task behind them, so they still go to the model. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-29 — page kinds (third pass)
+
+Tried 26 hosts such as wellsfargo.com.au, chase.co.uk, hsbc.co.uk, barclays.com, login.gov.uk, medicare.gov, rabobank.nl, hdfcbank.com, signin.aws.amazon.com, a look-alike (bankofamerica.com.evil.com) and github.com/login.
+
+As a user, the worst problem was that the cat did not look away on the country sites of banks it already knew. wellsfargo.com.au, chase.co.uk, hsbc.co.uk and barclays.com were all treated as ordinary pages. The same went for medicare.gov and a few Google and AWS sign-in hosts.
+
+Fixed: a brand pattern now matches the big banks and payment sites with any two or three letter country suffix, and a few more sensitive hosts are on the list. The look-alike host still does not match. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: smaller national banks outside the list stay "other" unless they show a password field, and a plain page on github.com/login is classed as code, which is fine while the password field makes it private. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
