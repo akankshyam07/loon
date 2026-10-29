@@ -495,3 +495,13 @@ As a user, pasting "localhost:11434/v1" for a local model server was rejected wi
 Fixed: checkBaseUrl in brain/api-provider.js now assumes http for this Mac and https for any other host when no scheme is typed. cleanPersonal in brain/personal.js keeps only strings. Tests added in test/api-provider.test.js and test/personal.test.js.
 
 Left for later: a base URL with a query string such as "?key=abc" is accepted and the key would sit in a stored setting outside the key store. Control characters and bidi marks in "About you" are kept. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-29 — translation and definitions (fourth pass)
+
+Tried 30 dictionary phrasings such as "pls define ephemeral", "could you define ephemeral", "hey loon define ennui", "whats ephemeral mean", "what does ephemeral mean in english", "define ephemeral 🤔", "definition: ephemeral" and "ephemeral means?".
+
+As a user, a polite opener, a greeting, an emoji or an "in english" tail made the instant WordNet lookup miss, so a one-word question went to the language model.
+
+Fixed: dictionaryTerm in brain/define.js now drops leading "please", "pls", "can you", "hey loon" and similar, trailing emoji and tails such as "in english", "exactly" and "lol". It also accepts "whats X mean", "X means" and "definition:". Pronoun forms such as "what does it mean" still go to the model. Test added in test/brain.test.js and checked to fail before the change.
+
+Left for later: "what's X" and "what is X" alone are ambiguous with general questions, so they still go to the model. "wat does X mean" with a typo and "synonym for X" are not handled. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.

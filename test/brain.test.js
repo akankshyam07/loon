@@ -140,3 +140,16 @@ test('dictionaryTerm accepts a colon, a polite tail and "X meaning"', () => {
   assert.strictEqual(dictionaryTerm('Ephemeral definition?'), 'Ephemeral');
   assert.strictEqual(dictionaryTerm('this meaning'), null);
 });
+
+test('dictionaryTerm ignores polite openers, "in english" tails and emoji', () => {
+  const { dictionaryTerm } = require('../brain/define');
+  assert.strictEqual(dictionaryTerm('pls define ephemeral'), 'ephemeral');
+  assert.strictEqual(dictionaryTerm('could you define ephemeral'), 'ephemeral');
+  assert.strictEqual(dictionaryTerm('hey loon define ennui'), 'ennui');
+  assert.strictEqual(dictionaryTerm('what does ephemeral mean in english'), 'ephemeral');
+  assert.strictEqual(dictionaryTerm('whats ephemeral mean'), 'ephemeral');
+  assert.strictEqual(dictionaryTerm('define ephemeral 🤔'), 'ephemeral');
+  assert.strictEqual(dictionaryTerm('definition: ephemeral'), 'ephemeral');
+  assert.strictEqual(dictionaryTerm('ephemeral means?'), 'ephemeral');
+  assert.strictEqual(dictionaryTerm('what does it mean'), null);
+});

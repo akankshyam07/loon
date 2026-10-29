@@ -62,12 +62,16 @@ async function define(phrase, { maxSenses = 4 } = {}) {
 
 // A typed dictionary question ("define ephemeral", "what does ephemeral mean?", "meaning of the word ephemeral") → the
 // term, or null. Pronouns and "the error" style phrases are left to the model, since they point at something on screen.
-const DICTIONARY_ASK = /^(?:define:?|definition of|meaning of|what(?:'s| is| does)(?: the)? (?:meaning|definition) of|what does)\s+(?:the (?:word|term) )?["'“‘]?([\p{L}-]+(?: [\p{L}-]+)??)["'”’]?(?: mean)?$|^([\p{L}-]+) (?:meaning|definition)$/iu;
+const DICTIONARY_ASK = /^(?:define:?|definition:?|definition of|meaning of|what(?:'s| is| does)(?: the)? (?:meaning|definition) of|what does)\s+(?:the (?:word|term) )?["'“‘]?([\p{L}-]+(?: [\p{L}-]+)??)["'”’]?(?: mean)?$|^what(?:'?s| is) ([\p{L}-]+) mean$|^([\p{L}-]+) (?:meaning|definition|means)$/iu;
 const NOT_A_TERM = /^(?:this|that|it|these|those|here|there|the|my|your|his|her|our|their|a|an|going on|wrong|new|up|happening|next|today|time)\b/i;
 
 function dictionaryTerm(question) {
-  const m = String(question || '').trim().replace(/[’‘]/g, "'").replace(/(?:,? (?:please|pls|for me))?[\s?!.]*$/i, '').match(DICTIONARY_ASK);
-  const term = m && (m[1] || m[2]);
+  const m = String(question || '').trim().replace(/[’‘]/g, "'")
+    .replace(/^(?:(?:hey|ok|okay) )?(?:loon[,\s]+)?(?:(?:please|pls|plz|can you|could you|would you)\s+)*/i, '')
+    .replace(/[\s?!.\p{Extended_Pictographic}]*$/u, '')
+    .replace(/(?:,? (?:please|pls|for me|in english|exactly|lol))+$/i, '')
+    .replace(/[\s?!.]*$/, '').match(DICTIONARY_ASK);
+  const term = m && (m[1] || m[2] || m[3]);
   return term && !NOT_A_TERM.test(term) ? term : null;
 }
 
