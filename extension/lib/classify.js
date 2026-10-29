@@ -33,9 +33,12 @@
   // A known tool followed by a flag, a path or a subcommand, so "git is great" stays prose
   const SHELL = /^\s*(\$\s+)?(sudo\s+)?(git|npm|npx|yarn|pnpm|docker|kubectl|apt|apt-get|brew|pip3?|curl|ssh|chmod|rm|mkdir|ls|cd)\s+(-\S|\S*[/~.]\S*|(install|run|add|remove|commit|push|pull|clone|checkout|status|build|update|start|test|init|up|down|exec|get|apply)\b)/;
 
+  // One-line import and include statements have too few symbols for the density check
+  const IMPORT = /^\s*(import\s+[\w{*][^\n]*\sfrom\s+['"]|import\s+[\w.]+(\.\*)?;|from\s+[\w.]+\s+import\s+\w|#include\s*[<"]|using\s+[\w.]+;|package\s+[\w.]+;)/;
+
   function looksLikeCommand(text) {
     const lines = text.split('\n').filter((l) => l.trim());
-    return lines.length > 0 && (SQL.test(text) || lines.every((l) => SHELL.test(l)));
+    return lines.length > 0 && (SQL.test(text) || lines.every((l) => SHELL.test(l) || IMPORT.test(l)));
   }
 
   function classifySelection(text, { editable = false, monospace = false } = {}) {

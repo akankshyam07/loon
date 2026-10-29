@@ -455,3 +455,13 @@ As a user, the worst problem was that the cat did not look away on the country s
 Fixed: a brand pattern now matches the big banks and payment sites with any two or three letter country suffix, and a few more sensitive hosts are on the list. The look-alike host still does not match. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: smaller national banks outside the list stay "other" unless they show a password field, and a plain page on github.com/login is classed as code, which is fine while the password field makes it private. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-29 — selection chips and classification (third pass)
+
+Tried 42 selections such as "ephemeral", "x = 5", "¿Cómo estás?", URLs, emails, prices, emoji, JSON, stack frames, Windows paths, CJK and Korean sentences, quoted text, SQL, shell commands and one-line imports.
+
+As a user, the worst problem was that a selected "import React from "react"" got sentence chips and "#include <stdio.h>" got word chips. One-line imports have too few symbols to pass the code density check.
+
+Fixed: classifySelection now treats one-line import, include, using and package statements as code. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: a lone "x = 5" and "x => x*2" are still words, a bare stack frame line such as "at Object.<anonymous> (/a/b.js:1:1)" is a word, and URLs, emails and Windows paths get word chips with no link or copy action.
