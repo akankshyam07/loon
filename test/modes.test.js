@@ -34,6 +34,15 @@ test('parseQuantity does not double count restated sizes and reads spelled-out u
   assert.strictEqual(Math.round(q('1 gallon').amount), 3785);
 });
 
+test('parseQuantity reads fractions, counted cans and "12-ct"; parsePrice splits "5 for $10"', () => {
+  const q = (s) => shopping.parseQuantity(s);
+  assert.strictEqual(Math.round(q('1/2 gallon').amount), 1893);
+  assert.strictEqual(Math.round(q('12 cans x 12 fl oz').amount), 4259);
+  assert.deepStrictEqual(q('12-ct'), { amount: 12, unit: 'count' });
+  assert.strictEqual(q('500g x 2').amount, 1000);
+  assert.strictEqual(shopping.parsePrice('5 for $10'), 2);
+});
+
 test('parseQuantity reads hyphenated sizes, pints and "gr"; parsePrice takes the sale price', () => {
   const q = (s) => shopping.parseQuantity(s);
   assert.strictEqual(Math.round(q('32-oz bottle').amount), 907);

@@ -385,3 +385,13 @@ As a user, the worst problems were that the Veggie Burger was left out of the ve
 Fixed: meat-free qualifiers such as veggie, vegan, plant-based and meatless before burger, sausage and similar words no longer count as meat. Menu items keep their currency sign and the recommendation shows it. A line with two prices names the dish from the text before the first price. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: "Soup $6 | Bowl $8" should really be two dishes, "Margherita 12 / 16" is dropped, and "MP" lines are taken as the description of the dish above. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-29 — shopping and unit price (third pass)
+
+Tried 37 size strings and 13 price strings such as "1/2 gallon", "12 cans x 12 fl oz", "12-ct", "Pack of 12, 8 oz each", "2.5 kg / 5.5 lb", "5 for $10", "Save $5 $20" and "From $9.99".
+
+As a user, the worst problems were wrong numbers stated with confidence. "1/2 gallon" was read as 2 gallons, so a half gallon looked four times bigger and won the unit price ranking. "12 cans x 12 fl oz" ignored the 12 cans. "12-ct" was not read. "5 for $10" was priced at $5 instead of $2 each.
+
+Fixed: parseQuantity reads simple fractions before a unit, a count noun before the x in a multipack, and a hyphen in "12-ct". parsePrice divides "N for $P". Test added in test/modes.test.js.
+
+Left for later: "1 dozen", "half gallon", "Set of 4" and "100 sheets" are not parsed. "Save $5 $20" takes the saving, "$5.00 - $7.00" takes the low end, and Indian lakh grouping ("₹1,29,999") reads as 1.29. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
