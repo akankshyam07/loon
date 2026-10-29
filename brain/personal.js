@@ -51,13 +51,13 @@ const sensesFor = (length) => ({ short: 1, detailed: 6 }[length] || 4);
 const FEEDBACK = [
   [/^(?:be |make (?:it|them|your (?:answers|replies)) |keep (?:it|them|answers|replies) |give (?:me )?)?(?:shorter|more concise|concise|briefer|brief|less wordy|less verbose|short(?: answers| replies)?|(?:that was |that's |thats |it's |its |answers are |you're |youre |way )?too (?:long|wordy|verbose)|tl;?dr|less text|less words|talk less|fewer words)(?: answers| replies)?$/,
     (p) => ({ length: p.length === 'detailed' ? 'normal' : 'short' })],
-  [/^(?:be |give (?:me )?|i want |i need )?(?:more detail(?:ed|s)?|longer(?: answers| replies)?|more thorough|(?:that was |that's |thats |it's |its |answers are |way )?too short|go into more detail|detailed(?: answers| replies)?|more in[- ]depth)(?: answers| replies)?$/,
+  [/^(?:be |make (?:it|them) |give (?:me )?|i want |i need |answer in |reply in )?(?:more detail(?:ed|s)?|longer(?: answers| replies)?|more thorough|(?:that was |that's |thats |it's |its |answers are |way )?too short|go into more detail|detailed(?: answers| replies)?|more in[- ]depth)(?: answers| replies)?$/,
     (p) => ({ length: p.length === 'short' ? 'normal' : 'detailed' })],
   [/^(?:(?:use |with )?(?:less|fewer|no(?: more)?)|stop using|stop with the|without|don'?t use|drop the|too many) emojis?$/, () => ({ emoji: false })],
   [/^(?:use|more|add|with) emojis?$/, () => ({ emoji: true })],
   [/^(?:be |sound )?(?:more )?(?:formal|professional)$|^too (?:casual|informal|silly)$/, () => ({ tone: 'formal' })],
   [/^(?:be )?(?:more serious|less playful|less silly|less cute|no jokes|fewer jokes|less jokes|stop joking|plainer|plain)$|^too (?:playful|silly|cute)$/, () => ({ tone: 'plain' })],
-  [/^(?:be )?(?:more (?:playful|fun|casual|cute)|less formal|less serious)$|^too (?:formal|serious|stiff)$/, () => ({ tone: 'playful' })],
+  [/^(?:be )?(?:(?:more )?(?:playful|fun|casual|cute)|less formal|less serious)$|^too (?:formal|serious|stiff)$/, () => ({ tone: 'playful' })],
 ];
 const NOTES = {
   length: { short: 'shorter from now on', normal: 'back to normal-length answers', detailed: 'more detail from now on' },
@@ -213,7 +213,7 @@ const ROLES = {
 const DIETS = { vegetarian: "I'm vegetarian", vegan: "I'm vegan", pescatarian: "I'm pescatarian", gluten_free: "I'm gluten-free", halal: 'I eat halal', kosher: 'I keep kosher', lactose: "I'm lactose intolerant" };
 const tidy = (text, max = 80) => String(text || '').replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
 // "None" and "n/a" are answers, not allergies; "I'm allergic to peanuts" is typed often, so the lead-in is dropped.
-const NO_ANSWER = /^(?:none|no|nope|nil|nothing|n\/?a|na|-+|idk)$/i;
+const NO_ANSWER = /^(?:i (?:have|got|don'?t have)(?: any)? )?(?:(?:none|no|nope|nil|nothing|n\/?a|na|-+|idk)(?: (?:known |food )?(?:allergies|really|at all|thanks?|that i know of))*|not (?:that i know of|really|sure)|i'?m not allergic to anything|i don'?t have any(?: allergies)?)$/i;
 const list = (text) => tidy(text, 200).replace(/^(?:i(?:'m| am)\s+)?(?:allergic to|interested in)\s+/i, '').split(/\s*(?:,|;|\band\b)\s*/i)
   .map((x) => x.replace(/[.!]+$/, '').trim()).filter((x) => x && !NO_ANSWER.test(x)).slice(0, 6);
 const joinList = (items) => (items.length > 1 ? `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}` : items[0] || '');

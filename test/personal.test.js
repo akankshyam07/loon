@@ -181,6 +181,9 @@ test('feedback messages change the reply style in code, before the model', async
   assert.deepStrictEqual(parseFeedback('shorter please'), { patch: { length: 'short' }, note: 'Got it, shorter from now on. Change it in Settings.' });
   assert.deepStrictEqual(parseFeedback('That was too long!').patch, { length: 'short' });
   assert.deepStrictEqual(parseFeedback('more detail').patch, { length: 'detailed' });
+  assert.deepStrictEqual(parseFeedback('make it longer').patch, { length: 'detailed' });
+  assert.deepStrictEqual(parseFeedback('answer in more detail').patch, { length: 'detailed' });
+  assert.deepStrictEqual(parseFeedback('be casual').patch, { tone: 'playful' });
   assert.deepStrictEqual(parseFeedback('shorter', { length: 'detailed' }).patch, { length: 'normal' });
   assert.deepStrictEqual(parseFeedback('less emoji pls').patch, { emoji: false });
   assert.deepStrictEqual(parseFeedback('no more emoji').patch, { emoji: false });

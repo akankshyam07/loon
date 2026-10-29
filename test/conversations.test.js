@@ -195,6 +195,7 @@ test('"Get to know you": answers map to pinned facts and reply settings; only ti
   });
   // "None" is not an allergy, and a typed lead-in is not repeated in the saved fact.
   assert.deepStrictEqual(onboardingResult({ allergies: 'None', interests: 'n/a' }).facts, []);
+  for (const none of ['no allergies', 'I have no allergies', 'nothing really', 'not that I know of', "I don't have any"]) assert.deepStrictEqual(onboardingResult({ allergies: none }).facts, [], none);
   assert.deepStrictEqual(onboardingResult({ allergies: 'none, peanuts' }).facts, ["I'm allergic to peanuts"]);
   assert.deepStrictEqual(onboardingResult({ allergies: "I'm allergic to peanuts." }).facts, ["I'm allergic to peanuts"]);
   const { memory, settings, companion } = setup();

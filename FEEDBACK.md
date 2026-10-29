@@ -405,3 +405,13 @@ As a user, the errors I hit most in a normal week still waited on the language m
 Fixed: added table entries for ERESOLVE, disk full, too many open files, segmentation fault, untrusted certificates, rejected git push and Java "cannot find symbol". Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: Rust borrow errors, React key and hydration warnings, ClassCastException, UnicodeDecodeError and "x is not iterable" still go to the model. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-29 — onboarding and style feedback (second pass)
+
+Tried 15 allergy answers such as "no allergies", "I have no allergies", "nothing really", "not that I know of", "rock and roll", "R&B, jazz" and a list of eight items, plus 25 style feedback phrases such as "make it longer", "be casual", "less detail", "answer in more detail" and "explain like I'm five".
+
+As a user, the worst problem was that a natural "no" answer to the allergy question saved a pinned fact such as "I'm allergic to no allergies" or "I'm allergic to not that I know of". That fact goes to the model with every food question. Telling Loon "make it longer", "answer in more detail" or "be casual" did nothing and went to the model as a normal question.
+
+Fixed: the no-answer check in brain/personal.js now accepts the longer phrasings, and the feedback rules accept "make it longer", "answer in more detail" and plain "be casual". Tests added in test/conversations.test.js and test/personal.test.js and checked to fail before the change.
+
+Left for later: "rock and roll" and "R&B, jazz" style names still split on "and". A list of more than six items is cut silently. "less detail", "respond in hinglish" and "explain like I'm five" are not understood as style feedback. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
