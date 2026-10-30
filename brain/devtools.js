@@ -13,11 +13,25 @@ function keysOf(value) {
   return Object.entries(value).flatMap(([k, v]) => [k, ...keysOf(v)]);
 }
 
+// JSON copied from a README or chat usually sits in a ``` fence, and JS-style trailing commas are common.
+function parseJson(text) {
+  const json = String(text).replace(/^\s*```\w*\s*\n?|\n?\s*```\s*$/g, '');
+  try {
+    return JSON.parse(json);
+  } catch (err) {
+    try {
+      return JSON.parse(json.replace(/,(\s*[}\]])/g, '$1'));
+    } catch {
+      throw err;
+    }
+  }
+}
+
 async function jsonToDto(json, language = 'java', name = 'Root') {
   const { quicktype, InputData, jsonInputForTargetLanguage } = await import('quicktype-core');
   const { lang, options, label } = DTO_LANGUAGES[language];
   // A top-level array (a typical API response) means "one of these"; Java renders nothing for it, so type the elements.
-  const parsed = JSON.parse(json);
+  const parsed = parseJson(json);
   const samples = Array.isArray(parsed) ? parsed : [parsed];
   const objects = samples.filter((v) => v && typeof v === 'object' && !Array.isArray(v));
   if (!objects.length) return "That JSON has no fields (just plain values), so there are no types to make from it.";
@@ -85,4 +99,4 @@ async function fixGrammar(text) {
   return { fixed, changes };
 }
 
-module.exports = { jsonToDto, fixGrammar, DTO_LANGUAGES };
+module.exports = { jsonToDto, parseJson, fixGrammar, DTO_LANGUAGES };

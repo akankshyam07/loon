@@ -6,7 +6,7 @@ const shopping = require('./shopping');
 const { summarizeReviews, extractReviews } = require('./reviews');
 const food = require('./food');
 const { lookupKnown } = require('./errors');
-const { jsonToDto, fixGrammar } = require('./devtools');
+const { jsonToDto, parseJson, fixGrammar } = require('./devtools');
 const { redact } = require('./redact');
 const { makeQuiz } = require('./quiz');
 
@@ -154,10 +154,9 @@ class Skills {
         return text ? { text, mood: 'focused', detail: 'known-error table' } : null;
       }
       case 'dto': {
-        // JSON copied from a README or chat usually arrives inside a ``` fence.
-        const json = String(packet.text).replace(/^\s*```\w*\s*\n?|\n?\s*```\s*$/g, '');
+        const json = packet.text;
         try {
-          JSON.parse(json);
+          parseJson(json);
         } catch {
           return { text: "That isn't valid JSON, so I can't make types from it.", mood: 'confused' };
         }

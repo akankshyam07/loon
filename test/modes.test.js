@@ -162,6 +162,12 @@ test('JSON → DTO with quicktype; grammar fixes with Harper', async () => {
   assert.strictEqual(changes.length, 3);
 });
 
+test('JSON → DTO accepts trailing commas but still rejects other broken JSON', async () => {
+  const java = await jsonToDto('{"id": 7, "tags": ["a",],}', 'java');
+  assert.match(java, /private long id;[\s\S]*List<String> tags;/);
+  await assert.rejects(jsonToDto("{'id': 7}", 'java'));
+});
+
 test('JSON → DTO handles top-level arrays, plain values and multi-class Java', async () => {
   const list = await jsonToDto('[{"id": 1}, {"id": 2, "name": "x"}]', 'java');
   assert.match(list, /one per item/);

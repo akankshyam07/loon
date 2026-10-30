@@ -515,3 +515,13 @@ As a user, the most common annoyance was a thank-you with a small extra word. "o
 Fixed: the thanks reply also matches a leading "ok", "great" or "perfect" and trailing "that helps", "so much" or "loon". Thanks followed by a real request ("thanks, now translate it") still goes to the model. Tests added in test/brain.test.js and checked to fail before the change.
 
 Left for later: "ok", "yes", "no" and "lol" mid-thread still cost a model call. "half of that" and "and 10% of it" need the previous number, so they go to the model, which is right but means arithmetic on an earlier answer is not done by code. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-30 — developer help, JSON to DTO (third pass)
+
+Tried 10 JSON inputs as Java and TypeScript, such as plain objects, nested objects, empty arrays and objects, trailing commas, single quotes, reserved words like "class" and "new", dates, nulls and arrays of differing objects.
+
+As a user, the worst problem was that JSON copied from JavaScript code with a trailing comma (`{"a": 1,}`) was refused as "not valid JSON". That is a common shape when copying from a config file or a log line. Reserved words and dates already came out fine.
+
+Fixed: a shared `parseJson` in brain/devtools.js strips the code fence and retries once without trailing commas. Both the validity check in skills.js and jsonToDto use it. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: single quoted keys and unquoted keys (JS object literals) are still refused. A null-only field becomes `Object`, "2fa" becomes `the2Fa`, and arrays of differing objects give an odd class. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
