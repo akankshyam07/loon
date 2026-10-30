@@ -545,3 +545,13 @@ As a user, the worst problem was that any dish with "-free" in its name was thro
 Fixed: "free" only counts as a promo when it is not part of a "-free" word, "-free" words no longer count as meat, and extra spaces in dish names are collapsed. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: "(V)" and "VEGAN" tags are kept in the name but not used to judge vegetarian. Prices written as a bare whole number ("Burger — 13") and "Fish & Chips 12.5" are not read. "Wings 6pc $8 | 12pc $14" is one dish. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-30 — memory and privacy, redaction (fourth pass)
+
+Tried 32 snippets such as "SSN 123 45 6789", "ssn: 123456789", "Set-Cookie: session=…", "my api key is …", "token: abc", "routing number …", "mot de passe: …", "password: p@ss word" and ordinary sentences like "the password must be at least 8 characters".
+
+As a user, the worst problem was a labelled SSN being sent to the model when it was typed with spaces or without dashes, and a session cookie named `session` or a spoken "my api key is …" passing through untouched.
+
+Fixed: labelled SSNs ("ssn", "social security number") are redacted in any digit grouping, "api key is/: X" is redacted, and every name=value pair in a Cookie or Set-Cookie header is redacted while attributes like Path stay. Test added in test/browser.test.js. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+Left for later: a bare nine digit number with no label, bank account and routing numbers, passport numbers, passwords labelled in other languages ("mot de passe", "contraseña"), unquoted passwords with spaces (the part after the first space leaks), and one time codes.

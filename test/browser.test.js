@@ -125,3 +125,10 @@ test('redaction catches quoted phrases, "is:", pw, bare PIN/CVV and session cook
   assert.strictEqual(count, 6);
   assert.strictEqual(redact('the pin code is fine, enter your password to continue').count, 0);
 });
+
+test('redaction catches labelled SSNs, "api key is" and session cookie pairs', () => {
+  const { text } = redact('SSN 123 45 6789, ssn: 123456789, my api key is abcdef1234567890, Set-Cookie: session=abc123def456; Path=/');
+  assert.doesNotMatch(text, /6789|abcdef1234567890|abc123def456/);
+  assert.match(text, /Path=\//);
+  assert.strictEqual(redact('my api key is in the settings page').count, 0);
+});
