@@ -144,6 +144,11 @@ test('errors: fingerprint ignores paths/values; known errors answer from the tab
   assert.strictEqual(lookupKnown('git@github.com: Permission denied (publickey).'), null, 'an SSH key problem is not a file permission problem');
   assert.match(lookupKnown("ValueError: invalid literal for int() with base 10: 'abc'"), /isn’t a number/);
   assert.match(lookupKnown('ZeroDivisionError: division by zero'), /Division by zero/);
+  assert.match(lookupKnown("TypeError: Cannot read property 'length' of undefined"), /Reading a property/);
+  assert.match(lookupKnown("TypeError: Cannot set property 'x' of undefined"), /Setting a property/);
+  assert.match(lookupKnown("Module not found: Error: Can't resolve 'react' in '/app/src'"), /Module not found/);
+  assert.match(lookupKnown('java.net.BindException: Address already in use'), /Port already in use/);
+  assert.match(lookupKnown('Web server failed to start. Port 8080 was already in use.'), /Port already in use/);
   assert.match(lookupKnown('zsh: command not found: nvm'), /Command not found/);
   assert.match(lookupKnown('Error: Request failed with status code 429'), /429 Too Many Requests/);
   assert.match(lookupKnown('HTTP/1.1 503 Service Unavailable'), /503/);

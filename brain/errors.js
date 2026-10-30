@@ -65,7 +65,7 @@ const KNOWN = [
     fix: ['Use `iterator.remove()` or `removeIf(...)` instead of removing inside a for-each.', 'Collect changes and apply them after the loop.'],
   },
   {
-    match: /Cannot read propert(y|ies) of (undefined|null)|undefined is not an object/,
+    match: /Cannot read propert(y|ies)( '[^']*')? of (undefined|null)|undefined is not an object/,
     title: 'Reading a property of undefined (JavaScript)',
     explain: 'Code accessed `.something` on a value that is `undefined` or `null`.',
     fix: ['Find the variable before the dot on the reported line.', 'Check the data actually arrived (API response, props, async timing).', 'Use optional chaining `a?.b` where missing data is legitimate.'],
@@ -83,13 +83,13 @@ const KNOWN = [
     fix: ['Check spelling and imports.', 'In ES modules, globals like `require` or `__dirname` don’t exist.'],
   },
   {
-    match: /Cannot find module|MODULE_NOT_FOUND|ERR_MODULE_NOT_FOUND/,
+    match: /Cannot find module|MODULE_NOT_FOUND|ERR_MODULE_NOT_FOUND|Module not found: (Error: )?Can't resolve/,
     title: 'Module not found (Node)',
     explain: 'Node couldn’t resolve an import: the package isn’t installed, or the path is wrong.',
     fix: ['Run `npm install` (check it’s in package.json).', 'For relative imports, check the path and file extension (ESM needs `.js`).'],
   },
   {
-    match: /EADDRINUSE/,
+    match: /EADDRINUSE|BindException: Address already in use|Port \d+ (was )?already in use/i,
     title: 'Port already in use',
     explain: 'Another process is already listening on that port.',
     fix: ['Find it: `lsof -i :PORT`.', 'Stop that process, or run yours on a different port.'],
@@ -137,7 +137,7 @@ const KNOWN = [
     fix: ['Print the absolute path being opened (`os.path.abspath(path)`).', 'Relative paths depend on the working directory, not the script’s folder.', 'Check spelling and the file extension.'],
   },
   {
-    match: /Cannot set propert(y|ies) of (undefined|null)/,
+    match: /Cannot set propert(y|ies)( '[^']*')? of (undefined|null)/,
     title: 'Setting a property of null (JavaScript)',
     explain: 'Code assigned to `.something` on a value that is `undefined` or `null`. With `innerHTML` it usually means the element wasn’t found.',
     fix: ['Check `document.querySelector(...)` really returned an element.', 'Run the script after the page has loaded (`defer` or `DOMContentLoaded`).'],
@@ -255,12 +255,6 @@ const KNOWN = [
     title: 'Not a git repository',
     explain: 'The command ran outside a git repo.',
     fix: ['`cd` into the project folder, or `git init` to start one.'],
-  },
-  {
-    match: /npm ERR! ERESOLVE|unable to resolve dependency tree/,
-    title: 'npm dependency conflict',
-    explain: 'Two packages need incompatible versions of a shared dependency.',
-    fix: ['Read which peer dependency conflicts and upgrade one side.', '`npm install --legacy-peer-deps` works around it (it hides the conflict rather than fixing it).'],
   },
   {
     match: new RegExp(`${status(401)}|\\bUnauthorized\\b`),

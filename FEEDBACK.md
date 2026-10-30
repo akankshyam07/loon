@@ -595,3 +595,13 @@ As a user, two things were wrong. "every mon wed fri" kept only Monday and turne
 Fixed: day lists may be separated by spaces, and a dotted time before am/pm is read as a colon time. Test added in test/routines.test.js and checked to fail before the change.
 
 Left for later: "0730" style times, "mornings at 7", and non-English routines are not understood. The 3 WordNet and demo failures in `npm test` are the usual sandbox ones.
+
+## 2026-10-30 — developer help, error table (fourth pass)
+
+Tried 40 error lines such as "Cannot read property 'length' of undefined", "Module not found: Can't resolve 'react'", "java.net.BindException: Address already in use", "Port 8080 was already in use", ClassCastException, Rust borrow errors, Go nil pointer panics, TypeScript TS2345, Docker daemon errors and 502 and 504 responses.
+
+As a user, the worst problem was the old Node wording "Cannot read property 'x' of undefined", still very common in logs, missing the table and going to the model. Webpack "Can't resolve" errors and Spring Boot "port already in use" messages also missed. The table also held a second npm conflict entry that could never match.
+
+Fixed: the read and set property entries accept the quoted property name, the module entry accepts webpack's wording, and the port entry accepts BindException and Spring Boot messages. The dead duplicate npm entry is removed. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: ClassCastException, ImportError, AttributeError for types other than NoneType, Rust, Go and TypeScript errors, Docker daemon errors, SQL constraint errors, and 502 and 504 responses are not in the table. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
