@@ -440,3 +440,12 @@ test('every N weeks keeps its cycle instead of turning into a weekly routine', (
   assert.strictEqual(R.describeSchedule(R.parseRoutine('biweekly remind me to pay', { now: NOW }).schedule), 'every other Monday at 9:00 AM');
   assert.strictEqual(R.parseSchedule('every 2 weeks on mon and wed', NOW).schedule, null); // two days would drift off one cycle
 });
+
+test('day lists without commas and dotted times are read whole', () => {
+  const run = R.parseRoutine('every mon wed fri at 7am remind me to run', { now: NOW });
+  assert.deepStrictEqual(run.schedule.days, [1, 3, 5]);
+  assert.strictEqual(run.payload.message, 'run');
+  const late = R.parseRoutine('every day at 7.30pm remind me to read', { now: NOW });
+  assert.strictEqual(late.schedule.time, '19:30');
+  assert.strictEqual(late.payload.message, 'read');
+});

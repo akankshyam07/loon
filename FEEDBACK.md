@@ -585,3 +585,13 @@ As a user, the worst problem was a price off by a factor of 100000. "₹1,29,999
 Fixed: parsePrice removes Indian grouping commas and reads a bare ".99". parseQuantity reads dozen, "a dozen", "half dozen" and "half gallon" style sizes. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: "Set of 4", "100 sheets", "$5.00 - $7.00" (takes the low end) and "Save $5 $20" are still not handled. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-30 — routines (fourth pass)
+
+Tried 27 routine phrasings, including "every mon wed fri at 7am remind me to run", "every day at 7.30pm remind me to read", "every other day remind me to floss", "every month on the 1st", "every day at noon", emoji messages, and Spanish.
+
+As a user, two things were wrong. "every mon wed fri" kept only Monday and turned the rest into the reminder text. "7.30pm" was read as 7:00 with ".30pm" in the message.
+
+Fixed: day lists may be separated by spaces, and a dotted time before am/pm is read as a colon time. Test added in test/routines.test.js and checked to fail before the change.
+
+Left for later: "0730" style times, "mornings at 7", and non-English routines are not understood. The 3 WordNet and demo failures in `npm test` are the usual sandbox ones.

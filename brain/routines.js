@@ -57,7 +57,7 @@ function formatTime(time) {
 //                                                          monthDay: that date, or the month's last day if shorter)
 // { type: 'interval', minutes, window, days }             every N minutes inside window (null = all day)
 const DAY_WORD = String.raw`(?:mon|tues?|wed(?:nes)?|thu(?:rs?)?|fri|sat(?:ur)?|sun)(?:day)?s?`;
-const DAY_LIST = new RegExp(String.raw`\b(?:every|each|on)\s+(${DAY_WORD}(?:\s*(?:,|and|&)\s*${DAY_WORD})*)\b`, 'i');
+const DAY_LIST = new RegExp(String.raw`\b(?:every|each|on)\s+(${DAY_WORD}(?:(?:\s*(?:,|and|&)\s*|\s+)${DAY_WORD})*)\b`, 'i');
 const DAY_PLURAL = new RegExp(String.raw`\b((?:mon|tues|wednes|thurs|fri|satur|sun)days(?:\s*(?:,|and|&)\s*(?:mon|tues|wednes|thurs|fri|satur|sun)days)*)\b`, 'i');
 const dayIndex = (word) => ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].indexOf(word.toLowerCase().slice(0, 3));
 const RECURRING = /\b(?:every|each|everyday|daily|nightly|hourly|weekdays?|weekends?|weekly|monthly|(?:mon|tues|wednes|thurs|fri|satur|sun)days)\b/i;
@@ -75,7 +75,8 @@ const unitMinutes = (u) => (/^h/i.test(u) ? 60 : 1);
 // Reads the schedule out of text: { schedule, rest } (schedule null when nothing recurring was found).
 // allowOnce: also accept a plain date ("tomorrow at 9") as a one-off, for the confirm card's When field.
 function parseSchedule(input, now = new Date(), { allowOnce = false } = {}) {
-  const state = { text: ` ${String(input).replace(/[()]/g, ' ')} ` };
+  // "7.30pm" reads as 7:30pm.
+  const state = { text: ` ${String(input).replace(/[()]/g, ' ').replace(/\b(\d{1,2})\.(\d{2})(?=\s*[ap]\.?m\b)/gi, '$1:$2')} ` };
   const at = now.getTime();
   const done = (schedule) => ({ schedule, rest: tidyRest(state.text) });
 
@@ -96,7 +97,7 @@ function parseSchedule(input, now = new Date(), { allowOnce = false } = {}) {
   else if (take(state, /\b(?:every\s+|on\s+)?weekends?\b/i)) days = WEEKEND;
   else {
     const list = take(state, DAY_LIST) || take(state, DAY_PLURAL);
-    if (list) days = [...new Set(list[1].split(/\s*(?:,|and|&)\s*/).map(dayIndex).filter((d) => d >= 0))].sort();
+    if (list) days = [...new Set(list[1].split(/\s*(?:,|and|&)\s*|\s+/).map(dayIndex).filter((d) => d >= 0))].sort();
   }
   const weekly = take(state, /\b(?:every\s+week|weekly)\b/i);
   const daily = take(state, /\b(?:every|each)\s+(day|morning|afternoon|evening|night)\b/i) || take(state, /\b(daily|nightly|everyday)\b/i);
