@@ -4,6 +4,7 @@ const chrono = require('chrono-node');
 
 // Pulls the first date/time phrase out of text: { date, text-without-it } or { date: null }.
 function extractWhen(text, now = new Date()) {
+  text = dayOfMonth(text, now);
   const [found] = chrono.parse(text, now, { forwardDate: true });
   if (!found) return { date: null, rest: text.trim() };
   const rest = (text.slice(0, found.index) + text.slice(found.index + found.text.length))
@@ -23,6 +24,19 @@ function extractWhen(text, now = new Date()) {
   if (/morning/i.test(found.text) && !found.start.isCertain('hour')) date.setHours(9, 0, 0, 0);
   if (date < now && !found.start.isCertain('day')) date.setTime(date.getTime() + DAY);
   return { date, rest, end: found.end ? found.end.date() : null };
+}
+
+// chrono does not read "on the 1st" or "the 15th"; rewrite it to the next such day as "Nov 1".
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function dayOfMonth(text, now) {
+  return text.replace(/\b(?:on )?the (\d{1,2})(?:st|nd|rd|th)\b/i, (all, d) => {
+    const day = Number(d);
+    for (let i = 0; i < 13 && day >= 1; i++) {
+      const c = new Date(now.getFullYear(), now.getMonth() + i, day);
+      if (c.getDate() === day && (i > 0 || day >= now.getDate())) return `${MONTHS[c.getMonth()]} ${day}`;
+    }
+    return all;
+  });
 }
 
 const tidy = (s) => s.replace(/^[\s,:-]+|[\s,.!?]+$/g, '');
@@ -48,7 +62,9 @@ function parseCommand(input, now = new Date()) {
   let m;
   // Loon has no alarm clock of its own. Timers, alarms and "wake me" become Reminders, which the confirm card names.
   if ((m = text.match(/^(?:set |start )?(?:an? )?(?:timer|countdown)(?: for| of)? (?:in )?(.+)$/i)) || (m = text.match(/^(?:set |start )?(?:an? )?(.+?)[\s-]timer$/i))) {
-    const { date } = extractWhen(`in ${m[1].replace(/^in /i, '')}`, now);
+    // "timer 1h30" and "timer 5" (minutes) are how people type it.
+    const length = m[1].replace(/^in /i, '').replace(/^(\d+)h(?:ours?|rs?)?\s*(\d+)(?:m(?:ins?)?)?$/i, '$1 hours $2 minutes').replace(/^(\d+)$/, '$1 minutes');
+    const { date } = extractWhen(`in ${length}`, now);
     return date ? { action: 'reminder', title: 'Timer is up', when: date } : null;
   }
   if ((m = text.match(/^(?:set (?:an? )?alarm(?: for| at)?|wake me(?: up)?) (.+)$/i))) {

@@ -226,3 +226,13 @@ test('history questions drop time words and "you" instead of searching for them'
   assert.deepStrictEqual(parseCommand('what did i search for'), { action: 'recall', query: '' });
   assert.deepStrictEqual(parseCommand('what did I ask last'), { action: 'recall', query: '' });
 });
+
+test('commands: "timer 1h30" and a bare number are timers, "on the 1st" is a date', () => {
+  const ms = (t) => parseCommand(t, NOW).when.getTime() - NOW.getTime();
+  assert.strictEqual(ms('timer 1h30'), 90 * 60000);
+  assert.strictEqual(ms('set a timer for 5'), 5 * 60000);
+  const rent = parseCommand('remind me to pay rent on the 1st', NOW);
+  assert.strictEqual(rent.title, 'pay rent');
+  assert.strictEqual(rent.when.getDate(), 1);
+  assert.ok(rent.when > NOW);
+});

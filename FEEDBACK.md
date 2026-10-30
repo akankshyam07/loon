@@ -525,3 +525,13 @@ As a user, the worst problem was that JSON copied from JavaScript code with a tr
 Fixed: a shared `parseJson` in brain/devtools.js strips the code fence and retries once without trailing commas. Both the validity check in skills.js and jsonToDto use it. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: single quoted keys and unquoted keys (JS object literals) are still refused. A null-only field becomes `Object`, "2fa" becomes `the2Fa`, and arrays of differing objects give an odd class. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-30 — reminders, timers and focus (fourth pass)
+
+Tried 31 phrasings such as "timer 1h30", "set a timer for 5", "set timer 5", "remindme to call bob", "remind me to pay rent on the 1st", "remind me in 10 to check oven", calendar bookings with a weekday and time, and shouted text like "REMIND ME TO CALL BOB AT 5".
+
+As a user, the worst problem was "remind me to pay rent on the 1st". The date was not read, so I got a reminder with no time and "on the 1st" stuck in the title. Timers with a bare number or "1h30" matched nothing and went to the model, which cannot start a timer.
+
+Fixed: extractWhen now reads "on the 1st" and "the 15th" as the next such day, and timers read "1h30" and a bare number as minutes. The confirm card still shows the exact time. Tests added in test/assistant.test.js.
+
+Left for later. "remindme to…", "cancel my timer" and "remind me in 10 to check oven" (a bare number with no unit) are not handled. A date with no time of day lands at noon. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
