@@ -555,3 +555,13 @@ As a user, the worst problem was a labelled SSN being sent to the model when it 
 Fixed: labelled SSNs ("ssn", "social security number") are redacted in any digit grouping, "api key is/: X" is redacted, and every name=value pair in a Cookie or Set-Cookie header is redacted while attributes like Path stay. Test added in test/browser.test.js. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
 
 Left for later: a bare nine digit number with no label, bank account and routing numbers, passport numbers, passwords labelled in other languages ("mot de passe", "contraseña"), unquoted passwords with spaces (the part after the first space leaks), and one time codes.
+
+## 2026-10-30 — writing tools by voice (second pass)
+
+Tried 42 spoken phrasings such as "fix my grammar", "check my spelling", "proofread", "summarize this for me", "sum this up", "give me examples", "rewrite this warmer", "make it short", "make it more polite" and "tldr this".
+
+As a user, the worst problem was that natural short forms of tasks Loon already has went to the model as plain questions with no selection attached. "Fix my grammar" and "proofread" did nothing useful, and "give me examples" had a chip but no voice route.
+
+Fixed: the voice templates now accept "my" grammar and spelling, a bare "proofread", "sum this up" and "for me" tails, "rewrite this warmer", "make it short" and "give me examples". Test added in test/voice.test.js and checked to fail before the change.
+
+Left for later: "make this longer", "more polite", "less formal", "eli5" and "tl;dr" have no task behind them. "Translate this to Spanish" only has an English target. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.

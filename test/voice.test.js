@@ -32,6 +32,9 @@ test('spoken edits and explanations of a selection are templates', () => {
     'make this a bit shorter': 'shorter', 'tighten this up': 'shorter', 'Rephrase this': 'rewrite',
     'make it sound professional': 'professional', 'rewrite this more professionally': 'professional',
     'Fix the grammar': 'fix_grammar', 'proofread this': 'fix_grammar', 'fix typos': 'fix_grammar',
+    'fix my grammar': 'fix_grammar', 'check my spelling': 'fix_grammar', 'proofread': 'fix_grammar',
+    'summarize this for me': 'summarize', 'sum this up': 'summarize', 'rewrite this warmer': 'warmer', 'make it short': 'shorter',
+    'give me examples': 'examples',
     'Translate it': 'translate', 'Loon, translate this for me': 'translate', 'translate that into English': 'translate',
   };
   for (const [said, task] of Object.entries(expected)) {
