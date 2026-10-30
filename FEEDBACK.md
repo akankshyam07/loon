@@ -565,3 +565,13 @@ As a user, the worst problem was that natural short forms of tasks Loon already 
 Fixed: the voice templates now accept "my" grammar and spelling, a bare "proofread", "sum this up" and "for me" tails, "rewrite this warmer", "make it short" and "give me examples". Test added in test/voice.test.js and checked to fail before the change.
 
 Left for later: "make this longer", "more polite", "less formal", "eli5" and "tl;dr" have no task behind them. "Translate this to Spanish" only has an English target. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-30 — typed questions and instant answers (third pass)
+
+Tried 42 typed questions such as "what year is it", "what month is it", "what day is tomorrow", "what's the day", "current date", "thanks 🙏", "what time is it? 🕐", "bye", "good night", "what's your name" and "what time is it in tokyo".
+
+As a user, the worst problem was date questions going to the language model. A model cannot know today's date, so "what year is it" or "what day is tomorrow" could come back stale or invented. A trailing emoji also broke the instant answers for thanks and the time.
+
+Fixed: year, month, tomorrow, yesterday, "what's the day", "current date" and "what is today" are now answered by code. Trailing emoji are ignored when matching instant answers. Test added in test/brain.test.js and checked to fail before the change.
+
+Left for later: time in another city ("what time is it in tokyo") goes to the model, which cannot know it, and needs a timezone lookup in code. "bye", "good night", "what's your name", "who made you" and "how do i use loon" still go to the model. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.

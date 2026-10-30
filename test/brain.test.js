@@ -72,6 +72,18 @@ test('ladder: instant answers survive smart quotes, "?!", "right now" and a wake
   }
 });
 
+test('ladder: date questions and trailing emoji are answered by code, not guessed by the model', async () => {
+  const brain = { modelId: () => 'fake', chat: async () => { throw new Error('model should not run'); } };
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));
+  const resolver = new Resolver({ brain, cacheFile: path.join(dir, 'c.json'), countsFile: path.join(dir, 'n.json') });
+  const cases = [['what year is it', String(new Date().getFullYear())], ['what month is it?', new Date().toLocaleDateString([], { month: 'long' })], ['current date', 'It\u2019s|It\'s'], ["what's the day", "It's"], ['what day is tomorrow', 'Tomorrow is'], ['what day is yesterday', 'Yesterday is'], ['thanks 🙏', 'Anytime'], ['what time is it? 🕐', "It's"]];
+  for (const [q, re] of cases) {
+    const r = await resolver.ask(q, { onText: () => {}, firstInThread: true });
+    assert.strictEqual(r.tier, 'code', q);
+    assert.match(r.text, new RegExp(re), q);
+  }
+});
+
 test('ladder: thanks followed by a real request still goes to the model', async () => {
   const brain = { modelId: () => 'fake', chat: async (_p, { onText }) => onText('Sure.') };
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));

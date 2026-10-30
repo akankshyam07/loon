@@ -31,8 +31,23 @@ const CODE_ANSWERS = [
     answer: () => ({ mood: 'happy', text: `It's ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.` }),
   },
   {
-    match: /^(what('?s| is) (the |today'?s )?date|today'?s date|date|what day is (it|today))( today)?$/,
+    match: /^(what('?s| is) (the |today'?s )?(current )?date|(today'?s |current |the )?date|what day is (it|today)|what'?s (the )?day|what is today|what'?s today)( today)?$/,
     answer: () => ({ mood: 'happy', text: `It's ${new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}.` }),
+  },
+  {
+    match: /^what (year|month) is it( now)?$|^what('?s| is) the (year|month)$/,
+    answer: (key) => {
+      const year = /year/.test(key);
+      return { mood: 'happy', text: `It's ${new Date().toLocaleDateString([], year ? { year: 'numeric' } : { month: 'long' })}.` };
+    },
+  },
+  {
+    match: /^what day is (tomorrow|yesterday)$/,
+    answer: (key) => {
+      const d = new Date();
+      d.setDate(d.getDate() + (/tomorrow/.test(key) ? 1 : -1));
+      return { mood: 'happy', text: `${key.slice(12).replace(/^./, (c) => c.toUpperCase())} is ${d.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}.` };
+    },
   },
   {
     match: /^(what can (you|u) do( for me)?|help( me)?|what do you do|how do (i|you) use (you|this))$/,
@@ -76,7 +91,7 @@ function instantKey(text) {
     .replace(/[’‘]/g, "'")
     .replace(/^(?:(?:hey |hi |ok |okay )?loon|please|pls)[,:]?\s+/, '')
     .replace(/\s+(?:right now|please|pls)(?=[\s?!.]*$)/, '')
-    .replace(/[\s?!.]+$/, '');
+    .replace(/[\s?!.\p{Extended_Pictographic}\uFE0F]+$/u, '');
 }
 
 function isoWeek(date = new Date()) {
@@ -246,7 +261,7 @@ class Resolver {
       const key = instantKey(packet.question);
       const template = CODE_ANSWERS.find((c) => c.match.test(key) && !(!firstInThread && c.openingOnly?.test(key)));
       if (template) {
-        const { text, mood } = template.answer();
+        const { text, mood } = template.answer(key);
         onText(text);
         this.count('code');
         return { text, mood, tier: 'code' };
