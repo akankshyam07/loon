@@ -605,3 +605,13 @@ As a user, the worst problem was the old Node wording "Cannot read property 'x' 
 Fixed: the read and set property entries accept the quoted property name, the module entry accepts webpack's wording, and the port entry accepts BindException and Spring Boot messages. The dead duplicate npm entry is removed. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: ClassCastException, ImportError, AttributeError for types other than NoneType, Rust, Go and TypeScript errors, Docker daemon errors, SQL constraint errors, and 502 and 504 responses are not in the table. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-30 — onboarding and style feedback (third pass)
+
+Tried 32 style feedback phrases such as "less detail", "stop being so wordy", "answers too long", "stop the emojis", "no emoji please 🙏", "you're too chatty", "go back to english" and "respond in hinglish", plus 20 "remember this" statements.
+
+As a user, the worst problem was that common ways of asking for shorter answers did nothing and went to the model as a normal question. "less detail", "stop being so wordy", "answers too long" and "you're too chatty" all missed. "stop the emojis" missed, and so did any emoji request that ended with an emoji character. "go back to english" did not undo a reply language.
+
+Fixed: the feedback rules in brain/personal.js now accept these phrasings, and emoji characters are ignored while matching. Test added in test/personal.test.js and checked to fail before the change.
+
+Left for later: "im vegetarian" without the apostrophe is saved as "Im vegetarian". "I have a peanut allergy", "I'm on a keto diet" and "I'm trying to lose weight" are not offered as memories. "respond in hinglish", "explain like I'm five" and "keep it simple" are not understood as style feedback. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.

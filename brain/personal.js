@@ -49,11 +49,11 @@ const sensesFor = (length) => ({ short: 1, detailed: 6 }[length] || 4);
 
 // ---------- feedback: "shorter please", "less emoji", "be more formal" ----------
 const FEEDBACK = [
-  [/^(?:be |make (?:it|them|your (?:answers|replies)) |keep (?:it|them|answers|replies) |give (?:me )?)?(?:shorter|more concise|concise|briefer|brief|less wordy|less verbose|short(?: answers| replies)?|(?:that was |that's |thats |it's |its |answers are |you're |youre |way )?too (?:long|wordy|verbose)|tl;?dr|less text|less words|talk less|fewer words)(?: answers| replies)?$/,
+  [/^(?:be |make (?:it|them|your (?:answers|replies)) |keep (?:it|them|answers|replies) |give (?:me )?)?(?:shorter|more concise|concise|briefer|brief|less wordy|less verbose|short(?: answers| replies)?|(?:that was |that's |thats |it's |its |answers are |you're |youre |way )?too (?:long|wordy|verbose)|tl;?dr|less text|less words|talk less|fewer words|less detail(?:ed)?|(?:stop being |you(?:'re| are) )?(?:so |too )?(?:wordy|chatty)|(?:answers|replies) (?:are |is )?too long)(?: answers| replies)?$/,
     (p) => ({ length: p.length === 'detailed' ? 'normal' : 'short' })],
   [/^(?:be |make (?:it|them) |give (?:me )?|i want |i need |answer in |reply in )?(?:more detail(?:ed|s)?|longer(?: answers| replies)?|more thorough|(?:that was |that's |thats |it's |its |answers are |way )?too short|go into more detail|detailed(?: answers| replies)?|more in[- ]depth)(?: answers| replies)?$/,
     (p) => ({ length: p.length === 'short' ? 'normal' : 'detailed' })],
-  [/^(?:(?:use |with )?(?:less|fewer|no(?: more)?)|stop using|stop with the|without|don'?t use|drop the|too many) emojis?$/, () => ({ emoji: false })],
+  [/^(?:(?:use |with )?(?:less|fewer|no(?: more)?)|stop using|stop with the|stop the|without|don'?t use|drop the|too many) emojis?$/, () => ({ emoji: false })],
   [/^(?:use|more|add|with) emojis?$/, () => ({ emoji: true })],
   [/^(?:be |sound )?(?:more )?(?:formal|professional)$|^too (?:casual|informal|silly)$/, () => ({ tone: 'formal' })],
   [/^(?:be )?(?:more serious|less playful|less silly|less cute|no jokes|fewer jokes|less jokes|stop joking|plainer|plain)$|^too (?:playful|silly|cute)$/, () => ({ tone: 'plain' })],
@@ -72,7 +72,7 @@ function parseFeedback(text, current = PERSONAL_DEFAULTS) {
   if (!raw.trim() || raw.length > 80) return null;
   const t = raw.replace(/[!.?]+\s*$/, '')
     .replace(/\b(?:please|pls|plz|loon|hey|ok(?:ay)?|can you|could you|would you|try to|a bit|a little|much|kinda|slightly|from now on|going forward|next time|in (?:the )?future|always)\b/g, ' ')
-    .replace(/[,]/g, ' ').replace(/\s+/g, ' ').trim();
+    .replace(/[,]|\p{Extended_Pictographic}/gu, ' ').replace(/\s+/g, ' ').trim();
   const p = cleanPersonal(current);
   for (const [re, patchFor] of FEEDBACK) {
     if (!re.test(t)) continue;
@@ -80,7 +80,7 @@ function parseFeedback(text, current = PERSONAL_DEFAULTS) {
     const [key, value] = Object.entries(patch)[0];
     return { patch, note: `Got it, ${NOTES[key][String(value)]}. Change it in Settings.` };
   }
-  const lang = t.match(/^(?:reply|answer|respond|talk|speak|write)(?: to me)? in ([a-z]+)(?: only)?$/);
+  const lang = t.match(/^(?:(?:reply|answer|respond|talk|speak|write)(?: to me)? in|(?:go )?back to) ([a-z]+)(?: only)?$/);
   if (lang && LANGUAGES.includes(lang[1])) {
     const language = lang[1] === 'english' ? '' : lang[1][0].toUpperCase() + lang[1].slice(1);
     return { patch: { language }, note: `Got it, ${language ? `I'll reply in ${language}` : 'back to English'} from now on. Change it in Settings.` };
