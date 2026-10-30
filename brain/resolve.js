@@ -57,7 +57,7 @@ const CODE_ANSWERS = [
     answer: () => ({ mood: 'happy', text: 'Hi! Highlight something, or ask me anything.' }),
   },
   {
-    match: /^(thanks|thank you|thank u|thx|ty|thanks a lot|thank you so much|cheers)( loon)?$/,
+    match: /^(?:(?:ok|okay|great|perfect|cool|awesome|nice)[ ,]+)?(?:thanks|thank you|thank u|thx|ty|cheers)(?:[ ,]+(?:a lot|so much|very much|that helps|that helped|loon))*$/,
     answer: () => ({ mood: 'happy', text: 'Anytime. *purrs*' }),
   },
   {

@@ -67,8 +67,17 @@ test('ladder: instant answers survive smart quotes, "?!", "right now" and a wake
   const brain = { modelId: () => 'fake', chat: async () => { throw new Error('model should not run'); } };
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));
   const resolver = new Resolver({ brain, cacheFile: path.join(dir, 'c.json'), countsFile: path.join(dir, 'n.json') });
-  for (const q of ['what’s the time?', 'What time is it?!', 'what time is it right now?', 'Hey Loon, what time is it', 'tell me the time', 'today’s date', 'what can u do', 'help me!', 'hi', 'Hello!', 'hey loon', 'thanks!', 'thank you', 'Good morning', 'thx']) {
+  for (const q of ['what’s the time?', 'What time is it?!', 'what time is it right now?', 'Hey Loon, what time is it', 'tell me the time', 'today’s date', 'what can u do', 'help me!', 'hi', 'Hello!', 'hey loon', 'thanks!', 'thank you', 'Good morning', 'thx', 'ok thanks', 'Thanks, that helps!', 'great thank you so much', 'thanks loon']) {
     assert.strictEqual((await resolver.ask(q, { onText: () => {}, firstInThread: true })).tier, 'code', q);
+  }
+});
+
+test('ladder: thanks followed by a real request still goes to the model', async () => {
+  const brain = { modelId: () => 'fake', chat: async (_p, { onText }) => onText('Sure.') };
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));
+  const resolver = new Resolver({ brain, cacheFile: path.join(dir, 'c.json'), countsFile: path.join(dir, 'n.json') });
+  for (const q of ['thanks, now translate it to French', 'ok thanks but why is that']) {
+    assert.notStrictEqual((await resolver.ask(q, { onText: () => {}, firstInThread: false, history: [{ question: 'a', answer: 'b' }] })).tier, 'code', q);
   }
 });
 

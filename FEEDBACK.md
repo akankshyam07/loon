@@ -505,3 +505,13 @@ As a user, a polite opener, a greeting, an emoji or an "in english" tail made th
 Fixed: dictionaryTerm in brain/define.js now drops leading "please", "pls", "can you", "hey loon" and similar, trailing emoji and tails such as "in english", "exactly" and "lol". It also accepts "whats X mean", "X means" and "definition:". Pronoun forms such as "what does it mean" still go to the model. Test added in test/brain.test.js and checked to fail before the change.
 
 Left for later: "what's X" and "what is X" alone are ambiguous with general questions, so they still go to the model. "wat does X mean" with a typo and "synonym for X" are not handled. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-30 — follow-up conversations (third pass)
+
+Tried 60 messages inside and outside a bubble thread, such as "ok thanks", "Thanks, that helps", "hello again", "lol", "half of that", "and 10% of it", "shorter", "tl;dr" and a single emoji.
+
+As a user, the most common annoyance was a thank-you with a small extra word. "ok thanks" or "Thanks, that helps" cost a full model call and came back as a wordy answer, while plain "thanks" got the instant purr.
+
+Fixed: the thanks reply also matches a leading "ok", "great" or "perfect" and trailing "that helps", "so much" or "loon". Thanks followed by a real request ("thanks, now translate it") still goes to the model. Tests added in test/brain.test.js and checked to fail before the change.
+
+Left for later: "ok", "yes", "no" and "lol" mid-thread still cost a model call. "half of that" and "and 10% of it" need the previous number, so they go to the model, which is right but means arithmetic on an earlier answer is not done by code. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
