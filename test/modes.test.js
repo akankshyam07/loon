@@ -217,3 +217,11 @@ test('menu: veggie burgers count as vegetarian, two prices on one line name one 
   assert.doesNotMatch(picks, /\*\*Hamburger/);
   assert.match(food.recommend(items, 'protein').text, /£13\.50/);
 });
+
+test('parsePrice and parseQuantity read lakh grouping, bare cents, dozens and half sizes', () => {
+  assert.strictEqual(shopping.parsePrice('₹1,29,999'), 129999);
+  assert.strictEqual(shopping.parsePrice('$.99'), 0.99);
+  assert.deepStrictEqual(shopping.parseQuantity('1 dozen'), { amount: 12, unit: 'count' });
+  assert.deepStrictEqual(shopping.parseQuantity('half dozen eggs'), { amount: 6, unit: 'count' });
+  assert.ok(Math.abs(shopping.parseQuantity('half gallon').amount - 1892.705892) < 1e-6);
+});

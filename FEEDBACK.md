@@ -575,3 +575,13 @@ As a user, the worst problem was date questions going to the language model. A m
 Fixed: year, month, tomorrow, yesterday, "what's the day", "current date" and "what is today" are now answered by code. Trailing emoji are ignored when matching instant answers. Test added in test/brain.test.js and checked to fail before the change.
 
 Left for later: time in another city ("what time is it in tokyo") goes to the model, which cannot know it, and needs a timezone lookup in code. "bye", "good night", "what's your name", "who made you" and "how do i use loon" still go to the model. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-30 — shopping and unit price (fourth pass)
+
+Tried 27 size strings and 13 price strings such as "1 dozen", "half gallon", "Set of 4", "100 sheets", "500 gr", "Pack of 3 (6 oz each)", "₹1,29,999", "$.99" and "$5.00 - $7.00".
+
+As a user, the worst problem was a price off by a factor of 100000. "₹1,29,999" read as 1.29, so a laptop looked almost free and won every ranking. "$.99" read as 99. "1 dozen" and "half gallon" were not read, so those products dropped out of the unit price ranking.
+
+Fixed: parsePrice removes Indian grouping commas and reads a bare ".99". parseQuantity reads dozen, "a dozen", "half dozen" and "half gallon" style sizes. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: "Set of 4", "100 sheets", "$5.00 - $7.00" (takes the low end) and "Save $5 $20" are still not handled. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.

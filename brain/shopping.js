@@ -18,7 +18,7 @@ const ADJACENT = /^\s*(?:and|,)?\s*$/;
 function parseQuantity(text) {
   if (!text) return null;
   // "1/2 gallon" is half a gallon, not two.
-  const t = String(text).toLowerCase().replace(/×/g, 'x').replace(/\b([1-3])\/([2-4])\b(?=\s*(?:fl|gal|lb|oz|qt|pt|l\b|lit|kg|g\b|ml|pound|ounce|quart|pint))/g, (_, a, b) => Number(a) / Number(b));
+  const t = String(text).toLowerCase().replace(/×/g, 'x').replace(/\bhalf[- ](?=gallon|liter|litre|quart|pint|pound|lb)/g, '0.5 ').replace(/\b([1-3])\/([2-4])\b(?=\s*(?:fl|gal|lb|oz|qt|pt|l\b|lit|kg|g\b|ml|pound|ounce|quart|pint))/g, (_, a, b) => Number(a) / Number(b));
   let count = 1;
   const multi = t.match(/(\d+)\s*(?:(?:cans?|bottles?|bags?|boxes|pouches|jars|sticks)\s*)?x\s*\d/) || t.match(/\bpack of (\d+)/) || t.match(/(\d+)\s*[- ]?(?:pack|pk)\b/);
   if (multi) count = Number(multi[1]);
@@ -41,6 +41,8 @@ function parseQuantity(text) {
     const size = multi && /x/.test(multi[0]) ? first.amount : run.reduce((sum, m) => sum + m.amount, 0);
     return { amount: size * count, unit: first.base };
   }
+  const dozen = t.match(/(?:(\d+(?:\.\d+)?)|\b(a|one)|\b(half))[\s-]?dozen\b/);
+  if (dozen) return { amount: (dozen[3] ? 0.5 : Number(dozen[1] || 1)) * 12, unit: 'count' };
   const pieces = t.match(/(\d+)[\s-]?(?:ct|count|pcs|pieces|pods|tablets|capsules|rolls|bags)\b/);
   if (pieces) return { amount: Number(pieces[1]) * (multi && multi[0] !== pieces[0] ? count : 1), unit: 'count' };
   if (multi) return { amount: count, unit: 'count' };
@@ -53,8 +55,9 @@ function parsePrice(value) {
   // "Was $20 Now $15" is the sale price.
   const forN = String(value).match(/\b(\d+)\s*for\s*\D*?(\d+(?:\.\d{1,2})?)/i);
   if (forN) return Number(forN[2]) / Number(forN[1]);
-  const text = String(value).replace(/^.*\bnow\b/i, '').replace(/(\d)[.\s](?=\d{3},\d{1,2}\b)/g, '$1');
-  const m = text.replace(/,(?=\d{3}\b)/g, '').match(/(\d+(?:[.,]\d{1,2})?)/);
+  // Indian grouping ("₹1,29,999") puts commas every two digits before the last three.
+  const text = String(value).replace(/^.*\bnow\b/i, '').replace(/(\d),(?=\d{2},\d)/g, '$1').replace(/(\d)[.\s](?=\d{3},\d{1,2}\b)/g, '$1');
+  const m = text.replace(/,(?=\d{3}\b)/g, '').match(/(\d+(?:[.,]\d{1,2})?|[.,]\d{2})/);
   return m ? Number(m[1].replace(',', '.')) : null;
 }
 
