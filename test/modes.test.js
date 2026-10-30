@@ -109,6 +109,13 @@ test('menu: bare and trailing-symbol prices count, promos and add-ons do not', (
   assert.deepStrictEqual(items.map((i) => [i.name, i.price]), [['Grilled Chicken Wrap', 13.5], ['Pad Thai', 14]]);
 });
 
+test('menu: "-free" dishes are dishes, and stray spaces after the price are tidied', () => {
+  const items = food.extractMenu('Gluten-free Pasta $14\nChicken-free Pad Thai $12\nMargherita Pizza $14 (V)\nFree refills $0');
+  assert.deepStrictEqual(items.map((i) => i.name), ['Gluten-free Pasta', 'Chicken-free Pad Thai', 'Margherita Pizza (V)']);
+  assert.strictEqual(food.score(items[1]).likelyVegetarian, true);
+  assert.strictEqual(food.score({ name: 'Gluten-free Chicken Wrap', description: '' }).likelyVegetarian, false);
+});
+
 test('menu: lightest, protein and vegetarian picks with tips and a warning', () => {
   const text = fixture('menu.html').replace(/<\/p>/g, '\n').replace(/<[^>]+>/g, '').replace(/&amp;/g, '&');
   const items = food.extractMenu(text);

@@ -535,3 +535,13 @@ As a user, the worst problem was "remind me to pay rent on the 1st". The date wa
 Fixed: extractWhen now reads "on the 1st" and "the 15th" as the next such day, and timers read "1h30" and a bare number as minutes. The confirm card still shows the exact time. Tests added in test/assistant.test.js.
 
 Left for later. "remindme to…", "cancel my timer" and "remind me in 10 to check oven" (a bare number with no unit) are not handled. A date with no time of day lands at noon. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-30 — food and menu (fourth pass)
+
+Tried 40 menu lines such as "Egg-free Mayo Wrap $9", "Gluten-free Pasta $14", "Chicken-free Pad Thai $12", "Margherita Pizza $14 (V)", "Caesar Salad $9.50 GF", wing sizes with two prices and a full 20 dish menu for the three goals.
+
+As a user, the worst problem was that any dish with "-free" in its name was thrown away as a promo, so "Gluten-free Pasta $14" never showed up. "Chicken-free Pad Thai" also counted as meat. Notes after the price left a double space in the dish name.
+
+Fixed: "free" only counts as a promo when it is not part of a "-free" word, "-free" words no longer count as meat, and extra spaces in dish names are collapsed. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: "(V)" and "VEGAN" tags are kept in the name but not used to judge vegetarian. Prices written as a bare whole number ("Burger — 13") and "Fish & Chips 12.5" are not read. "Wings 6pc $8 | 12pc $14" is one dish. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.

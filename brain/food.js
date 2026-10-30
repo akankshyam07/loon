@@ -3,8 +3,8 @@
 
 // "$9", "€11,50", "14.00 €" or a bare "13.50" at the end of the line
 const PRICE = /([$€£])\s?(\d+(?:[.,]\d{2})?)|(\d+(?:[.,]\d{2})?)\s?([€£])|\s(\d+[.,]\d{2})\s*$/;
-// Promos, fees and add-ons share the line shape of a dish but are not dishes.
-const NOT_A_DISH = /\b(off|free|delivery|tax|tip|service charge|discount|coupon|minimum|surcharge)\b|^\s*(add|extra|\+)/i;
+// Promos, fees and add-ons share the line shape of a dish but are not dishes. "gluten-free" is a dish.
+const NOT_A_DISH = /\b(off|(?<!-)free|delivery|tax|tip|service charge|discount|coupon|minimum|surcharge)\b|^\s*(add|extra|\+)/i;
 const HEAVY = { fried: 3, 'deep-fried': 4, crispy: 2, battered: 3, breaded: 2, creamy: 2, cream: 2, cheese: 1.5, cheesy: 2, alfredo: 3, aioli: 2, mayo: 2, butter: 1.5, bacon: 2, sausage: 2, loaded: 2, smothered: 2, gravy: 2, carbonara: 3, ranch: 1.5, fries: 2, 'double': 1.5, pastry: 2, 'pork belly': 3 };
 const LIGHT = { grilled: -2, steamed: -3, baked: -1, roasted: -1, poached: -2, salad: -2, broth: -2, 'raw': -1, sashimi: -2, vinaigrette: -1, greens: -1, vegetable: -1, veggie: -1, lean: -2 };
 const PROTEIN = /\b(chicken|turkey|salmon|tuna|shrimp|prawns?|beef|steak|pork|tofu|tempeh|egg whites?|eggs?|lentils?|chickpeas?|beans|edamame|greek yogurt|cod|fish|seitan)\b/gi;
@@ -29,7 +29,7 @@ function extractMenu(text) {
     const m = lines[i].match(PRICE);
     if (!m || NOT_A_DISH.test(lines[i])) continue;
     // "Soup $6 | Bowl $8": the dish is the text before the first price
-    const name = (lines[i].match(new RegExp(PRICE.source, 'g')).length > 1 ? lines[i].slice(0, m.index) : lines[i].replace(PRICE, '')).replace(/[.·…\-–|]+\s*$/, '').replace(/^[.·…\-–|\s]+/, '').trim();
+    const name = (lines[i].match(new RegExp(PRICE.source, 'g')).length > 1 ? lines[i].slice(0, m.index) : lines[i].replace(PRICE, '')).replace(/[.·…\-–|]+\s*$/, '').replace(/^[.·…\-–|\s]+/, '').replace(/\s{2,}/g, ' ').trim();
     if (!name || name.length > 80) continue;
     const next = lines[i + 1];
     const description = next && !PRICE.test(next) && next.length > 15 ? next : '';
@@ -49,7 +49,7 @@ function score(item) {
     }
   }
   const proteins = [...new Set((text.match(PROTEIN) || []).map((p) => p.toLowerCase()))];
-  return { ...item, heaviness, reasons, proteins, likelyVegetarian: !MEAT.test(text.replace(MEAT_FREE, '')), tips: TIPS.filter(([re]) => re.test(text)).map(([, tip]) => tip) };
+  return { ...item, heaviness, reasons, proteins, likelyVegetarian: !MEAT.test(text.replace(MEAT_FREE, '').replace(/\b[a-z]+-free\b/g, '')), tips: TIPS.filter(([re]) => re.test(text)).map(([, tip]) => tip) };
 }
 
 const GOALS = {
