@@ -4,7 +4,7 @@
 const { parseCommand, normalizeSpoken } = require('./commands');
 
 const STOP = /^(stop|cancel|never ?mind|shh+|quiet|be quiet|hush|that's enough|enough)$/i;
-const YES = /^(yes|yeah|yep|yup|sure|ok(ay)?|do it|go ahead|confirm|please do|correct|right)( (do it|go ahead|please))*$/i;
+const YES = /^(yes|yeah|yep|yup|sure|ok(ay)?|do it|go ahead|confirm|please do|correct|right)( (do it|go ahead|please|sure))*$/i;
 const NO = /^(no|nope|nah|don't|do not|cancel|stop|never ?mind|wrong|no thanks|no thank you|not now)$/i;
 
 // Fixed phrases → task/toggle. Alternatives written as regex; matched on the normalized utterance.
@@ -21,14 +21,14 @@ const TEMPLATES = [
   { re: /^translate (this|that|it)( for me)?( (to|into) english)?$/, route: { type: 'task', task: 'translate', needs: 'selection' } },
   { re: /^(summari[sz]e|sum up) (this|the) page$|^what'?s on (this|the) page$|^what is this page( about)?$/, route: { type: 'task', task: 'page_summary' } },
   { re: /^what (do|should) i do (here|on this page)$/, route: { type: 'task', task: 'page_todo' } },
-  { re: /^(which (one )?is (the )?(cheapest|best value)|what'?s the best (deal|value))( here)?$/, route: { type: 'task', task: 'shop_value' } },
+  { re: /^(which (one )?is (the )?(cheapest|best value)|what'?s the (cheapest|best (deal|value)))( here)?$/, route: { type: 'task', task: 'shop_value' } },
   { re: /^what should i (order|eat)( here)?$|^what'?s the lightest( option)?$/, route: { type: 'task', task: 'food_lightest' } },
   { re: /^(quiz me|test me)( on this( page)?)?$/, route: { type: 'task', task: 'quiz' } },
   { re: /^(what have i found|summari[sz]e my notes)$/, route: { type: 'task', task: 'research_found' } },
   { re: /^(?:(?:turn on |start )focus(?: mode)?(?: on)?|focus mode(?: on)?)$|^go to sleep$/, route: { type: 'toggle', key: 'focus', value: true } },
-  { re: /^(turn off |stop )focus( mode)?$|^focus (mode )?off$|^wake up$/, route: { type: 'toggle', key: 'focus', value: false } },
-  { re: /^(turn on )?privacy mode( on)?$/, route: { type: 'toggle', key: 'privacy', value: true } },
-  { re: /^(turn off )?privacy mode off$|^turn off privacy mode$/, route: { type: 'toggle', key: 'privacy', value: false } },
+  { re: /^(turn off |stop )focus( mode)?$|^(turn )?focus (mode )?off$|^wake up$/, route: { type: 'toggle', key: 'focus', value: false } },
+  { re: /^(turn on )?priv(acy|ate) mode( on)?$|^go private$/, route: { type: 'toggle', key: 'privacy', value: true } },
+  { re: /^(turn off )?priv(acy|ate) mode off$|^turn off priv(acy|ate) mode$/, route: { type: 'toggle', key: 'privacy', value: false } },
   { re: /^define:? (?:the word )?(.+)$/, route: { type: 'task', task: 'define', slot: 'text' } },
 ];
 
@@ -37,6 +37,7 @@ function normalize(transcript) {
   return transcript
     .toLowerCase()
     .replace(/^(hey |ok |okay )?loon[,\s]+/, '') // wake phrase at the start of an utterance
+    .replace(/^((um+|uh+|er+|hmm+|so|well),?\s+)+/, '')
     .replace(/^(please|can you|could you|would you)\s+/, '')
     .replace(/[,.!?]+/g, ' ')
     .replace(/\s+(please|loon)$/, '')

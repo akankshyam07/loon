@@ -615,3 +615,13 @@ As a user, the worst problem was that common ways of asking for shorter answers 
 Fixed: the feedback rules in brain/personal.js now accept these phrasings, and emoji characters are ignored while matching. Test added in test/personal.test.js and checked to fail before the change.
 
 Left for later: "im vegetarian" without the apostrophe is saved as "Im vegetarian". "I have a peanut allergy", "I'm on a keto diet" and "I'm trying to lose weight" are not offered as memories. "respond in hinglish", "explain like I'm five" and "keep it simple" are not understood as style feedback. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-30 — voice intents (third pass)
+
+Tried 47 spoken phrasings such as "turn focus off", "turn on private mode", "go private", "what's the cheapest", "uh yes", "yeah sure", "um, make this shorter please", "tl;dr", "eli5" and "what does serendipity mean".
+
+As a user, the worst problem was that "turn focus off" went to the model while "stop focus mode" worked. The same happened with "private mode". A filler like "um," or "uh" in front of a command or a yes also broke the match, and "what's the cheapest" missed the shopping answer.
+
+Fixed: leading fillers are dropped, "turn focus off" and "private mode" on and off are accepted, "go private" turns privacy on, "what's the cheapest" routes to the value answer and "yeah sure" counts as a yes. Test added in test/voice.test.js and checked to fail before the change.
+
+Left for later: "tl;dr", "eli5", "explain this page", "what does X mean" and "translate this to french" still go to the model. "do not disturb" and "quiet mode" are not mapped to focus. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.

@@ -104,3 +104,13 @@ test('spoken confirmations, focus and define phrasings route to the right intent
   assert.deepStrictEqual(route('define: ephemeral'), { type: 'task', task: 'define', slot: 'text', text: 'ephemeral' });
   assert.strictEqual(route('define the word ephemeral').text, 'ephemeral');
 });
+
+test('spoken fillers, "turn focus off", private mode and "what\'s the cheapest" are understood', () => {
+  assert.deepStrictEqual(route('turn focus off'), { type: 'toggle', key: 'focus', value: false });
+  assert.deepStrictEqual(route('turn on private mode'), { type: 'toggle', key: 'privacy', value: true });
+  assert.deepStrictEqual(route('turn off private mode'), { type: 'toggle', key: 'privacy', value: false });
+  assert.deepStrictEqual(route("what's the cheapest"), { type: 'task', task: 'shop_value' });
+  assert.deepStrictEqual(route('um, make this shorter please'), { type: 'task', task: 'shorter', needs: 'selection' });
+  assert.strictEqual(route('uh yes', { awaitingConfirmation: true }).type, 'yes');
+  assert.strictEqual(route('yeah sure', { awaitingConfirmation: true }).type, 'yes');
+});
