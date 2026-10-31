@@ -705,3 +705,13 @@ As a user, the worst problem was a wrong time stated with confidence. "Wake me u
 Fixed: alarms and "wake me" no longer move a bare hour to the afternoon, a timer can carry a "for …" label that shows in the reminder title, and a leading "about" is dropped from reminder titles. Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: "end of day" is not a time and stays in the title with no time set. "snooze 10 minutes", "cancel my timer", "focus mode" and a bare "set a timer" are not matched. "Every day" in a one-time reminder is still not flagged. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-31 — settings UI (third pass)
+
+Tried 11 base URLs on the custom provider check in plain Node, such as a query string with a key, a fragment, a bare "?", a trailing slash, a full chat completions path, an upper case scheme, a private network address, an IPv6 localhost and a bad port.
+
+As a user, pasting a URL like "https://x.ai/v1?key=abc" was accepted. The key would sit in a stored setting outside the key store, and requests append paths after the base, so the call would also break in a confusing way.
+
+Fixed: checkBaseUrl in brain/api-provider.js now rejects anything after a "?" or "#" and says to use the key field. Test added in test/api-provider.test.js and checked to fail before the change.
+
+Left for later: a pasted full endpoint such as ".../v1/chat/completions" is kept as the base, so requests go to a doubled path. A private network address like 192.168.1.5 is refused with the https message, which is correct but does not say why. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.

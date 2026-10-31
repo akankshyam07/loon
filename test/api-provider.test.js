@@ -128,7 +128,7 @@ test('base URLs: https anywhere, plain http only for this Mac', async () => {
   assert.strictEqual(api.checkBaseUrl('localhost:11434/v1'), 'http://localhost:11434/v1');
   assert.strictEqual(api.checkBaseUrl('127.0.0.1:1234'), 'http://127.0.0.1:1234');
   assert.strictEqual(api.checkBaseUrl('openrouter.ai/api/v1'), 'https://openrouter.ai/api/v1');
-  for (const bad of ['http://example.com/v1', 'http://192.168.1.5:1234/v1', 'ftp://x.y', 'not a url', 'https://user:pw@x.com']) {
+  for (const bad of ['http://example.com/v1', 'http://192.168.1.5:1234/v1', 'ftp://x.y', 'not a url', 'https://user:pw@x.com', 'https://x.com/v1?key=abc', 'https://x.com/v1#frag']) {
     assert.throws(() => api.checkBaseUrl(bad), undefined, bad);
   }
   await assert.rejects(api.ask({ provider: 'custom', baseUrl: 'http://example.com/v1', model: 'x', prompt: 'hi' }), /https/);

@@ -106,6 +106,8 @@ function checkBaseUrl(raw) {
     throw new Error('That base URL doesn\'t look right. Example: https://openrouter.ai/api/v1');
   }
   if (url.username || url.password) throw new Error('Put the key in the key field, not in the URL.');
+  // A query would also sit in a stored setting outside the key store, and requests append paths after the base.
+  if (/[?#]/.test(String(raw))) throw new Error('Leave off anything after a ? or # (keys go in the key field). Example: https://openrouter.ai/api/v1');
   if (url.protocol === 'https:') return url.href.replace(/\/+$/, '');
   if (url.protocol === 'http:' && LOCAL_HOSTS.has(url.hostname)) return url.href.replace(/\/+$/, '');
   throw new Error('Use an https:// URL. Plain http:// is only allowed for a server on this Mac (localhost).');
