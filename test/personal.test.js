@@ -258,3 +258,9 @@ test('privacy mode: no memory or graph in prompts, profile text left out', async
   assert.deepStrictEqual(profileSummary([{ id: '1', text: 'My name is Akku', pinned: true }, { id: '2', text: 'I like tea', pinned: false }], settings.personal),
     [{ source: 'fact', id: '1', text: 'My name is Akku' }, { source: 'setting', key: 'about', text: 'I intern at Acme.' }, { source: 'setting', key: 'style', text: 'Likes short replies.' }]);
 });
+
+test('feedback understands "speak French" and "stop being so formal"', () => {
+  assert.deepStrictEqual(parseFeedback('speak french').patch, { language: 'French' });
+  assert.deepStrictEqual(parseFeedback('Stop being so formal!').patch, { tone: 'playful' });
+  assert.strictEqual(parseFeedback('speak up'), null);
+});

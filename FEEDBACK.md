@@ -715,3 +715,13 @@ As a user, pasting a URL like "https://x.ai/v1?key=abc" was accepted. The key wo
 Fixed: checkBaseUrl in brain/api-provider.js now rejects anything after a "?" or "#" and says to use the key field. Test added in test/api-provider.test.js and checked to fail before the change.
 
 Left for later: a pasted full endpoint such as ".../v1/chat/completions" is kept as the base, so requests go to a doubled path. A private network address like 192.168.1.5 is refused with the https message, which is correct but does not say why. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-31 — onboarding and style feedback (second pass)
+
+Tried 28 style feedback phrases and 8 allergy and interest answers, including "speak french", "stop being so formal", "respond in hinglish", "rock and roll", "R&B, hip-hop", "none" and a name with HTML tags.
+
+As a user, "speak french" and "stop being so formal" did nothing and went to the model as a normal question. The list answers held up, since "rock and roll" is joined back together when saved.
+
+Fixed: parseFeedback accepts "speak <language>" and "stop being (so) formal, serious or stiff". Test added in test/personal.test.js and checked to fail before the change.
+
+Left for later: "Call me" names keep the letters of HTML tags ("José <b>María</b>" becomes "José bMaríab"). "simpler words", "less jargon", "be nicer" and "respond in hinglish" have no setting to map to. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.

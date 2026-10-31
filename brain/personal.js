@@ -57,7 +57,7 @@ const FEEDBACK = [
   [/^(?:use|more|add|with) emojis?$/, () => ({ emoji: true })],
   [/^(?:be |sound )?(?:more )?(?:formal|professional)$|^too (?:casual|informal|silly)$/, () => ({ tone: 'formal' })],
   [/^(?:be )?(?:more serious|less playful|less silly|less cute|no jokes|fewer jokes|less jokes|stop joking|plainer|plain)$|^too (?:playful|silly|cute)$/, () => ({ tone: 'plain' })],
-  [/^(?:be )?(?:(?:more )?(?:playful|fun|casual|cute)|less formal|less serious)$|^too (?:formal|serious|stiff)$/, () => ({ tone: 'playful' })],
+  [/^(?:be )?(?:(?:more )?(?:playful|fun|casual|cute)|less formal|less serious)$|^too (?:formal|serious|stiff)$|^stop being (?:so |too )?(?:formal|serious|stiff)$/, () => ({ tone: 'playful' })],
 ];
 const NOTES = {
   length: { short: 'shorter from now on', normal: 'back to normal-length answers', detailed: 'more detail from now on' },
@@ -80,7 +80,7 @@ function parseFeedback(text, current = PERSONAL_DEFAULTS) {
     const [key, value] = Object.entries(patch)[0];
     return { patch, note: `Got it, ${NOTES[key][String(value)]}. Change it in Settings.` };
   }
-  const lang = t.match(/^(?:(?:reply|answer|respond|talk|speak|write)(?: to me)? in|(?:go )?back to) ([a-z]+)(?: only)?$/);
+  const lang = t.match(/^(?:(?:reply|answer|respond|talk|speak|write)(?: to me)? in|(?:go )?back to|speak) ([a-z]+)(?: only)?$/);
   if (lang && LANGUAGES.includes(lang[1])) {
     const language = lang[1] === 'english' ? '' : lang[1][0].toUpperCase() + lang[1].slice(1);
     return { patch: { language }, note: `Got it, ${language ? `I'll reply in ${language}` : 'back to English'} from now on. Change it in Settings.` };
