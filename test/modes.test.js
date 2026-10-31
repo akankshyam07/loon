@@ -162,6 +162,14 @@ test('errors: fingerprint ignores paths/values; known errors answer from the tab
   assert.match(lookupKnown('Error: unable to verify the first certificate'), /Certificate not trusted/);
   assert.match(lookupKnown("error: failed to push some refs to 'origin'"), /push rejected/);
   assert.match(lookupKnown('Main.java:5: error: cannot find symbol'), /Cannot find symbol/);
+  assert.match(lookupKnown('FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory'), /Node ran out of memory/);
+  assert.match(lookupKnown('java.lang.ClassCastException: class A cannot be cast to class B'), /ClassCastException/);
+  assert.match(lookupKnown('Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?'), /Docker daemon/);
+  assert.match(lookupKnown('panic: runtime error: invalid memory address or nil pointer dereference'), /Nil pointer/);
+  assert.match(lookupKnown('error[E0382]: borrow of moved value: `s`'), /moved value/);
+  assert.match(lookupKnown('502 Bad Gateway'), /502 Bad Gateway/);
+  assert.match(lookupKnown('upstream: 504 Gateway Time-out'), /504 Gateway Timeout/);
+  assert.strictEqual(lookupKnown('ValueError at app.js:502:9'), null, 'a line number is not a 502');
 });
 
 test('JSON → DTO with quicktype; grammar fixes with Harper', async () => {

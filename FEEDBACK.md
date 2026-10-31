@@ -735,3 +735,13 @@ As a user, the worst problem was that an object copied from JavaScript source (`
 Fixed: the retry in `parseJson` now rewrites single quotes, bare keys, comments and trailing commas outside of strings. It replaces the old comma regex, which could also have changed a string such as "a,}". The old test that expected single quotes to be rejected now checks a truly broken input, and a new test covers the literal case.
 
 Left for later: JSON lines (one object per line), NaN, Python-style True/None, and JSON with text around it are still refused. A null-only field becomes `Object`. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-31 — developer help, error table (fifth pass)
+
+Tried 38 pasted errors such as Python ImportError and ValueError, Rust "borrow of moved value", Go nil pointer panics, TypeScript TS2345, a Docker daemon error, Node "heap out of memory", ClassCastException, 502 and 504 responses, React key and hydration warnings and SQL duplicate key errors.
+
+As a user, the common production errors were still going to the model. The Node heap out of memory crash, a 502 or 504 from a proxy, "Cannot connect to the Docker daemon", Java ClassCastException, Go nil pointer panics and the Rust moved value error all missed the table, so a simple lookup cost a model call.
+
+Fixed: added seven table entries for these. The 502 and 504 entries skip line numbers like the other status codes. Tests added in test/modes.test.js.
+
+Left for later: TypeScript errors, AttributeError for types other than NoneType, "TypeError: 'int' object is not subscriptable", React key and hydration warnings, SQL constraint errors, NoSuchMethodError and UnsupportedClassVersionError are still not in the table. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.

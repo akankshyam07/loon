@@ -281,6 +281,48 @@ const KNOWN = [
     fix: ['Open the server logs around that timestamp for the stack trace.'],
   },
   {
+    match: /JavaScript heap out of memory|Reached heap limit/,
+    title: 'Node ran out of memory',
+    explain: 'The Node process hit its heap limit, usually from loading a huge file or data set at once or from a leak.',
+    fix: ['Stream or paginate large data instead of loading it all.', 'Look for caches, arrays or listeners that only ever grow.', 'As a stopgap raise the limit: `NODE_OPTIONS=--max-old-space-size=4096`.'],
+  },
+  {
+    match: /ClassCastException/,
+    title: 'ClassCastException (Java)',
+    explain: 'Code cast an object to a type it is not, often from raw generics or two copies of a class loaded by different class loaders.',
+    fix: ['Read the message: it names the actual class and the one it was cast to.', 'Check the code that produced the object, not the cast itself.', 'Use `instanceof` or fix the generic type instead of casting.'],
+  },
+  {
+    match: /Cannot connect to the Docker daemon|docker daemon is not running/i,
+    title: 'Docker daemon not reachable',
+    explain: 'The docker command could not talk to the Docker engine, so it is probably not running or you lack access to its socket.',
+    fix: ['Start Docker Desktop (or `sudo systemctl start docker` on Linux).', 'On Linux, add your user to the `docker` group and log in again.'],
+  },
+  {
+    match: /nil pointer dereference/,
+    title: 'Nil pointer panic (Go)',
+    explain: 'Go code used a pointer, map or interface that was nil.',
+    fix: ['Read the goroutine trace: the first line in your own package is where it happened.', 'Check errors before using the returned value.', 'Initialize maps and structs before use.'],
+  },
+  {
+    match: /borrow of moved value|use of moved value|E0382/,
+    title: 'Use of a moved value (Rust)',
+    explain: 'A value was moved to another owner and then used again.',
+    fix: ['Pass a reference (`&value`) instead of moving it.', 'Call `.clone()` if you really need two owners.'],
+  },
+  {
+    match: new RegExp(`${status(502)}|Bad Gateway`),
+    title: '502 Bad Gateway',
+    explain: 'A proxy or load balancer got a bad answer, or none, from the app behind it.',
+    fix: ['Check the app behind the proxy is running and listening on the expected port.', 'Look at the proxy and app logs at that time.'],
+  },
+  {
+    match: new RegExp(`${status(504)}|Gateway Time-?out`),
+    title: '504 Gateway Timeout',
+    explain: 'A proxy waited too long for the app behind it to answer.',
+    fix: ['Find the slow request: a long query or an external call with no timeout.', 'Raise the proxy timeout only after that.'],
+  },
+  {
     match: new RegExp(`${status(429)}|Too Many Requests`),
     title: '429 Too Many Requests',
     explain: 'You hit the server’s rate limit.',
