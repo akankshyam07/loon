@@ -91,7 +91,7 @@ function parseCommand(input, now = new Date()) {
     const isUrl = /^(https?:\/\/)?[\w-]+(\.[\w-]+)+(\/\S*)?$/i.test(target);
     return { action: 'open', target: isUrl && !/^https?:/i.test(target) ? `https://${target}` : target, kind: isUrl ? 'url' : 'app' };
   }
-  if ((m = text.match(/^(?:find|search for|look for|where is|where's)(?: my)? (.+?)(?: files?)?\??$/i))) {
+  if (!/^find my (?:question|search)\b/i.test(text) && (m = text.match(/^(?:find|search for|look for|where is|where's)(?: my)? (.+?)(?: files?)?\??$/i))) {
     return { action: 'find', query: tidy(m[1]) };
   }
   if ((m = text.match(/^(?:where did i leave off|what was i (?:working on|doing)|catch me up)(?: (?:in|on|with) (.+?))?\??$/i))) {
@@ -104,7 +104,7 @@ function parseCommand(input, now = new Date()) {
   if ((m = text.match(/^(?:what did i (?:ask|look up|search(?: for)?|read|learn|find out)|when did i (?:ask|look up|read)|find my (?:question|search)) (?:about |on |for )?(.+?)\??$/i))) {
     return { action: 'recall', query: recallQuery(m[1]) };
   }
-  if (/^(?:(?:show|open)(?: me)? )?(?:my )?(?:(?:recent|past|previous) (?:questions|searches|lookups)|history|recent activity)\??$/i.test(text) || /^what (?:was|were) my (?:last|latest|recent|previous) (?:questions?|searches|lookups?)\??$/i.test(text) || /^what (?:have|did) i (?:asked?|looked up|searched)\??$/i.test(text)) return { action: 'recall', query: '' };
+  if (/^(?:(?:show|open)(?: me)? )?(?:my )?(?:(?:recent|past|previous) (?:questions|searches|lookups|history)|history|recent activity)\??$/i.test(text) || /^what(?:'?s| is| was| were| are)? my (?:(?:last|latest|recent|previous) )?(?:questions?|searches|lookups?|history)\??$/i.test(text) || /^(?:show me |tell me )?what (?:have|did) i (?:been )?(?:ask(?:ed)?|asking|looked up|looking up|searched|searching)(?: you)?(?: (?:so far|lately|recently|earlier))?\??$/i.test(text) || /^what (?:did|have) we (?:talk(?:ed)?|chat(?:ted)?) about(?: (?:today|yesterday|earlier|lately|recently))?\??$/i.test(text)) return { action: 'recall', query: '' };
   if ((m = text.match(/^(?:did i|have i) (?:ever )?(?:look(?:ed)? up|search(?:ed)?(?: for)?|ask(?:ed)?(?: about)?|read about) (.+?)(?: before)?\??$/i))) {
     return { action: 'recall', query: recallQuery(m[1]) };
   }

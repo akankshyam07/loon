@@ -685,3 +685,13 @@ As a user, ordinary variations of the edit commands missed the templates and wen
 Fixed: the shorter, professional, warmer and fix grammar templates in brain/intents.js accept "way" and "much", "cut this down", "polite", "friendly", "in a friendlier tone", "proofread this for me" and "check this for typos". Test added in test/voice.test.js and checked to fail before the change.
 
 Left for later: "make this longer", "expand this", "make it more casual", "make this clearer", "improve this", "polish this", "reply to this" and "eli5" still go to the model because there is no task for them. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-31 — history (fourth pass)
+
+Tried 25 phrasings such as "what did I ask", "what have I asked you", "what's my history", "what are my recent questions", "recent history", "what did we talk about yesterday", "find my question about redis" and "show me what I looked up".
+
+As a user, the worst problem was that the plainest forms, "what did I ask" and "what have I asked you", were not understood and went to the language model, which cannot see my history. "find my question about redis" searched my files instead of my history.
+
+Fixed: those forms and "what's my history", "what did we talk about" now open the recent history list, and "find my question/search about X" searches the history. Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: "show me what I looked up" and "recent history" are still not matched, and "remind me what I asked" becomes a reminder. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
