@@ -7,6 +7,7 @@
     /Traceback \(most recent call last\)/, // Python
     /^\s*File ".+", line \d+/m,
     /\b\w+(Error|Exception)\b[:\s].{3,}/,
+    /^\s*(Uncaught\s+)?(Error|Exception): \S/, // a bare "Error: ..." line
     /^\s*panic: /m, // Go
   ];
 
@@ -29,15 +30,30 @@
     return density > 0.06 && (keywords || text.includes('\n'));
   }
 
+  const SQL = /^\s*(select\s+(distinct\s+)?(\*|[\w.()*`"]+(\s+as\s+\w+)?(\s*,\s*[\w.()*`"]+(\s+as\s+\w+)?)*)\s+from\s+\S|insert\s+into\b|update\s+\w+\s+set\b|delete\s+from\b|create\s+table\b)/i;
+  // A known tool followed by a flag, a path or a subcommand, so "git is great" stays prose
+  const SHELL = /^\s*(\$\s+)?(sudo\s+)?(git|npm|npx|yarn|pnpm|docker|kubectl|apt|apt-get|brew|pip3?|curl|ssh|chmod|rm|mkdir|ls|cd)\s+(-\S|\S*[/~.]\S*|(install|run|add|remove|commit|push|pull|clone|checkout|status|build|update|start|test|init|up|down|exec|get|apply)\b)/;
+
+  // One-line import and include statements have too few symbols for the density check
+  const IMPORT = /^\s*(import\s+[\w{*][^\n]*\sfrom\s+['"]|import\s+[\w.]+(\.\*)?;|from\s+[\w.]+\s+import\s+\w|#include\s*[<"]|using\s+[\w.]+;|package\s+[\w.]+;)/;
+
+  function looksLikeCommand(text) {
+    const lines = text.split('\n').filter((l) => l.trim());
+    return lines.length > 0 && (SQL.test(text) || lines.every((l) => SHELL.test(l) || IMPORT.test(l)));
+  }
+
   function classifySelection(text, { editable = false, monospace = false } = {}) {
     const t = text.trim();
     if (editable) return 'editable';
     if (looksLikeJson(t)) return 'json';
     if (STACK_TRACE.some((re) => re.test(t)) && (t.includes('\n') || /(Error|Exception)/.test(t))) return 'stacktrace';
-    if (looksLikeCode(t, { monospace })) return 'code';
+    if (looksLikeCode(t, { monospace }) || looksLikeCommand(t)) return 'code';
+    // CJK text has no spaces, so count roughly one word per two characters
+    const cjk = (t.match(/[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/g) || []).length;
     const words = t.split(/\s+/).filter(Boolean);
-    if (words.length <= 3) return 'word';
-    const sentences = (t.match(/[.!?](\s|$)/g) || []).length;
+    const wordCount = cjk > 0 ? words.length + Math.floor(cjk / 2) : words.length;
+    if (wordCount <= 3) return 'word';
+    const sentences = (t.replace(/\b(?:mr|mrs|ms|dr|prof|st|vs|etc)\.|\b[ap]\.m\.|\b(?:e\.g|i\.e)\./gi, ' ').match(/[.!?](\s|$)|[。！？]/g) || []).length;
     if (sentences <= 1 && t.length < 260) return 'sentence';
     return 'paragraph';
   }

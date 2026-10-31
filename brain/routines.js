@@ -57,10 +57,10 @@ function formatTime(time) {
 //                                                          monthDay: that date, or the month's last day if shorter)
 // { type: 'interval', minutes, window, days }             every N minutes inside window (null = all day)
 const DAY_WORD = String.raw`(?:mon|tues?|wed(?:nes)?|thu(?:rs?)?|fri|sat(?:ur)?|sun)(?:day)?s?`;
-const DAY_LIST = new RegExp(String.raw`\b(?:every|each|on)\s+(${DAY_WORD}(?:\s*(?:,|and|&)\s*${DAY_WORD})*)\b`, 'i');
+const DAY_LIST = new RegExp(String.raw`\b(?:every|each|on)\s+(${DAY_WORD}(?:(?:\s*(?:,|and|&)\s*|\s+)${DAY_WORD})*)\b`, 'i');
 const DAY_PLURAL = new RegExp(String.raw`\b((?:mon|tues|wednes|thurs|fri|satur|sun)days(?:\s*(?:,|and|&)\s*(?:mon|tues|wednes|thurs|fri|satur|sun)days)*)\b`, 'i');
 const dayIndex = (word) => ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].indexOf(word.toLowerCase().slice(0, 3));
-const RECURRING = /\b(?:every|each|daily|nightly|hourly|weekdays?|weekends?|weekly|monthly|(?:mon|tues|wednes|thurs|fri|satur|sun)days)\b/i;
+const RECURRING = /\b(?:every|each|everyday|daily|nightly|hourly|weekdays?|weekends?|weekly|monthly|(?:mon|tues|wednes|thurs|fri|satur|sun)days)\b/i;
 
 // Cuts the first match out of state.text (so what's left is the action) and returns it.
 function take(state, re) {
@@ -75,7 +75,8 @@ const unitMinutes = (u) => (/^h/i.test(u) ? 60 : 1);
 // Reads the schedule out of text: { schedule, rest } (schedule null when nothing recurring was found).
 // allowOnce: also accept a plain date ("tomorrow at 9") as a one-off, for the confirm card's When field.
 function parseSchedule(input, now = new Date(), { allowOnce = false } = {}) {
-  const state = { text: ` ${String(input).replace(/[()]/g, ' ')} ` };
+  // "7.30pm" reads as 7:30pm.
+  const state = { text: ` ${String(input).replace(/[()]/g, ' ').replace(/\b(\d{1,2})\.(\d{2})(?=\s*[ap]\.?m\b)/gi, '$1:$2')} ` };
   const at = now.getTime();
   const done = (schedule) => ({ schedule, rest: tidyRest(state.text) });
 
@@ -90,22 +91,25 @@ function parseSchedule(input, now = new Date(), { allowOnce = false } = {}) {
     || take(state, /\b(?:every|each)\s+month\s+on\s+the\s+(\d{1,2})(?:st|nd|rd|th)?\b/i)
     || take(state, /\bmonthly\s+on\s+the\s+(\d{1,2})(?:st|nd|rd|th)?\b/i);
   const everyN = take(state, /\bevery\s+(other|second|\d+)\s+days?\b/i);
+  const everyWeeks = take(state, /\bevery\s+(other|second|\d+)\s+weeks?\b/i) || take(state, /\b(?:bi-?weekly|fortnightly)\b/i);
   let days = null;
   if (take(state, /\b(?:every\s+|on\s+)?(?:weekdays?|work\s?days?)\b/i)) days = WEEKDAYS;
   else if (take(state, /\b(?:every\s+|on\s+)?weekends?\b/i)) days = WEEKEND;
   else {
     const list = take(state, DAY_LIST) || take(state, DAY_PLURAL);
-    if (list) days = [...new Set(list[1].split(/\s*(?:,|and|&)\s*/).map(dayIndex).filter((d) => d >= 0))].sort();
+    if (list) days = [...new Set(list[1].split(/\s*(?:,|and|&)\s*|\s+/).map(dayIndex).filter((d) => d >= 0))].sort();
   }
   const weekly = take(state, /\b(?:every\s+week|weekly)\b/i);
-  const daily = take(state, /\b(?:every|each)\s+(day|morning|afternoon|evening|night)\b/i) || take(state, /\b(daily|nightly)\b/i);
-  if (daily) part = { nightly: 'night', daily: null, day: null }[daily[1].toLowerCase()] ?? daily[1].toLowerCase();
+  const daily = take(state, /\b(?:every|each)\s+(day|morning|afternoon|evening|night)\b/i) || take(state, /\b(daily|nightly|everyday)\b/i);
+  if (daily) part = { nightly: 'night', daily: null, everyday: null, day: null }[daily[1].toLowerCase()] ?? daily[1].toLowerCase();
   const partWord = take(state, /\b(?:in\s+the\s+|at\s+)?(morning|afternoon|evening|night)s?\b/i);
   if (partWord && !part) part = partWord[1].toLowerCase();
   const timeMatch = take(state, new RegExp(String.raw`\bat\s+(${TIME})(?![\w:])`, 'i')) || take(state, /\b(\d{1,2}(?::\d{2})?\s*(?:am|pm)|noon|midnight)\b/i);
   const time = timeMatch ? parseTime(timeMatch[1], part) : PART_TIMES[part] || '09:00';
+  // A routine has one time of day: "at 9am and 5pm" must not quietly keep only the first.
+  if (timeMatch && /(?:,|\band|&)\s*(?:at\s+)?(?:\d{1,2}(?::\d{2})?\s*(?:am|pm)|noon|midnight)\b/i.test(state.text)) return { schedule: null, rest: tidyRest(state.text) };
 
-  const recurring = window || interval || monthDay || everyN || days || weekly || daily;
+  const recurring = window || interval || monthDay || everyN || everyWeeks || days || weekly || daily;
   if (!recurring) {
     if (!allowOnce) return { schedule: null, rest: tidyRest(input) };
     const [found] = chrono.parse(String(input), now, { forwardDate: true });
@@ -133,6 +137,14 @@ function parseSchedule(input, now = new Date(), { allowOnce = false } = {}) {
     const d = Number(monthDay[1]);
     if (d < 1 || d > 31) return { schedule: null, rest: tidyRest(state.text) };
     return done({ type: 'daily', time, days: ALL_DAYS, monthDay: d });
+  }
+  if (everyWeeks) {
+    // One weekday only: the 14-day cycle starts on the next such day, so a second day would drift off it.
+    const weeks = /^\d+$/.test(everyWeeks[1] || '') ? Number(everyWeeks[1]) : 2;
+    if (days && days.length > 1) return { schedule: null, rest: tidyRest(state.text) };
+    const first = new Date(now.getFullYear(), now.getMonth(), now.getDate(), ...hm(time));
+    while (first.getTime() <= at || first.getDay() !== (days ? days[0] : now.getDay())) first.setDate(first.getDate() + 1);
+    return done({ type: 'daily', time, days: [first.getDay()], every: weeks * 7, anchor: isoDay(first) });
   }
   if (everyN) {
     const every = /^(?:other|second)$/i.test(everyN[1]) ? 2 : Number(everyN[1]);
@@ -222,6 +234,7 @@ function describeSchedule(s) {
   }
   const at = ` at ${formatTime(s.time)}`;
   if (s.monthDay) return `the ${ordinal(s.monthDay)} of every month${at}`;
+  if (s.every > 1 && s.every % 7 === 0) return `every ${s.every === 14 ? 'other' : `${s.every / 7} weeks on`} ${DAY_NAMES[s.days[0]]}${at}`;
   if (s.every > 1) return `${s.every === 2 ? 'every other day' : `every ${s.every} days`}${at}`;
   return `${describeDays(s.days || ALL_DAYS)}${at}`;
 }
@@ -238,7 +251,10 @@ const ACTION_RULES = [
 function parseAction(rest, { pageUrl = null } = {}) {
   const text = rest.trim().replace(/^(?:to|and|then)\s+/i, '');
   let m;
-  if ((m = text.match(/^remind me (?:to |about |of )?(.+)$/i))) return { action: 'reminder', payload: { message: tidyMessage(m[1]) }, understood: true };
+  if ((m = text.match(/^remind me (?:to |about |of )?(.+)$/i))) {
+    const message = /^(?:to|about|of)$/i.test(m[1]) ? '' : tidyMessage(m[1]); // "remind me to" with nothing after it
+    return { action: 'reminder', payload: { message }, understood: Boolean(message) };
+  }
   if ((m = text.match(/^(?:tell|ask) me to (.+)$/i))) return { action: 'notify', payload: { message: `Time to ${tidyMessage(m[1])}` }, understood: true };
   for (const [action, re] of ACTION_RULES) {
     if (!re.test(text)) continue;

@@ -4,25 +4,32 @@
 const { parseCommand, normalizeSpoken } = require('./commands');
 
 const STOP = /^(stop|cancel|never ?mind|shh+|quiet|be quiet|hush|that's enough|enough)$/i;
-const YES = /^(yes|yeah|yep|yup|sure|ok(ay)?|do it|go ahead|confirm|please do|correct|right)$/i;
-const NO = /^(no|nope|nah|don't|do not|cancel|stop|never ?mind|wrong)$/i;
+const YES = /^(yes|yeah|yep|yup|sure|ok(ay)?|do it|go ahead|confirm|please do|correct|right)( (do it|go ahead|please|sure))*$/i;
+const NO = /^(no|nope|nah|don't|do not|cancel|stop|never ?mind|wrong|no thanks|no thank you|not now)$/i;
 
 // Fixed phrases → task/toggle. Alternatives written as regex; matched on the normalized utterance.
 const TEMPLATES = [
-  { re: /^(explain|what does) (this|that|the selection)( mean)?$|^what does this mean$/, route: { type: 'task', task: 'explain', needs: 'selection' } },
-  { re: /^(simplify( this| that)?|make (this|that) simpler)$/, route: { type: 'task', task: 'simplify', needs: 'selection' } },
-  { re: /^translate (this|that)( to english)?$/, route: { type: 'task', task: 'translate', needs: 'selection' } },
+  { re: /^(explain|what does) (this|that|it|the selection)( to me)?( mean)?$|^what does this mean$/, route: { type: 'task', task: 'explain', needs: 'selection' } },
+  { re: /^(simplify( this| that| it)?|make (this|that|it) (simpler|easier))$|^explain (this|that|it) simply$/, route: { type: 'task', task: 'simplify', needs: 'selection' } },
+  { re: /^(make (this|that|it) ((a (bit|little)|way|much) )?(shorter|short|more concise|concise)|(shorten|tighten|trim)( up)? (this|that|it)( up)?|cut (this|that|it) (down|short))( for me)?$/, route: { type: 'task', task: 'shorter', needs: 'selection' } },
+  { re: /^(rewrite|reword|rephrase|paraphrase) (this|that|it)$|^say (this|that|it) (differently|another way)$/, route: { type: 'task', task: 'rewrite', needs: 'selection' } },
+  { re: /^make (this|that|it) (sound )?(more )?(professional|formal|polite)$|^(rewrite|reword|rephrase) (this|that|it) (more |to be more |to sound more )?(professionally|formally|politely|professional|formal|polite)$/, route: { type: 'task', task: 'professional', needs: 'selection' } },
+  { re: /^(make (this|that|it) (sound )?(more )?|(rewrite|reword|rephrase) (this|that|it) (to be |to sound |in a )?)(warmer|friendlier|nicer|friendly|warm|nice)( tone)?$/, route: { type: 'task', task: 'warmer', needs: 'selection' } },
+  { re: /^(fix|correct|proofread|check) (the |my )?(grammar|spelling|typos)( (in|of) (this|that|it))?$|^(fix|correct|proofread) (this|that|it)( for me)?$|^proofread$|^check (this|that|it) for (typos|spelling|grammar)( mistakes| errors)?$/, route: { type: 'task', task: 'fix_grammar', needs: 'selection' } },
+  { re: /^(summari[sz]e|sum up|sum) (this|that|it|the selection)( up)?( for me)?$/, route: { type: 'task', task: 'summarize', needs: 'selection' } },
+  { re: /^(give me |show me )?(some )?examples( of (this|that|it))?$|^(give|show) (me )?an example$/, route: { type: 'task', task: 'examples', needs: 'selection' } },
+  { re: /^translate (this|that|it)( for me)?( (to|into) english)?$/, route: { type: 'task', task: 'translate', needs: 'selection' } },
   { re: /^(summari[sz]e|sum up) (this|the) page$|^what'?s on (this|the) page$|^what is this page( about)?$/, route: { type: 'task', task: 'page_summary' } },
   { re: /^what (do|should) i do (here|on this page)$/, route: { type: 'task', task: 'page_todo' } },
-  { re: /^(which (one )?is (the )?(cheapest|best value)|what'?s the best (deal|value))( here)?$/, route: { type: 'task', task: 'shop_value' } },
+  { re: /^(which (one )?is (the )?(cheapest|best value)|what'?s the (cheapest|best (deal|value)))( here)?$/, route: { type: 'task', task: 'shop_value' } },
   { re: /^what should i (order|eat)( here)?$|^what'?s the lightest( option)?$/, route: { type: 'task', task: 'food_lightest' } },
   { re: /^(quiz me|test me)( on this( page)?)?$/, route: { type: 'task', task: 'quiz' } },
   { re: /^(what have i found|summari[sz]e my notes)$/, route: { type: 'task', task: 'research_found' } },
-  { re: /^(turn on |start )?focus mode( on)?$|^go to sleep$/, route: { type: 'toggle', key: 'focus', value: true } },
-  { re: /^(turn off |stop )focus mode$|^focus mode off$|^wake up$/, route: { type: 'toggle', key: 'focus', value: false } },
-  { re: /^(turn on )?privacy mode( on)?$/, route: { type: 'toggle', key: 'privacy', value: true } },
-  { re: /^(turn off )?privacy mode off$|^turn off privacy mode$/, route: { type: 'toggle', key: 'privacy', value: false } },
-  { re: /^define (.+)$/, route: { type: 'task', task: 'define', slot: 'text' } },
+  { re: /^(?:(?:turn on |start )focus(?: mode)?(?: on)?|focus mode(?: on)?)$|^go to sleep$/, route: { type: 'toggle', key: 'focus', value: true } },
+  { re: /^(turn off |stop )focus( mode)?$|^(turn )?focus (mode )?off$|^wake up$/, route: { type: 'toggle', key: 'focus', value: false } },
+  { re: /^(turn on )?priv(acy|ate) mode( on)?$|^go private$/, route: { type: 'toggle', key: 'privacy', value: true } },
+  { re: /^(turn off )?priv(acy|ate) mode off$|^turn off priv(acy|ate) mode$/, route: { type: 'toggle', key: 'privacy', value: false } },
+  { re: /^define:? (?:the word )?(.+)$/, route: { type: 'task', task: 'define', slot: 'text' } },
 ];
 
 // Numbers stay as words here ("which one is cheapest"); only commands get digits, for chrono's sake.
@@ -30,9 +37,10 @@ function normalize(transcript) {
   return transcript
     .toLowerCase()
     .replace(/^(hey |ok |okay )?loon[,\s]+/, '') // wake phrase at the start of an utterance
+    .replace(/^((um+|uh+|er+|hmm+|so|well),?\s+)+/, '')
     .replace(/^(please|can you|could you|would you)\s+/, '')
     .replace(/[,.!?]+/g, ' ')
-    .replace(/\s+please$/, '')
+    .replace(/\s+(please|loon)$/, '')
     .replace(/\s{2,}/g, ' ')
     .trim();
 }

@@ -152,7 +152,11 @@ test('custom instructions sit right after the fixed system prompt, identical acr
   assert.strictEqual(instructionsBlock({}), ''); // defaults add nothing, so the prompt is exactly as before
   assert.doesNotMatch(instructionsBlock(settings.personal, { privacy: true }), /CS student/);
   assert.strictEqual(cleanPersonal({ about: 'x'.repeat(2000), length: 'huge', tone: 1 }).about.length, 600);
+  // A damaged settings file must not turn objects into "[object Object]" in the prompt.
+  assert.deepStrictEqual([cleanPersonal({ about: { a: 1 } }).about, cleanPersonal({ language: {} }).language], ['', '']);
   assert.deepStrictEqual([cleanPersonal({ length: 'huge' }).length, cleanPersonal({ tone: 1 }).tone], ['normal', 'playful']);
+  // a language typed with an emoji, a region code or extra spaces stays readable in "Reply in X."
+  assert.deepStrictEqual(['Español 🇪🇸', 'pt-BR', '  Brazilian   Portuguese '].map((language) => cleanPersonal({ language }).language), ['Español', 'pt-BR', 'Brazilian Portuguese']);
 });
 
 test('"Remember this?" detection: stated preferences and facts only', () => {
@@ -179,8 +183,20 @@ test('feedback messages change the reply style in code, before the model', async
   assert.deepStrictEqual(parseFeedback('shorter please'), { patch: { length: 'short' }, note: 'Got it, shorter from now on. Change it in Settings.' });
   assert.deepStrictEqual(parseFeedback('That was too long!').patch, { length: 'short' });
   assert.deepStrictEqual(parseFeedback('more detail').patch, { length: 'detailed' });
+  assert.deepStrictEqual(parseFeedback('make it longer').patch, { length: 'detailed' });
+  assert.deepStrictEqual(parseFeedback('answer in more detail').patch, { length: 'detailed' });
+  assert.deepStrictEqual(parseFeedback('be casual').patch, { tone: 'playful' });
+  assert.deepStrictEqual(parseFeedback('less detail').patch, { length: 'short' });
+  assert.deepStrictEqual(parseFeedback('stop being so wordy').patch, { length: 'short' });
+  assert.deepStrictEqual(parseFeedback('answers are too long').patch, { length: 'short' });
+  assert.deepStrictEqual(parseFeedback('stop the emojis').patch, { emoji: false });
+  assert.deepStrictEqual(parseFeedback('no emoji please 🙏').patch, { emoji: false });
+  assert.deepStrictEqual(parseFeedback('go back to english').patch, { language: '' });
   assert.deepStrictEqual(parseFeedback('shorter', { length: 'detailed' }).patch, { length: 'normal' });
   assert.deepStrictEqual(parseFeedback('less emoji pls').patch, { emoji: false });
+  assert.deepStrictEqual(parseFeedback('no more emoji').patch, { emoji: false });
+  assert.deepStrictEqual(parseFeedback('can you be shorter next time?').patch, { length: 'short' });
+  assert.deepStrictEqual(parseFeedback('talk less').patch, { length: 'short' });
   assert.deepStrictEqual(parseFeedback('Be more formal.').patch, { tone: 'formal' });
   assert.deepStrictEqual(parseFeedback('no jokes').patch, { tone: 'plain' });
   assert.deepStrictEqual(parseFeedback('reply in Spanish from now on').patch, { language: 'Spanish' });
@@ -241,4 +257,10 @@ test('privacy mode: no memory or graph in prompts, profile text left out', async
 
   assert.deepStrictEqual(profileSummary([{ id: '1', text: 'My name is Akku', pinned: true }, { id: '2', text: 'I like tea', pinned: false }], settings.personal),
     [{ source: 'fact', id: '1', text: 'My name is Akku' }, { source: 'setting', key: 'about', text: 'I intern at Acme.' }, { source: 'setting', key: 'style', text: 'Likes short replies.' }]);
+});
+
+test('feedback understands "speak French" and "stop being so formal"', () => {
+  assert.deepStrictEqual(parseFeedback('speak french').patch, { language: 'French' });
+  assert.deepStrictEqual(parseFeedback('Stop being so formal!').patch, { tone: 'playful' });
+  assert.strictEqual(parseFeedback('speak up'), null);
 });

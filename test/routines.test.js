@@ -55,7 +55,15 @@ test('routines: ~20 phrasings parse in code, and their wording reads back to the
   assert.deepStrictEqual(R.parseRoutine('every night at 10 tell me to sleep 😴', { now: NOW }).payload, { message: 'Time to sleep 😴' });
   assert.deepStrictEqual(R.parseRoutine('every Monday check the price of this page', { now: NOW, pageUrl: PAGE }).payload, { url: PAGE });
   assert.strictEqual(R.parseRoutine('every Monday check the price of this page', { now: NOW }).understood, false); // no page open
+  // two times of day are not understood, so the card asks instead of keeping only 9am
+  const twice = R.parseRoutine('every day at 9am and 5pm remind me to stretch', { now: NOW });
+  assert.strictEqual(twice.schedule, null);
+  assert.strictEqual(twice.understood, false);
+  assert.deepStrictEqual(twice.payload, { message: 'stretch' });
   assert.strictEqual(R.parseRoutine('on weekends at 10am catch me up on Loon', { now: NOW }).payload.project, 'Loon');
+  assert.strictEqual(R.describeSchedule(R.parseRoutine('everyday at 8 remind me to take meds', { now: NOW }).schedule), 'every day at 8:00 AM'); // one-word spelling
+  const empty = R.parseRoutine('every day at 9 remind me to', { now: NOW }); // the card asks what to say, not a reminder called "To"
+  assert.deepStrictEqual([empty.payload.message, empty.understood], ['', false]);
 
   // one-offs: "in 20 minutes"
   const stretch = R.parseRoutine('in 20 minutes remind me to stretch', { now: NOW });
@@ -420,4 +428,24 @@ test('companion: routine phrasings reach the routine card before Apple Reminders
   assert.strictEqual((await say('in 20 minutes remind me to stretch')).command.draft.schedule.type, 'once');
   assert.strictEqual((await say('remind me to call mom at 5')).command.action, 'reminder');
   assert.match((await say('show my routines')).message, /No routines yet/);
+});
+
+test('every N weeks keeps its cycle instead of turning into a weekly routine', () => {
+  const p = R.parseRoutine('every 2 weeks on friday remind me to submit timesheet', { now: NOW });
+  assert.strictEqual(R.describeSchedule(p.schedule), 'every other Friday at 9:00 AM');
+  assert.strictEqual(p.payload.message, 'submit timesheet');
+  const first = R.nextRun(p.schedule, NOW.getTime());
+  assert.strictEqual(new Date(first).getDay(), 5);
+  assert.strictEqual(new Date(R.nextRun(p.schedule, first) - first).getTime(), 14 * 864e5);
+  assert.strictEqual(R.describeSchedule(R.parseRoutine('biweekly remind me to pay', { now: NOW }).schedule), 'every other Monday at 9:00 AM');
+  assert.strictEqual(R.parseSchedule('every 2 weeks on mon and wed', NOW).schedule, null); // two days would drift off one cycle
+});
+
+test('day lists without commas and dotted times are read whole', () => {
+  const run = R.parseRoutine('every mon wed fri at 7am remind me to run', { now: NOW });
+  assert.deepStrictEqual(run.schedule.days, [1, 3, 5]);
+  assert.strictEqual(run.payload.message, 'run');
+  const late = R.parseRoutine('every day at 7.30pm remind me to read', { now: NOW });
+  assert.strictEqual(late.schedule.time, '19:30');
+  assert.strictEqual(late.payload.message, 'read');
 });

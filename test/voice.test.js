@@ -24,6 +24,28 @@ test('common voice phrases route to templates or commands, never the model', () 
   assert.deepStrictEqual(leaked, []);
 });
 
+test('spoken edits and explanations of a selection are templates', () => {
+  const expected = {
+    'Explain this to me': 'explain', 'explain it': 'explain', 'Make this shorter': 'shorter', 'shorten it': 'shorter',
+    'Simplify it': 'simplify', 'make it easier': 'simplify', 'Rewrite this': 'rewrite',
+    'Make this more professional': 'professional', 'make it friendlier': 'warmer', 'Summarize this': 'summarize',
+    'make this a bit shorter': 'shorter', 'tighten this up': 'shorter', 'Rephrase this': 'rewrite',
+    'make it sound professional': 'professional', 'rewrite this more professionally': 'professional',
+    'Fix the grammar': 'fix_grammar', 'proofread this': 'fix_grammar', 'fix typos': 'fix_grammar',
+    'fix my grammar': 'fix_grammar', 'check my spelling': 'fix_grammar', 'proofread': 'fix_grammar',
+    'summarize this for me': 'summarize', 'sum this up': 'summarize', 'rewrite this warmer': 'warmer', 'make it short': 'shorter',
+    'give me examples': 'examples',
+    'make it way shorter': 'shorter', 'cut this down': 'shorter', 'make it more polite': 'professional',
+    'rewrite this to be more polite': 'professional', 'rewrite it in a friendlier tone': 'warmer',
+    'make this sound more friendly': 'warmer', 'proofread this for me': 'fix_grammar', 'check this for typos': 'fix_grammar',
+    'Translate it': 'translate', 'Loon, translate this for me': 'translate', 'translate that into English': 'translate',
+  };
+  for (const [said, task] of Object.entries(expected)) {
+    assert.deepStrictEqual(route(said), { type: 'task', task, needs: 'selection' }, said);
+  }
+  assert.strictEqual(route('Summarize this page').task, 'page_summary');
+});
+
 test('open questions still go to the model; yes/no only count while confirming', () => {
   assert.strictEqual(route('Why is the sky blue?').type, 'question');
   assert.strictEqual(route('What is a black hole?').text, 'What is a black hole?');
@@ -74,4 +96,24 @@ test('speech → end of turn → text, all on this Mac', { skip: !engine.modelsR
   const text = engine.transcribe(utterances[0]);
   assert.match(text, /remind me to call mom at five/i);
   assert.strictEqual(route(text).type, 'command');
+});
+
+test('spoken confirmations, focus and define phrasings route to the right intent', () => {
+  assert.strictEqual(route('Yes, do it.', { awaitingConfirmation: true }).type, 'yes');
+  assert.strictEqual(route('No thanks', { awaitingConfirmation: true }).type, 'no');
+  assert.strictEqual(route('not now', { awaitingConfirmation: true }).type, 'no');
+  assert.deepStrictEqual(route('turn off focus'), { type: 'toggle', key: 'focus', value: false });
+  assert.deepStrictEqual(route('go to sleep, Loon'), { type: 'toggle', key: 'focus', value: true });
+  assert.deepStrictEqual(route('define: ephemeral'), { type: 'task', task: 'define', slot: 'text', text: 'ephemeral' });
+  assert.strictEqual(route('define the word ephemeral').text, 'ephemeral');
+});
+
+test('spoken fillers, "turn focus off", private mode and "what\'s the cheapest" are understood', () => {
+  assert.deepStrictEqual(route('turn focus off'), { type: 'toggle', key: 'focus', value: false });
+  assert.deepStrictEqual(route('turn on private mode'), { type: 'toggle', key: 'privacy', value: true });
+  assert.deepStrictEqual(route('turn off private mode'), { type: 'toggle', key: 'privacy', value: false });
+  assert.deepStrictEqual(route("what's the cheapest"), { type: 'task', task: 'shop_value' });
+  assert.deepStrictEqual(route('um, make this shorter please'), { type: 'task', task: 'shorter', needs: 'selection' });
+  assert.strictEqual(route('uh yes', { awaitingConfirmation: true }).type, 'yes');
+  assert.strictEqual(route('yeah sure', { awaitingConfirmation: true }).type, 'yes');
 });
