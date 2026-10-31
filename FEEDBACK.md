@@ -675,3 +675,13 @@ As a user, small typos and filler words in a dictionary question made the instan
 Fixed: dictionaryTerm in brain/define.js accepts "wat", "wut" and "whats the meaning of", drops "even", "actually", "really" and "exactly" before "mean", and drops "again", "thanks", "thx", "btw" and "tho" at the end. Test added in test/brain.test.js and checked to fail before the change.
 
 Left for later: "translate this to spanish" and "translate hello to spanish" still go to the model, since the translate task only targets English. "synonym for X", "opposite of X" and "what does X stand for" are not handled. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-31 — writing tools by voice (third pass)
+
+Tried 40 spoken edit phrasings such as "make it way shorter", "cut this down", "make it more polite", "rewrite this to be more polite", "rewrite it in a friendlier tone", "proofread this for me", "check this for typos", "make this longer" and "eli5".
+
+As a user, ordinary variations of the edit commands missed the templates and went to the language model as a question, so nothing was offered to replace my selection. "proofread this for me" and "make it way shorter" were the most annoying.
+
+Fixed: the shorter, professional, warmer and fix grammar templates in brain/intents.js accept "way" and "much", "cut this down", "polite", "friendly", "in a friendlier tone", "proofread this for me" and "check this for typos". Test added in test/voice.test.js and checked to fail before the change.
+
+Left for later: "make this longer", "expand this", "make it more casual", "make this clearer", "improve this", "polish this", "reply to this" and "eli5" still go to the model because there is no task for them. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
