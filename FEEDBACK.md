@@ -694,4 +694,4 @@ As a user, the worst problem was that the plainest forms, "what did I ask" and "
 
 Fixed: those forms and "what's my history", "what did we talk about" now open the recent history list, and "find my question/search about X" searches the history. Test added in test/assistant.test.js and checked to fail before the change.
 
-Left for later: "show me what I looked up" and "recent history" are still not matched, and "remind me what I asked" becomes a reminder. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+Left for later: "show me what I looked up" is still not matched, and "remind me what I asked" becomes a reminder. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
