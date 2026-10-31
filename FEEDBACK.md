@@ -695,3 +695,13 @@ As a user, the worst problem was that the plainest forms, "what did I ask" and "
 Fixed: those forms and "what's my history", "what did we talk about" now open the recent history list, and "find my question/search about X" searches the history. Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: "show me what I looked up" is still not matched, and "remind me what I asked" becomes a reminder. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-31 — reminders, timers and focus (fourth pass)
+
+Tried 40 phrasings such as "wake me up at 6:45 tomorrow", "set a timer for 1 hour 30 minutes", "10 minute timer", "set a 5 minute timer for tea", "remind me next friday about the dentist", "reminder: dentist friday 2pm", "focus mode", "snooze 10 minutes" and "remind me end of day to submit report".
+
+As a user, the worst problem was a wrong time stated with confidence. "Wake me up at 6:45 tomorrow" made a reminder for 6:45 PM, because the rule that reads a bare small hour as the afternoon also applied to alarms. A labeled timer such as "set a 5 minute timer for tea" was not understood, and "remind me next friday about the dentist" got the title "about the dentist".
+
+Fixed: alarms and "wake me" no longer move a bare hour to the afternoon, a timer can carry a "for …" label that shows in the reminder title, and a leading "about" is dropped from reminder titles. Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: "end of day" is not a time and stays in the title with no time set. "snooze 10 minutes", "cancel my timer", "focus mode" and a bare "set a timer" are not matched. "Every day" in a one-time reminder is still not flagged. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.

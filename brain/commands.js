@@ -3,7 +3,7 @@
 const chrono = require('chrono-node');
 
 // Pulls the first date/time phrase out of text: { date, text-without-it } or { date: null }.
-function extractWhen(text, now = new Date()) {
+function extractWhen(text, now = new Date(), { morning = false } = {}) {
   text = dayOfMonth(text, now);
   const [found] = chrono.parse(text, now, { forwardDate: true });
   if (!found) return { date: null, rest: text.trim() };
@@ -16,7 +16,8 @@ function extractWhen(text, now = new Date()) {
   const DAY = 24 * 60 * 60 * 1000;
   // "at 5" with no am/pm means 5pm, the next sensible waking-hours time. chrono may already have pushed 5am to
   // tomorrow, so after switching to pm, pull it back to today if today's 5pm is still ahead.
-  if (!found.start.isCertain('meridiem') && found.start.isCertain('hour') && date.getHours() < 7) {
+  // An alarm for "6:45" is never 6:45pm, so alarms skip this.
+  if (!morning && !found.start.isCertain('meridiem') && found.start.isCertain('hour') && date.getHours() < 7) {
     date.setHours(date.getHours() + 12);
     if (!found.start.isCertain('day') && date.getTime() - DAY > now.getTime()) date.setTime(date.getTime() - DAY);
   }
@@ -61,22 +62,22 @@ function parseCommand(input, now = new Date()) {
     .trim();
   let m;
   // Loon has no alarm clock of its own. Timers, alarms and "wake me" become Reminders, which the confirm card names.
-  if ((m = text.match(/^(?:set |start )?(?:an? )?(?:timer|countdown)(?: for| of)? (?:in )?(.+)$/i)) || (m = text.match(/^(?:set |start )?(?:an? )?(.+?)[\s-]timer$/i))) {
+  if ((m = text.match(/^(?:set |start )?(?:an? )?(?:timer|countdown)(?: for| of)? (?:in )?(.+)$/i)) || (m = text.match(/^(?:set |start )?(?:an? )?(.+?)[\s-]timer(?: for (.+))?$/i))) {
     // "timer 1h30" and "timer 5" (minutes) are how people type it.
     const length = m[1].replace(/^in /i, '').replace(/^(\d+)h(?:ours?|rs?)?\s*(\d+)(?:m(?:ins?)?)?$/i, '$1 hours $2 minutes').replace(/^(\d+)$/, '$1 minutes');
     const { date } = extractWhen(`in ${length}`, now);
-    return date ? { action: 'reminder', title: 'Timer is up', when: date } : null;
+    return date ? { action: 'reminder', title: m[2] ? `Timer is up for ${tidy(m[2])}` : 'Timer is up', when: date } : null;
   }
   if ((m = text.match(/^(?:set (?:an? )?alarm(?: for| at)?|wake me(?: up)?) (.+)$/i))) {
-    const { date } = extractWhen(m[1], now);
+    const { date } = extractWhen(m[1], now, { morning: true });
     return date ? { action: 'reminder', title: 'Wake up', when: date } : null;
   }
   if ((m = text.match(/^(?:set (?:an? )?)?reminder(?: for| to| about|:)?\s+(.+)$/i))) return parseCommand(`remind me ${m[1]}`, now);
   if ((m = text.match(/^remind me (?:to |about )?(.+)$/i))) {
     const { date, rest } = extractWhen(m[1], now);
-    // "remind me tomorrow to buy milk" leaves the "to" in front of the task.
+    // "remind me tomorrow to buy milk" and "next friday about the dentist" leave the "to"/"about" in front of the task.
     // "remind me on friday" has no task; a reminder titled "on friday" would be noise.
-    const title = tidy(rest.replace(/^to\s+/i, '')) || (date ? 'Reminder' : tidy(m[1]));
+    const title = tidy(rest.replace(/^(?:to|about)\s+/i, '')) || (date ? 'Reminder' : tidy(m[1]));
     return /^(?:to|about)$/i.test(title) ? null : { action: 'reminder', title, when: date };
   }
   if ((m = text.match(/^(?:add|create|schedule|put|book) (?:an? )?(.+)$/i))) {

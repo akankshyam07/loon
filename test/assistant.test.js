@@ -249,3 +249,12 @@ test('commands: "timer 1h30" and a bare number are timers, "on the 1st" is a dat
   assert.strictEqual(rent.when.getDate(), 1);
   assert.ok(rent.when > NOW);
 });
+
+test('alarms are mornings, timers can carry a label, and "about" does not stay in a reminder title', () => {
+  assert.strictEqual(parseCommand('wake me up at 6:45 tomorrow', NOW).when.getHours(), 6);
+  assert.strictEqual(parseCommand('wake me at 6', NOW).when.getHours(), 6);
+  const tea = parseCommand('set a 5 minute timer for tea', NOW);
+  assert.strictEqual(tea.title, 'Timer is up for tea');
+  assert.strictEqual(tea.when.getTime() - NOW.getTime(), 5 * 60 * 1000);
+  assert.strictEqual(parseCommand('remind me next friday about the dentist', NOW).title, 'the dentist');
+});
