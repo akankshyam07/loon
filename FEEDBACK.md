@@ -625,3 +625,13 @@ As a user, the worst problem was that "turn focus off" went to the model while "
 Fixed: leading fillers are dropped, "turn focus off" and "private mode" on and off are accepted, "go private" turns privacy on, "what's the cheapest" routes to the value answer and "yeah sure" counts as a yes. Test added in test/voice.test.js and checked to fail before the change.
 
 Left for later: "tl;dr", "eli5", "explain this page", "what does X mean" and "translate this to french" still go to the model. "do not disturb" and "quiet mode" are not mapped to focus. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-31 — selection chips and classification (fourth pass)
+
+Tried 32 selections such as a bare "Error: ENOENT…" line, prose that starts with "select", "x => x * 2", Windows and Unix paths, bullet lists, "Dr. Smith…" sentences, "5 p.m." and "U.S." sentences, SQL, shell commands and a Rust one-liner.
+
+As a user, the worst problem was that a plain sentence like "select a nice option from the list below please" got code chips, because the SQL rule matched any text starting with "select" and containing "from". A plain "Error: ENOENT: no such file or directory" line only got sentence chips, so no error help was offered.
+
+Fixed: the SQL rule now needs a column list (a star or comma separated names) between select and from. A line starting with "Error:" or "Exception:" now counts as an error. Tests added in test/browser.test.js and checked to fail before the change.
+
+Left for later: "fn main() { println!(…) }" and "x => x * 2" are called sentences, "Segmentation fault" and "npm ERR! code ELIFECYCLE" get sentence chips, and a bullet list of four short items is a sentence. A one-column "select name from users" still counts as SQL, which is fine. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.

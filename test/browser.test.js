@@ -56,6 +56,10 @@ test('selection kinds treat unspaced CJK text by length', () => {
   assert.strictEqual(classifySelection('#include <stdio.h>'), 'code');
   assert.strictEqual(classifySelection('from os import path'), 'code');
   assert.strictEqual(classifySelection('git is great'), 'word');
+  assert.strictEqual(classifySelection('select a nice option from the list below please'), 'sentence');
+  assert.strictEqual(classifySelection('SELECT id, name FROM users'), 'code');
+  assert.strictEqual(classifySelection("Error: ENOENT: no such file or directory, open 'x.txt'"), 'stacktrace');
+  assert.strictEqual(classifySelection('I got an Exception: it was funny, not code'), 'sentence');
   assert.strictEqual(classifySelection('Mr. Jones arrived at 5 p.m. today.'), 'sentence');
   assert.strictEqual(classifySelection('你好，今天天气很好。我们去公园玩吧。'), 'paragraph');
 });

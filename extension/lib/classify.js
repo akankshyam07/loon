@@ -7,6 +7,7 @@
     /Traceback \(most recent call last\)/, // Python
     /^\s*File ".+", line \d+/m,
     /\b\w+(Error|Exception)\b[:\s].{3,}/,
+    /^\s*(Uncaught\s+)?(Error|Exception): \S/, // a bare "Error: ..." line
     /^\s*panic: /m, // Go
   ];
 
@@ -29,7 +30,7 @@
     return density > 0.06 && (keywords || text.includes('\n'));
   }
 
-  const SQL = /^\s*(select\b[\s\S]+\bfrom\b|insert\s+into\b|update\s+\w+\s+set\b|delete\s+from\b|create\s+table\b)/i;
+  const SQL = /^\s*(select\s+(distinct\s+)?(\*|[\w.()*`"]+(\s+as\s+\w+)?(\s*,\s*[\w.()*`"]+(\s+as\s+\w+)?)*)\s+from\s+\S|insert\s+into\b|update\s+\w+\s+set\b|delete\s+from\b|create\s+table\b)/i;
   // A known tool followed by a flag, a path or a subcommand, so "git is great" stays prose
   const SHELL = /^\s*(\$\s+)?(sudo\s+)?(git|npm|npx|yarn|pnpm|docker|kubectl|apt|apt-get|brew|pip3?|curl|ssh|chmod|rm|mkdir|ls|cd)\s+(-\S|\S*[/~.]\S*|(install|run|add|remove|commit|push|pull|clone|checkout|status|build|update|start|test|init|up|down|exec|get|apply)\b)/;
 
