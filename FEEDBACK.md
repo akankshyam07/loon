@@ -725,3 +725,13 @@ As a user, "speak french" and "stop being so formal" did nothing and went to the
 Fixed: parseFeedback accepts "speak <language>" and "stop being (so) formal, serious or stiff". Test added in test/personal.test.js and checked to fail before the change.
 
 Left for later: "Call me" names keep the letters of HTML tags ("José <b>María</b>" becomes "José bMaríab"). "simpler words", "less jargon", "be nicer" and "respond in hinglish" have no setting to map to. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-31 — developer help, JSON to DTO (fourth pass)
+
+Tried 15 inputs such as JS object literals with single quotes and bare keys, comments, a string that contains ",}", a fenced block, NaN, two JSON documents on separate lines, an empty array, an empty object and text around the JSON.
+
+As a user, the worst problem was that an object copied from JavaScript source (`{name: 'Ann', age: 3}`) was refused as "not valid JSON". That is what most code snippets look like.
+
+Fixed: the retry in `parseJson` now rewrites single quotes, bare keys, comments and trailing commas outside of strings. It replaces the old comma regex, which could also have changed a string such as "a,}". The old test that expected single quotes to be rejected now checks a truly broken input, and a new test covers the literal case.
+
+Left for later: JSON lines (one object per line), NaN, Python-style True/None, and JSON with text around it are still refused. A null-only field becomes `Object`. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.

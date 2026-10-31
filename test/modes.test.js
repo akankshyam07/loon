@@ -6,7 +6,7 @@ const shopping = require('../brain/shopping');
 const food = require('../brain/food');
 const { summarizeReviews, extractReviews } = require('../brain/reviews');
 const { fingerprint, lookupKnown } = require('../brain/errors');
-const { jsonToDto, fixGrammar } = require('../brain/devtools');
+const { jsonToDto, parseJson, fixGrammar } = require('../brain/devtools');
 
 const fixture = (name) => fs.readFileSync(path.join(__dirname, 'fixtures', name), 'utf8');
 const dom = async (html) => (await import('linkedom')).parseHTML(html).document;
@@ -177,7 +177,14 @@ test('JSON → DTO with quicktype; grammar fixes with Harper', async () => {
 test('JSON → DTO accepts trailing commas but still rejects other broken JSON', async () => {
   const java = await jsonToDto('{"id": 7, "tags": ["a",],}', 'java');
   assert.match(java, /private long id;[\s\S]*List<String> tags;/);
-  await assert.rejects(jsonToDto("{'id': 7}", 'java'));
+  await assert.rejects(jsonToDto('{"id": 7', 'java'));
+});
+
+test('JSON → DTO reads JS object literals: single quotes, bare keys, comments', async () => {
+  const java = await jsonToDto("{id: 7, 'name': 'it\\'s', // who\n tags: ['a'],}", 'java');
+  assert.match(java, /private long id;[\s\S]*String name;[\s\S]*List<String> tags;/);
+  assert.deepStrictEqual(parseJson('{"s": "a,}", "b": true}'), { s: 'a,}', b: true });
+  assert.throws(() => parseJson('{bad'));
 });
 
 test('JSON → DTO handles top-level arrays, plain values and multi-class Java', async () => {
