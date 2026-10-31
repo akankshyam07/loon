@@ -110,6 +110,15 @@ test('commands: remember to is a reminder, empty remembers save nothing, clearin
   for (const t of ['clear your memory', 'delete my memories', 'wipe all memory']) assert.strictEqual(parseCommand(t).all, true, t);
 });
 
+test('commands: dont forget, keep in mind and trailing remember that all save a fact', () => {
+  assert.deepStrictEqual(parseCommand("don't forget I'm vegan"), { action: 'remember', text: "I'm vegan" });
+  assert.deepStrictEqual(parseCommand('keep in mind that I am allergic to nuts'), { action: 'remember', text: 'I am allergic to nuts' });
+  assert.deepStrictEqual(parseCommand("I'm vegetarian, remember that"), { action: 'remember', text: "I'm vegetarian" });
+  assert.deepStrictEqual(parseCommand('remember this: I like short answers'), { action: 'remember', text: 'I like short answers' });
+  assert.strictEqual(parseCommand("don't forget to call mom at 5").action, 'reminder');
+  assert.strictEqual(parseCommand("don't forget"), null);
+});
+
 test('actions: remember refuses a password', async () => {
   const dir = tmp();
   const memory = new Memory(path.join(dir, 'memory.json'));

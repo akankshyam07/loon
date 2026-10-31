@@ -635,3 +635,13 @@ As a user, the worst problem was that a plain sentence like "select a nice optio
 Fixed: the SQL rule now needs a column list (a star or comma separated names) between select and from. A line starting with "Error:" or "Exception:" now counts as an error. Tests added in test/browser.test.js and checked to fail before the change.
 
 Left for later: "fn main() { println!(…) }" and "x => x * 2" are called sentences, "Segmentation fault" and "npm ERR! code ELIFECYCLE" get sentence chips, and a bullet list of four short items is a sentence. A one-column "select name from users" still counts as SQL, which is fine. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-31 — memory commands (third pass)
+
+Tried 22 phrasings such as "don't forget I'm vegan", "I'm vegetarian, remember that", "keep in mind I'm allergic to nuts", "remember this: I prefer short answers", "dont forget that i like oat milk" and "forget that I said vegan".
+
+As a user, the worst problem was that the most natural ways to ask Loon to remember a fact fell to the language model, which may say it saved something when it did not. "remember this: X" also saved the text "this: X".
+
+Fixed: "don't forget X", "keep in mind X", "X, remember that" and "remember this: X" now save the fact. "don't forget to call mom at 5" becomes a reminder, and a bare "don't forget" saves nothing. Test added in test/assistant.test.js.
+
+Left for later: "call me Sam", "my name is Sam", "you should know I'm vegan" and "what did I tell you about food" still go to the model. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.

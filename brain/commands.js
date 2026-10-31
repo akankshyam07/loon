@@ -111,10 +111,11 @@ function parseCommand(input, now = new Date()) {
   if ((m = text.match(/^run (?:the |my )?(?:shortcut )?(.+?)(?: shortcut)?$/i))) return { action: 'shortcut', name: tidy(m[1]) };
   if ((m = text.match(/^(?:note|take a note|save a note|jot down)[:\s]+(.+)$/i))) return { action: 'note', text: tidy(m[1]) };
   // "remember to buy milk" is a to-do, so it becomes a reminder. A bare "remember to" or "remember me" saves nothing.
-  if ((m = text.match(/^remember to\s+(.+)$/i))) return parseCommand(`remind me to ${m[1]}`, now);
-  if (/^remember(?: to| me)?[:,]?$/i.test(text)) return null;
+  if ((m = text.match(/^(?:remember|(?:do not|don'?t) forget) to\s+(.+)$/i))) return parseCommand(`remind me to ${m[1]}`, now);
+  if (/^(?:remember|(?:do not|don'?t) forget)(?: to| me)?[:,]?$/i.test(text)) return null;
   if (/^(?:delete|clear|wipe|erase|reset) (?:all )?(?:of )?(?:my |your |the )?(?:memory|memories)$/i.test(text)) return { action: 'forget', text: 'everything', all: true };
-  if ((m = text.match(/^remember[:,]?\s+(?:that )?(.+)$/i)) && tidy(m[1])) return { action: 'remember', text: tidy(m[1]) };
+  if ((m = text.match(/^(?:remember|(?:do not|don'?t) forget|keep in mind)(?: this)?[:,]?\s+(?:that )?(.+)$/i)) && tidy(m[1])) return { action: 'remember', text: tidy(m[1]) };
+  if ((m = text.match(/^(.+?),?\s+(?:please )?remember (?:that|this|it)$/i))) return { action: 'remember', text: tidy(m[1]) };
   // "forget it" and "forget about it" are idioms, not a request to delete a memory.
   if ((m = text.match(/^forget[:,]?\s+(?:that )?(.+)$/i)) && !/^(?:about )?(?:it|that|this|me not)$/i.test(tidy(m[1]))) {
     return { action: 'forget', text: tidy(m[1]), all: /^(?:about )?(?:everything|all|all of it)\b/i.test(tidy(m[1])) };
