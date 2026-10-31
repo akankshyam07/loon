@@ -79,13 +79,20 @@ function convert(value, from, to) {
 function calc(question) {
   const q = question.toLowerCase().replace(/[’‘]/g, "'").replace(/(\d),(?=\d{3}\b)/g, '$1').replace(/[\s?!.=]+$/, '').trim();
   const lead = q.match(LEAD)[0];
-  const body = q.slice(lead.length).replace(/^to\s+/, '').replace(/°/g, '').replace(/\bpercent\b/g, '%')
+  // "15% of $80" is money: drop the symbol to calculate, put it back on the answer
+  const money = q.match(/[$€£]/);
+  const cash = (n) => (money ? money[0] + n.toFixed(2).replace(/\B(?=(\d{3})+\.)/g, ',') : fmt(n));
+  const body = q.slice(lead.length).replace(/[$€£]\s*(?=\d)/g, '').replace(/\s*(?:dollars|euros|bucks)$/, '')
+    .replace(/^how many (\w+) (?:are |is )?(?:in|per) (?:a |an |one |1 )?(\w+)$/, '1 $2 to $1').replace(/^to\s+/, '').replace(/°/g, '').replace(/\bpercent\b/g, '%')
     .replace(/(\d)\s*(?:times|multiplied by)\s*(?=[\d(])/g, '$1*').replace(/(\d)\s*plus\s*(?=[\d(])/g, '$1+')
     .replace(/(\d)\s*minus\s*(?=[\d(])/g, '$1 - ').replace(/(\d)\s*(?:divided by|over)\s*(?=[\d(])/g, '$1/')
     .replace(/(\d)\s*to the power of\s*(?=[\d(])/g, '$1^').replace(/(\d)\s*squared\b/g, '$1^2').trim();
 
   let m = body.match(/^(\d+(?:\.\d+)?)\s*%\s*of\s+(\d+(?:\.\d+)?)$/);
-  if (m) return `${fmt(m[1] * m[2] / 100)}.`;
+  if (m) return `${cash(m[1] * m[2] / 100)}.`;
+
+  m = body.match(/^(\d+(?:\.\d+)?)\s*%\s*off\s+(\d+(?:\.\d+)?)$/);
+  if (m) return `${cash(m[2] * (1 - m[1] / 100))} after ${m[1]}% off.`;
 
   m = body.match(/^(-?\d+(?:\.\d+)?)\s*([a-z]+)\s+(?:to|in|into|as)\s+([a-z]+)$/);
   if (m && ALIASES[m[2]] && ALIASES[m[3]]) {
@@ -101,7 +108,7 @@ function calc(question) {
     if (!lead && !/[+*/^]| - /.test(expression)) return null;
     const v = evaluate(expression);
     const text = v === null ? null : fmt(v);
-    if (text) return `${body.replace(/\*/g, '×')} = ${text}`;
+    if (text) return `${body.replace(/\*/g, '×')} = ${money ? cash(v) : text}`;
   }
   return null;
 }

@@ -645,3 +645,13 @@ As a user, the worst problem was that the most natural ways to ask Loon to remem
 Fixed: "don't forget X", "keep in mind X", "X, remember that" and "remember this: X" now save the fact. "don't forget to call mom at 5" becomes a reminder, and a bare "don't forget" saves nothing. Test added in test/assistant.test.js.
 
 Left for later: "call me Sam", "my name is Sam", "you should know I'm vegan" and "what did I tell you about food" still go to the model. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-31 — typed questions, money and "how many" conversions
+
+Tried 46 inputs such as "15% of $80", "$45 * 1.08", "20% off 80", "tip on 45 at 18%", "how many cups in a gallon", "how many oz in a lb", "what's 3 cubed", "sqrt(16)", "half of 50", "5'10 in cm" and "100 km/h in mph".
+
+As a user, the worst problem was that anything with a price went to the language model. A currency symbol broke "15% of $80" and "$45 * 1.08", which are the most common sums while shopping. "20% off 80" and "how many cups in a gallon" were missed too.
+
+Fixed: calc ignores a currency symbol while calculating and puts it back on the answer with two decimals, answers "N% off M", and reads "how many X in a Y". Cases added in test/brain.test.js and checked to fail before the change.
+
+Left for later: "tip on 45 at 18%", "what's 3 cubed", "sqrt(16)", "half of 50", "7 mod 3", "5'10 in cm" and speed units are not parsed. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
