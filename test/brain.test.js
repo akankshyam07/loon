@@ -174,3 +174,13 @@ test('dictionaryTerm ignores polite openers, "in english" tails and emoji', () =
   assert.strictEqual(dictionaryTerm('ephemeral means?'), 'ephemeral');
   assert.strictEqual(dictionaryTerm('what does it mean'), null);
 });
+
+test('dictionaryTerm handles typos and filler words in "what does X mean"', () => {
+  const { dictionaryTerm } = require('../brain/define');
+  assert.strictEqual(dictionaryTerm('wat does ephemeral mean'), 'ephemeral');
+  assert.strictEqual(dictionaryTerm('whats the meaning of ennui'), 'ennui');
+  assert.strictEqual(dictionaryTerm('what does ephemeral even mean'), 'ephemeral');
+  assert.strictEqual(dictionaryTerm('what does ephemeral mean again'), 'ephemeral');
+  assert.strictEqual(dictionaryTerm('what does ephemeral mean thanks'), 'ephemeral');
+  assert.strictEqual(dictionaryTerm('what do you mean'), null);
+});

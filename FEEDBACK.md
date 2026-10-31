@@ -665,3 +665,13 @@ As a user, the worst problem was that the cat did not look away on retirement an
 Fixed: those hosts are now on the sensitive list, and Proton, HEY, AOL and Zoho mail are on the email list. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: iCloud Mail lives at icloud.com/mail, so it needs a path check. Small national banks outside the list still rely on a password field. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-31 — translation and definitions (fifth pass)
+
+Tried 33 dictionary and translation phrasings such as "wat does ephemeral mean", "whats the meaning of ennui", "what does ephemeral even mean", "what does ephemeral mean again", "what does ephemeral mean thanks", "translate this to spanish" and "translate hello to spanish".
+
+As a user, small typos and filler words in a dictionary question made the instant WordNet lookup miss, so a one-word question went to the language model. "what does ephemeral even mean" was read as the two word term "ephemeral even".
+
+Fixed: dictionaryTerm in brain/define.js accepts "wat", "wut" and "whats the meaning of", drops "even", "actually", "really" and "exactly" before "mean", and drops "again", "thanks", "thx", "btw" and "tho" at the end. Test added in test/brain.test.js and checked to fail before the change.
+
+Left for later: "translate this to spanish" and "translate hello to spanish" still go to the model, since the translate task only targets English. "synonym for X", "opposite of X" and "what does X stand for" are not handled. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
