@@ -88,6 +88,12 @@ test('page kinds: sensitive wins, shops and articles are recognized', async () =
   // A sign-up page is not private, only its password field is (the screen-control selftest clicks buttons on one)
   assert.notStrictEqual(page('<input type="text" autocomplete="new-password"><button>Sign up</button>').sensitive, true);
   assert.strictEqual(page('<p>hi</p>', 'https://online.citibank.com/').sensitive, true);
+  for (const url of ['https://www.tiaa.org/', 'https://login.yahoo.com/', 'https://dashboard.stripe.com/']) {
+    assert.strictEqual(page('<p>hi</p>', url).sensitive, true, url);
+  }
+  for (const url of ['https://mail.proton.me/u/0/inbox', 'https://app.hey.com/']) {
+    assert.strictEqual(page('<p>hi</p>', url).kind, 'email', url);
+  }
   for (const url of ['https://www.wellsfargo.com.au/', 'https://www.chase.co.uk/', 'https://www.hsbc.co.uk/', 'https://www.medicare.gov/', 'https://mijn.rabobank.nl/']) {
     assert.strictEqual(page('<p>hi</p>', url).sensitive, true, url);
   }

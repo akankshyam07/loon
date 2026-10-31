@@ -655,3 +655,13 @@ As a user, the worst problem was that anything with a price went to the language
 Fixed: calc ignores a currency symbol while calculating and puts it back on the answer with two decimals, answers "N% off M", and reads "how many X in a Y". Cases added in test/brain.test.js and checked to fail before the change.
 
 Left for later: "tip on 45 at 18%", "what's 3 cubed", "sqrt(16)", "half of 50", "7 mod 3", "5'10 in cm" and speed units are not parsed. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-10-31 — page kinds (fourth pass)
+
+Tried 27 hosts such as mail.proton.me, app.hey.com, icloud.com/mail, tiaa.org, ameriprise.com, login.yahoo.com, dashboard.stripe.com, nerdwallet.com, gist.github.com and docs.google.com, plus a few small pages with prices, menu words and many form fields.
+
+As a user, the worst problem was that the cat did not look away on retirement and brokerage sites like tiaa.org and ameriprise.com, on Yahoo sign-in and on the Stripe dashboard. Proton Mail and HEY were also treated as ordinary pages, so I got no email actions there.
+
+Fixed: those hosts are now on the sensitive list, and Proton, HEY, AOL and Zoho mail are on the email list. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: iCloud Mail lives at icloud.com/mail, so it needs a path check. Small national banks outside the list still rely on a password field. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.

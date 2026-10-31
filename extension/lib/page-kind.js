@@ -12,13 +12,16 @@
     'citibank.com', 'chime.com', 'monzo.com', 'barclays.co.uk', 'lloydsbank.com', 'natwest.com',
     'medicare.gov', 'commbank.com.au', 'rabobank.nl', 'hdfcbank.com', 'icicibank.com', 'login.gov.uk',
     'myaccount.google.com', 'signin.aws.amazon.com',
+    'tiaa.org', 'ameriprise.com', 'merrilledge.com', 'edwardjones.com', 'login.yahoo.com', 'account.proton.me',
+    'accounts.intuit.com', 'turbotax.intuit.com', 'dashboard.stripe.com', 'cash.app',
   ];
   // Country sites of the same banks (wellsfargo.com.au, hsbc.co.uk, chase.co.uk); a look-alike such as
   // bankofamerica.com.evil.com does not match because only a two or three letter suffix may follow.
   const SENSITIVE_BRANDS = /(^|\.)(wellsfargo|chase|barclays|hsbc|paypal|citibank|bankofamerica|capitalone|americanexpress|revolut|coinbase)\.(com?\.)?[a-z]{2,3}$/;
   const SENSITIVE_LABELS = /(^|\.)(mychart|myhealth|patientportal)[\w-]*\./;
   const CODE_DOMAINS = ['github.com', 'gitlab.com', 'bitbucket.org', 'stackoverflow.com', 'stackexchange.com', 'developer.mozilla.org'];
-  const EMAIL_HOSTS = ['mail.google.com', 'outlook.live.com', 'outlook.office.com', 'outlook.office365.com', 'mail.yahoo.com'];
+  const EMAIL_HOSTS = ['mail.google.com', 'outlook.live.com', 'outlook.office.com', 'outlook.office365.com', 'mail.yahoo.com',
+    'mail.proton.me', 'mail.protonmail.com', 'app.hey.com', 'mail.aol.com', 'mail.zoho.com'];
   const PRICE = /(?:[$€£¥₹]\s?\d[\d,]*(?:\.\d{2})?|\d[\d,.]*(?:[.,]\d{2})?\s?(?:USD|EUR|GBP|[€£])(?!\w))/g;
   const FOOD_WORDS = /\b(entr[ée]es?|appetizers?|starters?|sides|desserts?|grilled|fried|roasted|sauce|salad|burger|sandwich|pasta|pizza|tacos?|soup|vegan|vegetarian|gluten|aioli|chicken|beef|tofu|dressing)\b/gi;
 
