@@ -835,3 +835,13 @@ As a user, the worst problem was that a one-line code snippet with three words o
 Fixed: a single line that is a function call, an arrow function or an `fn` definition now counts as code. The npm, segfault and "command not found" lines now count as errors. Tests added in test/browser.test.js and checked to fail before the change.
 
 Left for later: a bullet list of four short items is still a word, a shebang script with two lines is a word, and `mvn clean install` or `cargo run` are words because the shell rule only knows a fixed tool list. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-01 — translation and definitions (sixth pass)
+
+Tried 33 phrasings such as "define the word ephemeral", "whats ephemeral mean", "what does 'ephemeral' mean", "synonym for happy", "another word for big", "opposite of happy", "what does NASA stand for", "pronounce ephemeral" and "what does break a leg mean".
+
+As a user, the dictionary phrasings were already solid. The gap was "synonym for X" and "another word for X", which went to the language model even though WordNet already holds the answer. That is slow and the model can list words that do not fit.
+
+Fixed: a new `synonymTerm` and `synonyms` in brain/define.js answer those questions from WordNet in code, before the model, on the first turn of a thread. Tests added in test/brain.test.js, including the resolver ladder.
+
+Left for later: antonyms ("opposite of happy") need the WordNet pointer chase. "what does NASA stand for", idioms like "break a leg", "pronounce X" and typos such as "definiton" still go to the model. "translate hello to spanish" is still not parsed.

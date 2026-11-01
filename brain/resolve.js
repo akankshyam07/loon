@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const { ResponseCache } = require('./cache');
 const { TASKS, MAX_CONTEXT_CHARS, buildPrompt, historyBlock, followUpContext, memoryGroup } = require('./tasks');
-const { define, dictionaryTerm } = require('./define');
+const { define, dictionaryTerm, synonymTerm, synonyms } = require('./define');
 const { calc } = require('./calc');
 const { scopeOf } = require('./memory');
 const { domainForTask } = require('./graph');
@@ -271,6 +271,13 @@ class Resolver {
         onText(sum);
         this.count('code');
         return { text: sum, mood: 'focused', tier: 'code' };
+      }
+      const synonymFor = firstInThread && synonymTerm(packet.question);
+      const synonymList = synonymFor && await synonyms(synonymFor);
+      if (synonymList) {
+        onText(synonymList);
+        this.count('code');
+        return { text: synonymList, mood: 'curious', tier: 'code', detail: 'WordNet dictionary' };
       }
       const term = firstInThread && dictionaryTerm(packet.question);
       const entry = term && await define(term, { maxSenses: sensesFor(personal.length) });

@@ -75,4 +75,29 @@ function dictionaryTerm(question) {
   return term && !NOT_A_TERM.test(term) ? term : null;
 }
 
-module.exports = { define, candidates, dictionaryTerm };
+// "synonym for happy", "another word for big" → the word, or null.
+const SYNONYM_ASK = /^(?:(?:give me |find me |what(?:'?s| is| are) )?(?:a |some |the )?(?:synonyms?|another word|other words|different word|similar words?|words similar)\s+(?:for|of|to)|(?:what(?:'?s| is) )?(?:a |another )?word for)\s+(?:the (?:word|term) )?["'“‘]?([\p{L}-]+)["'”’]?$/iu;
+
+function synonymTerm(question) {
+  const m = String(question || '').trim().replace(/[’‘]/g, "'")
+    .replace(/^(?:(?:hey|ok|okay) )?(?:loon[,\s]+)?(?:(?:please|pls|plz|can you|could you|would you)\s+)*/i, '')
+    .replace(/[\s?!.\p{Extended_Pictographic}]*$/u, '').replace(/(?:,? (?:please|pls|thanks|thx))+$/i, '').match(SYNONYM_ASK);
+  return m ? m[1] : null;
+}
+
+// Markdown list of words that share a WordNet sense with the term, commonest senses first, or null.
+async function synonyms(term, { max = 10 } = {}) {
+  if (!wordpos) {
+    const WordPOS = require('wordpos');
+    wordpos = new WordPOS();
+  }
+  for (const candidate of candidates(term.toLowerCase())) {
+    const senses = await wordpos.lookup(candidate);
+    const words = [...new Set(senses.flatMap((s) => s.synonyms).map((w) => w.replace(/\(\w\)$/, '').replace(/_/g, ' ')))]
+      .filter((w) => w.toLowerCase() !== candidate);
+    if (words.length) return `**${candidate}**: ${words.slice(0, max).join(', ')}`;
+  }
+  return null;
+}
+
+module.exports = { define, candidates, dictionaryTerm, synonymTerm, synonyms };

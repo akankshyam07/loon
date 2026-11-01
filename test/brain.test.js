@@ -128,6 +128,9 @@ test('ladder: typed dictionary questions use WordNet, not the model', async () =
     assert.strictEqual(r.tier, 'code', q);
     assert.match(r.text, /lasting a very short time/, q);
   }
+  const synonym = await resolver.ask('synonym for big', { onText: () => {}, firstInThread: true });
+  assert.strictEqual(synonym.tier, 'code');
+  assert.match(synonym.text, /large/);
   for (const q of ['what does that mean', 'what does this error mean', 'what is python']) {
     await assert.rejects(resolver.ask(q, { onText: () => {}, firstInThread: true }), /model should not run/, q);
   }
@@ -183,4 +186,17 @@ test('dictionaryTerm handles typos and filler words in "what does X mean"', () =
   assert.strictEqual(dictionaryTerm('what does ephemeral mean again'), 'ephemeral');
   assert.strictEqual(dictionaryTerm('what does ephemeral mean thanks'), 'ephemeral');
   assert.strictEqual(dictionaryTerm('what do you mean'), null);
+});
+
+test('synonymTerm reads "synonym for X" and "another word for X"; synonyms lists WordNet siblings', async () => {
+  const { synonymTerm, synonyms } = require('../brain/define');
+  assert.strictEqual(synonymTerm('synonym for happy'), 'happy');
+  assert.strictEqual(synonymTerm('Synonyms of "big"?'), 'big');
+  assert.strictEqual(synonymTerm('pls give me another word for big'), 'big');
+  assert.strictEqual(synonymTerm('what is a word for ephemeral'), 'ephemeral');
+  assert.strictEqual(synonymTerm('synonym for this sentence'), null);
+  const text = await synonyms('big');
+  assert.match(text, /^\*\*big\*\*: .*large/);
+  assert.doesNotMatch(text, /\(a\)|_/);
+  assert.strictEqual(await synonyms('zzqxv'), null);
 });
