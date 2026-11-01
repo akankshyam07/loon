@@ -91,6 +91,24 @@ function calc(question) {
   let m = body.match(/^(\d+(?:\.\d+)?)\s*%\s*of\s+(\d+(?:\.\d+)?)$/);
   if (m) return `${cash(m[1] * m[2] / 100)}.`;
 
+  // "tip on 45 at 18%" and "18% tip on 45"
+  m = body.match(/^(?:(?:a|the)\s+)?(?:(\d+(?:\.\d+)?)\s*%\s*)?tip\s+(?:on|for)\s+(\d+(?:\.\d+)?)(?:\s+at\s+(\d+(?:\.\d+)?)\s*%)?$/);
+  if (m && (m[1] || m[3])) {
+    const [bill, tip] = [parseFloat(m[2]), m[2] * (m[1] || m[3]) / 100];
+    const sym = money ? money[0] : '';
+    const two = (n) => sym + n.toFixed(2).replace(/\B(?=(\d{3})+\.)/g, ',');
+    return `Tip ${two(tip)}, total ${two(bill + tip)}.`;
+  }
+
+  m = body.match(/^(half|a third|a quarter|one third|one quarter) of (\d+(?:\.\d+)?)$/);
+  if (m) return `${cash(m[2] / { half: 2, 'a third': 3, 'one third': 3, 'a quarter': 4, 'one quarter': 4 }[m[1]])}.`;
+
+  m = body.match(/^(?:sqrt\s*\(?|square root of\s+)(\d+(?:\.\d+)?)\)?$/);
+  if (m) return `√${m[1]} = ${fmt(Math.sqrt(m[1]))}`;
+
+  m = body.match(/^(\d+(?:\.\d+)?)\s*cubed$/);
+  if (m) return `${m[1]}^3 = ${fmt(m[1] ** 3)}`;
+
   m = body.match(/^(\d+(?:\.\d+)?)\s*%\s*off\s+(\d+(?:\.\d+)?)$/);
   if (m) return `${cash(m[2] * (1 - m[1] / 100))} after ${m[1]}% off.`;
 

@@ -795,3 +795,13 @@ As a user, the worst problem was a size with a thousands comma. "1,000 g" was re
 Fixed: parseQuantity drops a thousands comma when exactly three digits follow it, and leaves "0,125 l" and "1,5 l" as decimals. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: "Set of 4", "three pack", "a pound", lengths such as "25 ft", "Save $5 $20" (takes 5) and "$5.00 - $7.00" (takes the low end) are still not handled.
+
+## 2026-11-01 — typed questions, tips and quick maths (fourth pass)
+
+Tried 35 inputs such as "tip on 45 at 18%", "15% tip on $80", "half of 50", "sqrt(16)", "square root of 144", "what's 3 cubed", "7 mod 3", "5'10 in cm", "100 usd to eur" and "1,5 + 2".
+
+As a user, the worst problem was that tip questions, which come up at every restaurant, went to the language model. Roots, "half of" and "cubed" did too.
+
+Fixed: calc answers "tip on N at P%", "P% tip on N" (with the currency symbol kept), "half / a third / a quarter of N", sqrt and "square root of N", and "N cubed". Cases added in test/brain.test.js and checked to fail before the change.
+
+Left for later: "7 mod 3", "5'10 in cm", speed units, "5 factorial", "how many days in a year" and currency conversion (needs live rates, so it should say so). "10 / 0" falls through to the model. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
