@@ -57,8 +57,8 @@ function normalizeSpoken(text) {
 function parseCommand(input, now = new Date()) {
   // Politeness doesn't change the command: "please remind me…", "can you open Spotify", "…, thanks".
   const text = input.trim()
-    .replace(/^(?:(?:hey|ok|okay) )?(?:loon[,\s]+)?(?:(?:please|can you|could you|would you|will you)\s+)+/i, '')
-    .replace(/[,\s]+(?:please|thanks|thank you)[.!?]*$/i, '')
+    .replace(/^(?:(?:hey|ok|okay) )?(?:loon[,\s]+)?(?:(?:please|pls|plz|can you|could you|would you|will you)\s+)+/i, '')
+    .replace(/[,\s]+(?:please|pls|plz|thanks|thank you)[.!?]*$/i, '')
     .trim();
   let m;
   // Loon has no alarm clock of its own. Timers, alarms and "wake me" become Reminders, which the confirm card names.
@@ -99,7 +99,7 @@ function parseCommand(input, now = new Date()) {
     return { action: 'briefing', project: m[1] ? tidy(m[1]) : null };
   }
   if (/^(?:show |list )?my projects\??$/i.test(text)) return { action: 'briefing', project: null };
-  if (/^what do you (?:know|remember) about me\??$/i.test(text)) return { action: 'recall', facts: true };
+  if (/^what do you (?:know|remember) about me\??$/i.test(text) || /^(?:what(?:'?s| is) (?:in|saved in|stored in) (?:your|my) memor(?:y|ies)|(?:show|list|open) (?:me )?(?:my |your )?(?:memory|memories|saved facts)|what (?:have|did) you (?:saved?|stored?|remembered?)(?: about me)?)\??$/i.test(text)) return { action: 'recall', facts: true };
   if ((m = text.match(/^what do you (?:know|remember) about (?:my |the )?(.+?)\??$/i))) return { action: 'recall', about: tidy(m[1]) };
   if (/^what (?:did|have) i (?:ask(?:ed)?|look(?:ed)? up|search(?:ed)?(?: for)?|do(?:ne)?) (?:today|recently|lately)\??$/i.test(text)) return { action: 'recall', query: '' };
   if ((m = text.match(/^(?:what did i (?:ask|look up|search(?: for)?|read|learn|find out)|when did i (?:ask|look up|read)|find my (?:question|search)) (?:about |on |for )?(.+?)\??$/i))) {
@@ -116,7 +116,7 @@ function parseCommand(input, now = new Date()) {
   if (/^(?:remember|(?:do not|don'?t) forget)(?: to| me)?[:,]?$/i.test(text)) return null;
   if (/^(?:delete|clear|wipe|erase|reset) (?:all )?(?:of )?(?:my |your |the )?(?:memory|memories)$/i.test(text)) return { action: 'forget', text: 'everything', all: true };
   if ((m = text.match(/^(?:remember|(?:do not|don'?t) forget|keep in mind)(?: this)?[:,]?\s+(?:that )?(.+)$/i)) && tidy(m[1])) return { action: 'remember', text: tidy(m[1]) };
-  if ((m = text.match(/^(.+?),?\s+(?:please )?remember (?:that|this|it)$/i))) return { action: 'remember', text: tidy(m[1]) };
+  if ((m = text.match(/^(.+?),?\s+(?:please )?remember (?:that|this|it)$/i)) && !/^(?:do not|don'?t|never|stop)$/i.test(tidy(m[1]))) return { action: 'remember', text: tidy(m[1]) };
   // "forget it" and "forget about it" are idioms, not a request to delete a memory.
   if ((m = text.match(/^forget[:,]?\s+(?:that )?(.+)$/i)) && !/^(?:about )?(?:it|that|this|me not)$/i.test(tidy(m[1]))) {
     return { action: 'forget', text: tidy(m[1]), all: /^(?:about )?(?:everything|all|all of it)\b/i.test(tidy(m[1])) };

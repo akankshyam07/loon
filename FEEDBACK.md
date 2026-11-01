@@ -845,3 +845,13 @@ As a user, the dictionary phrasings were already solid. The gap was "synonym for
 Fixed: a new `synonymTerm` and `synonyms` in brain/define.js answer those questions from WordNet in code, before the model, on the first turn of a thread. Tests added in test/brain.test.js, including the resolver ladder.
 
 Left for later: antonyms ("opposite of happy") need the WordNet pointer chase. "what does NASA stand for", idioms like "break a leg", "pronounce X" and typos such as "definiton" still go to the model. "translate hello to spanish" is still not parsed.
+
+## 2026-11-01 — memory commands (fourth pass)
+
+Tried 32 phrasings such as "don't remember this", "remember i'm vegan pls", "pls forget everything", "what's in your memory", "show my memories", "stop remembering things" and "can you remember that I'm vegan?".
+
+As a user, the worst problem was "don't remember this" saving a memory that said "don't", the opposite of what I asked. "pls" was not treated as polite, so "pls forget everything" and "remember i'm vegan pls" went wrong or saved the "pls". Asking "what's in your memory" went to the language model, which can invent a list.
+
+Fixed: a leading "don't", "never" or "stop" before a trailing "remember this" saves nothing. "pls" and "plz" count as polite words. "what's in your memory", "show my memories" and "what have you saved about me" now show the real list of facts. Test added in test/assistant.test.js.
+
+Left for later: "call me Sam", "my name is Sam" and "you should know I'm vegan" still go to the model. "delete memory about food" and "list what you know" are not matched. The 4 failures in `npm test` are the WordNet and demo ones from the sandbox install and fail the same way without this change.

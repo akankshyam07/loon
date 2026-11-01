@@ -119,6 +119,14 @@ test('commands: dont forget, keep in mind and trailing remember that all save a 
   assert.strictEqual(parseCommand("don't forget"), null);
 });
 
+test('commands: "don\'t remember this" saves nothing, pls is polite, and memory can be listed by asking', () => {
+  assert.strictEqual(parseCommand("don't remember this"), null);
+  assert.strictEqual(parseCommand('never remember that'), null);
+  assert.deepStrictEqual(parseCommand("remember I'm vegan pls"), { action: 'remember', text: "I'm vegan" });
+  assert.strictEqual(parseCommand('pls forget everything').all, true);
+  for (const t of ["what's in your memory", 'show my memories', 'what have you saved about me']) assert.deepStrictEqual(parseCommand(t), { action: 'recall', facts: true }, t);
+});
+
 test('actions: remember refuses a password', async () => {
   const dir = tmp();
   const memory = new Memory(path.join(dir, 'memory.json'));
