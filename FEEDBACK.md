@@ -765,3 +765,13 @@ As a user, the worst problem was a one-digit cent price. "Side salad $4.5" becam
 Fixed: prices accept one or two decimals, em dashes are trimmed from names, and "veg" counts as a meat-free word like "veggie". Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: a bare whole number price ("Soup of the Day 6") is still ignored, and the dish line is then used as the description of the dish above it, which can give a wrong protein. A range such as "$11 - 14" keeps the dash in the name. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-01 — follow-up conversations (fourth pass)
+
+Tried 30 short messages typed mid-thread or alone, such as "thanks a ton", "tysm", "got it thanks", "many thanks", "thanks again", "hi again", "ok", "yes", "lol", "perfect", "good night" and "what time is it in tokyo".
+
+As a user, the annoying part was that ordinary ways of saying thanks still cost a full model call and came back wordy, while "thanks" got the instant purr. "tysm", "thanks a ton", "got it thanks" and "hi again" were the common ones.
+
+Fixed: the thanks reply now also matches "tysm", "many thanks", "a ton", "again", "kindly", "mate" and a leading "got it", "gotcha" or "makes sense". The greeting also takes "again". Test cases added in test/brain.test.js and checked to fail before the change. One test in test/cli-provider.test.js used "hello again" as a stand-in for a model question, so I changed that input to "tell me a story" and kept the assertion.
+
+Left for later: "ok", "yes", "lol", "gm" and "good night" still go to the model. "what time is it in tokyo" goes to the model, which cannot know the time, so it may guess. "tip on 45 at 18%" and "how many km is 10 miles" are not handled by the calculator. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.

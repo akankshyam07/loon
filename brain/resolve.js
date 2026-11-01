@@ -68,11 +68,11 @@ const CODE_ANSWERS = [
     }),
   },
   {
-    match: /^(hi|hii+|hey|heya|hello|yo|sup|what'?s up|good (morning|afternoon|evening))( loon)?$/,
+    match: /^(hi|hii+|hey|heya|hello|yo|sup|what'?s up|good (morning|afternoon|evening))( again)?( loon)?$/,
     answer: () => ({ mood: 'happy', text: 'Hi! Highlight something, or ask me anything.' }),
   },
   {
-    match: /^(?:(?:ok|okay|great|perfect|cool|awesome|nice)[ ,]+)?(?:thanks|thank you|thank u|thx|ty|cheers)(?:[ ,]+(?:a lot|so much|very much|that helps|that helped|loon))*$/,
+    match: /^(?:(?:ok|okay|great|perfect|cool|awesome|nice|got it|gotcha|makes sense)[ ,]+)?(?:(?:many )?thanks|thank you|thank u|thx|tysm|ty|cheers)(?:[ ,]+(?:a lot|a ton|so much|very much|again|kindly|mate|that helps|that helped|loon))*$/,
     answer: () => ({ mood: 'happy', text: 'Anytime. *purrs*' }),
   },
   {

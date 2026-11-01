@@ -190,7 +190,7 @@ test('resolver falls back to the CLI when the local model is unavailable', async
   const result = await resolver.ask('hello there', { onText: () => {} });
   assert.deepStrictEqual([result.tier, result.text], ['cloud', 'Codex answer.']);
   settings.privacy = true;
-  await assert.rejects(resolver.ask('hello again', { onText: () => {} }), /No model available/);
+  await assert.rejects(resolver.ask('tell me a story', { onText: () => {} }), /No model available/);
 });
 
 test('never API billing: refuses CLIs signed in with an API key, and strips API keys from their environment', async () => {
