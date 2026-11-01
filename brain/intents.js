@@ -10,7 +10,7 @@ const NO = /^(no|nope|nah|don't|do not|cancel|stop|never ?mind|wrong|no thanks|n
 // Fixed phrases → task/toggle. Alternatives written as regex; matched on the normalized utterance.
 const TEMPLATES = [
   { re: /^(explain|what does) (this|that|it|the selection)( to me)?( mean)?$|^what does this mean$/, route: { type: 'task', task: 'explain', needs: 'selection' } },
-  { re: /^(simplify( this| that| it)?|make (this|that|it) (simpler|easier))$|^explain (this|that|it) simply$/, route: { type: 'task', task: 'simplify', needs: 'selection' } },
+  { re: /^(simplify( this| that| it)?|make (this|that|it) (simpler|easier))$|^explain (this|that|it) (to me )?simply$|^eli5( (this|that|it))?$|^explain( this| that| it)? like i'?m (5|five)$|^dumb (this|that|it) down$/, route: { type: 'task', task: 'simplify', needs: 'selection' } },
   { re: /^(make (this|that|it) ((a (bit|little)|way|much) )?(shorter|short|more concise|concise)|(shorten|tighten|trim)( up)? (this|that|it)( up)?|cut (this|that|it) (down|short))( for me)?$/, route: { type: 'task', task: 'shorter', needs: 'selection' } },
   { re: /^(rewrite|reword|rephrase|paraphrase) (this|that|it)$|^say (this|that|it) (differently|another way)$/, route: { type: 'task', task: 'rewrite', needs: 'selection' } },
   { re: /^make (this|that|it) (sound )?(more )?(professional|formal|polite)$|^(rewrite|reword|rephrase) (this|that|it) (more |to be more |to sound more )?(professionally|formally|politely|professional|formal|polite)$/, route: { type: 'task', task: 'professional', needs: 'selection' } },
@@ -19,9 +19,9 @@ const TEMPLATES = [
   { re: /^(summari[sz]e|sum up|sum) (this|that|it|the selection)( up)?( for me)?$|^summari[sz]e$|^tl;?dr( (this|that|it))?$/, route: { type: 'task', task: 'summarize', needs: 'selection' } },
   { re: /^(give me |show me )?(some )?examples( of (this|that|it))?$|^(give|show) (me )?an example$/, route: { type: 'task', task: 'examples', needs: 'selection' } },
   { re: /^translate (this|that|it)( for me)?( (to|into) english)?$/, route: { type: 'task', task: 'translate', needs: 'selection' } },
-  { re: /^(summari[sz]e|sum up) (this|the) page$|^what'?s on (this|the) page$|^what is this page( about)?$/, route: { type: 'task', task: 'page_summary' } },
+  { re: /^(summari[sz]e|sum up|explain) (this|the) page$|^what'?s on (this|the) page$|^what is this page( about)?$|^tell me what this page is about$/, route: { type: 'task', task: 'page_summary' } },
   { re: /^what (do|should) i do (here|on this page)$/, route: { type: 'task', task: 'page_todo' } },
-  { re: /^(which (one )?is (the )?(cheapest|best value)|what'?s the (cheapest|best (deal|value)))( here)?$/, route: { type: 'task', task: 'shop_value' } },
+  { re: /^(which (one )?is (the )?(cheapest|best value)|which one is (the )?cheaper|what'?s the (cheapest|best (deal|value))( one)?)( here)?$/, route: { type: 'task', task: 'shop_value' } },
   { re: /^what should i (order|eat)( here)?$|^what'?s the lightest( option)?$/, route: { type: 'task', task: 'food_lightest' } },
   { re: /^(quiz me|test me)( on this( page)?)?$/, route: { type: 'task', task: 'quiz' } },
   { re: /^(what have i found|summari[sz]e my notes)$/, route: { type: 'task', task: 'research_found' } },

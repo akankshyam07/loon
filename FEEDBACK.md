@@ -815,3 +815,13 @@ As a user, the plain word "summarize" and "tldr" are what I would say after sele
 Fixed: "summarize", "tldr" and "tl;dr this" now route to the summarize task. Cases added in test/voice.test.js and checked to fail before the change.
 
 Left for later: there is no task for "make it more casual", "make this longer", "make it clearer" or "improve this", so they reach the model as free questions. "Translate this to spanish" ignores the language because the translate task only goes to English. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-01 — voice intents (fourth pass)
+
+Tried 45 spoken phrasings such as "explain this page", "tell me what this page is about", "what's the cheapest one", "which one is cheaper", "eli5", "explain like I'm five", "dumb it down", "do not disturb", "translate this to french" and "what does this word mean".
+
+As a user, the worst problem was that page questions like "explain this page" went to the model, which has no page text unless the page task fetches it. "what's the cheapest one" and "which one is cheaper" also missed the shopping answer. "eli5" and "dumb it down" are common ways to ask for a simpler version and all went to the model.
+
+Fixed: those phrasings now route to the page summary, shopping value and simplify tasks. Test added in test/voice.test.js and checked to fail before the change.
+
+Left for later: "translate this to french" still ends up as a plain question because the translate task only targets English. "do not disturb", "quiet mode" and "stop listening" are not mapped to anything. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.

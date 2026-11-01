@@ -31,6 +31,7 @@ test('spoken edits and explanations of a selection are templates', () => {
     'Make this more professional': 'professional', 'make it friendlier': 'warmer', 'Summarize this': 'summarize',
     'make this a bit shorter': 'shorter', 'tighten this up': 'shorter', 'Rephrase this': 'rewrite',
     'make it sound professional': 'professional', 'rewrite this more professionally': 'professional',
+    'explain this to me simply': 'simplify', 'ELI5': 'simplify', "explain like I'm five": 'simplify', 'dumb it down': 'simplify',
     'Fix the grammar': 'fix_grammar', 'proofread this': 'fix_grammar', 'fix typos': 'fix_grammar',
     'fix my grammar': 'fix_grammar', 'check my spelling': 'fix_grammar', 'proofread': 'fix_grammar',
     'summarize this for me': 'summarize', 'sum this up': 'summarize', 'rewrite this warmer': 'warmer', 'make it short': 'shorter',
@@ -45,6 +46,8 @@ test('spoken edits and explanations of a selection are templates', () => {
     assert.deepStrictEqual(route(said), { type: 'task', task, needs: 'selection' }, said);
   }
   assert.strictEqual(route('Summarize this page').task, 'page_summary');
+  for (const said of ['explain this page', 'tell me what this page is about']) assert.strictEqual(route(said).task, 'page_summary', said);
+  for (const said of ["what's the cheapest one", 'which one is cheaper']) assert.strictEqual(route(said).task, 'shop_value', said);
 });
 
 test('open questions still go to the model; yes/no only count while confirming', () => {
