@@ -104,6 +104,13 @@ test('page kinds: sensitive wins, shops and articles are recognized', async () =
   for (const url of ['https://www.wellsfargo.com.au/', 'https://www.chase.co.uk/', 'https://www.hsbc.co.uk/', 'https://www.medicare.gov/', 'https://mijn.rabobank.nl/']) {
     assert.strictEqual(page('<p>hi</p>', url).sensitive, true, url);
   }
+  for (const url of ['https://www.td.com/', 'https://www.rbc.com/', 'https://www.santander.co.uk/', 'https://onlinesbi.sbi/', 'https://kite.zerodha.com/', 'https://www.hmrc.gov.uk/', 'https://portal.cigna.com/']) {
+    assert.strictEqual(page('<p>hi</p>', url).sensitive, true, url);
+  }
+  for (const url of ['https://www.icloud.com/mail/', 'https://outlook.com/mail', 'https://mail.live.com/', 'https://mail.yandex.com/']) {
+    assert.strictEqual(page('<p>hi</p>', url).kind, 'email', url);
+  }
+  assert.notStrictEqual(page('<p>hi</p>', 'https://www.icloud.com/photos/').kind, 'email');
   assert.notStrictEqual(page('<p>hi</p>', 'https://bankofamerica.com.evil.com/').sensitive, true);
   const euro = (items) => items.map((x) => `<p>${x} grilled chicken sauce</p>`).join('');
   assert.strictEqual(page(euro(['Pizza 11,50 €', 'Pasta 9,00 €', 'Soup 6,50 €', 'Salad 7,00 €', 'Tiramisu 5,50 €'])).kind, 'menu');

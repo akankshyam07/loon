@@ -855,3 +855,13 @@ As a user, the worst problem was "don't remember this" saving a memory that said
 Fixed: a leading "don't", "never" or "stop" before a trailing "remember this" saves nothing. "pls" and "plz" count as polite words. "what's in your memory", "show my memories" and "what have you saved about me" now show the real list of facts. Test added in test/assistant.test.js.
 
 Left for later: "call me Sam", "my name is Sam" and "you should know I'm vegan" still go to the model. "delete memory about food" and "list what you know" are not matched. The 4 failures in `npm test` are the WordNet and demo ones from the sandbox install and fail the same way without this change.
+
+## 2026-11-01 — page kinds (fifth pass)
+
+Tried 31 hosts such as icloud.com/mail, outlook.com, mail.live.com, mail.yandex.com, td.com, rbc.com, santander.co.uk, onlinesbi.sbi, zerodha.com, hmrc.gov.uk, cigna.com, aetna.com and healthequity.com.
+
+As a user, the worst problem was that the cat did not look away on Canadian, Indian and UK banks, the UK tax site and big health insurers, so it would offer to read an account page. iCloud Mail, outlook.com and Yandex Mail were treated as ordinary pages, so no email actions showed up.
+
+Fixed: those hosts are now on the sensitive list, the common webmail hosts are on the email list, and iCloud Mail is detected by its /mail path so iCloud Photos stays an ordinary page. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: many smaller national banks (ing.nl, other regional banks) still rely on a password field. Insurer marketing pages now go quiet too, which errs on the safe side. The failures in `npm test` here are the WordNet and demo ones from the sandbox install (4 this run).
