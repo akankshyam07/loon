@@ -745,3 +745,13 @@ As a user, the common production errors were still going to the model. The Node 
 Fixed: added seven table entries for these. The 502 and 504 entries skip line numbers like the other status codes. Tests added in test/modes.test.js.
 
 Left for later: TypeScript errors, AttributeError for types other than NoneType, "TypeError: 'int' object is not subscriptable", React key and hydration warnings, SQL constraint errors, NoSuchMethodError and UnsupportedClassVersionError are still not in the table. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-01 — memory and privacy, redaction (fifth pass)
+
+Tried 26 snippets such as "routing number 021000021", "account #: 00123456789", "passport no. X1234567", "my verification code is 482913", "your OTP: 554433", "mot de passe: …", "contraseña: …", "Passwort: …", a quoted DB_PASSWORD with spaces and ordinary sentences about accounts and passports.
+
+As a user, labelled bank, routing and passport numbers and one-time codes went to the model untouched, and so did a password labelled in French, Spanish or German.
+
+Fixed: a new rule redacts a value that has a digit after labels such as account, routing, sort code, passport, verification code and OTP. The password rule also knows mot de passe, mdp, contraseña, clave, passwort and kennwort. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: three digit codes in groups ("2FA code 123 456"), recovery codes without digits, `DB_PASSWORD="correct horse"` (quoted with spaces), bare "token: abc" and "bearer token eyJ…" without the word Bearer in front. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.

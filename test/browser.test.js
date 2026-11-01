@@ -142,3 +142,10 @@ test('redaction catches labelled SSNs, "api key is" and session cookie pairs', (
   assert.match(text, /Path=\//);
   assert.strictEqual(redact('my api key is in the settings page').count, 0);
 });
+
+test('redaction hides labelled account, routing, passport and one-time codes and foreign password labels', () => {
+  const { text } = redact('routing number 021000021, account #: 00123456789, passport no. X1234567, my verification code is 482913, mot de passe: hunter22, contraseña: abc12345');
+  for (const secret of ['021000021', '00123456789', 'X1234567', '482913', 'hunter22', 'abc12345']) assert.ok(!text.includes(secret), secret);
+  assert.strictEqual(redact('your account was created in 2024 and the code is below').count, 0);
+  assert.strictEqual(redact('Call 555 1234 about the passport office').count, 0);
+});

@@ -43,7 +43,7 @@ const RULES = [
   { kind: 'token', re: /\bBasic\s+[A-Za-z0-9+\/]{12,}={0,2}/g },
   {
     kind: 'secret',
-    re: /\b(password|passcode|passphrase|pw|pin|cvv|cvc)(\s+is\s*[:=]?\s*|\s*[:=]\s*)(?:(["'])(?!\[redacted)([^"'\n]{3,})\3|(?!\[redacted)([^\s"',;]{3,}))/gi,
+    re: /\b(password|passcode|passphrase|mot de passe|mdp|contraseña|clave|passwort|kennwort|pw|pin|cvv|cvc)(\s+is\s*[:=]?\s*|\s*[:=]\s*)(?:(["'])(?!\[redacted)([^"'\n]{3,})\3|(?!\[redacted)([^\s"',;]{3,}))/gi,
     replace: (m, name, sep, quote) => `${name}${sep}${quote || ''}[redacted:secret]${quote || ''}`,
   },
   { kind: 'secret', re: /\b(pin|cvv|cvc)(\s+)\d{3,8}\b/gi, replace: (m, name, sep) => `${name}${sep}[redacted:secret]` },
@@ -57,6 +57,11 @@ const RULES = [
     kind: 'secret',
     re: /\b(api[ -]key|secret key|access token)(\s+is\s*[:=]?\s*|\s*[:=]\s*)(?!\[redacted)([A-Za-z0-9._~+\/=-]{12,})/gi,
     replace: (m, name, sep) => `${name}${sep}[redacted:secret]`,
+  },
+  {
+    kind: 'account',
+    re: /\b((?:bank )?account(?: number| no\.?| #)?|acct(?: no\.?| #)?|routing(?: number| no\.?)?|aba(?: number)?|sort code|passport(?: number| no\.?)?|(?:verification|security|confirmation|one-time|login|2fa|auth(?:entication)?) code|otp)(\s*(?:is\s*|[:#=]\s*)?|\s+)(?=[A-Z0-9-]*\d)([A-Z0-9-]{4,}(?: \d{3})?)\b/gi,
+    replace: (m, name, sep) => `${name}${sep}[redacted:account]`,
   },
   {
     kind: 'ssn',
