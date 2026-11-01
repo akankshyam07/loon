@@ -9,6 +9,8 @@
     /\b\w+(Error|Exception)\b[:\s].{3,}/,
     /^\s*(Uncaught\s+)?(Error|Exception): \S/, // a bare "Error: ..." line
     /^\s*panic: /m, // Go
+    /^npm ERR!/m,
+    /\bSegmentation fault\b|: command not found\b/,
   ];
 
   function looksLikeJson(text) {
@@ -37,16 +39,20 @@
   // One-line import and include statements have too few symbols for the density check
   const IMPORT = /^\s*(import\s+[\w{*][^\n]*\sfrom\s+['"]|import\s+[\w.]+(\.\*)?;|from\s+[\w.]+\s+import\s+\w|#include\s*[<"]|using\s+[\w.]+;|package\s+[\w.]+;)/;
 
+  // Short snippets have too few symbols for the density check, so "console.log('hi')" would get Define
+  const SNIPPET = /^[\w$.]+\(.*\);?$|=>|^\s*(pub\s+)?fn\s+\w+\s*\(/;
+
   function looksLikeCommand(text) {
     const lines = text.split('\n').filter((l) => l.trim());
-    return lines.length > 0 && (SQL.test(text) || lines.every((l) => SHELL.test(l) || IMPORT.test(l)));
+    return lines.length > 0 && (SQL.test(text) || lines.every((l) => SHELL.test(l) || IMPORT.test(l)))
+      || (lines.length === 1 && SNIPPET.test(text.trim()));
   }
 
   function classifySelection(text, { editable = false, monospace = false } = {}) {
     const t = text.trim();
     if (editable) return 'editable';
     if (looksLikeJson(t)) return 'json';
-    if (STACK_TRACE.some((re) => re.test(t)) && (t.includes('\n') || /(Error|Exception)/.test(t))) return 'stacktrace';
+    if (STACK_TRACE.some((re) => re.test(t)) && (t.includes('\n') || /(Error|Exception|ERR!|fault|not found)/.test(t))) return 'stacktrace';
     if (looksLikeCode(t, { monospace }) || looksLikeCommand(t)) return 'code';
     // CJK text has no spaces, so count roughly one word per two characters
     const cjk = (t.match(/[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/g) || []).length;

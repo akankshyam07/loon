@@ -825,3 +825,13 @@ As a user, the worst problem was that page questions like "explain this page" we
 Fixed: those phrasings now route to the page summary, shopping value and simplify tasks. Test added in test/voice.test.js and checked to fail before the change.
 
 Left for later: "translate this to french" still ends up as a plain question because the translate task only targets English. "do not disturb", "quiet mode" and "stop listening" are not mapped to anything. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-01 — selection chips and classification (fifth pass)
+
+Tried 38 selections such as "Segmentation fault (core dumped)", "npm ERR! code ELIFECYCLE", "bash: foo: command not found", `console.log("hi")`, `print("hello")`, `x => x * 2`, `fn main() { println!("hi"); }`, a bullet list, bare URLs, emails, prices, a shebang script and Japanese and German sentences.
+
+As a user, the worst problem was that a one-line code snippet with three words or fewer got the word chips, so selecting `console.log("hi")` offered Define. Short arrow functions and Rust `fn` lines were called sentences. Common crash lines such as a segfault, an npm error and "command not found" got sentence chips, so no error help was offered.
+
+Fixed: a single line that is a function call, an arrow function or an `fn` definition now counts as code. The npm, segfault and "command not found" lines now count as errors. Tests added in test/browser.test.js and checked to fail before the change.
+
+Left for later: a bullet list of four short items is still a word, a shebang script with two lines is a word, and `mvn clean install` or `cargo run` are words because the shell rule only knows a fixed tool list. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
