@@ -18,7 +18,8 @@ const ADJACENT = /^\s*(?:and|,)?\s*$/;
 function parseQuantity(text) {
   if (!text) return null;
   // "1/2 gallon" is half a gallon, not two.
-  const t = String(text).toLowerCase().replace(/×/g, 'x').replace(/\bhalf[- ](?=gallon|liter|litre|quart|pint|pound|lb)/g, '0.5 ').replace(/\b([1-3])\/([2-4])\b(?=\s*(?:fl|gal|lb|oz|qt|pt|l\b|lit|kg|g\b|ml|pound|ounce|quart|pint))/g, (_, a, b) => Number(a) / Number(b));
+  // "1,000 g" is a thousand, but "0,125 l" is a European decimal.
+  const t = String(text).toLowerCase().replace(/×/g, 'x').replace(/(?<![\d,.])([1-9]\d{0,2}(?:,\d{3})*),(?=\d{3}(?!\d))/g, (_, d) => d.replace(/,/g, '')).replace(/\bhalf[- ](?=gallon|liter|litre|quart|pint|pound|lb)/g, '0.5 ').replace(/\b([1-3])\/([2-4])\b(?=\s*(?:fl|gal|lb|oz|qt|pt|l\b|lit|kg|g\b|ml|pound|ounce|quart|pint))/g, (_, a, b) => Number(a) / Number(b));
   let count = 1;
   const multi = t.match(/(\d+)\s*(?:(?:cans?|bottles?|bags?|boxes|pouches|jars|sticks)\s*)?x\s*\d/) || t.match(/\bpack of (\d+)/) || t.match(/(\d+)\s*[- ]?(?:pack|pk)\b/);
   if (multi) count = Number(multi[1]);

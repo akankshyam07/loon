@@ -246,6 +246,13 @@ test('parsePrice and parseQuantity read lakh grouping, bare cents, dozens and ha
   assert.ok(Math.abs(shopping.parseQuantity('half gallon').amount - 1892.705892) < 1e-6);
 });
 
+test('parseQuantity reads a thousands comma but keeps a European decimal', () => {
+  assert.deepStrictEqual(shopping.parseQuantity('1,000 g'), { amount: 1000, unit: 'g' });
+  assert.deepStrictEqual(shopping.parseQuantity('2 x 1,500 ml'), { amount: 3000, unit: 'ml' });
+  assert.deepStrictEqual(shopping.parseQuantity('0,125 l'), { amount: 125, unit: 'ml' });
+  assert.deepStrictEqual(shopping.parseQuantity('1,5 l'), { amount: 1500, unit: 'ml' });
+});
+
 test('menu: one-digit cents keep the whole price, em dashes are trimmed, "Veg Burger" is vegetarian', () => {
   const items = food.extractMenu('Side salad $4.5\nCheese pizza 9.5€\nTofu Stir-fry — $13\nVeg Burger $12');
   assert.deepStrictEqual(items.map((i) => [i.name, i.price]), [['Side salad', 4.5], ['Cheese pizza', 9.5], ['Tofu Stir-fry', 13], ['Veg Burger', 12]]);

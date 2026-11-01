@@ -785,3 +785,13 @@ As a user, two things were wrong. "every day at 0:15" was scheduled for 12:15 PM
 Fixed: hour 0 is no longer pushed to the afternoon, and "on the hour" is dropped with the interval. Test added in test/routines.test.js and checked to fail before the change.
 
 Left for later: "every day except sunday" quietly becomes every day, which is dishonest. "every first monday of the month", "every 1st of the month", "every other friday at 4" and "twice a day" are not understood, though the first three at least show a card to fix. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-01 — shopping and unit price (fifth pass)
+
+Tried 39 size strings and 22 price strings such as "1,000 g", "6x330ml", "12 x 12 fl oz", "Net wt 12 oz", "Pack of 2", "1/2 lb", "CA$ 12.50", "Rs. 1,299", "1 299,00 €" and "Was $20 Now $15".
+
+As a user, the worst problem was a size with a thousands comma. "1,000 g" was read as 1 g, so that product looked a thousand times too expensive per gram and fell to the bottom of the ranking.
+
+Fixed: parseQuantity drops a thousands comma when exactly three digits follow it, and leaves "0,125 l" and "1,5 l" as decimals. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: "Set of 4", "three pack", "a pound", lengths such as "25 ft", "Save $5 $20" (takes 5) and "$5.00 - $7.00" (takes the low end) are still not handled.
