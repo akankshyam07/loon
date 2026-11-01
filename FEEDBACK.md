@@ -805,3 +805,13 @@ As a user, the worst problem was that tip questions, which come up at every rest
 Fixed: calc answers "tip on N at P%", "P% tip on N" (with the currency symbol kept), "half / a third / a quarter of N", sqrt and "square root of N", and "N cubed". Cases added in test/brain.test.js and checked to fail before the change.
 
 Left for later: "7 mod 3", "5'10 in cm", speed units, "5 factorial", "how many days in a year" and currency conversion (needs live rates, so it should say so). "10 / 0" falls through to the model. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-01 — writing tools by voice (fourth pass)
+
+Tried 41 spoken phrasings on a selection such as "make this less formal", "make it casual", "make this longer", "expand this", "tldr", "tl;dr this", "summarize", "eli5", "translate this to spanish", "draft a reply", "make this clearer" and "improve my writing".
+
+As a user, the plain word "summarize" and "tldr" are what I would say after selecting a paragraph, and both went down the slow question path instead of the summarize task.
+
+Fixed: "summarize", "tldr" and "tl;dr this" now route to the summarize task. Cases added in test/voice.test.js and checked to fail before the change.
+
+Left for later: there is no task for "make it more casual", "make this longer", "make it clearer" or "improve this", so they reach the model as free questions. "Translate this to spanish" ignores the language because the translate task only goes to English. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.

@@ -35,6 +35,7 @@ test('spoken edits and explanations of a selection are templates', () => {
     'fix my grammar': 'fix_grammar', 'check my spelling': 'fix_grammar', 'proofread': 'fix_grammar',
     'summarize this for me': 'summarize', 'sum this up': 'summarize', 'rewrite this warmer': 'warmer', 'make it short': 'shorter',
     'give me examples': 'examples',
+    'summarize': 'summarize', 'tldr': 'summarize', 'tl;dr this': 'summarize',
     'make it way shorter': 'shorter', 'cut this down': 'shorter', 'make it more polite': 'professional',
     'rewrite this to be more polite': 'professional', 'rewrite it in a friendlier tone': 'warmer',
     'make this sound more friendly': 'warmer', 'proofread this for me': 'fix_grammar', 'check this for typos': 'fix_grammar',

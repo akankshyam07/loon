@@ -16,7 +16,7 @@ const TEMPLATES = [
   { re: /^make (this|that|it) (sound )?(more )?(professional|formal|polite)$|^(rewrite|reword|rephrase) (this|that|it) (more |to be more |to sound more )?(professionally|formally|politely|professional|formal|polite)$/, route: { type: 'task', task: 'professional', needs: 'selection' } },
   { re: /^(make (this|that|it) (sound )?(more )?|(rewrite|reword|rephrase) (this|that|it) (to be |to sound |in a )?)(warmer|friendlier|nicer|friendly|warm|nice)( tone)?$/, route: { type: 'task', task: 'warmer', needs: 'selection' } },
   { re: /^(fix|correct|proofread|check) (the |my )?(grammar|spelling|typos)( (in|of) (this|that|it))?$|^(fix|correct|proofread) (this|that|it)( for me)?$|^proofread$|^check (this|that|it) for (typos|spelling|grammar)( mistakes| errors)?$/, route: { type: 'task', task: 'fix_grammar', needs: 'selection' } },
-  { re: /^(summari[sz]e|sum up|sum) (this|that|it|the selection)( up)?( for me)?$/, route: { type: 'task', task: 'summarize', needs: 'selection' } },
+  { re: /^(summari[sz]e|sum up|sum) (this|that|it|the selection)( up)?( for me)?$|^summari[sz]e$|^tl;?dr( (this|that|it))?$/, route: { type: 'task', task: 'summarize', needs: 'selection' } },
   { re: /^(give me |show me )?(some )?examples( of (this|that|it))?$|^(give|show) (me )?an example$/, route: { type: 'task', task: 'examples', needs: 'selection' } },
   { re: /^translate (this|that|it)( for me)?( (to|into) english)?$/, route: { type: 'task', task: 'translate', needs: 'selection' } },
   { re: /^(summari[sz]e|sum up) (this|the) page$|^what'?s on (this|the) page$|^what is this page( about)?$/, route: { type: 'task', task: 'page_summary' } },
