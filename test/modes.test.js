@@ -245,3 +245,9 @@ test('parsePrice and parseQuantity read lakh grouping, bare cents, dozens and ha
   assert.deepStrictEqual(shopping.parseQuantity('half dozen eggs'), { amount: 6, unit: 'count' });
   assert.ok(Math.abs(shopping.parseQuantity('half gallon').amount - 1892.705892) < 1e-6);
 });
+
+test('menu: one-digit cents keep the whole price, em dashes are trimmed, "Veg Burger" is vegetarian', () => {
+  const items = food.extractMenu('Side salad $4.5\nCheese pizza 9.5€\nTofu Stir-fry — $13\nVeg Burger $12');
+  assert.deepStrictEqual(items.map((i) => [i.name, i.price]), [['Side salad', 4.5], ['Cheese pizza', 9.5], ['Tofu Stir-fry', 13], ['Veg Burger', 12]]);
+  assert.match(food.recommend(items, 'vegetarian').text, /Veg Burger/);
+});

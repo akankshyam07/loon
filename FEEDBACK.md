@@ -755,3 +755,13 @@ As a user, labelled bank, routing and passport numbers and one-time codes went t
 Fixed: a new rule redacts a value that has a digit after labels such as account, routing, sort code, passport, verification code and OTP. The password rule also knows mot de passe, mdp, contraseña, clave, passwort and kennwort. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: three digit codes in groups ("2FA code 123 456"), recovery codes without digits, `DB_PASSWORD="correct horse"` (quoted with spaces), bare "token: abc" and "bearer token eyJ…" without the word Bearer in front. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-01 — food and menu (fifth pass)
+
+Tried three menus with 30 lines such as "Side salad $4.5", "Cheese pizza $9.5 (vegetarian)", "Tofu Stir-fry — $13", "Veg Burger $12", dot leaders, a euro price with a comma, kids items and tax and tip lines.
+
+As a user, the worst problem was a one-digit cent price. "Side salad $4.5" became a dish called "Side salad .5" at $4.00, so the price and the name were both wrong. "Veg Burger" counted as meat and could be shown with protein from the next line. An em dash before the price stayed in the dish name.
+
+Fixed: prices accept one or two decimals, em dashes are trimmed from names, and "veg" counts as a meat-free word like "veggie". Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: a bare whole number price ("Soup of the Day 6") is still ignored, and the dish line is then used as the description of the dish above it, which can give a wrong protein. A range such as "$11 - 14" keeps the dash in the name. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
