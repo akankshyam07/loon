@@ -775,3 +775,13 @@ As a user, the annoying part was that ordinary ways of saying thanks still cost 
 Fixed: the thanks reply now also matches "tysm", "many thanks", "a ton", "again", "kindly", "mate" and a leading "got it", "gotcha" or "makes sense". The greeting also takes "again". Test cases added in test/brain.test.js and checked to fail before the change. One test in test/cli-provider.test.js used "hello again" as a stand-in for a model question, so I changed that input to "tell me a story" and kept the assertion.
 
 Left for later: "ok", "yes", "lol", "gm" and "good night" still go to the model. "what time is it in tokyo" goes to the model, which cannot know the time, so it may guess. "tip on 45 at 18%" and "how many km is 10 miles" are not handled by the calculator. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-01 — routines (fifth pass)
+
+Tried 30 routine phrasings such as "every day at 0:15", "every hour on the hour remind me to drink", "every first monday of the month", "every weekday at 9am and 5pm", "twice a day", "every day except sunday", "every 1st of the month" and "every other friday at 4".
+
+As a user, two things were wrong. "every day at 0:15" was scheduled for 12:15 PM, noon instead of just after midnight. "every hour on the hour remind me to drink" became a plain message reading "The hour remind me to drink".
+
+Fixed: hour 0 is no longer pushed to the afternoon, and "on the hour" is dropped with the interval. Test added in test/routines.test.js and checked to fail before the change.
+
+Left for later: "every day except sunday" quietly becomes every day, which is dishonest. "every first monday of the month", "every 1st of the month", "every other friday at 4" and "twice a day" are not understood, though the first three at least show a card to fix. The 3 failures in `npm test` are the WordNet and demo ones from the sandbox install.

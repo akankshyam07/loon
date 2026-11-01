@@ -41,7 +41,7 @@ function parseTime(raw, part = null) {
     if (part === 'night' && h === 12) h = 0;
     else if (part === 'night' && h < 4) { /* 1–3 at night are after midnight */ }
     else if (['afternoon', 'evening', 'night'].includes(part) && h < 12) h += 12;
-    else if (part !== 'morning' && h < 7) h += 12;
+    else if (part !== 'morning' && h >= 1 && h < 7) h += 12; // 0 and 00:15 are already midnight
   }
   return `${pad(h)}:${pad(min)}`;
 }
@@ -86,7 +86,7 @@ function parseSchedule(input, now = new Date(), { allowOnce = false } = {}) {
 
   let part = null;
   const window = take(state, new RegExp(String.raw`\b(?:between|from)\s+(${TIME})\s+(?:and|to|until|-|–)\s+(${TIME})`, 'i'));
-  const interval = take(state, /\bevery\s+(\d+|other|an?|one|half an?)?\s*(minutes?|mins?|hours?|hrs?)\b/i) || take(state, /\b(hourly)\b/i);
+  const interval = take(state, /\bevery\s+(\d+|other|an?|one|half an?)?\s*(minutes?|mins?|hours?|hrs?)\b(?:\s+on the hour)?/i) || take(state, /\b(hourly)\b/i);
   const monthDay = take(state, /\b(?:on\s+)?the\s+(\d{1,2})(?:st|nd|rd|th)?\s+of\s+(?:every|each|the)\s+month\b/i)
     || take(state, /\b(?:every|each)\s+month\s+on\s+the\s+(\d{1,2})(?:st|nd|rd|th)?\b/i)
     || take(state, /\bmonthly\s+on\s+the\s+(\d{1,2})(?:st|nd|rd|th)?\b/i);

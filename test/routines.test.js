@@ -449,3 +449,11 @@ test('day lists without commas and dotted times are read whole', () => {
   assert.strictEqual(late.schedule.time, '19:30');
   assert.strictEqual(late.payload.message, 'read');
 });
+
+test('routines: 0:15 is just after midnight and "on the hour" is not part of the message', () => {
+  assert.strictEqual(R.parseSchedule('every day at 0:15 remind me to sleep', NOW).schedule.time, '00:15');
+  const r = R.parseRoutine('every hour on the hour remind me to drink', { now: NOW });
+  assert.strictEqual(r.schedule.minutes, 60);
+  assert.strictEqual(r.action, 'reminder');
+  assert.strictEqual(r.payload.message, 'drink');
+});
