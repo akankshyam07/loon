@@ -945,3 +945,13 @@ As a user, a quoted secret with spaces in an env-style line only lost nothing, b
 Fixed: the name=value secret rule now reads a quoted value with spaces as one value, and the Bearer rule ignores case. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: spaced digit codes ("2FA code 123 456", "login code 12 34 56"), recovery codes without digits, "my pass is …", the Chinese label 密码 and a bare "Your code is 482913". An unquoted password with spaces still keeps everything after the first word. This sandbox still shows 29 failures in `npm test` from missing install steps (WordNet, quicktype, Harper and others), and the same ones fail without my change.
+
+## 2026-11-02 — settings UI, reply language (fourth pass)
+
+Tried 12 reply language names in plain Node, such as "हिन्दी", "தமிழ்", "ଓଡ଼ିଆ", "العربية", "日本語", "中文 (简体)", "Español 🇪🇸", "Português (Brasil)" and "tiếng Việt". Also confirmed that the pasted full endpoint case from the last pass is already handled.
+
+As a user, typing Hindi, Tamil or Odia in the reply language box saved a broken word ("हनद" for "हिन्दी"), so the prompt told the model to reply in a language that does not exist. All three are on Loon's own language list. The cause is that vowel signs in these scripts are combining marks, not letters.
+
+Fixed: cleanPersonal in brain/personal.js now keeps combining marks. Test added in test/personal.test.js and checked to fail before the change.
+
+Left for later: parentheses are dropped, so "Português (Brasil)" becomes "Português Brasil". It still reads fine. The 4 failures in `npm test` are the WordNet and demo ones from the sandbox install.

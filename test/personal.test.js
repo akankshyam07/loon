@@ -156,6 +156,8 @@ test('custom instructions sit right after the fixed system prompt, identical acr
   assert.deepStrictEqual([cleanPersonal({ about: { a: 1 } }).about, cleanPersonal({ language: {} }).language], ['', '']);
   assert.deepStrictEqual([cleanPersonal({ length: 'huge' }).length, cleanPersonal({ tone: 1 }).tone], ['normal', 'playful']);
   // a language typed with an emoji, a region code or extra spaces stays readable in "Reply in X."
+  // scripts that write vowels as combining marks keep them
+  assert.deepStrictEqual(['हिन्दी', 'தமிழ்', 'ଓଡ଼ିଆ'].map((language) => cleanPersonal({ language }).language), ['हिन्दी', 'தமிழ்', 'ଓଡ଼ିଆ']);
   assert.deepStrictEqual(['Español 🇪🇸', 'pt-BR', '  Brazilian   Portuguese '].map((language) => cleanPersonal({ language }).language), ['Español', 'pt-BR', 'Brazilian Portuguese']);
 });
 
