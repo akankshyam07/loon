@@ -895,3 +895,13 @@ As a user, the worst problem was that "open my history" tried to open an app cal
 Fixed: "open my history" now lists recent history, "search my history for X" searches it, more recent-history phrasings are understood, and the leftover "about" after a time word is dropped. Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: "remind me what I asked" still becomes a reminder, "what have I been looking at" is not matched, and typos such as "wat did i ask" go to the model. There is still no spoken "clear my history". The 4 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-02 — developer help, error table (sixth pass)
+
+Tried 38 pasted errors such as TypeScript TS2345 and TS2304, Python "'int' object is not subscriptable" and AttributeError on a str, the React missing key warning, a Postgres duplicate key error, NoSuchMethodError, UnsupportedClassVersionError, git "local changes would be overwritten" and LazyInitializationException.
+
+As a user, everyday TypeScript, Python type and SQL errors still cost a model call, and the model can drift on them. Git refusing to merge over local edits is a daily annoyance and was not covered.
+
+Fixed: seven new table entries for these (TypeScript mismatch and unknown name, Python wrong type, React key, SQL duplicate value, Java class version, git local changes). Test added in test/modes.test.js, it fails without the entries.
+
+Left for later: NoSuchMethodError, "refusing to merge unrelated histories", LazyInitializationException, UnicodeDecodeError and the React hydration warning are still not in the table. The 4 failures in `npm test` are the WordNet and demo ones from the sandbox install.

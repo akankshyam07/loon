@@ -165,6 +165,11 @@ test('errors: fingerprint ignores paths/values; known errors answer from the tab
   assert.match(lookupKnown('FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory'), /Node ran out of memory/);
   assert.match(lookupKnown('java.lang.ClassCastException: class A cannot be cast to class B'), /ClassCastException/);
   assert.match(lookupKnown('Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?'), /Docker daemon/);
+  assert.match(lookupKnown("src/app.ts(12,5): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'."), /TypeScript/);
+  assert.match(lookupKnown("TypeError: 'int' object is not subscriptable"), /Python/);
+  assert.match(lookupKnown('Warning: Each child in a list should have a unique "key" prop.'), /React/);
+  assert.match(lookupKnown('ERROR: duplicate key value violates unique constraint "users_pkey"'), /Duplicate value/);
+  assert.match(lookupKnown('error: Your local changes to the following files would be overwritten by merge:'), /git/);
   assert.match(lookupKnown('panic: runtime error: invalid memory address or nil pointer dereference'), /Nil pointer/);
   assert.match(lookupKnown('error[E0382]: borrow of moved value: `s`'), /moved value/);
   assert.match(lookupKnown('502 Bad Gateway'), /502 Bad Gateway/);

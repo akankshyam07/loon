@@ -334,6 +334,48 @@ const KNOWN = [
     explain: 'The server is up but can’t take requests right now (overloaded, restarting or down for maintenance).',
     fix: ['Retry after a short wait.', 'Check the service’s status page.'],
   },
+  {
+    match: /\bTS2345\b|\bTS2322\b|is not assignable to (?:parameter of )?type/,
+    title: 'Type mismatch (TypeScript)',
+    explain: 'A value of one type was passed or assigned where TypeScript expects a different type.',
+    fix: ['Read the two types in the message: the first is what you gave, the second is what was expected.', 'Convert the value (`Number(x)`, `String(x)`) or widen the declared type if the code is right.', 'Avoid `as any`; it only hides the problem.'],
+  },
+  {
+    match: /TS2304|TS2552|Cannot find name '/,
+    title: 'Unknown name (TypeScript)',
+    explain: 'TypeScript cannot see a variable, function or type with that name in this scope.',
+    fix: ['Check the spelling and add the missing `import`.', 'For globals like `process` or `describe`, install the matching `@types/...` package.'],
+  },
+  {
+    match: /TypeError: '\w+' object is not (?:subscriptable|callable|iterable)|TypeError: unsupported operand type|AttributeError: '\w+' object has no attribute/,
+    title: 'Wrong type for this operation (Python)',
+    explain: 'The value is not the type the code assumed (for example an int used like a list, or a str added to an int).',
+    fix: ['Print `type(x)` for the variable named in the message and trace back to where it was set.', 'Convert it first (`int(x)`, `str(x)`), or fix the code that returned the wrong type.'],
+  },
+  {
+    match: /unique "key" prop/,
+    title: 'Missing key prop (React)',
+    explain: 'Items rendered from a list need a stable `key` so React can tell them apart between renders.',
+    fix: ['Add `key={item.id}` to the outermost element inside `.map()`.', 'Use the array index only if the list never reorders.'],
+  },
+  {
+    match: /duplicate key value violates unique constraint|UNIQUE constraint failed|Duplicate entry .* for key/,
+    title: 'Duplicate value (SQL)',
+    explain: 'An insert or update would create a second row with a value that must be unique.',
+    fix: ['Check the constraint name in the message to see which column it protects.', 'Look the row up first, or use an upsert (`ON CONFLICT` / `ON DUPLICATE KEY UPDATE`).'],
+  },
+  {
+    match: /UnsupportedClassVersionError|class file version \d+/,
+    title: 'Java version too old for this code',
+    explain: 'The class was compiled with a newer Java than the one running it.',
+    fix: ['Run `java -version` and compare it with the version your build targets.', 'Switch `JAVA_HOME` to the newer JDK, or compile for the older one.'],
+  },
+  {
+    match: /would be overwritten by (?:merge|checkout)/,
+    title: 'Local changes would be overwritten (git)',
+    explain: 'Git will not switch or merge because it would erase edits you have not committed.',
+    fix: ['Commit the changes, or `git stash` them and run the command again.', '`git stash pop` brings them back afterwards.'],
+  },
 ];
 
 function lookupKnown(text) {
