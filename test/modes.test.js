@@ -273,3 +273,9 @@ test('menu: one-digit cents keep the whole price, em dashes are trimmed, "Veg Bu
   assert.deepStrictEqual(items.map((i) => [i.name, i.price]), [['Side salad', 4.5], ['Cheese pizza', 9.5], ['Tofu Stir-fry', 13], ['Veg Burger', 12]]);
   assert.match(food.recommend(items, 'vegetarian').text, /Veg Burger/);
 });
+
+test('menu: a price range is one price and "cod" is not counted as a second fish protein', () => {
+  const items = food.extractMenu('Pizza $11 - 14\nPasta $12 - 15 oz\nFish & Chips $14\nBeer-battered cod with fries');
+  assert.deepStrictEqual(items.map((i) => [i.name, i.price]), [['Pizza', 11], ['Pasta - 15 oz', 12], ['Fish & Chips', 14]]);
+  assert.deepStrictEqual(food.score(items[2]).proteins, ['cod']);
+});

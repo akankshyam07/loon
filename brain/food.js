@@ -1,8 +1,8 @@
 // Food Cat (DESIGN.md §3.7): picks from keywords, no model. Numbers only when the user asks ("Estimate calories"),
 // and those are labelled estimated. Allergens are never promised.
 
-// "$9", "€11,50", "14.00 €" or a bare "13.50" at the end of the line
-const PRICE = /([$€£])\s?(\d+(?:[.,]\d{1,2})?)|(\d+(?:[.,]\d{1,2})?)\s?([€£])|\s(\d+[.,]\d{2})\s*$/;
+// "$9", "€11,50", "14.00 €" or a bare "13.50" at the end of the line. "$11 - 14" is one price (the lower one)
+const PRICE = /([$€£])\s?(\d+(?:[.,]\d{1,2})?)(?:\s?[-–—]\s?\d+(?:[.,]\d{1,2})?(?!\s?[a-z%\d]))?|(\d+(?:[.,]\d{1,2})?)\s?([€£])|\s(\d+[.,]\d{2})\s*$/;
 // Promos, fees and add-ons share the line shape of a dish but are not dishes. "gluten-free" is a dish.
 const NOT_A_DISH = /\b(off|(?<!-)free|delivery|tax|tip|service charge|discount|coupon|minimum|surcharge)\b|^\s*(add|extra|\+)/i;
 const HEAVY = { fried: 3, 'deep-fried': 4, crispy: 2, battered: 3, breaded: 2, creamy: 2, cream: 2, cheese: 1.5, cheesy: 2, alfredo: 3, aioli: 2, mayo: 2, butter: 1.5, bacon: 2, sausage: 2, loaded: 2, smothered: 2, gravy: 2, carbonara: 3, ranch: 1.5, fries: 2, 'double': 1.5, pastry: 2, 'pork belly': 3 };
@@ -48,7 +48,9 @@ function score(item) {
       reasons.push(word);
     }
   }
-  const proteins = [...new Set((text.match(PROTEIN) || []).map((p) => p.toLowerCase()))];
+  let proteins = [...new Set((text.match(PROTEIN) || []).map((p) => p.toLowerCase()))];
+  // "beer-battered cod" is one fish, not two proteins
+  if (proteins.some((p) => ['salmon', 'tuna', 'cod'].includes(p))) proteins = proteins.filter((p) => p !== 'fish');
   return { ...item, heaviness, reasons, proteins, likelyVegetarian: !MEAT.test(text.replace(MEAT_FREE, '').replace(/\b[a-z]+-free\b/g, '')), tips: TIPS.filter(([re]) => re.test(text)).map(([, tip]) => tip) };
 }
 

@@ -925,3 +925,13 @@ As a user, the worst problem was chat shorthand rewritten into other words and o
 Fixed: the shorthand skip in fixGrammar was only for "u". It is now a small list (u, ur, ok, k, lol, omg, ty, thx, pls, plz, idk, imo, brb, sec, ya). Test extended in test/modes.test.js, it fails without the list.
 
 Left for later: a text that mixes one English clause into another language still passes the English check and gets mangled ("Ich habe einen Hund und it is nice"). Doubled spaces and "I seen it" are not flagged. The 4 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-02 — food and menu (sixth pass)
+
+Tried a 24 line menu with a price range ("Pizza $11 - 14"), "Margherita 12 / 16", "Soup of the Day 6", a vegan burger, a fish and chips with "beer-battered cod", kids items and a long description under a salad.
+
+As a user, the worst problem was the protein ranking. Fish and Chips came out on top because "fish" and "cod" counted as two proteins for one piece of fish, ahead of the grilled salmon. A price range also left the dish named "Pizza - 14".
+
+Fixed: a range such as "$11 - 14" is read as one price (the lower one) and no longer leaks into the name. "fish" is dropped when a specific fish (salmon, tuna, cod) is named. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: "Margherita 12 / 16" and "Soup of the Day 6" are still ignored because a bare whole number is too risky to read as a price. The 4 failures in `npm test` are the WordNet and demo ones from the sandbox install and fail the same way on main.
