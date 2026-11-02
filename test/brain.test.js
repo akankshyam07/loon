@@ -108,13 +108,13 @@ test('ladder: arithmetic, percentages and unit conversions are answered by code'
   const brain = { modelId: () => 'fake', chat: async () => { throw new Error('model should not run'); } };
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));
   const resolver = new Resolver({ brain, cacheFile: path.join(dir, 'c.json'), countsFile: path.join(dir, 'n.json') });
-  const cases = [['what is 15% of 80?', /^12\./], ['2+2', /= 4$/], ["what's 12 x 12", /144/], ['(3+4)*2', /= 14/], ['5 miles in km', /8\.0467 km/], ['100 f to c', /37\.7778 c/], ['convert 3 cups to ml', /709\.7647 ml/], ['15 percent of 80', /^12\./], ["what's 8 times 9", /= 72/], ['100 minus 37', /= 63/], ['100 divided by 4', /= 25/], ['what is 2 to the power of 10', /1,024/], ["what's 7 squared", /= 49/], ['15% of $80', /^\$12\.00\./], ['$45 * 1.08', /= \$48\.60/], ['20% off 80', /^64 after 20% off/], ['how many cups in a gallon', /1 gallon is about 16 cups/], ['how many oz in a lb', /16 oz/], ['tip on 45 at 18%', /^Tip 8\.10, total 53\.10/], ['15% tip on $80', /^Tip \$12\.00, total \$92\.00/], ['half of 50', /^25\./], ['sqrt(16)', /= 4$/], ['square root of 144', /= 12$/], ["what's 3 cubed", /= 27$/]];
+  const cases = [['what is 15% of 80?', /^12\./], ['2+2', /= 4$/], ["what's 12 x 12", /144/], ['(3+4)*2', /= 14/], ['5 miles in km', /8\.0467 km/], ['100 f to c', /37\.7778 c/], ['convert 3 cups to ml', /709\.7647 ml/], ['15 percent of 80', /^12\./], ["what's 8 times 9", /= 72/], ['100 minus 37', /= 63/], ['100 divided by 4', /= 25/], ['what is 2 to the power of 10', /1,024/], ["what's 7 squared", /= 49/], ['15% of $80', /^\$12\.00\./], ['$45 * 1.08', /= \$48\.60/], ['20% off 80', /^64 after 20% off/], ['how many cups in a gallon', /1 gallon is about 16 cups/], ['how many oz in a lb', /16 oz/], ['tip on 45 at 18%', /^Tip 8\.10, total 53\.10/], ['15% tip on $80', /^Tip \$12\.00, total \$92\.00/], ['half of 50', /^25\./], ['sqrt(16)', /= 4$/], ['square root of 144', /= 12$/], ["what's 3 cubed", /= 27$/], ['how many days in a year', /1 year is about 365 days/], ['how many minutes in 3 hours', /3 hours is about 180 minutes/], ['1/0', /divides by zero/], ['5/0.5', /= 10$/]];
   for (const [q, re] of cases) {
     const r = await resolver.ask(q, { onText: () => {}, firstInThread: true });
     assert.strictEqual(r.tier, 'code', q);
     assert.match(r.text, re, q);
   }
-  for (const q of ['555-1234', '1/0', 'banana', 'what is 3 in']) {
+  for (const q of ['555-1234', 'banana', 'what is 3 in']) {
     await assert.rejects(resolver.ask(q, { onText: () => {}, firstInThread: true }), /model should not run/, q);
   }
 });

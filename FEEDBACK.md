@@ -955,3 +955,13 @@ As a user, typing Hindi, Tamil or Odia in the reply language box saved a broken 
 Fixed: cleanPersonal in brain/personal.js now keeps combining marks. Test added in test/personal.test.js and checked to fail before the change.
 
 Left for later: parentheses are dropped, so "Português (Brasil)" becomes "Português Brasil". It still reads fine. The 4 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-02 — typed questions, time units and divide by zero (fifth pass)
+
+Tried 30 inputs such as "how many days in a year", "how many minutes in a day", "how many seconds in an hour", "7 mod 3", "5 factorial", "10/0", "80 with 20% off", "percent change from 50 to 75" and "1e3 + 5".
+
+As a user, "how many days in a year" is an everyday question and it went to the language model, as did every other time conversion. "1/0" also went to the model, which can invent an answer for something that has none.
+
+Fixed: calc now knows seconds, minutes, hours, days, weeks and years (a year is 365 days), and "how many X in N Y" accepts a number, not only "a" or "one". A divide by zero gets a plain answer from code. The old test expected "1/0" to fall through to the model, so I moved it to the answered cases. Tests added in test/brain.test.js and checked to fail before the change.
+
+Left for later: "7 mod 3", "5 factorial", "80 with 20% off", "percent change from 50 to 75", number words ("twelve plus five") and "1e3". Month conversions are skipped because a month has no fixed length. The 4 failures in `npm test` are the WordNet and demo ones from the sandbox install.

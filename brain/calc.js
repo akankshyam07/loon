@@ -5,6 +5,7 @@ const UNITS = {
   length: { m: 1, km: 1000, cm: 0.01, mm: 0.001, mi: 1609.344, yd: 0.9144, ft: 0.3048, in: 0.0254 },
   mass: { kg: 1, g: 0.001, mg: 1e-6, lb: 0.45359237, oz: 0.028349523125 },
   volume: { l: 1, ml: 0.001, gal: 3.785411784, qt: 0.946352946, pt: 0.473176473, cup: 0.2365882365, floz: 0.0295735295625, tbsp: 0.01478676478125, tsp: 0.00492892159375 },
+  time: { sec: 1, min: 60, hr: 3600, day: 86400, wk: 604800, yr: 31536000 },
 };
 const ALIASES = {
   m: 'm', meter: 'm', meters: 'm', metre: 'm', metres: 'm', km: 'km', kilometer: 'km', kilometers: 'km', kilometre: 'km', kilometres: 'km',
@@ -15,6 +16,8 @@ const ALIASES = {
   l: 'l', liter: 'l', liters: 'l', litre: 'l', litres: 'l', ml: 'ml', gallon: 'gal', gallons: 'gal', gal: 'gal',
   quart: 'qt', quarts: 'qt', pint: 'pt', pints: 'pt', cup: 'cup', cups: 'cup', tbsp: 'tbsp', tablespoon: 'tbsp', tablespoons: 'tbsp',
   tsp: 'tsp', teaspoon: 'tsp', teaspoons: 'tsp',
+  second: 'sec', seconds: 'sec', sec: 'sec', secs: 'sec', minute: 'min', minutes: 'min', min: 'min', mins: 'min',
+  hour: 'hr', hours: 'hr', hr: 'hr', hrs: 'hr', day: 'day', days: 'day', week: 'wk', weeks: 'wk', year: 'yr', years: 'yr',
   c: 'C', celsius: 'C', f: 'F', fahrenheit: 'F', k: 'K', kelvin: 'K',
 };
 
@@ -83,7 +86,7 @@ function calc(question) {
   const money = q.match(/[$€£]/);
   const cash = (n) => (money ? money[0] + n.toFixed(2).replace(/\B(?=(\d{3})+\.)/g, ',') : fmt(n));
   const body = q.slice(lead.length).replace(/[$€£]\s*(?=\d)/g, '').replace(/\s*(?:dollars|euros|bucks)$/, '')
-    .replace(/^how many (\w+) (?:are |is )?(?:in|per) (?:a |an |one |1 )?(\w+)$/, '1 $2 to $1').replace(/^to\s+/, '').replace(/°/g, '').replace(/\bpercent\b/g, '%')
+    .replace(/^how many (\w+) (?:are |is )?(?:in|per) (?:(?:a|an|one) |(\d+(?:\.\d+)?) )?(\w+)$/, (_, to, n, from) => `${n || 1} ${from} to ${to}`).replace(/^to\s+/, '').replace(/°/g, '').replace(/\bpercent\b/g, '%')
     .replace(/(\d)\s*(?:times|multiplied by)\s*(?=[\d(])/g, '$1*').replace(/(\d)\s*plus\s*(?=[\d(])/g, '$1+')
     .replace(/(\d)\s*minus\s*(?=[\d(])/g, '$1 - ').replace(/(\d)\s*(?:divided by|over)\s*(?=[\d(])/g, '$1/')
     .replace(/(\d)\s*to the power of\s*(?=[\d(])/g, '$1^').replace(/(\d)\s*squared\b/g, '$1^2').trim();
@@ -125,6 +128,7 @@ function calc(question) {
     // "555-1234" is a phone number unless asked as a question or spaced out
     if (!lead && !/[+*/^]| - /.test(expression)) return null;
     const v = evaluate(expression);
+    if (v !== null && !Number.isFinite(v) && /\/\s*0+(?![\d.])/.test(expression)) return 'That divides by zero, which has no answer.';
     const text = v === null ? null : fmt(v);
     if (text) return `${body.replace(/\*/g, '×')} = ${money ? cash(v) : text}`;
   }
