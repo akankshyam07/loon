@@ -231,6 +231,9 @@ test('grammar fixer leaves other languages and chat shorthand alone', async () =
   assert.ok(spanish.notEnglish);
   const chat = await fixGrammar('can u send me teh report');
   assert.strictEqual(chat.fixed, 'can u send me the report');
+  for (const text of ['omg that was fun', 'thx for the help', 'lol that is funny', 'ok see you', 'brb in a sec']) {
+    assert.strictEqual((await fixGrammar(text)).fixed, text);
+  }
 });
 
 test('grammar fixer keeps names, does not shrink words to one letter and does not loop', async () => {

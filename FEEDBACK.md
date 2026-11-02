@@ -915,3 +915,13 @@ As a user, a name with a tag kept the tag's letters ("José bMaríab"). That fac
 Fixed: onboardingResult drops whole tags before it filters characters. checkBaseUrl trims a trailing "/chat/completions". Tests added in test/personal.test.js and test/api-provider.test.js. The existing onboarding test expected "Call me Ada script" for "Ada <script>", so I changed it to "Call me Ada", since the tag is now removed as a whole.
 
 Left for later: "simpler words", "less jargon" and "be nicer" still have no setting to map to. A private network address in the base URL is refused without saying why. The 4 other failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-02 — writing tools, fix grammar (third pass)
+
+Tried 40 texts and messages such as "omg that was fun", "thx for the help", "lol that is funny", "ok see you", "brb in a sec", "ty so much", links and email addresses, backtick code, mixed German and English, and tabs and doubled spaces.
+
+As a user, the worst problem was chat shorthand rewritten into other words and offered as a replacement. "thx" became "the", "omg" became "om", "lol" became "loll", "ok" became "okay", "pls" became "plus" and "brb in a sec" became "barb in a second".
+
+Fixed: the shorthand skip in fixGrammar was only for "u". It is now a small list (u, ur, ok, k, lol, omg, ty, thx, pls, plz, idk, imo, brb, sec, ya). Test extended in test/modes.test.js, it fails without the list.
+
+Left for later: a text that mixes one English clause into another language still passes the English check and gets mangled ("Ich habe einen Hund und it is nice"). Doubled spaces and "I seen it" are not flagged. The 4 failures in `npm test` are the WordNet and demo ones from the sandbox install.

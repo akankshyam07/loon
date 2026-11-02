@@ -110,6 +110,8 @@ function linter() {
   return linterPromise;
 }
 
+const CHAT_SHORTHAND = new Set('u ur ok k lol omg ty thx pls plz idk imo brb sec ya'.split(' '));
+
 // Harper only knows English and "fixes" other languages into nonsense (Hola → Hold), so a text of three or more words
 // with no common English word in it is left alone.
 const ENGLISH_WORDS = new Set('the a an and or but of to in on at for with is are was were be been am i you he she it we they me my your this that these those not no do does did have has had will would can could should there their from as if so what when'.split(' '));
@@ -119,7 +121,7 @@ function looksEnglish(text) {
 }
 
 // Applies Harper's first suggestion for each problem, re-linting after every change so spans stay valid.
-// Chat shorthand like "u" is skipped: Harper turns it into "uh" and then drops it.
+// Chat shorthand is skipped: Harper turns "u" into "uh", "thx" into "the" and "lol" into "loll".
 async function fixGrammar(text) {
   if (!looksEnglish(text)) return { fixed: text, changes: [], notEnglish: true };
   const harper = await linter();
@@ -132,7 +134,7 @@ async function fixGrammar(text) {
     const { start, end } = l.span();
     const word = fixed.slice(start, end);
     const first = l.suggestions()[0];
-    if (!first || /^u$/i.test(word) || tried.has(`${start}:${word}`)) return false;
+    if (!first || CHAT_SHORTHAND.has(word.toLowerCase()) || tried.has(`${start}:${word}`)) return false;
     const to = first.get_replacement_text();
     return !(/^[A-Z][a-z]/.test(word) && to === word.toUpperCase()) && !(word.length > 1 && to.length === 1);
   };
