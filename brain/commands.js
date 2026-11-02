@@ -87,11 +87,13 @@ function parseCommand(input, now = new Date()) {
       return { action: 'event', title: title || 'Event', start: date, end: end || new Date(date.getTime() + 60 * 60 * 1000) };
     }
   }
+  if (/^(?:(?:show|open)(?: me)? )?(?:my )?(?:(?:recent|past|previous) (?:questions|searches|lookups|history)|history|recent activity)\??$/i.test(text) || /^(?:what(?:'?s| is| was| were| are)? )?my (?:(?:last|latest|recent|previous) )?(?:questions?|searches|lookups?|history)\??$/i.test(text) || /^(?:what(?:'?s| is| was) )?(?:my |the )?(?:last|latest|previous) (?:thing i (?:asked|searched(?: for)?|looked up)|search|question|lookup)\??$/i.test(text) || /^(?:show me |tell me )?what (?:(?:have|did) )?i (?:been )?(?:ask(?:ed)?|asking|look(?:ed|ing)? up|search(?:ed|ing)?|google[d]?|googling)(?: you| for)*(?: (?:so far|lately|recently|earlier|today|yesterday|last (?:week|month|time)))?\??$/i.test(text) || /^what (?:did|have) we (?:talk(?:ed)?|chat(?:ted)?) about(?: (?:today|yesterday|earlier|lately|recently))?\??$/i.test(text)) return { action: 'recall', query: '' };
   if ((m = text.match(/^open (.+)$/i))) {
     const target = tidy(m[1]);
     const isUrl = /^(https?:\/\/)?[\w-]+(\.[\w-]+)+(\/\S*)?$/i.test(target);
     return { action: 'open', target: isUrl && !/^https?:/i.test(target) ? `https://${target}` : target, kind: isUrl ? 'url' : 'app' };
   }
+  if ((m = text.match(/^(?:search|look (?:through|in)|find in)(?: my)? history(?: for)? (.+?)\??$/i))) return { action: 'recall', query: recallQuery(m[1]) };
   if (!/^find my (?:question|search)\b/i.test(text) && (m = text.match(/^(?:find|search for|look for|where is|where's)(?: my)? (.+?)(?: files?)?\??$/i))) {
     return { action: 'find', query: tidy(m[1]) };
   }
@@ -105,7 +107,6 @@ function parseCommand(input, now = new Date()) {
   if ((m = text.match(/^(?:what did i (?:ask|look up|search(?: for)?|read|learn|find out)|when did i (?:ask|look up|read)|find my (?:question|search)) (?:about |on |for )?(.+?)\??$/i))) {
     return { action: 'recall', query: recallQuery(m[1]) };
   }
-  if (/^(?:(?:show|open)(?: me)? )?(?:my )?(?:(?:recent|past|previous) (?:questions|searches|lookups|history)|history|recent activity)\??$/i.test(text) || /^what(?:'?s| is| was| were| are)? my (?:(?:last|latest|recent|previous) )?(?:questions?|searches|lookups?|history)\??$/i.test(text) || /^(?:show me |tell me )?what (?:have|did) i (?:been )?(?:ask(?:ed)?|asking|looked up|looking up|searched|searching)(?: you)?(?: (?:so far|lately|recently|earlier))?\??$/i.test(text) || /^what (?:did|have) we (?:talk(?:ed)?|chat(?:ted)?) about(?: (?:today|yesterday|earlier|lately|recently))?\??$/i.test(text)) return { action: 'recall', query: '' };
   if ((m = text.match(/^(?:did i|have i) (?:ever )?(?:look(?:ed)? up|search(?:ed)?(?: for)?|ask(?:ed)?(?: about)?|read about) (.+?)(?: before)?\??$/i))) {
     return { action: 'recall', query: recallQuery(m[1]) };
   }
@@ -135,7 +136,7 @@ function parseCommand(input, now = new Date()) {
 // History search has no date filter, so "yesterday" or "last week" as a search word only finds nothing. Drop the
 // time words and the "you (about)" of "what did I ask you about X".
 function recallQuery(raw) {
-  return tidy(raw.replace(/\b(?:today|yesterday|recently|lately|earlier|before|(?:last|this) (?:week|month|night|morning|time)|last)\b/gi, ' ')
+  return tidy(raw.replace(/\b(?:today|yesterday|recently|lately|earlier|before|(?:last|this) (?:week|month|night|morning|time)|last)\b/gi, ' ').replace(/\s+/g, ' ')
     .replace(/^\s*(?:you(?: (?:about|on|for))?|about|on|for)\b/i, ' ').replace(/\s+/g, ' '));
 }
 

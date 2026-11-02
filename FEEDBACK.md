@@ -885,3 +885,13 @@ As a user, the worst problem was a wrong time stated with confidence. "Remind me
 Fixed: midnight now means the next 00:00, and "focus", "focus mode" and "start focus" start the default 25 minute session. Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: "snooze 10 minutes", "cancel my timer", "stop timer" and a bare "set a timer" are not matched. "End of day" stays in the title with no time. "Remind me to drink water every hour" is still a one-time reminder with "every hour" in the title. The 4 failures in `npm test` here are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-02 — history (fifth pass)
+
+Tried 30 phrasings such as "what did I look up", "show me what I looked up", "what was the last thing I asked", "my last search", "what did I google", "open my history", "search my history for docker" and "what did I ask you earlier about docker".
+
+As a user, the worst problem was that "open my history" tried to open an app called "my history". "Search my history for docker" was not understood, and "find in my history redis" searched my files. "What did I look up" and "what was the last thing I asked" went to the language model, which cannot see my history. "What did I ask you earlier about docker" searched for "about docker".
+
+Fixed: "open my history" now lists recent history, "search my history for X" searches it, more recent-history phrasings are understood, and the leftover "about" after a time word is dropped. Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: "remind me what I asked" still becomes a reminder, "what have I been looking at" is not matched, and typos such as "wat did i ask" go to the model. There is still no spoken "clear my history". The 4 failures in `npm test` are the WordNet and demo ones from the sandbox install.

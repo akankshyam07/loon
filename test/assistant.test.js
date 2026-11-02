@@ -246,6 +246,12 @@ test('history questions drop time words and "you" instead of searching for them'
   assert.deepStrictEqual(parseCommand('have I looked up docker before?'), { action: 'recall', query: 'docker' });
   assert.deepStrictEqual(parseCommand('what did i search for'), { action: 'recall', query: '' });
   assert.deepStrictEqual(parseCommand('what did I ask last'), { action: 'recall', query: '' });
+  for (const q of ['what did I look up', 'show me what I looked up', 'show me what i searched for yesterday', 'what did I google', 'what was the last thing I asked', 'my last search', 'open my history']) {
+    assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: '' }, q);
+  }
+  assert.deepStrictEqual(parseCommand('search my history for docker'), { action: 'recall', query: 'docker' });
+  assert.deepStrictEqual(parseCommand('find in my history redis'), { action: 'recall', query: 'redis' });
+  assert.deepStrictEqual(parseCommand('what did i ask you earlier about docker'), { action: 'recall', query: 'docker' });
 });
 
 test('commands: "timer 1h30" and a bare number are timers, "on the 1st" is a date', () => {
