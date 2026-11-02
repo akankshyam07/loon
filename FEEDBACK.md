@@ -865,3 +865,13 @@ As a user, the worst problem was that the cat did not look away on Canadian, Ind
 Fixed: those hosts are now on the sensitive list, the common webmail hosts are on the email list, and iCloud Mail is detected by its /mail path so iCloud Photos stays an ordinary page. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: many smaller national banks (ing.nl, other regional banks) still rely on a password field. Insurer marketing pages now go quiet too, which errs on the safe side. The failures in `npm test` here are the WordNet and demo ones from the sandbox install (4 this run).
+
+## 2026-11-02 — developer help, JSON to DTO (fifth pass)
+
+Tried 16 inputs such as a Python dict with True, False and None, JSON lines from a log, a response with a sentence before and after it, a fenced block with prose around it, two objects on separate lines and plain prose with two lines.
+
+As a user, the worst problem was that anything copied from a terminal or a chat was refused as "not valid JSON". A Python dict, a log with one object per line and "Here is the response: {...}" all failed, though the data was fine.
+
+Fixed: parseJson now reads True, False and None, cuts prose before the first and after the last bracket, and turns JSON lines into an array. Plain prose is still refused. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: NaN and Infinity are still refused. A null-only field becomes `Object`. The failures in `npm test` here are the WordNet and demo ones from the sandbox install.

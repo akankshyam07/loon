@@ -15,6 +15,8 @@ function keysOf(value) {
 
 // JSON copied from a README, chat or JS source often sits in a ``` fence, or is a JS object literal: trailing commas,
 // single quotes, unquoted keys, comments. The retry rewrites those outside of strings so JSON.parse can take it.
+const PYTHON_LITERALS = { True: 'true', False: 'false', None: 'null' };
+
 function looseToJson(text) {
   let out = '';
   for (let i = 0; i < text.length; ) {
@@ -39,7 +41,7 @@ function looseToJson(text) {
     } else if (/[A-Za-z_$]/.test(c)) {
       const word = /^[\w$]+/.exec(text.slice(i))[0];
       const isKey = /^\s*:/.test(text.slice(i + word.length)) && !/^(true|false|null)$/.test(word);
-      out += isKey ? `"${word}"` : word;
+      out += isKey ? `"${word}"` : PYTHON_LITERALS[word] ?? word;
       i += word.length;
     } else {
       out += c;
@@ -49,17 +51,31 @@ function looseToJson(text) {
   return out;
 }
 
+// Tries the text as JSON, then as a JS/Python literal, then with prose cut off before the first and after the last
+// bracket ("Here is the response: {...} hope that helps"), then as JSON lines (one object per line, becomes an array).
 function parseJson(text) {
   const json = String(text).replace(/^\s*```\w*\s*\n?|\n?\s*```\s*$/g, '');
-  try {
-    return JSON.parse(json);
-  } catch (err) {
+  const attempt = (s) => {
     try {
-      return JSON.parse(looseToJson(json));
+      return { value: JSON.parse(s) };
     } catch {
-      throw err;
+      try {
+        return { value: JSON.parse(looseToJson(s)) };
+      } catch {
+        return null;
+      }
     }
-  }
+  };
+  const whole = attempt(json);
+  if (whole) return whole.value;
+  const start = json.search(/[{[]/);
+  const end = Math.max(json.lastIndexOf('}'), json.lastIndexOf(']'));
+  const inner = start >= 0 && end > start ? attempt(json.slice(start, end + 1)) : null;
+  if (inner) return inner.value;
+  const lines = json.split('\n').map((l) => l.trim()).filter(Boolean);
+  const rows = lines.length > 1 ? lines.map(attempt) : [];
+  if (rows.length && rows.every((r) => r && r.value && typeof r.value === 'object')) return rows.map((r) => r.value);
+  JSON.parse(json);
 }
 
 async function jsonToDto(json, language = 'java', name = 'Root') {
