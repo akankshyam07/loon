@@ -965,3 +965,13 @@ As a user, "how many days in a year" is an everyday question and it went to the 
 Fixed: calc now knows seconds, minutes, hours, days, weeks and years (a year is 365 days), and "how many X in N Y" accepts a number, not only "a" or "one". A divide by zero gets a plain answer from code. The old test expected "1/0" to fall through to the model, so I moved it to the answered cases. Tests added in test/brain.test.js and checked to fail before the change.
 
 Left for later: "7 mod 3", "5 factorial", "80 with 20% off", "percent change from 50 to 75", number words ("twelve plus five") and "1e3". Month conversions are skipped because a month has no fixed length. The 4 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-02 — routines (sixth pass)
+
+Tried 26 routine phrasings such as "every day except sunday", "every weekday except friday at 9am", "every monday wednesday and friday at 7", "twice a day", "every other friday at 4", "every day at 9am and 5pm", "evry day at 7" and "everyday at 6".
+
+As a user, the worst problem was that "every day except sunday remind me to stretch" got a card that said every day, with the reminder titled "Except sunday remind me to stretch". The exception was kept in the text and not in the schedule.
+
+Fixed: "except", "but not", "excluding" and "other than" followed by day names now remove those days from the schedule. Test added in test/routines.test.js and checked to fail before the change.
+
+Left for later: "every other friday", "every 1st of the month", "twice a day", "every day at 9am and 5pm" and a typo like "evry day" are still not understood. The 4 failures in `npm test` are the same WordNet and demo ones that fail on main in this sandbox.

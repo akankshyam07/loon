@@ -457,3 +457,12 @@ test('routines: 0:15 is just after midnight and "on the hour" is not part of the
   assert.strictEqual(r.action, 'reminder');
   assert.strictEqual(r.payload.message, 'drink');
 });
+
+test('"except" removes days from the schedule instead of being ignored', () => {
+  const a = R.parseRoutine('every day except sunday remind me to stretch', { now: NOW });
+  assert.deepStrictEqual(a.schedule.days, [1, 2, 3, 4, 5, 6]);
+  assert.strictEqual(a.payload.message, 'stretch');
+  const b = R.parseRoutine('every weekday except friday at 9am remind me to stand up', { now: NOW });
+  assert.deepStrictEqual(b.schedule.days, [1, 2, 3, 4]);
+  assert.strictEqual(b.schedule.time, '09:00');
+});

@@ -92,12 +92,18 @@ function parseSchedule(input, now = new Date(), { allowOnce = false } = {}) {
     || take(state, /\bmonthly\s+on\s+the\s+(\d{1,2})(?:st|nd|rd|th)?\b/i);
   const everyN = take(state, /\bevery\s+(other|second|\d+)\s+days?\b/i);
   const everyWeeks = take(state, /\bevery\s+(other|second|\d+)\s+weeks?\b/i) || take(state, /\b(?:bi-?weekly|fortnightly)\b/i);
+  const except = take(state, new RegExp(String.raw`\b(?:except(?:\s+on)?|but\s+not|excluding|other\s+than)\s+(${DAY_WORD}(?:(?:\s*(?:,|and|&|or)\s*|\s+)${DAY_WORD})*)\b`, 'i'));
   let days = null;
   if (take(state, /\b(?:every\s+|on\s+)?(?:weekdays?|work\s?days?)\b/i)) days = WEEKDAYS;
   else if (take(state, /\b(?:every\s+|on\s+)?weekends?\b/i)) days = WEEKEND;
   else {
     const list = take(state, DAY_LIST) || take(state, DAY_PLURAL);
     if (list) days = [...new Set(list[1].split(/\s*(?:,|and|&)\s*|\s+/).map(dayIndex).filter((d) => d >= 0))].sort();
+  }
+  if (except) {
+    const skip = except[1].split(/\s*(?:,|and|&|or)\s*|\s+/).map(dayIndex);
+    days = (days || ALL_DAYS).filter((d) => !skip.includes(d));
+    if (!days.length) return { schedule: null, rest: tidyRest(state.text) };
   }
   const weekly = take(state, /\b(?:every\s+week|weekly)\b/i);
   const daily = take(state, /\b(?:every|each)\s+(day|morning|afternoon|evening|night)\b/i) || take(state, /\b(daily|nightly|everyday)\b/i);
