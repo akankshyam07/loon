@@ -905,3 +905,13 @@ As a user, everyday TypeScript, Python type and SQL errors still cost a model ca
 Fixed: seven new table entries for these (TypeScript mismatch and unknown name, Python wrong type, React key, SQL duplicate value, Java class version, git local changes). Test added in test/modes.test.js, it fails without the entries.
 
 Left for later: NoSuchMethodError, "refusing to merge unrelated histories", LazyInitializationException, UnicodeDecodeError and the React hydration warning are still not in the table. The 4 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-02 — onboarding name and settings base URL (sixth pass)
+
+Tried the "Call me" name with markup ("José <b>María</b>", "Ada <script>") and base URLs pasted from provider docs, including a full ".../v1/chat/completions" endpoint with and without a trailing slash.
+
+As a user, a name with a tag kept the tag's letters ("José bMaríab"). That fact is pinned and sent to the model with every question. A pasted full endpoint was accepted as the base, so every request went to a doubled path and failed with a confusing error.
+
+Fixed: onboardingResult drops whole tags before it filters characters. checkBaseUrl trims a trailing "/chat/completions". Tests added in test/personal.test.js and test/api-provider.test.js. The existing onboarding test expected "Call me Ada script" for "Ada <script>", so I changed it to "Call me Ada", since the tag is now removed as a whole.
+
+Left for later: "simpler words", "less jargon" and "be nicer" still have no setting to map to. A private network address in the base URL is refused without saying why. The 4 other failures in `npm test` are the WordNet and demo ones from the sandbox install.

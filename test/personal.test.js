@@ -5,7 +5,7 @@ const os = require('os');
 const path = require('path');
 const { DatabaseSync } = require('node:sqlite');
 const { extract, domainForTask, formatAbout, ME } = require('../brain/graph');
-const { instructionsBlock, parseFeedback, suggestMemory, secondPerson, profileSummary, cleanPersonal } = require('../brain/personal');
+const { instructionsBlock, onboardingResult, parseFeedback, suggestMemory, secondPerson, profileSummary, cleanPersonal } = require('../brain/personal');
 const { Memory } = require('../brain/memory');
 const { Resolver } = require('../brain/resolve');
 const { SYSTEM_PROMPT } = require('../brain/ai');
@@ -263,4 +263,8 @@ test('feedback understands "speak French" and "stop being so formal"', () => {
   assert.deepStrictEqual(parseFeedback('speak french').patch, { language: 'French' });
   assert.deepStrictEqual(parseFeedback('Stop being so formal!').patch, { tone: 'playful' });
   assert.strictEqual(parseFeedback('speak up'), null);
+});
+
+test('onboarding drops HTML tags from the name instead of keeping their letters', () => {
+  assert.deepStrictEqual(onboardingResult({ name: 'José <b>María</b>' }).facts, ['Call me José María']);
 });

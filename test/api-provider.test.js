@@ -120,6 +120,11 @@ test('redaction runs on the whole prompt before it is sent', async () => {
   assert.match(sent, /\[redacted:card\]/);
 });
 
+test('a pasted full chat endpoint is trimmed back to the base', () => {
+  assert.strictEqual(api.checkBaseUrl('https://openrouter.ai/api/v1/chat/completions'), 'https://openrouter.ai/api/v1');
+  assert.strictEqual(api.checkBaseUrl('http://localhost:1234/v1/chat/completions/'), 'http://localhost:1234/v1');
+});
+
 test('base URLs: https anywhere, plain http only for this Mac', async () => {
   assert.strictEqual(api.checkBaseUrl('https://openrouter.ai/api/v1/'), 'https://openrouter.ai/api/v1');
   assert.strictEqual(api.checkBaseUrl('http://localhost:1234/v1'), 'http://localhost:1234/v1');

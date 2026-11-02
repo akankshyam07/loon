@@ -222,7 +222,7 @@ const joinList = (items) => (items.length > 1 ? `${items.slice(0, -1).join(', ')
 // shows: { facts: [text] (saved pinned), personal: patch for cleanPersonal, role }. Plain code, no model.
 function onboardingResult(answers = {}) {
   const facts = [];
-  const name = tidy(answers.name, 40).replace(/[^\p{L}\p{N} .'-]/gu, '');
+  const name = tidy(answers.name, 40).replace(/<[^>]*>/g, '').replace(/[^\p{L}\p{N} .'-]/gu, '').trim();
   if (name) facts.push(`Call me ${name}`);
   const role = Object.hasOwn(ROLES, answers.role) ? answers.role : '';
   if (role && ROLES[role].fact) facts.push(ROLES[role].fact);
