@@ -163,3 +163,9 @@ test('redaction hides labelled account, routing, passport and one-time codes and
   assert.strictEqual(redact('your account was created in 2024 and the code is below').count, 0);
   assert.strictEqual(redact('Call 555 1234 about the passport office').count, 0);
 });
+
+test('redaction hides quoted secrets with spaces and a lowercase bearer header', () => {
+  assert.equal(redact('DB_PASSWORD="correct horse battery"').text, 'DB_PASSWORD="[redacted:secret]"');
+  assert.equal(redact("client_secret: 'abc def ghi'").text, "client_secret: '[redacted:secret]'");
+  assert.equal(redact('authorization: bearer abcdefghijklmnop1234').text, 'authorization: [redacted:token]');
+});

@@ -935,3 +935,13 @@ As a user, the worst problem was the protein ranking. Fish and Chips came out on
 Fixed: a range such as "$11 - 14" is read as one price (the lower one) and no longer leaks into the name. "fish" is dropped when a specific fish (salmon, tuna, cod) is named. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: "Margherita 12 / 16" and "Soup of the Day 6" are still ignored because a bare whole number is too risky to read as a price. The 4 failures in `npm test` are the WordNet and demo ones from the sandbox install and fail the same way on main.
+
+## 2026-11-02 — memory and privacy, redaction (sixth pass)
+
+Tried 24 snippets such as `DB_PASSWORD="correct horse battery"`, `client_secret: "abc def ghi"`, "authorization: bearer …", "2FA code 123 456", "recovery code: abcd-efgh-ijkl", a Chinese password label and plain sentences about accounts and passports.
+
+As a user, a quoted secret with spaces in an env-style line only lost nothing, because the rule stopped at the first space or never matched the quoted form. A lowercase "bearer" header went to the model untouched.
+
+Fixed: the name=value secret rule now reads a quoted value with spaces as one value, and the Bearer rule ignores case. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: spaced digit codes ("2FA code 123 456", "login code 12 34 56"), recovery codes without digits, "my pass is …", the Chinese label 密码 and a bare "Your code is 482913". An unquoted password with spaces still keeps everything after the first word. This sandbox still shows 29 failures in `npm test` from missing install steps (WordNet, quicktype, Harper and others), and the same ones fail without my change.
