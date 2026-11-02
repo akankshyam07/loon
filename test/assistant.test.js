@@ -266,3 +266,12 @@ test('alarms are mornings, timers can carry a label, and "about" does not stay i
   assert.strictEqual(tea.when.getTime() - NOW.getTime(), 5 * 60 * 1000);
   assert.strictEqual(parseCommand('remind me next friday about the dentist', NOW).title, 'the dentist');
 });
+
+test('commands: midnight is the next 00:00, and plain "focus mode" starts a default session', () => {
+  const r = parseCommand('remind me at midnight to lock up', NOW);
+  assert.strictEqual(r.title, 'lock up');
+  assert.strictEqual(r.when.getHours(), 0);
+  assert.ok(r.when > NOW);
+  assert.deepStrictEqual(parseCommand('focus mode', NOW), { action: 'focus', minutes: 25 });
+  assert.strictEqual(parseCommand('focus on my essay', NOW), null);
+});

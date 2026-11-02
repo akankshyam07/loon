@@ -16,8 +16,8 @@ function extractWhen(text, now = new Date(), { morning = false } = {}) {
   const DAY = 24 * 60 * 60 * 1000;
   // "at 5" with no am/pm means 5pm, the next sensible waking-hours time. chrono may already have pushed 5am to
   // tomorrow, so after switching to pm, pull it back to today if today's 5pm is still ahead.
-  // An alarm for "6:45" is never 6:45pm, so alarms skip this.
-  if (!morning && !found.start.isCertain('meridiem') && found.start.isCertain('hour') && date.getHours() < 7) {
+  // An alarm for "6:45" is never 6:45pm, so alarms skip this, and neither is "midnight".
+  if (!morning && !/midnight/i.test(found.text) && !found.start.isCertain('meridiem') && found.start.isCertain('hour') && date.getHours() < 7) {
     date.setHours(date.getHours() + 12);
     if (!found.start.isCertain('day') && date.getTime() - DAY > now.getTime()) date.setTime(date.getTime() - DAY);
   }
@@ -127,7 +127,7 @@ function parseCommand(input, now = new Date()) {
     if (/^an?$/i.test(m[1]) && !/^h/i.test(m[2] || '')) return null; // "focus a" is not a duration
     return { action: 'focus', minutes: Math.min(n * (/^h/i.test(m[2] || '') ? 60 : 1), 240) };
   }
-  if (/^(?:start (?:a )?focus(?: timer| session)?|pomodoro)$/i.test(text)) return { action: 'focus', minutes: 25 };
+  if (/^(?:start (?:a )?)?focus(?: mode| timer| session)?$|^pomodoro$/i.test(text)) return { action: 'focus', minutes: 25 };
   if (/^(?:stop|end|cancel) (?:the )?focus(?: mode| timer| session)?$/i.test(text)) return { action: 'focus', minutes: 0 };
   return null;
 }

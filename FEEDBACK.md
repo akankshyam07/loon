@@ -875,3 +875,13 @@ As a user, the worst problem was that anything copied from a terminal or a chat 
 Fixed: parseJson now reads True, False and None, cuts prose before the first and after the last bracket, and turns JSON lines into an array. Plain prose is still refused. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: NaN and Infinity are still refused. A null-only field becomes `Object`. The failures in `npm test` here are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-02 — reminders, timers and focus (fifth pass)
+
+Tried 33 phrasings such as "remind me at midnight", "remind me in 90 minutes", "remind me tmrw to buy milk", "set a reminder for 3pm to call bob", "timer for 45 seconds", "wake me at 7", "focus", "focus mode", "snooze 10 minutes" and "remind me end of day to submit report".
+
+As a user, the worst problem was a wrong time stated with confidence. "Remind me at midnight" made a reminder for 12 noon, because the rule that moves a bare small hour to the afternoon also hit midnight. A plain "focus" or "focus mode" went to the model instead of starting a session.
+
+Fixed: midnight now means the next 00:00, and "focus", "focus mode" and "start focus" start the default 25 minute session. Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: "snooze 10 minutes", "cancel my timer", "stop timer" and a bare "set a timer" are not matched. "End of day" stays in the title with no time. "Remind me to drink water every hour" is still a one-time reminder with "every hour" in the title. The 4 failures in `npm test` here are the WordNet and demo ones from the sandbox install.
