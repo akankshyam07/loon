@@ -975,3 +975,13 @@ As a user, the worst problem was that "every day except sunday remind me to stre
 Fixed: "except", "but not", "excluding" and "other than" followed by day names now remove those days from the schedule. Test added in test/routines.test.js and checked to fail before the change.
 
 Left for later: "every other friday", "every 1st of the month", "twice a day", "every day at 9am and 5pm" and a typo like "evry day" are still not understood. The 4 failures in `npm test` are the same WordNet and demo ones that fail on main in this sandbox.
+
+## 2026-11-02 — shopping and unit price (sixth pass)
+
+Tried 29 size strings and 24 price strings such as "Save $5 $20", "$20 (save $5)", "$15 off $60", "$20.00 $15.00", "Sale $12 reg $18", "Set of 4", "a pound", "1 Kilo", "12 ct (2 x 6)" and "$5.00 - $7.00".
+
+As a user, the worst problem was a saving read as the price. "Save $5 $20" and "You save 25%" next to a price gave 5, so a $20 item looked almost free and won the ranking.
+
+Fixed: parsePrice removes "save N", "you save N" and "N off" phrases before reading the price. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: "$20.00 $15.00" (struck-through price then sale price) takes the first number, "$5 - $7" takes the low end, "12 ct (2 x 6)" reads as 24, and "Set of 4", "a pound", "1 Kilo", "25 ft" and "100 sheets" are not parsed. The 4 failures in `npm test` are the WordNet and demo ones from the sandbox install.

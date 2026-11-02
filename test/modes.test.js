@@ -51,6 +51,13 @@ test('parseQuantity reads hyphenated sizes, pints and "gr"; parsePrice takes the
   assert.strictEqual(shopping.parsePrice('Was $20.00 Now $15.00'), 15);
 });
 
+test('parsePrice ignores a saving printed next to the price', () => {
+  assert.strictEqual(shopping.parsePrice('Save $5 $20'), 20);
+  assert.strictEqual(shopping.parsePrice('$20.00 You save 25%'), 20);
+  assert.strictEqual(shopping.parsePrice('$4 off $19.99'), 19.99);
+  assert.strictEqual(shopping.parsePrice('$20 (save $5)'), 20);
+});
+
 test('parsePrice reads decimal-comma prices with a thousands separator', () => {
   assert.strictEqual(shopping.parsePrice('1.299,99 €'), 1299.99);
   assert.strictEqual(shopping.parsePrice('1 299,00 €'), 1299);
