@@ -1095,3 +1095,13 @@ As a user, routines already handled hourly, daily, weekday, weekly and every-N-d
 Fixed: "monthly" and "every month" with no day now mean today's date each month, the same way a bare "weekly" means today's weekday. The confirm card shows the day so it can be changed. Test added in test/routines.test.js and checked to fail before the change.
 
 Left for later: "yearly" and "every year on March 3" still fall through to a one-time reminder with the recurrence words in the title. Routines have no yearly schedule. "Snooze 10 minutes", "cancel my timer" and a bare "set a timer" are still not matched. The 5 failures in `npm test` here are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-03 — food and menu (seventh pass)
+
+Tried a 24 dish menu with burgers, bowls, dumplings, tempura, pho, poke, a Caesar salad and a chicken-fried steak, and asked for the lightest, highest protein and vegetarian picks.
+
+As a user, the worst problem was that "Chicken-fried Steak" was listed as protein from chicken and steak, and it ranked first for protein. There is no chicken in that dish.
+
+Fixed: score no longer counts "chicken-fried" or "country-fried" as a protein word. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: "Caesar Salad" is called likely vegetarian though the classic dressing has anchovy. "Cobb Salad" is also called vegetarian though it usually has bacon and chicken. Both need a deliberate list of dishes with hidden meat. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install and fail the same way on main.

@@ -40,6 +40,8 @@ function extractMenu(text) {
 
 function score(item) {
   const text = `${item.name} ${item.description}`.toLowerCase();
+  // "chicken-fried steak" is a beef dish with a chicken-style crust, not chicken
+  const proteinText = text.replace(/\b(chicken|country)[- ]fried\b/g, 'fried');
   let heaviness = 0;
   const reasons = [];
   for (const [word, weight] of Object.entries({ ...HEAVY, ...LIGHT })) {
@@ -48,7 +50,7 @@ function score(item) {
       reasons.push(word);
     }
   }
-  let proteins = [...new Set((text.match(PROTEIN) || []).map((p) => p.toLowerCase()))];
+  let proteins = [...new Set((proteinText.match(PROTEIN) || []).map((p) => p.toLowerCase()))];
   // "beer-battered cod" is one fish, not two proteins
   if (proteins.some((p) => ['salmon', 'tuna', 'cod'].includes(p))) proteins = proteins.filter((p) => p !== 'fish');
   return { ...item, heaviness, reasons, proteins, likelyVegetarian: !MEAT.test(text.replace(MEAT_FREE, '').replace(/\b[a-z]+-free\b/g, '')), tips: TIPS.filter(([re]) => re.test(text)).map(([, tip]) => tip) };

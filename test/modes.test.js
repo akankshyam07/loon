@@ -298,3 +298,8 @@ test('menu: a price range is one price and "cod" is not counted as a second fish
   assert.deepStrictEqual(items.map((i) => [i.name, i.price]), [['Pizza', 11], ['Pasta - 15 oz', 12], ['Fish & Chips', 14]]);
   assert.deepStrictEqual(food.score(items[2]).proteins, ['cod']);
 });
+
+test('menu: chicken-fried steak is not counted as chicken protein', () => {
+  const [item] = food.extractMenu('Chicken-fried Steak $16');
+  assert.deepStrictEqual(food.score(item).proteins, ['steak']);
+});
