@@ -204,6 +204,24 @@ test('dictionaryTerm handles typos and filler words in "what does X mean"', () =
   assert.strictEqual(dictionaryTerm('what do you mean'), null);
 });
 
+test('antonymTerm reads "opposite of X"; antonyms follow WordNet word links and the resolver answers in code', async () => {
+  const { antonymTerm, antonyms } = require('../brain/define');
+  assert.strictEqual(antonymTerm('opposite of happy'), 'happy');
+  assert.strictEqual(antonymTerm("what's the opposite of hot?"), 'hot');
+  assert.strictEqual(antonymTerm('Antonym for "big" please'), 'big');
+  assert.strictEqual(antonymTerm('opposite of this'), 'this');
+  assert.strictEqual(antonymTerm('opposite day'), null);
+  assert.match(await antonyms('hot'), /cold/);
+  assert.match(await antonyms('big'), /small|little/);
+  assert.strictEqual(await antonyms('zzqxv'), null);
+  const brain = { modelId: () => 'fake', chat: async () => { throw new Error('model should not run'); } };
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));
+  const resolver = new Resolver({ brain, cacheFile: path.join(dir, 'c.json'), countsFile: path.join(dir, 'n.json') });
+  const reply = await resolver.ask('opposite of hot', { onText: () => {}, firstInThread: true });
+  assert.strictEqual(reply.tier, 'code');
+  assert.match(reply.text, /cold/);
+});
+
 test('synonymTerm reads "synonym for X" and "another word for X"; synonyms lists WordNet siblings', async () => {
   const { synonymTerm, synonyms } = require('../brain/define');
   assert.strictEqual(synonymTerm('synonym for happy'), 'happy');

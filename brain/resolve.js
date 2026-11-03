@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const { ResponseCache } = require('./cache');
 const { TASKS, MAX_CONTEXT_CHARS, buildPrompt, historyBlock, followUpContext, memoryGroup } = require('./tasks');
-const { define, dictionaryTerm, synonymTerm, synonyms } = require('./define');
+const { define, dictionaryTerm, synonymTerm, synonyms, antonymTerm, antonyms } = require('./define');
 const { calc } = require('./calc');
 const { worldTime } = require('./worldtime');
 const { scopeOf } = require('./memory');
@@ -285,6 +285,13 @@ class Resolver {
         onText(synonymList);
         this.count('code');
         return { text: synonymList, mood: 'curious', tier: 'code', detail: 'WordNet dictionary' };
+      }
+      const antonymFor = firstInThread && antonymTerm(packet.question);
+      const antonymList = antonymFor && await antonyms(antonymFor);
+      if (antonymList) {
+        onText(antonymList);
+        this.count('code');
+        return { text: antonymList, mood: 'curious', tier: 'code', detail: 'WordNet dictionary' };
       }
       const term = firstInThread && dictionaryTerm(packet.question);
       const entry = term && await define(term, { maxSenses: sensesFor(personal.length) });

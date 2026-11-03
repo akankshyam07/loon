@@ -78,10 +78,22 @@ function dictionaryTerm(question) {
 // "synonym for happy", "another word for big" → the word, or null.
 const SYNONYM_ASK = /^(?:(?:give me |find me |what(?:'?s| is| are) )?(?:a |some |the )?(?:synonyms?|another word|other words|different word|similar words?|words similar)\s+(?:for|of|to)|(?:what(?:'?s| is) )?(?:a |another )?word for)\s+(?:the (?:word|term) )?["'“‘]?([\p{L}-]+)["'”’]?$/iu;
 
-function synonymTerm(question) {
-  const m = String(question || '').trim().replace(/[’‘]/g, "'")
+function cleanAsk(question) {
+  return String(question || '').trim().replace(/[’‘]/g, "'")
     .replace(/^(?:(?:hey|ok|okay) )?(?:loon[,\s]+)?(?:(?:please|pls|plz|can you|could you|would you)\s+)*/i, '')
-    .replace(/[\s?!.\p{Extended_Pictographic}]*$/u, '').replace(/(?:,? (?:please|pls|thanks|thx))+$/i, '').match(SYNONYM_ASK);
+    .replace(/[\s?!.\p{Extended_Pictographic}]*$/u, '').replace(/(?:,? (?:please|pls|thanks|thx))+$/i, '');
+}
+
+function synonymTerm(question) {
+  const m = cleanAsk(question).match(SYNONYM_ASK);
+  return m ? m[1] : null;
+}
+
+// "opposite of happy", "antonym for big" → the word, or null.
+const ANTONYM_ASK = /^(?:(?:give me |find me |what(?:'?s| is| are) )?(?:the |an |some )?(?:opposites?|antonyms?)\s+(?:of|for|to)|what(?:'?s| is) the opposite of)\s+(?:the (?:word|term) )?["'“‘]?([\p{L}-]+)["'”’]?$/iu;
+
+function antonymTerm(question) {
+  const m = cleanAsk(question).match(ANTONYM_ASK);
   return m ? m[1] : null;
 }
 
@@ -100,4 +112,25 @@ async function synonyms(term, { max = 10 } = {}) {
   return null;
 }
 
-module.exports = { define, candidates, dictionaryTerm, synonymTerm, synonyms };
+// Markdown list of WordNet antonyms (they link word to word, not sense to sense), or null.
+async function antonyms(term, { max = 8 } = {}) {
+  if (!wordpos) {
+    const WordPOS = require('wordpos');
+    wordpos = new WordPOS();
+  }
+  for (const candidate of candidates(term.toLowerCase())) {
+    const found = new Set();
+    for (const sense of await wordpos.lookup(candidate)) {
+      const index = sense.synonyms.findIndex((w) => w.replace(/\(\w+\)$/, '').toLowerCase() === candidate) + 1;
+      for (const ptr of sense.ptrs.filter((p) => p.pointerSymbol === '!' && parseInt(p.sourceTarget.slice(0, 2), 16) === index)) {
+        const target = await wordpos.seek(ptr.synsetOffset, ptr.pos);
+        const word = target.synonyms[parseInt(ptr.sourceTarget.slice(2), 16) - 1];
+        if (word) found.add(word.replace(/\(\w+\)$/, '').replace(/_/g, ' '));
+      }
+    }
+    if (found.size) return `**${candidate}** is the opposite of: ${[...found].slice(0, max).join(', ')}`;
+  }
+  return null;
+}
+
+module.exports = { define, candidates, dictionaryTerm, synonymTerm, synonyms, antonymTerm, antonyms };

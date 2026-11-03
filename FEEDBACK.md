@@ -1005,3 +1005,13 @@ As a user, the worst problem was that common build commands and crash lines were
 Fixed: those error line shapes now count as stack traces, and mvn, gradle, cargo, go, make, python, node and java commands count as code when they have a flag, a path or a build subcommand. Prose such as "go home early today" and "make sure it works" stays a sentence. Tests added in test/browser.test.js and checked to fail before the change.
 
 Left for later: a bullet list of four short items is still read as a sentence, a two-line shebang script is a word, and `{a:1}` and bare Windows or Unix paths are words. The 4 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-03 — translation and definitions (seventh pass)
+
+Tried 30 phrasings such as "define Ephemeral!", "synonyms for happy 😊", "words like happy", "a word for sad", "opposite of happy", "what is the opposite of hot", "antonym of big", "meaning of life" and "define dog's".
+
+As a user, the dictionary and synonym phrasings held up. The visible gap was "opposite of X" and "antonym of X", which went to the language model even though WordNet has the answer. This was left open in the last two passes.
+
+Fixed: new `antonymTerm` and `antonyms` in brain/define.js follow the WordNet antonym links from the matching word, and the resolver answers in code on the first turn of a thread. Test added in test/brain.test.js, including the resolver ladder.
+
+Left for later: "words like happy", "a better word for good", "synonym angry" and "angry synonym" still go to the model. "translate hello to spanish" is still not parsed. "meaning of life" is defined as the word "life". `npm test` passes after building the wordpos index with its postinstall script.
