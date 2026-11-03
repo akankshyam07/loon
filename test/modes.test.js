@@ -182,6 +182,11 @@ test('errors: fingerprint ignores paths/values; known errors answer from the tab
   assert.match(lookupKnown('502 Bad Gateway'), /502 Bad Gateway/);
   assert.match(lookupKnown('upstream: 504 Gateway Time-out'), /504 Gateway Timeout/);
   assert.strictEqual(lookupKnown('ValueError at app.js:502:9'), null, 'a line number is not a 502');
+  assert.match(lookupKnown('Exception in thread "main" java.lang.NoSuchMethodError: com.foo.Bar.baz()V'), /Method missing/);
+  assert.match(lookupKnown('org.hibernate.LazyInitializationException: could not initialize proxy - no Session'), /Lazy loading/);
+  assert.match(lookupKnown('fatal: refusing to merge unrelated histories'), /Unrelated histories/);
+  assert.match(lookupKnown("UnicodeDecodeError: 'utf-8' codec can't decode byte 0xff in position 0"), /encoding/);
+  assert.match(lookupKnown('Error: Hydration failed because the initial UI does not match what was rendered on the server.'), /Hydration/);
 });
 
 test('JSON → DTO with quicktype; grammar fixes with Harper', async () => {

@@ -1055,3 +1055,13 @@ As a user, the spoken answer cut off at the decimal point. "It costs $3.50 per l
 Fixed: speakable and the streaming splitter in brain/intents.js now end a sentence only at punctuation followed by a space, and skip common abbreviations and single letters. Links are removed before brackets are stripped, so no stray parenthesis is left. Test added in test/voice.test.js and checked to fail before the change.
 
 Left for later: "..." is treated as one sentence end, which is fine. Numbered list prose such as "1. Do this" in a paragraph is not handled.
+
+## 2026-11-03 — developer help, error table (seventh pass)
+
+Tried 24 pasted errors such as NoSuchMethodError, LazyInitializationException, "refusing to merge unrelated histories", UnicodeDecodeError, the React hydration warning, EADDRINUSE, CORS, ERESOLVE and an SSH publickey failure.
+
+As a user, the five leftovers from the last pass still cost a model call. These are everyday errors and the model can drift on them. Most other common errors already answered from the table.
+
+Fixed: five new table entries for NoSuchMethodError, Hibernate lazy loading, unrelated histories, UnicodeDecodeError and hydration mismatch. Test added in test/modes.test.js. The tests fail without the entries.
+
+Left for later: "Permission denied (publickey)" is still not in the table on purpose, an older test says it must not match the file permission entry, and a dedicated SSH entry would need that test rethought. "Failed to load ApplicationContext" in Spring Boot also goes to the model. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

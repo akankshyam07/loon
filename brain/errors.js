@@ -376,6 +376,36 @@ const KNOWN = [
     explain: 'Git will not switch or merge because it would erase edits you have not committed.',
     fix: ['Commit the changes, or `git stash` them and run the command again.', '`git stash pop` brings them back afterwards.'],
   },
+  {
+    match: /NoSuchMethodError/,
+    title: 'Method missing at runtime (Java)',
+    explain: 'The code was compiled against a version of a library that had this method, but a different version is on the classpath when it runs.',
+    fix: ['Run `mvn dependency:tree` (or `gradle dependencies`) and look for two versions of the library named in the message.', 'Pin one version, exclude the other, then do a clean build.'],
+  },
+  {
+    match: /LazyInitializationException/,
+    title: 'Lazy loading outside a session (Hibernate)',
+    explain: 'A lazy field or collection was read after the database session was already closed.',
+    fix: ['Load what you need inside the transaction (`JOIN FETCH` or `@EntityGraph`).', 'Or map to a DTO before leaving the service method. Avoid switching on open-session-in-view just to silence it.'],
+  },
+  {
+    match: /refusing to merge unrelated histories/,
+    title: 'Unrelated histories (git)',
+    explain: 'The two branches have no common starting commit, which usually means two separate repos were created.',
+    fix: ['If you really want to join them, run `git pull --allow-unrelated-histories` and resolve any conflicts.', 'If it was a mistake, check the remote URL with `git remote -v`.'],
+  },
+  {
+    match: /UnicodeDecodeError/,
+    title: 'Wrong text encoding (Python)',
+    explain: 'The file or bytes are not in the encoding Python assumed, usually UTF-8.',
+    fix: ['Open the file with the right encoding, for example `open(path, encoding="latin-1")`.', 'For a quick workaround use `errors="replace"`, but that loses characters.'],
+  },
+  {
+    match: /Hydration failed|Text content does not match server-rendered HTML|did not match\. Server:/,
+    title: 'Hydration mismatch (React / Next.js)',
+    explain: 'The HTML the server sent is different from what React rendered in the browser on first load.',
+    fix: ['Look for values that differ per render, like `Date.now()`, `Math.random()` or `window` checks.', 'Move those into `useEffect`, or invalid HTML nesting such as a `<div>` inside a `<p>` can also cause it.'],
+  },
 ];
 
 function lookupKnown(text) {
