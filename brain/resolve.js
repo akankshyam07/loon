@@ -8,6 +8,7 @@ const { ResponseCache } = require('./cache');
 const { TASKS, MAX_CONTEXT_CHARS, buildPrompt, historyBlock, followUpContext, memoryGroup } = require('./tasks');
 const { define, dictionaryTerm, synonymTerm, synonyms } = require('./define');
 const { calc } = require('./calc');
+const { worldTime } = require('./worldtime');
 const { scopeOf } = require('./memory');
 const { domainForTask } = require('./graph');
 const { cleanPersonal, instructionsBlock, maxTokensFor, sensesFor } = require('./personal');
@@ -265,6 +266,12 @@ class Resolver {
         onText(text);
         this.count('code');
         return { text, mood, tier: 'code' };
+      }
+      const abroad = worldTime(key);
+      if (abroad) {
+        onText(abroad);
+        this.count('code');
+        return { text: abroad, mood: 'happy', tier: 'code' };
       }
       const sum = calc(packet.question);
       if (sum) {

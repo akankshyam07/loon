@@ -985,3 +985,13 @@ As a user, the worst problem was a saving read as the price. "Save $5 $20" and "
 Fixed: parsePrice removes "save N", "you save N" and "N off" phrases before reading the price. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: "$20.00 $15.00" (struck-through price then sale price) takes the first number, "$5 - $7" takes the low end, "12 ct (2 x 6)" reads as 24, and "Set of 4", "a pound", "1 Kilo", "25 ft" and "100 sheets" are not parsed. The 4 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-03 — follow-up conversations and typed questions, time in another city (fifth pass)
+
+Tried "what time is it in tokyo", "what's the time in London?", "time in NYC", "current time in new york right now" and an unknown place, as a first message and mid-thread.
+
+As a user, asking for the time somewhere else cost a model call and the model cannot know the time, so it would guess. This was left open by the last run.
+
+Fixed: a small city and country table in brain/worldtime.js answers these in code with the local time, and adds the weekday when it differs from today. Unknown places still go to the model. Test added in test/brain.test.js and checked to fail before the change.
+
+Left for later: "ok", "yes", "lol" and "good night" mid-thread still cost a model call. "time difference between X and Y" and zone names like "PST" are not handled. The 4 failures in `npm test` are the WordNet and demo ones from the sandbox install.

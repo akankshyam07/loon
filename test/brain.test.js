@@ -4,6 +4,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { createMoodParser, stripFlattery, Resolver } = require('../brain/resolve');
+const { worldTime } = require('../brain/worldtime');
 const { ResponseCache } = require('../brain/cache');
 
 function parse(chunks) {
@@ -82,6 +83,21 @@ test('ladder: date questions and trailing emoji are answered by code, not guesse
     assert.strictEqual(r.tier, 'code', q);
     assert.match(r.text, new RegExp(re), q);
   }
+});
+
+test('ladder: time in another city is answered by code, unknown places go to the model', async () => {
+  let asked = 0;
+  const brain = { modelId: () => 'fake', chat: async (_p, { onText }) => { asked++; onText('Hm.'); } };
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));
+  const resolver = new Resolver({ brain, cacheFile: path.join(dir, 'c.json'), countsFile: path.join(dir, 'n.json') });
+  for (const q of ['what time is it in tokyo', "What's the time in London?", 'time in NYC', 'current time in new york right now']) {
+    const r = await resolver.ask(q, { onText: () => {}, firstInThread: true });
+    assert.strictEqual(r.tier, 'code', q);
+    assert.match(r.text, /^It's \d{1,2}:\d{2}/, q);
+  }
+  assert.match(worldTime('what time is it in tokyo', new Date('2026-11-03T20:00:00Z')), /^It's 5:00\s?AM on Wednesday in Tokyo\.$/);
+  await resolver.ask('what time is it in narnia', { onText: () => {}, firstInThread: true });
+  assert.strictEqual(asked, 1);
 });
 
 test('ladder: thanks followed by a real request still goes to the model', async () => {
