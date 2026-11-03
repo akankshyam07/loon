@@ -1015,3 +1015,13 @@ As a user, the dictionary and synonym phrasings held up. The visible gap was "op
 Fixed: new `antonymTerm` and `antonyms` in brain/define.js follow the WordNet antonym links from the matching word, and the resolver answers in code on the first turn of a thread. Test added in test/brain.test.js, including the resolver ladder.
 
 Left for later: "words like happy", "a better word for good", "synonym angry" and "angry synonym" still go to the model. "translate hello to spanish" is still not parsed. "meaning of life" is defined as the word "life". `npm test` passes after building the wordpos index with its postinstall script.
+
+## 2026-11-03 — voice intents (fifth pass)
+
+Tried 50 spoken phrasings such as "stop talking", "shut up", "stop listening", "quiet mode", "mute", "cancel the timer", "what are my reminders", "repeat that", "louder", "read this to me", "thanks loon", "google cat food", "tell me a joke" and "where is the file menu".
+
+As a user, the worst problem was that "stop talking", "shut up" and "stop speaking" did not stop Loon. They went to the model as a question, so Loon kept speaking and then answered with more text. Only "stop", "quiet" and "be quiet" worked. "where is the file menu" looks like a file search in the router but the teach check runs first in the companion, so it is fine.
+
+Fixed: the stop words now include "stop talking", "stop speaking", "shut up", "that's enough", "okay stop" and "stop it". Test added in test/voice.test.js and checked to fail before the change.
+
+Left for later: "mute", "quiet mode", "do not disturb" and "stop listening" are not mapped to anything. "repeat that", "louder", "cancel the timer", "what are my reminders" and "thanks" have no handler and go to the model. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

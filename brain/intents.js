@@ -3,7 +3,7 @@
 // anything left is an ordinary question for the resolver ladder.
 const { parseCommand, normalizeSpoken } = require('./commands');
 
-const STOP = /^(stop|cancel|never ?mind|shh+|quiet|be quiet|hush|that's enough|enough)$/i;
+const STOP = /^(stop( talking| speaking)?|cancel|never ?mind|shh+|quiet|be quiet|hush|shut up|that's enough|that is enough|enough|ok(ay)? (stop|enough)|stop it)$/i;
 const YES = /^(yes|yeah|yep|yup|sure|ok(ay)?|do it|go ahead|confirm|please do|correct|right)( (do it|go ahead|please|sure))*$/i;
 const NO = /^(no|nope|nah|don't|do not|cancel|stop|never ?mind|wrong|no thanks|no thank you|not now)$/i;
 

@@ -57,6 +57,7 @@ test('open questions still go to the model; yes/no only count while confirming',
   assert.strictEqual(route('Yes.', { awaitingConfirmation: true }).type, 'yes');
   assert.strictEqual(route('Nope', { awaitingConfirmation: true }).type, 'no');
   assert.strictEqual(route('Stop!', { speaking: true }).type, 'stop');
+  for (const p of ['stop talking', 'Shut up', 'okay stop', "that's enough", 'stop speaking']) assert.strictEqual(route(p, { speaking: true }).type, 'stop', p);
   assert.deepStrictEqual(route('Define serendipity.'), { type: 'task', task: 'define', slot: 'text', text: 'serendipity' });
 });
 
