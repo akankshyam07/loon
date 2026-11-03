@@ -1065,3 +1065,13 @@ As a user, the five leftovers from the last pass still cost a model call. These 
 Fixed: five new table entries for NoSuchMethodError, Hibernate lazy loading, unrelated histories, UnicodeDecodeError and hydration mismatch. Test added in test/modes.test.js. The tests fail without the entries.
 
 Left for later: "Permission denied (publickey)" is still not in the table on purpose, an older test says it must not match the file permission entry, and a dedicated SSH entry would need that test rethought. "Failed to load ApplicationContext" in Spring Boot also goes to the model. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-03 — writing tools, fix grammar (fourth pass)
+
+Tried 22 texts such as a formal letter, "i dont know whether its going to work", a name in a sign-off, a phone number, a list with a doubled word, "me and him goes", a link containing "teh", and an empty string.
+
+As a user, the worst problem was a name swapped for another word. "my name is akankshya" became "My name is Changsha" and a sign-off of "Akankshya" became "Changsha", offered as a replacement of my selection. A phone number "555-1234" got an en dash.
+
+Fixed: fixGrammar now skips spelling suggestions that are far from the original word (an unknown name has no near match) and skips Harper's formatting lints. Real typos such as "recieve" still get fixed. Test added in test/modes.test.js, it fails without the change.
+
+Left for later: "cancelled" is changed to the American "canceled" without asking. "Me and him goes" and doubled spaces are not flagged. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

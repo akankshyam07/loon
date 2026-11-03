@@ -248,6 +248,13 @@ test('grammar fixer leaves other languages and chat shorthand alone', async () =
   }
 });
 
+test('grammar fixer does not swap unknown names for other words or restyle phone numbers', async () => {
+  const name = 'Thanks,\n\nAkankshya';
+  assert.strictEqual((await fixGrammar(name)).fixed, name);
+  assert.strictEqual((await fixGrammar('Call me on 555-1234 please')).fixed, 'Call me on 555-1234 please');
+  assert.strictEqual((await fixGrammar('I recieve alot of emails')).fixed, 'I receive a lot of emails');
+});
+
 test('grammar fixer keeps names, does not shrink words to one letter and does not loop', async () => {
   assert.strictEqual((await fixGrammar('Dear Sam, I hope your well.')).fixed, 'Dear Sam, I hope your well.');
   assert.strictEqual((await fixGrammar('Ill be there at 5 and im bringing cake')).fixed, 'Ill be there at 5 and im bringing cake');
