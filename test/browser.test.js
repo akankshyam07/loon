@@ -69,6 +69,14 @@ test('selection kinds treat unspaced CJK text by length', () => {
   assert.strictEqual(classifySelection('Segmentation fault (core dumped)'), 'stacktrace');
   assert.strictEqual(classifySelection('npm ERR! code ELIFECYCLE'), 'stacktrace');
   assert.strictEqual(classifySelection('bash: foo: command not found'), 'stacktrace');
+  assert.strictEqual(classifySelection('Exception in thread "main" java.lang.NullPointerException'), 'stacktrace');
+  assert.strictEqual(classifySelection('fatal: not a git repository (or any of the parent directories): .git'), 'stacktrace');
+  assert.strictEqual(classifySelection('error: cannot find module'), 'stacktrace');
+  assert.strictEqual(classifySelection('mvn clean install'), 'code');
+  assert.strictEqual(classifySelection('cargo run'), 'code');
+  assert.strictEqual(classifySelection('python3 script.py'), 'code');
+  assert.strictEqual(classifySelection('go home early today'), 'sentence');
+  assert.strictEqual(classifySelection('make sure it works'), 'sentence');
 });
 
 test('selection kinds pick the right chips', () => {

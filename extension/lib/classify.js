@@ -11,6 +11,8 @@
     /^\s*panic: /m, // Go
     /^npm ERR!/m,
     /\bSegmentation fault\b|: command not found\b/,
+    /^\s*Exception in thread\b/m, // Java crash line
+    /^\s*(fatal|error|FATAL|ERROR): \S/m, // git, rustc, gcc and database error lines
   ];
 
   function looksLikeJson(text) {
@@ -34,7 +36,7 @@
 
   const SQL = /^\s*(select\s+(distinct\s+)?(\*|[\w.()*`"]+(\s+as\s+\w+)?(\s*,\s*[\w.()*`"]+(\s+as\s+\w+)?)*)\s+from\s+\S|insert\s+into\b|update\s+\w+\s+set\b|delete\s+from\b|create\s+table\b)/i;
   // A known tool followed by a flag, a path or a subcommand, so "git is great" stays prose
-  const SHELL = /^\s*(\$\s+)?(sudo\s+)?(git|npm|npx|yarn|pnpm|docker|kubectl|apt|apt-get|brew|pip3?|curl|ssh|chmod|rm|mkdir|ls|cd)\s+(-\S|\S*[/~.]\S*|(install|run|add|remove|commit|push|pull|clone|checkout|status|build|update|start|test|init|up|down|exec|get|apply)\b)/;
+  const SHELL = /^\s*(\$\s+)?(sudo\s+)?(git|npm|npx|yarn|pnpm|docker|kubectl|apt|apt-get|brew|pip3?|curl|ssh|chmod|rm|mkdir|ls|cd|mvn|gradle|cargo|go|make|python3?|node|java)\s+(-\S|\S*[/~.]\S*|(install|run|add|remove|commit|push|pull|clone|checkout|status|build|update|start|test|init|up|down|exec|get|apply|clean|compile|package)\b)/;
 
   // One-line import and include statements have too few symbols for the density check
   const IMPORT = /^\s*(import\s+[\w{*][^\n]*\sfrom\s+['"]|import\s+[\w.]+(\.\*)?;|from\s+[\w.]+\s+import\s+\w|#include\s*[<"]|using\s+[\w.]+;|package\s+[\w.]+;)/;
@@ -52,7 +54,7 @@
     const t = text.trim();
     if (editable) return 'editable';
     if (looksLikeJson(t)) return 'json';
-    if (STACK_TRACE.some((re) => re.test(t)) && (t.includes('\n') || /(Error|Exception|ERR!|fault|not found)/.test(t))) return 'stacktrace';
+    if (STACK_TRACE.some((re) => re.test(t)) && (t.includes('\n') || /(error|exception|ERR!|fault|not found|fatal)/i.test(t))) return 'stacktrace';
     if (looksLikeCode(t, { monospace }) || looksLikeCommand(t)) return 'code';
     // CJK text has no spaces, so count roughly one word per two characters
     const cjk = (t.match(/[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/g) || []).length;

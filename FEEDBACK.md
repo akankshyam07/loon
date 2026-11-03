@@ -995,3 +995,13 @@ As a user, asking for the time somewhere else cost a model call and the model ca
 Fixed: a small city and country table in brain/worldtime.js answers these in code with the local time, and adds the weekday when it differs from today. Unknown places still go to the model. Test added in test/brain.test.js and checked to fail before the change.
 
 Left for later: "ok", "yes", "lol" and "good night" mid-thread still cost a model call. "time difference between X and Y" and zone names like "PST" are not handled. The 4 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-03 — selection chips and classification (sixth pass)
+
+Tried 50 selections such as `mvn clean install`, `cargo run`, `python3 script.py`, `go build ./...`, "Exception in thread "main" java.lang.NullPointerException", "fatal: not a git repository", "error: cannot find module", "FATAL: password authentication failed", URLs, emails, prices, emoji, lists and Windows paths.
+
+As a user, the worst problem was that common build commands and crash lines were treated as plain words or sentences, so selecting them offered Define instead of the code and error help. Java "Exception in thread" lines, git and rustc style "fatal:" and "error:" lines and database "FATAL:" lines all got sentence chips.
+
+Fixed: those error line shapes now count as stack traces, and mvn, gradle, cargo, go, make, python, node and java commands count as code when they have a flag, a path or a build subcommand. Prose such as "go home early today" and "make sure it works" stays a sentence. Tests added in test/browser.test.js and checked to fail before the change.
+
+Left for later: a bullet list of four short items is still read as a sentence, a two-line shebang script is a word, and `{a:1}` and bare Windows or Unix paths are words. The 4 failures in `npm test` are the WordNet and demo ones from the sandbox install.
