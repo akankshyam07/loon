@@ -74,18 +74,26 @@ function wakePhrase(transcript) {
   return { rest: transcript.slice(m[0].length).trim() };
 }
 
+// A full stop after these (or after a single letter, as in U.S. and e.g.) does not end a sentence.
+const ABBREVIATION = /(?:^|[\s.])(?:Mr|Mrs|Ms|Dr|Prof|St|vs|etc|approx|[A-Za-z])\.$/;
+
 // Splits streamed model text into sentences for sentence-by-sentence speech (GLaDOS / HA voice chapter 11).
 function createSentenceSplitter(onSentence) {
   let buffer = '';
   return {
     push(chunk) {
       buffer += chunk;
+      const re = /[.!?]+\s+/g;
       let m;
-      while ((m = buffer.match(/^([\s\S]*?[.!?])(\s+|$)(?=\S|$)/)) && m[0].length < buffer.length) {
-        const sentence = m[1].trim();
-        buffer = buffer.slice(m[0].length);
-        if (sentence) onSentence(sentence);
+      let start = 0;
+      while ((m = re.exec(buffer))) {
+        const end = m.index + m[0].length;
+        const sentence = buffer.slice(start, m.index + m[0].trimEnd().length);
+        if (ABBREVIATION.test(sentence) || end >= buffer.length) continue;
+        start = end;
+        if (sentence.trim()) onSentence(sentence.trim());
       }
+      buffer = buffer.slice(start);
     },
     flush() {
       if (buffer.trim()) onSentence(buffer.trim());
@@ -101,11 +109,15 @@ function speakable(markdown, maxSentences = 2) {
     .split('\n')
     .filter((l) => !/^\s*(\||>|[-*•]\s|\d+\.\s|#)/.test(l))
     .join(' ')
+    .replace(/\]\(https?:\/\/[^)\s]*\)/g, '')
     .replace(/[*_`[\]]/g, '')
-    .replace(/\(https?:\/\/\S+\)/g, '')
     .replace(/\s+/g, ' ')
     .trim();
-  const sentences = prose.match(/[^.!?]+[.!?]+/g) || (prose ? [prose] : []);
+  const sentences = [];
+  for (const part of prose.split(/(?<=[.!?])\s+/)) {
+    if (sentences.length && ABBREVIATION.test(sentences[sentences.length - 1])) sentences[sentences.length - 1] += ` ${part}`;
+    else if (part) sentences.push(part);
+  }
   return { text: sentences.slice(0, maxSentences).map((x) => x.trim()).join(' '), truncated: sentences.length > maxSentences || prose.length < markdown.trim().length * 0.6 };
 }
 

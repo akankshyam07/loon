@@ -1045,3 +1045,13 @@ As a user, the worst problem was privacy. A checkout form whose card field has n
 Fixed: card number and CVV/CVC field names make a page sensitive, and `ProductGroup` counts as a product. Test added in test/browser.test.js and checked to fail before the change. I tried making `autocomplete="new-password"` sensitive too, but an earlier run kept sign-up pages open on purpose, so I left that alone.
 
 Left for later: "Buy it now" alone is not a buy signal. A password field shown as plain text after a "show password" toggle is only caught if it keeps an autocomplete hint. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-03 — spoken answers (sentence splitting)
+
+Tried 10 answers read aloud, such as "It costs $3.50 per lb.", "Version 3.2 is out.", "The U.S. price is lower.", "Use e.g. the 24-pack.", a markdown link followed by a full stop, and streamed chunks that split a price in the middle.
+
+As a user, the spoken answer cut off at the decimal point. "It costs $3.50 per lb." was spoken as "It costs $3." and a version number or star rating was chopped the same way. Abbreviations such as "Dr." and "e.g." ended the sentence too, and the streaming splitter spoke "Dr." on its own. Shopping answers are full of prices, so this hit the main use case.
+
+Fixed: speakable and the streaming splitter in brain/intents.js now end a sentence only at punctuation followed by a space, and skip common abbreviations and single letters. Links are removed before brackets are stripped, so no stray parenthesis is left. Test added in test/voice.test.js and checked to fail before the change.
+
+Left for later: "..." is treated as one sentence end, which is fine. Numbered list prose such as "1. Do this" in a paragraph is not handled.

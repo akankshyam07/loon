@@ -85,6 +85,17 @@ test('streamed text splits into sentences; only prose gets spoken', () => {
   assert.strictEqual(truncated, true);
 });
 
+test('decimals and abbreviations do not end a spoken sentence', () => {
+  assert.strictEqual(speakable('It costs $3.50 per lb. Dr. Smith agrees. Third.').text, 'It costs $3.50 per lb. Dr. Smith agrees.');
+  assert.strictEqual(speakable('The U.S. price is lower. Use e.g. the 24-pack.').text, 'The U.S. price is lower. Use e.g. the 24-pack.');
+  assert.strictEqual(speakable('Rated 4.5 (see [reviews](https://x.com/a.b)). Fine.').text, 'Rated 4.5 (see reviews). Fine.');
+  const got = [];
+  const splitter = createSentenceSplitter((s) => got.push(s));
+  for (const chunk of ['It costs $3.', '50 total. Dr. Smith', ' agrees. Ok']) splitter.push(chunk);
+  splitter.flush();
+  assert.deepStrictEqual(got, ['It costs $3.50 total.', 'Dr. Smith agrees.', 'Ok']);
+});
+
 const engine = new VoiceEngine(path.join(os.homedir(), 'Library/Application Support/loon/voice'));
 test('speech → end of turn → text, all on this Mac', { skip: !engine.modelsReady() && 'voice models not downloaded' }, () => {
   const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'loon-voice-')), 'cmd.wav');
