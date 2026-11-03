@@ -110,6 +110,15 @@ test('commands: remember to is a reminder, empty remembers save nothing, clearin
   for (const t of ['clear your memory', 'delete my memories', 'wipe all memory']) assert.strictEqual(parseCommand(t).all, true, t);
 });
 
+test('commands: bare "remember that" saves nothing, "never forget" saves a fact, "delete memory about X" forgets X', () => {
+  assert.strictEqual(parseCommand('remember that'), null);
+  assert.strictEqual(parseCommand('remember this'), null);
+  assert.deepStrictEqual(parseCommand("never forget that I'm vegan"), { action: 'remember', text: "I'm vegan" });
+  assert.deepStrictEqual(parseCommand('delete memory about food'), { action: 'forget', text: 'food', all: false });
+  assert.deepStrictEqual(parseCommand('remove the memories of my dog'), { action: 'forget', text: 'my dog', all: false });
+  assert.strictEqual(parseCommand('delete everything you know about me').all, true);
+});
+
 test('commands: dont forget, keep in mind and trailing remember that all save a fact', () => {
   assert.deepStrictEqual(parseCommand("don't forget I'm vegan"), { action: 'remember', text: "I'm vegan" });
   assert.deepStrictEqual(parseCommand('keep in mind that I am allergic to nuts'), { action: 'remember', text: 'I am allergic to nuts' });

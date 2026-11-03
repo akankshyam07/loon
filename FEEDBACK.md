@@ -1025,3 +1025,13 @@ As a user, the worst problem was that "stop talking", "shut up" and "stop speaki
 Fixed: the stop words now include "stop talking", "stop speaking", "shut up", "that's enough", "okay stop" and "stop it". Test added in test/voice.test.js and checked to fail before the change.
 
 Left for later: "mute", "quiet mode", "do not disturb" and "stop listening" are not mapped to anything. "repeat that", "louder", "cancel the timer", "what are my reminders" and "thanks" have no handler and go to the model. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-03 — memory commands (fifth pass)
+
+Tried 37 phrasings such as "remember that", "never forget that I'm vegan", "delete memory about food", "remove the memory about dogs", "delete everything you know about me", "call me Sam" and "remembr that i like tea".
+
+As a user, the worst problem was that a bare "remember that" saved a memory that said "that". "never forget that I'm vegan" and "delete memory about food" were not understood and went to the language model, which can claim it forgot something when nothing was deleted.
+
+Fixed: a bare "remember that" or "remember this" saves nothing. "never forget" works like "don't forget". "delete", "remove", "erase" or "clear" followed by "memory about X" forgets X, and "delete everything you know about me" points to the wipe-all path. Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: "call me Sam", "my name is Sam", "you should know I'm vegan" and "from now on call me Boss" still go to the model. "forget me" tries to forget the word "me". Typos such as "remembr" are not matched. The failures in `npm test` here are the WordNet and demo ones from the sandbox install.
