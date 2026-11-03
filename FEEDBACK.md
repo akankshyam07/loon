@@ -1035,3 +1035,13 @@ As a user, the worst problem was that a bare "remember that" saved a memory that
 Fixed: a bare "remember that" or "remember this" saves nothing. "never forget" works like "don't forget". "delete", "remove", "erase" or "clear" followed by "memory about X" forgets X, and "delete everything you know about me" points to the wipe-all path. Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: "call me Sam", "my name is Sam", "you should know I'm vegan" and "from now on call me Boss" still go to the model. "forget me" tries to forget the word "me". Typos such as "remembr" are not matched. The failures in `npm test` here are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-03 — page kinds (sixth pass)
+
+Tried 22 pages such as a card form with a plain `name="cardnumber"` field, a CVV box, eBay and Shopify product pages, mail hosts with www, look-alike bank domains, 3-price pages with "Buy it now" and menus with euro prices.
+
+As a user, the worst problem was privacy. A checkout form whose card field has no `autocomplete` or `inputmode` attribute was treated as an ordinary page, so the cat would offer to read it. Pages that mark their products as `ProductGroup` in JSON-LD (eBay, Shopify variants) were not seen as shopping pages.
+
+Fixed: card number and CVV/CVC field names make a page sensitive, and `ProductGroup` counts as a product. Test added in test/browser.test.js and checked to fail before the change. I tried making `autocomplete="new-password"` sensitive too, but an earlier run kept sign-up pages open on purpose, so I left that alone.
+
+Left for later: "Buy it now" alone is not a buy signal. A password field shown as plain text after a "show password" toggle is only caught if it keeps an autocomplete hint. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

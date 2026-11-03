@@ -74,7 +74,7 @@
   function detectPage(doc, location) {
     const host = location.hostname.replace(/^www\./, '');
     const passwordField = doc.querySelector('input[type="password" i], input[autocomplete="current-password"], input[autocomplete="one-time-code"]');
-    const cardField = doc.querySelector('input[autocomplete^="cc-"], input[name*="card" i][inputmode="numeric"]');
+    const cardField = doc.querySelector('input[autocomplete^="cc-"], input[name*="card" i][inputmode="numeric"], input[name*="cardnumber" i], input[name*="card-number" i], input[name*="card_number" i], input[name*="cvv" i], input[name*="cvc" i]');
     if (hostMatches(host, SENSITIVE_DOMAINS) || SENSITIVE_BRANDS.test(host) || SENSITIVE_LABELS.test(host) || passwordField || cardField) {
       return { kind: 'sensitive', sensitive: true, reason: passwordField ? 'password field' : cardField ? 'card field' : 'sensitive site' };
     }
@@ -93,7 +93,7 @@
     if (host === 'leetcode.com' && /^\/problems\//.test(location.pathname)) kind = 'leetcode';
     else if (hostMatches(host, EMAIL_HOSTS) || (host === 'icloud.com' && location.pathname.startsWith('/mail'))) kind = 'email';
     else if (types.has('Menu') || types.has('Restaurant') || (prices.length >= 5 && foodWords.size >= 3)) kind = 'menu';
-    else if (types.has('Product') || types.has('Offer') || types.has('ItemList') || (prices.length >= 3 && buyText)) kind = 'shopping';
+    else if (types.has('Product') || types.has('ProductGroup') || types.has('Offer') || types.has('ItemList') || (prices.length >= 3 && buyText)) kind = 'shopping';
     else if (hostMatches(host, CODE_DOMAINS) || doc.querySelectorAll('pre code, pre').length >= 2) kind = 'code';
     else if (doc.querySelector('article') || words > 600) kind = 'article';
     else if (doc.querySelectorAll('form input:not([type="hidden"])').length >= 4) kind = 'form';

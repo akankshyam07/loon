@@ -98,6 +98,11 @@ test('page kinds: sensitive wins, shops and articles are recognized', async () =
     assert.strictEqual(page('<p>hi</p>', url).sensitive, true, url);
   }
   assert.strictEqual(page('<input type="PASSWORD">').sensitive, true);
+  for (const name of ['cardnumber', 'card-number', 'card_number', 'cvv']) {
+    assert.strictEqual(page(`<input type="text" name="${name}">`).sensitive, true, name);
+  }
+  assert.strictEqual(page('<input name="discard-notes">').sensitive, false);
+  assert.strictEqual(page('<script type="application/ld+json">{"@type":"ProductGroup"}</script>').kind, 'shopping');
   assert.strictEqual(page('<input type="text" autocomplete="current-password">').sensitive, true);
   assert.strictEqual(page('<input type="text" autocomplete="one-time-code">').sensitive, true);
   // A sign-up page is not private, only its password field is (the screen-control selftest clicks buttons on one)
