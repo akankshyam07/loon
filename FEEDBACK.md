@@ -1075,3 +1075,13 @@ As a user, the worst problem was a name swapped for another word. "my name is ak
 Fixed: fixGrammar now skips spelling suggestions that are far from the original word (an unknown name has no near match) and skips Harper's formatting lints. Real typos such as "recieve" still get fixed. Test added in test/modes.test.js, it fails without the change.
 
 Left for later: "cancelled" is changed to the American "canceled" without asking. "Me and him goes" and doubled spaces are not flagged. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-03 — history (sixth pass)
+
+Tried 30 phrasings such as "what did i ask u", "show me my last question", "pull up my history", "history for docker", "clear my history", "wat did i ask", "my last 5 searches" and "remind me what I asked".
+
+As a user, the worst problem was that "what did i ask u" searched my history for the word "u". "Show me my last question" and "pull up my history" were not understood and went to the language model, which cannot see my history.
+
+Fixed: "u" is dropped like "you" in a history search, and "show me my last question", "pull up my history" and "pull up history for X" now work. Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: "history for docker" without a verb, "my last 5 searches", "what have I been looking at", typos such as "wat did i ask" and "remind me what I asked" (still becomes a reminder) are not handled. There is still no spoken "clear my history". The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
