@@ -89,7 +89,9 @@ function parseSchedule(input, now = new Date(), { allowOnce = false } = {}) {
   const interval = take(state, /\bevery\s+(\d+|other|an?|one|half an?)?\s*(minutes?|mins?|hours?|hrs?)\b(?:\s+on the hour)?/i) || take(state, /\b(hourly)\b/i);
   const monthDay = take(state, /\b(?:on\s+)?the\s+(\d{1,2})(?:st|nd|rd|th)?\s+of\s+(?:every|each|the)\s+month\b/i)
     || take(state, /\b(?:every|each)\s+month\s+on\s+the\s+(\d{1,2})(?:st|nd|rd|th)?\b/i)
-    || take(state, /\bmonthly\s+on\s+the\s+(\d{1,2})(?:st|nd|rd|th)?\b/i);
+    || take(state, /\bmonthly\s+on\s+the\s+(\d{1,2})(?:st|nd|rd|th)?\b/i)
+    // No day named: today's date, the same way a bare "weekly" means today's weekday. The confirm card shows it.
+    || take(state, /\b(?:monthly|(?:every|each)\s+month)\b/i);
   const everyN = take(state, /\bevery\s+(other|second|\d+)\s+days?\b/i);
   const everyWeeks = take(state, /\bevery\s+(other|second|\d+)\s+weeks?\b/i) || take(state, /\b(?:bi-?weekly|fortnightly)\b/i);
   const except = take(state, new RegExp(String.raw`\b(?:except(?:\s+on)?|but\s+not|excluding|other\s+than)\s+(${DAY_WORD}(?:(?:\s*(?:,|and|&|or)\s*|\s+)${DAY_WORD})*)\b`, 'i'));
@@ -140,7 +142,7 @@ function parseSchedule(input, now = new Date(), { allowOnce = false } = {}) {
     return done({ type: 'interval', minutes, window: span, days: days || ALL_DAYS });
   }
   if (monthDay) {
-    const d = Number(monthDay[1]);
+    const d = monthDay[1] ? Number(monthDay[1]) : now.getDate();
     if (d < 1 || d > 31) return { schedule: null, rest: tidyRest(state.text) };
     return done({ type: 'daily', time, days: ALL_DAYS, monthDay: d });
   }

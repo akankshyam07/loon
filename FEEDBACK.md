@@ -1085,3 +1085,13 @@ As a user, the worst problem was that "what did i ask u" searched my history for
 Fixed: "u" is dropped like "you" in a history search, and "show me my last question", "pull up my history" and "pull up history for X" now work. Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: "history for docker" without a verb, "my last 5 searches", "what have I been looking at", typos such as "wat did i ask" and "remind me what I asked" (still becomes a reminder) are not handled. There is still no spoken "clear my history". The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-03 — reminders and routines, monthly wording (sixth pass)
+
+Tried 31 reminder, timer and alarm phrasings, then 15 recurring ones such as "every hour", "every weekday at 8", "every other day", "every 2 weeks", "yearly" and "monthly".
+
+As a user, routines already handled hourly, daily, weekday, weekly and every-N-days wording well. The problem was "remind me monthly to pay rent" and "every month remind me to pay rent". Routines did not read them, so the first became a one-time reminder titled "monthly to pay rent" with no time, and the second matched nothing.
+
+Fixed: "monthly" and "every month" with no day now mean today's date each month, the same way a bare "weekly" means today's weekday. The confirm card shows the day so it can be changed. Test added in test/routines.test.js and checked to fail before the change.
+
+Left for later: "yearly" and "every year on March 3" still fall through to a one-time reminder with the recurrence words in the title. Routines have no yearly schedule. "Snooze 10 minutes", "cancel my timer" and a bare "set a timer" are still not matched. The 5 failures in `npm test` here are the WordNet and demo ones from the sandbox install.

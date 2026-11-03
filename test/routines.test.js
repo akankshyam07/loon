@@ -117,6 +117,11 @@ test('routines: next run across DST changes, month ends, short months and interv
   assert.deepStrictEqual([new Date(feb).getMonth(), new Date(feb).getDate()], [1, 28]);
   const mar = R.nextRun(rent, feb);
   assert.deepStrictEqual([new Date(mar).getMonth(), new Date(mar).getDate()], [2, 31]);
+  // "monthly" with no day is today's date (the 12th), not a one-time reminder titled "monthly to pay rent"
+  for (const text of ['remind me monthly to pay rent', 'every month remind me to pay rent']) {
+    const draft = R.parseRoutine(text, { now: NOW });
+    assert.deepStrictEqual([draft.schedule.type, draft.schedule.monthDay, draft.label], ['daily', 12, 'Pay rent'], text);
+  }
   const leap = R.nextRun(rent, at('2028-02-01T00:00:00'));
   assert.strictEqual(new Date(leap).getDate(), 29);
   assert.strictEqual(new Date(R.nextRun(daily9, at('2026-01-31T10:00:00'))).getMonth(), 1);
