@@ -4,13 +4,13 @@
 // Exact conversion constants to base units (g, ml).
 const UNITS = {
   mg: ['g', 0.001], g: ['g', 1], kg: ['g', 1000], oz: ['g', 28.349523125], lb: ['g', 453.59237], lbs: ['g', 453.59237],
-  ml: ['ml', 1], cl: ['ml', 10], l: ['ml', 1000], floz: ['ml', 29.5735295625], gal: ['ml', 3785.411784], qt: ['ml', 946.352946], pt: ['ml', 473.176473], gr: ['g', 1],
+  ml: ['ml', 1], cl: ['ml', 10], l: ['ml', 1000], floz: ['ml', 29.5735295625], gal: ['ml', 3785.411784], qt: ['ml', 946.352946], pt: ['ml', 473.176473], gr: ['g', 1], gm: ['g', 1],
 };
 const WORDS = {
-  milligram: 'mg', gram: 'g', kilogram: 'kg', ounce: 'oz', pound: 'lb', milliliter: 'ml', millilitre: 'ml', liter: 'l', litre: 'l',
+  milligram: 'mg', gram: 'g', kilogram: 'kg', kilo: 'kg', ounce: 'oz', pound: 'lb', milliliter: 'ml', millilitre: 'ml', liter: 'l', litre: 'l',
   fluidounce: 'floz', gallon: 'gal', quart: 'qt', pint: 'pt',
 };
-const MEASURE = /(\d+(?:[.,]\d+)?)[\s-]?(fl\.?\s?oz|fluid ounces?|(?:milli|kilo)?grams?|milli?lit(?:er|re)s?|lit(?:er|re)s?|ounces?|pounds?|gallons?|quarts?|pints?|mg|kg|gr|g|lbs?|oz|ml|cl|l|gal|qt)\b/gi;
+const MEASURE = /(\d+(?:[.,]\d+)?)[\s-]?(fl\.?\s?oz|fluid ounces?|(?:milli|kilo)?grams?|kilos?|milli?lit(?:er|re)s?|lit(?:er|re)s?|ounces?|pounds?|gallons?|quarts?|pints?|mg|kg|gr|gm|g|lbs?|oz|ml|cl|l|gal|qt)\b/gi;
 // Two measures add up only when they sit side by side ("2 lb 4 oz"), not in "16 oz (1 lb)".
 const ADJACENT = /^\s*(?:and|,)?\s*$/;
 
@@ -21,7 +21,7 @@ function parseQuantity(text) {
   // "1,000 g" is a thousand, but "0,125 l" is a European decimal.
   const t = String(text).toLowerCase().replace(/×/g, 'x').replace(/(?<![\d,.])([1-9]\d{0,2}(?:,\d{3})*),(?=\d{3}(?!\d))/g, (_, d) => d.replace(/,/g, '')).replace(/\bhalf[- ](?=gallon|liter|litre|quart|pint|pound|lb)/g, '0.5 ').replace(/\b([1-3])\/([2-4])\b(?=\s*(?:fl|gal|lb|oz|qt|pt|l\b|lit|kg|g\b|ml|pound|ounce|quart|pint))/g, (_, a, b) => Number(a) / Number(b));
   let count = 1;
-  const multi = t.match(/(\d+)\s*(?:(?:cans?|bottles?|bags?|boxes|pouches|jars|sticks)\s*)?x\s*\d/) || t.match(/\bpack of (\d+)/) || t.match(/(\d+)\s*[- ]?(?:pack|pk)\b/);
+  const multi = t.match(/(\d+)\s*(?:(?:cans?|bottles?|bags?|boxes|pouches|jars|sticks)\s*)?x\s*\d/) || t.match(/\b(?:pack|set) of (\d+)/) || t.match(/(\d+)\s*[- ]?(?:pack|pk)\b/);
   if (multi) count = Number(multi[1]);
   const trailing = !multi && t.match(/[a-z.]\s*x\s*(\d+)\b(?!\s*[.,]?\d*\s*[a-z])/);
   if (trailing) count = Number(trailing[1]);
@@ -45,7 +45,12 @@ function parseQuantity(text) {
   const dozen = t.match(/(?:(\d+(?:\.\d+)?)|\b(a|one)|\b(half))[\s-]?dozen\b/);
   if (dozen) return { amount: (dozen[3] ? 0.5 : Number(dozen[1] || 1)) * 12, unit: 'count' };
   const pieces = t.match(/(\d+)[\s-]?(?:ct|count|pcs|pieces|pods|tablets|capsules|rolls|bags)\b/);
-  if (pieces) return { amount: Number(pieces[1]) * (multi && multi[0] !== pieces[0] ? count : 1), unit: 'count' };
+  // "12 ct (2 x 6)" spells out the same twelve, while "12 count (pack of 2)" is twenty-four.
+  if (pieces) {
+    const grid = multi && /x/.test(multi[0]) && t.match(/(\d+)\s*x\s*(\d+)/);
+    const repeats = multi && multi[0] !== pieces[0] && !(grid && Number(grid[1]) * Number(grid[2]) === Number(pieces[1]));
+    return { amount: Number(pieces[1]) * (repeats ? count : 1), unit: 'count' };
+  }
   if (multi) return { amount: count, unit: 'count' };
   return null;
 }

@@ -287,6 +287,14 @@ test('parseQuantity reads a thousands comma but keeps a European decimal', () =>
   assert.deepStrictEqual(shopping.parseQuantity('1,5 l'), { amount: 1500, unit: 'ml' });
 });
 
+test('parseQuantity: a count spelled out twice is not doubled, "kilo", "gm" and "set of" parse', () => {
+  assert.deepStrictEqual(shopping.parseQuantity('12 ct (2 x 6)'), { amount: 12, unit: 'count' });
+  assert.deepStrictEqual(shopping.parseQuantity('12 Count (Pack of 2)'), { amount: 24, unit: 'count' });
+  assert.deepStrictEqual(shopping.parseQuantity('1 Kilo'), { amount: 1000, unit: 'g' });
+  assert.deepStrictEqual(shopping.parseQuantity('250gm'), { amount: 250, unit: 'g' });
+  assert.deepStrictEqual(shopping.parseQuantity('Set of 4'), { amount: 4, unit: 'count' });
+});
+
 test('menu: one-digit cents keep the whole price, em dashes are trimmed, "Veg Burger" is vegetarian', () => {
   const items = food.extractMenu('Side salad $4.5\nCheese pizza 9.5€\nTofu Stir-fry — $13\nVeg Burger $12');
   assert.deepStrictEqual(items.map((i) => [i.name, i.price]), [['Side salad', 4.5], ['Cheese pizza', 9.5], ['Tofu Stir-fry', 13], ['Veg Burger', 12]]);

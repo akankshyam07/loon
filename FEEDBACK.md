@@ -1115,3 +1115,13 @@ As a user, three things annoyed me. "Percent change from 50 to 75" went to the l
 Fixed: percent change (up or down, with a clear answer when starting from zero), the word "degrees" before a temperature unit, and a trailing "dollars", "bucks" or "euros" now formats the answer as money. Tests added in test/brain.test.js.
 
 Left for later: currency conversion ("100 usd to eur") needs rates and still goes to the model. "5'10 in cm", "7 mod 3", "double 45" and "3 dozen" are not handled. `npm test` still shows the 5 WordNet and demo failures that come from skipping the native build in this sandbox.
+
+## 2026-11-04 — shopping and unit price (seventh pass)
+
+Tried 32 size strings and 16 price strings such as "12 ct (2 x 6)", "Set of 4", "1 Kilo", "250gm", "a pound", "25 ft", "Pack of 6, 8 oz each", "$20.00 $15.00", "$5 - $7" and "5 for $10".
+
+As a user, the worst problem was a wrong count stated with confidence. "12 ct (2 x 6)" was read as 24 items, so its unit price looked half as good as it is. "1 Kilo", "250gm" and "Set of 4" were not read at all, so those products dropped out of the ranking.
+
+Fixed: a count that is spelled out again as a grid ("12 ct (2 x 6)") is no longer multiplied, while "12 count (pack of 2)" still is. Added kilo, gm and "set of N". Test added in test/modes.test.js.
+
+Left for later: "a pound", "25 ft" and "100 sheets" are not parsed. "$20.00 $15.00" takes the first number and "$5 - $7" takes the low end. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
