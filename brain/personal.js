@@ -56,7 +56,7 @@ const FEEDBACK = [
   [/^(?:(?:use |with )?(?:less|fewer|no(?: more)?)|stop using|stop with the|stop the|without|don'?t use|drop the|too many) emojis?$/, () => ({ emoji: false })],
   [/^(?:use|more|add|with) emojis?$/, () => ({ emoji: true })],
   [/^(?:be |sound )?(?:more )?(?:formal|professional)$|^too (?:casual|informal|silly)$/, () => ({ tone: 'formal' })],
-  [/^(?:be )?(?:more serious|less playful|less silly|less cute|no jokes|fewer jokes|less jokes|stop joking|plainer|plain)$|^too (?:playful|silly|cute)$/, () => ({ tone: 'plain' })],
+  [/^(?:be )?(?:more serious|less playful|less silly|less cute|no jokes|fewer jokes|less jokes|no more jokes|stop joking|plainer|plain)$|^too (?:playful|silly|cute)$/, () => ({ tone: 'plain' })],
   [/^(?:be )?(?:(?:more )?(?:playful|fun|casual|cute)|less formal|less serious)$|^too (?:formal|serious|stiff)$|^stop being (?:so |too )?(?:formal|serious|stiff)$/, () => ({ tone: 'playful' })],
 ];
 const NOTES = {
@@ -111,7 +111,7 @@ function suggestMemory(text) {
     const clause = s.split(/\s*[,;:]\s*|\s+(?:so|but|because|which|what|can you|could you|please|any)\s+/i)[0].trim();
     if (!clause || /\?$/.test(clause) || clause.length < 4 || clause.length > 140 || clause.split(/\s+/).length > 20) continue;
     if (!STATEMENTS.some((re) => re.test(clause))) continue;
-    const fact = clause.replace(/[.!]+$/, '').replace(/\bi\b/g, 'I').replace(/\bi'(m|ve|d|ll)\b/gi, "I'$1");
+    const fact = clause.replace(/[.!]+$/, '').replace(/\bi\b/g, 'I').replace(/^im\b/i, "I'm").replace(/\bi'(m|ve|d|ll)\b/gi, "I'$1");
     return fact[0].toUpperCase() + fact.slice(1);
   }
   return null;

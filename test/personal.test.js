@@ -270,3 +270,8 @@ test('feedback understands "speak French" and "stop being so formal"', () => {
 test('onboarding drops HTML tags from the name instead of keeping their letters', () => {
   assert.deepStrictEqual(onboardingResult({ name: 'José <b>María</b>' }).facts, ['Call me José María']);
 });
+
+test('"no more jokes" and "im vegetarian" typed without an apostrophe', () => {
+  assert.deepStrictEqual(parseFeedback('no more jokes').patch, { tone: 'plain' });
+  assert.strictEqual(suggestMemory('im vegetarian'), "I'm vegetarian");
+});

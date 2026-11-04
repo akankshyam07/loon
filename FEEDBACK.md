@@ -1145,3 +1145,13 @@ As a user, the worst problem was that a JS or Python dump with NaN, Infinity or 
 Fixed: those values now read as null, so the rest of the object converts. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: a number written as 10.0 loses its decimal when the sample is re-serialized, so a price field can become `long` and break on 10.5 later. Pretty-printed objects pasted one after another (not one per line) are still refused. The 5 failures in `npm test` here are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-04 — settings UI and reply feedback (fifth pass)
+
+Tried 27 feedback phrases such as "be nicer", "simpler words", "no more jokes", "respond in spanish", "back to English" and "lol too formal", and 18 personal statements such as "im vegetarian", "I'm not vegetarian" and "I live in Berlin and I like hiking".
+
+As a user, "no more jokes" did nothing, although "no jokes" works. Typing "im vegetarian" without the apostrophe offered to remember "Im vegetarian", which then sits in the pinned facts with the typo.
+
+Fixed: the tone rule accepts "no more jokes", and a remembered fact starting with "im" is written as "I'm". Test added in test/personal.test.js.
+
+Left for later: "be nicer", "simpler words", "less jargon", "explain like I'm five" and "use bullet points" have no setting to map to. Feedback in other languages ("más corto") is not understood. The 5 failures in `npm test` are the same ones as without my change (sandbox install).
