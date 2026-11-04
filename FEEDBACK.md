@@ -1175,3 +1175,13 @@ As a user, the worst problem was "every 2 hours until 6pm remind me to drink wat
 Fixed: an interval with "until" or "till" and no start time is no longer turned into an all-day schedule, so the model path asks instead. "fortnight" and "every fortnight" now mean every 14 days. Test added in test/routines.test.js and checked to fail before the change.
 
 Left for later: "until 6pm" could start at the current time. "twice a day", "every year on march 3" and "every first monday of the month" are still not understood. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-04 — selection chips and classification (seventh pass)
+
+Tried 41 selections such as a bare word, a price, a URL, an email, "ReferenceError", "ECONNREFUSED 127.0.0.1:3000", "500 Internal Server Error", "HTTP 500", SQL, shell lines, a bullet list, CJK text and a sentence with "error" in prose.
+
+As a user, the worst problem was that short error lines got the wrong chips. "ECONNREFUSED 127.0.0.1:3000" was a word and offered Define. "500 Internal Server Error" was a sentence. These are the lines people select most often from a terminal or browser.
+
+Fixed: Node system error codes (ECONNREFUSED, ENOENT, EADDRINUSE and similar) and a lone HTTP 4xx or 5xx status line now count as stack traces, so the error help chips appear. Prose like "the file was not found yesterday" stays a sentence. Tests added in test/browser.test.js and checked to fail before the change.
+
+Left for later: "ReferenceError" and "HTTP 500" alone are still words. "What is this?" is a word because it has three words, so it offers Define. "x = 5" is a word. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

@@ -69,6 +69,10 @@ test('selection kinds treat unspaced CJK text by length', () => {
   assert.strictEqual(classifySelection('Segmentation fault (core dumped)'), 'stacktrace');
   assert.strictEqual(classifySelection('npm ERR! code ELIFECYCLE'), 'stacktrace');
   assert.strictEqual(classifySelection('bash: foo: command not found'), 'stacktrace');
+  assert.strictEqual(classifySelection('ECONNREFUSED 127.0.0.1:3000'), 'stacktrace');
+  assert.strictEqual(classifySelection('500 Internal Server Error'), 'stacktrace');
+  assert.strictEqual(classifySelection('HTTP/1.1 404 Not Found'), 'stacktrace');
+  assert.strictEqual(classifySelection('the file was not found yesterday'), 'sentence');
   assert.strictEqual(classifySelection('Exception in thread "main" java.lang.NullPointerException'), 'stacktrace');
   assert.strictEqual(classifySelection('fatal: not a git repository (or any of the parent directories): .git'), 'stacktrace');
   assert.strictEqual(classifySelection('error: cannot find module'), 'stacktrace');

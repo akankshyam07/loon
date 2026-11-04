@@ -15,6 +15,9 @@
     /^\s*(fatal|error|FATAL|ERROR): \S/m, // git, rustc, gcc and database error lines
   ];
 
+  // Short error lines with no trace around them: Node system error codes and HTTP status lines
+  const ERROR_LINE = /\bE(CONNREFUSED|CONNRESET|NOENT|ADDRINUSE|ACCES|PERM|TIMEDOUT|NOTFOUND|XIST)\b|^\s*(HTTP\/[\d.]+ |HTTP )?[45]\d\d (Bad Request|Unauthorized|Forbidden|Not Found|Too Many Requests|Internal Server Error|Bad Gateway|Service Unavailable|Gateway Timeout)\s*$/i;
+
   function looksLikeJson(text) {
     const t = text.trim();
     if (!/^[[{]/.test(t) || t.length < 2) return false;
@@ -55,6 +58,7 @@
     if (editable) return 'editable';
     if (looksLikeJson(t)) return 'json';
     if (STACK_TRACE.some((re) => re.test(t)) && (t.includes('\n') || /(error|exception|ERR!|fault|not found|fatal)/i.test(t))) return 'stacktrace';
+    if (ERROR_LINE.test(t)) return 'stacktrace';
     if (looksLikeCode(t, { monospace }) || looksLikeCommand(t)) return 'code';
     // CJK text has no spaces, so count roughly one word per two characters
     const cjk = (t.match(/[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/g) || []).length;
