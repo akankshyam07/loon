@@ -15,7 +15,8 @@ function keysOf(value) {
 
 // JSON copied from a README, chat or JS source often sits in a ``` fence, or is a JS object literal: trailing commas,
 // single quotes, unquoted keys, comments. The retry rewrites those outside of strings so JSON.parse can take it.
-const PYTHON_LITERALS = { True: 'true', False: 'false', None: 'null' };
+// NaN, Infinity and undefined have no JSON form; the field is kept as null so the other fields still convert.
+const PYTHON_LITERALS = { True: 'true', False: 'false', None: 'null', NaN: 'null', Infinity: 'null', undefined: 'null' };
 
 function looseToJson(text) {
   let out = '';
@@ -38,6 +39,9 @@ function looseToJson(text) {
     } else if (c === '}' || c === ']') {
       out = out.replace(/,\s*$/, '') + c;
       i++;
+    } else if (text.startsWith('-Infinity', i)) {
+      out += 'null';
+      i += 9;
     } else if (/[A-Za-z_$]/.test(c)) {
       const word = /^[\w$]+/.exec(text.slice(i))[0];
       const isKey = /^\s*:/.test(text.slice(i + word.length)) && !/^(true|false|null)$/.test(word);

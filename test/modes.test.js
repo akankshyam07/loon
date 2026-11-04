@@ -219,6 +219,11 @@ test('JSON → DTO reads Python literals, JSON lines and JSON with prose around 
   assert.throws(() => parseJson('hello world\nnothing here'));
 });
 
+test('JSON → DTO keeps the other fields when a value is NaN, Infinity or undefined', () => {
+  assert.deepStrictEqual(parseJson('{"a": NaN, "b": -Infinity, "c": Infinity, "d": undefined, "e": 1}'), { a: null, b: null, c: null, d: null, e: 1 });
+  assert.deepStrictEqual(parseJson('{"NaN": 1}'), { NaN: 1 });
+});
+
 test('JSON → DTO handles top-level arrays, plain values and multi-class Java', async () => {
   const list = await jsonToDto('[{"id": 1}, {"id": 2, "name": "x"}]', 'java');
   assert.match(list, /one per item/);

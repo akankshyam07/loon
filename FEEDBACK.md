@@ -1135,3 +1135,13 @@ As a user, the worst problem was a password left in plain text in a curl command
 Fixed: curl `-u` and `--user` credentials are redacted, and "est", "es" and "ist" now work like "is" after a password label. Test added in test/browser.test.js.
 
 Left for later: an unquoted password with a space ("password: p@ss w0rd") leaks the second word. "pass:" and "login with username bob password bob123" are not matched. Emails and phone numbers are not redacted, which may be intended. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-04 — developer help, JSON to DTO (sixth pass)
+
+Tried 18 inputs such as NaN, Infinity, undefined, a 20-digit id, duplicate keys, hyphenated and reserved-word keys, an empty array, an empty object, nested arrays with mixed types, single-quoted strings with escapes and pretty-printed objects one after another.
+
+As a user, the worst problem was that a JS or Python dump with NaN, Infinity or undefined in one field was refused as "not valid JSON", though every other field was fine.
+
+Fixed: those values now read as null, so the rest of the object converts. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: a number written as 10.0 loses its decimal when the sample is re-serialized, so a price field can become `long` and break on 10.5 later. Pretty-printed objects pasted one after another (not one per line) are still refused. The 5 failures in `npm test` here are the WordNet and demo ones from the sandbox install.
