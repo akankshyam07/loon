@@ -18,7 +18,7 @@ const TEMPLATES = [
   { re: /^(fix|correct|proofread|check) (the |my )?(grammar|spelling|typos)( (in|of) (this|that|it))?$|^(fix|correct|proofread) (this|that|it)( for me)?$|^proofread$|^check (this|that|it) for (typos|spelling|grammar)( mistakes| errors)?$/, route: { type: 'task', task: 'fix_grammar', needs: 'selection' } },
   { re: /^(summari[sz]e|sum up|sum) (this|that|it|the selection)( up)?( for me)?$|^summari[sz]e$|^tl;?dr( (this|that|it))?$/, route: { type: 'task', task: 'summarize', needs: 'selection' } },
   { re: /^(give me |show me )?(some )?examples( of (this|that|it))?$|^(give|show) (me )?an example$/, route: { type: 'task', task: 'examples', needs: 'selection' } },
-  { re: /^translate (this|that|it)( for me)?( (to|into) english)?$/, route: { type: 'task', task: 'translate', needs: 'selection' } },
+  { re: /^translate (this|that|it|the selection|selection)( for me)?( (to|into) english)?$|^(what does (this|that|it) say|what'?s (this|that)|what is (this|that)) in english$|^(this|that|it) in english( please)?$/, route: { type: 'task', task: 'translate', needs: 'selection' } },
   { re: /^(summari[sz]e|sum up|explain) (this|the) page$|^what'?s on (this|the) page$|^what is this page( about)?$|^tell me what this page is about$/, route: { type: 'task', task: 'page_summary' } },
   { re: /^what (do|should) i do (here|on this page)$/, route: { type: 'task', task: 'page_todo' } },
   { re: /^(which (one )?is (the )?(cheapest|best value)|which one is (the )?cheaper|what'?s the (cheapest|best (deal|value))( one)?)( here)?$/, route: { type: 'task', task: 'shop_value' } },

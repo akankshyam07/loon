@@ -1215,3 +1215,13 @@ As a user, the worst miss was the most common Spring startup failure. A "Error c
 Fixed: three new table entries for bean creation failures, database constraint exceptions and unreadable request bodies. The constraint entry sits after the SQL duplicate entry so that one keeps its own answer. Tests added in test/modes.test.js.
 
 Left for later: HttpMediaTypeNotSupportedException and the Whitelabel error page are still not in the table. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-04 — translation by voice (eighth pass)
+
+Tried 20 spoken phrasings such as "translate the selection", "what does this say in english", "what's this in english", "translate this to spanish", "translate hello to spanish", "how do you say hello in french", "traduce esto" and "what language is this".
+
+As a user, asking what a selected foreign sentence says is natural. "What does this say in English" and "translate the selection" both went to the slow question path with no selection attached.
+
+Fixed: the translate template in brain/intents.js now also accepts "the selection", "what does this say in english", "what's this in english" and "this in english". Cases added in test/voice.test.js and checked to fail before the change.
+
+Left for later: "translate this to spanish", "translate hello to spanish" and "how do you say hello in french" still go to the model, since the on-device translator only goes into English. "what language is this" also goes to the model. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
