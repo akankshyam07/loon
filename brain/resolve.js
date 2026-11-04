@@ -69,12 +69,16 @@ const CODE_ANSWERS = [
     }),
   },
   {
-    match: /^(hi|hii+|hey|heya|hello|yo|sup|what'?s up|good (morning|afternoon|evening))( again)?( loon)?$/,
+    match: /^(hi|hii+|hey|heya|hiya|howdy|hey there|hello|yo|sup|what'?s up|whats up|wassup|good (morning|afternoon|evening))( again)?( loon)?$/,
     answer: () => ({ mood: 'happy', text: 'Hi! Highlight something, or ask me anything.' }),
   },
   {
-    match: /^(?:(?:ok|okay|great|perfect|cool|awesome|nice|got it|gotcha|makes sense)[ ,]+)?(?:(?:many )?thanks|thank you|thank u|thx|tysm|ty|cheers)(?:[ ,]+(?:a lot|a ton|so much|very much|again|kindly|mate|that helps|that helped|loon))*$/,
+    match: /^(?:(?:ok|okay|great|perfect|cool|awesome|nice|got it|gotcha|makes sense)[ ,]+)?(?:(?:many )?thanks|thank you|thank u|thankyou|thx|thnx|thanx|tysm|tyvm|ty|cheers)(?:[ ,]+(?:a lot|a ton|so much|very much|again|kindly|mate|that helps|that helped|loon))*$/,
     answer: () => ({ mood: 'happy', text: 'Anytime. *purrs*' }),
+  },
+  {
+    match: /^(?:good ?night|night night|nighty night|gn|bye|bye bye|goodbye|see (?:you|ya)(?: later| soon| tomorrow)?|cya|ttyl|later)(?: loon)?$/,
+    answer: () => ({ mood: 'sleepy', text: "Night! I'll keep watch. *curls up*" }),
   },
   {
     match: /^(who|what) are you$/,

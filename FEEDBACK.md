@@ -1195,3 +1195,13 @@ As a user, naming the thing I selected is natural ("this paragraph", "this email
 Fixed: route in brain/intents.js now reads "this paragraph", "this email" and similar as "this" before matching templates, and also accepts "a lot shorter", "in a professional tone" and "in simple terms". Cases added in test/voice.test.js and checked to fail before the change.
 
 Left for later: "make it less wordy", "fix grammer" (typo), "make it shorter and more professional", "summarize this in one sentence" and "summarize in 3 bullets" still go to the model. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-04 — follow-up conversations, goodbyes and short greetings (sixth pass)
+
+Tried 45 short messages typed alone or mid-thread, such as "good night", "gn", "bye", "see ya", "tyvm", "thnx", "thankyou", "hiya", "howdy", "wassup", "ok", "yes", "lol", "nice", "how are you" and "are you there".
+
+As a user, ending a session with "good night" or "bye" cost a full model call and came back as a paragraph. Common spellings of thanks and hello ("thnx", "thankyou", "tyvm", "hiya", "howdy") did too.
+
+Fixed: goodbyes get an instant sleepy reply, and the thanks and greeting patterns take those spellings. Cases added in test/brain.test.js and checked to fail before the change.
+
+Left for later: "ok", "yes", "lol" and "nice" still go to the model on purpose, since "yes" can answer a question Loon just asked. "how are you", "are you there" and "who made you" still go to the model. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
