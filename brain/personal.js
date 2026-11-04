@@ -215,14 +215,15 @@ const tidy = (text, max = 80) => String(text || '').replace(/[\r\n]+/g, ' ').rep
 // "None" and "n/a" are answers, not allergies; "I'm allergic to peanuts" is typed often, so the lead-in is dropped.
 const NO_ANSWER = /^(?:i (?:have|got|don'?t have)(?: any)? )?(?:(?:none|no|nope|nil|nothing|n\/?a|na|-+|idk)(?: (?:known |food )?(?:allergies|really|at all|thanks?|that i know of))*|not (?:that i know of|really|sure)|i'?m not allergic to anything|i don'?t have any(?: allergies)?)$/i;
 const list = (text) => tidy(text, 200).replace(/^(?:i(?:'m| am)\s+)?(?:allergic to|interested in)\s+/i, '').split(/\s*(?:,|;|\band\b)\s*/i)
-  .map((x) => x.replace(/[.!]+$/, '').trim()).filter((x) => x && !NO_ANSWER.test(x)).slice(0, 6);
+  .map((x) => x.replace(/[.!]+$/, '').trim()).filter((x) => x && !NO_ANSWER.test(x))
+  .filter((x, i, all) => all.findIndex((y) => y.toLowerCase() === x.toLowerCase()) === i).slice(0, 6);
 const joinList = (items) => (items.length > 1 ? `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}` : items[0] || '');
 
 // answers: { name, role, length, tone, diets: [], allergies, interests } (every one optional) → what the review screen
 // shows: { facts: [text] (saved pinned), personal: patch for cleanPersonal, role }. Plain code, no model.
 function onboardingResult(answers = {}) {
   const facts = [];
-  const name = tidy(answers.name, 40).replace(/<[^>]*>/g, '').replace(/[^\p{L}\p{N} .'-]/gu, '').trim();
+  const name = tidy(answers.name, 40).replace(/<[^>]*>/g, '').replace(/[^\p{L}\p{N} .'-]/gu, '').replace(/^(?:(?:my name is|call me|i'?m|i am|it'?s|name'?s) )+/i, '').trim();
   if (name) facts.push(`Call me ${name}`);
   const role = Object.hasOwn(ROLES, answers.role) ? answers.role : '';
   if (role && ROLES[role].fact) facts.push(ROLES[role].fact);

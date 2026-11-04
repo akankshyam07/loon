@@ -275,3 +275,9 @@ test('"no more jokes" and "im vegetarian" typed without an apostrophe', () => {
   assert.deepStrictEqual(parseFeedback('no more jokes').patch, { tone: 'plain' });
   assert.strictEqual(suggestMemory('im vegetarian'), "I'm vegetarian");
 });
+
+test('onboarding drops a typed "my name is" and repeated list items', () => {
+  assert.deepStrictEqual(onboardingResult({ name: 'my name is Ada' }).facts, ['Call me Ada']);
+  assert.deepStrictEqual(onboardingResult({ name: "I'm Sam" }).facts, ['Call me Sam']);
+  assert.deepStrictEqual(onboardingResult({ allergies: 'Peanuts, peanuts, shellfish' }).facts, ["I'm allergic to Peanuts and shellfish"]);
+});

@@ -1155,3 +1155,13 @@ As a user, "no more jokes" did nothing, although "no jokes" works. Typing "im ve
 Fixed: the tone rule accepts "no more jokes", and a remembered fact starting with "im" is written as "I'm". Test added in test/personal.test.js.
 
 Left for later: "be nicer", "simpler words", "less jargon", "explain like I'm five" and "use bullet points" have no setting to map to. Feedback in other languages ("más corto") is not understood. The 5 failures in `npm test` are the same ones as without my change (sandbox install).
+
+## 2026-11-04 — onboarding first run, name and lists (seventh pass)
+
+Tried 22 answers for the "Get to know you" form, such as "my name is Ada", "I'm Ada", "call me Ada", an emoji in a name, a Chinese name, a name with a line break, allergies with "&" and "/", "none" and "N/A", repeated items, a 300 character interest and "rock and roll".
+
+As a user, typing "my name is Ada" into the name box saved "Call me my name is Ada". That fact is pinned and sent with every question. Repeating an allergy in a different case saved "Peanuts and peanuts".
+
+Fixed: onboardingResult strips a leading "my name is", "call me", "I'm" and similar from the name. The list answers drop repeats ignoring case. Test added in test/personal.test.js, it fails without the change.
+
+Left for later: "rock and roll" is split into "rock, roll" because "and" separates list items. "peanuts & shellfish" is kept as one allergy. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
