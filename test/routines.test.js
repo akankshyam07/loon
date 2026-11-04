@@ -471,3 +471,11 @@ test('"except" removes days from the schedule instead of being ignored', () => {
   assert.deepStrictEqual(b.schedule.days, [1, 2, 3, 4]);
   assert.strictEqual(b.schedule.time, '09:00');
 });
+
+test('"every fortnight" is every 14 days and "until" with an interval is not silently dropped', () => {
+  const f = R.parseSchedule('every fortnight on monday', NOW).schedule;
+  assert.strictEqual(f.every, 14);
+  assert.deepStrictEqual(f.days, [1]);
+  assert.strictEqual(R.parseSchedule('every 2 hours until 6pm remind me to drink water', NOW).schedule, null);
+  assert.ok(R.parseSchedule('every 2 hours from 9am to 6pm remind me to drink water', NOW).schedule.window);
+});

@@ -93,7 +93,7 @@ function parseSchedule(input, now = new Date(), { allowOnce = false } = {}) {
     // No day named: today's date, the same way a bare "weekly" means today's weekday. The confirm card shows it.
     || take(state, /\b(?:monthly|(?:every|each)\s+month)\b/i);
   const everyN = take(state, /\bevery\s+(other|second|\d+)\s+days?\b/i);
-  const everyWeeks = take(state, /\bevery\s+(other|second|\d+)\s+weeks?\b/i) || take(state, /\b(?:bi-?weekly|fortnightly)\b/i);
+  const everyWeeks = take(state, /\bevery\s+(other|second|\d+)\s+weeks?\b/i) || take(state, /\b(?:bi-?weekly|fortnight(?:ly)?|every\s+fortnight)\b/i);
   const except = take(state, new RegExp(String.raw`\b(?:except(?:\s+on)?|but\s+not|excluding|other\s+than)\s+(${DAY_WORD}(?:(?:\s*(?:,|and|&|or)\s*|\s+)${DAY_WORD})*)\b`, 'i'));
   let days = null;
   if (take(state, /\b(?:every\s+|on\s+)?(?:weekdays?|work\s?days?)\b/i)) days = WEEKDAYS;
@@ -138,6 +138,8 @@ function parseSchedule(input, now = new Date(), { allowOnce = false } = {}) {
       if (end <= start) return { schedule: null, rest: tidyRest(state.text) }; // ponytail: no windows across midnight yet
       span = { start, end };
     }
+    // "until 6pm" has no start time to pair with; running all day instead would be quietly wrong.
+    if (!window && /\b(?:until|till)\s+\S/i.test(state.text)) return { schedule: null, rest: tidyRest(state.text) };
     if (!(minutes >= 5)) return { schedule: null, rest: tidyRest(state.text) };
     return done({ type: 'interval', minutes, window: span, days: days || ALL_DAYS });
   }

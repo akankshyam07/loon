@@ -1165,3 +1165,13 @@ As a user, typing "my name is Ada" into the name box saved "Call me my name is A
 Fixed: onboardingResult strips a leading "my name is", "call me", "I'm" and similar from the name. The list answers drop repeats ignoring case. Test added in test/personal.test.js, it fails without the change.
 
 Left for later: "rock and roll" is split into "rock, roll" because "and" separates list items. "peanuts & shellfish" is kept as one allergy. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-04 — routines (seventh pass)
+
+Tried 34 routine phrasings such as "every 2 hours until 6pm remind me to drink water", "every fortnight on monday", "each night at 11:30pm", "every other day at 8", "twice a day take pills", "every year on march 3" and "every thursday morning".
+
+As a user, the worst problem was "every 2 hours until 6pm remind me to drink water". The card showed an all-day schedule titled "Until remind me to drink water", so the reminders would also fire overnight. "every fortnight on monday" quietly became a weekly routine.
+
+Fixed: an interval with "until" or "till" and no start time is no longer turned into an all-day schedule, so the model path asks instead. "fortnight" and "every fortnight" now mean every 14 days. Test added in test/routines.test.js and checked to fail before the change.
+
+Left for later: "until 6pm" could start at the current time. "twice a day", "every year on march 3" and "every first monday of the month" are still not understood. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
