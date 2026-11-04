@@ -83,10 +83,11 @@ function calc(question) {
   const q = question.toLowerCase().replace(/[’‘]/g, "'").replace(/(\d),(?=\d{3}\b)/g, '$1').replace(/[\s?!.=]+$/, '').trim();
   const lead = q.match(LEAD)[0];
   // "15% of $80" is money: drop the symbol to calculate, put it back on the answer
-  const money = q.match(/[$€£]/);
+  const words = q.match(/\b(dollars|bucks|euros)$/);
+  const money = q.match(/[$€£]/) || (words && [words[1] === 'euros' ? '€' : '$']);
   const cash = (n) => (money ? money[0] + n.toFixed(2).replace(/\B(?=(\d{3})+\.)/g, ',') : fmt(n));
   const body = q.slice(lead.length).replace(/[$€£]\s*(?=\d)/g, '').replace(/\s*(?:dollars|euros|bucks)$/, '')
-    .replace(/^how many (\w+) (?:are |is )?(?:in|per) (?:(?:a|an|one) |(\d+(?:\.\d+)?) )?(\w+)$/, (_, to, n, from) => `${n || 1} ${from} to ${to}`).replace(/^to\s+/, '').replace(/°/g, '').replace(/\bpercent\b/g, '%')
+    .replace(/^how many (\w+) (?:are |is )?(?:in|per) (?:(?:a|an|one) |(\d+(?:\.\d+)?) )?(\w+)$/, (_, to, n, from) => `${n || 1} ${from} to ${to}`).replace(/^to\s+/, '').replace(/°|\s+degrees?(?=\s+[cfk]\b|\s+(?:celsius|fahrenheit|kelvin))/g, '').replace(/\bpercent\b/g, '%')
     .replace(/(\d)\s*(?:times|multiplied by)\s*(?=[\d(])/g, '$1*').replace(/(\d)\s*plus\s*(?=[\d(])/g, '$1+')
     .replace(/(\d)\s*minus\s*(?=[\d(])/g, '$1 - ').replace(/(\d)\s*(?:divided by|over)\s*(?=[\d(])/g, '$1/')
     .replace(/(\d)\s*to the power of\s*(?=[\d(])/g, '$1^').replace(/(\d)\s*squared\b/g, '$1^2').trim();
@@ -101,6 +102,14 @@ function calc(question) {
     const sym = money ? money[0] : '';
     const two = (n) => sym + n.toFixed(2).replace(/\B(?=(\d{3})+\.)/g, ',');
     return `Tip ${two(tip)}, total ${two(bill + tip)}.`;
+  }
+
+  // "percent change from 50 to 75"
+  m = body.match(/^(?:(?:the\s+)?%\s*(?:change|increase|decrease|difference)\s+)?(?:from|between)\s+(\d+(?:\.\d+)?)\s+(?:to|and)\s+(\d+(?:\.\d+)?)$/);
+  if (m && /%\s*(?:change|increase|decrease|difference)/.test(body)) {
+    if (!+m[1]) return 'That starts from zero, so a percent change has no answer.';
+    const pct = (m[2] - m[1]) / m[1] * 100;
+    return `${pct >= 0 ? 'Up' : 'Down'} ${fmt(Math.abs(pct))}% (${fmt(+m[1])} to ${fmt(+m[2])}).`;
   }
 
   m = body.match(/^(half|a third|a quarter|one third|one quarter) of (\d+(?:\.\d+)?)$/);

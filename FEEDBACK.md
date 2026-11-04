@@ -1105,3 +1105,13 @@ As a user, the worst problem was that "Chicken-fried Steak" was listed as protei
 Fixed: score no longer counts "chicken-fried" or "country-fried" as a protein word. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: "Caesar Salad" is called likely vegetarian though the classic dressing has anchovy. "Cobb Salad" is also called vegetarian though it usually has bacon and chicken. Both need a deliberate list of dishes with hidden meat. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install and fail the same way on main.
+
+## 2026-11-04 — typed questions, math and conversions (sixth pass)
+
+Tried 40 phrasings such as percentages, tips, temperatures, length and mass conversions, "how many" questions, "percent change from 50 to 75", "20 degrees c in f" and "18% of 250 dollars".
+
+As a user, three things annoyed me. "Percent change from 50 to 75" went to the language model, which is bad because it is a numbers question. "20 degrees c in f" was not understood because of the word "degrees". "18% of 250 dollars" answered "45." with no money sign.
+
+Fixed: percent change (up or down, with a clear answer when starting from zero), the word "degrees" before a temperature unit, and a trailing "dollars", "bucks" or "euros" now formats the answer as money. Tests added in test/brain.test.js.
+
+Left for later: currency conversion ("100 usd to eur") needs rates and still goes to the model. "5'10 in cm", "7 mod 3", "double 45" and "3 dozen" are not handled. `npm test` still shows the 5 WordNet and demo failures that come from skipping the native build in this sandbox.
