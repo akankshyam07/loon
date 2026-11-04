@@ -185,6 +185,9 @@ test('errors: fingerprint ignores paths/values; known errors answer from the tab
   assert.match(lookupKnown('Exception in thread "main" java.lang.NoSuchMethodError: com.foo.Bar.baz()V'), /Method missing/);
   assert.match(lookupKnown('org.hibernate.LazyInitializationException: could not initialize proxy - no Session'), /Lazy loading/);
   assert.match(lookupKnown('fatal: refusing to merge unrelated histories'), /Unrelated histories/);
+  assert.match(lookupKnown("org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'userController'"), /couldn’t build a bean/);
+  assert.match(lookupKnown('org.springframework.dao.DataIntegrityViolationException: could not execute statement'), /constraint/);
+  assert.match(lookupKnown("com.fasterxml.jackson.databind.exc.MismatchedInputException: Cannot deserialize value of type `int`"), /Request body/);
   assert.match(lookupKnown("UnicodeDecodeError: 'utf-8' codec can't decode byte 0xff in position 0"), /encoding/);
   assert.match(lookupKnown('Error: Hydration failed because the initial UI does not match what was rendered on the server.'), /Hydration/);
 });

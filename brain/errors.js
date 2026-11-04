@@ -53,6 +53,18 @@ const KNOWN = [
     fix: ['Move the shared logic into a third bean.', 'Inject one side lazily (`@Lazy`) as a last resort.'],
   },
   {
+    match: /UnsatisfiedDependencyException|BeanCreationException|Failed to load ApplicationContext/,
+    title: 'Spring couldn’t build a bean',
+    explain: 'The app failed to start because a bean could not be created. The real cause is in the last `Caused by:` line.',
+    fix: ['Scroll to the bottom `Caused by:` and read that one, the top lines only say "creation failed".', 'Typical causes are a missing bean, a bad property in `application.properties`, or a database that is not reachable.'],
+  },
+  {
+    match: /HttpMessageNotReadableException|MismatchedInputException|JsonParseException|JsonMappingException|InvalidFormatException/,
+    title: 'Request body can’t be read (400)',
+    explain: 'Spring could not turn the JSON body into your DTO. It is malformed, has the wrong type for a field, or the body is missing.',
+    fix: ['Compare the JSON with the DTO field names and types (a string sent for a number, or a bad date format).', 'Make sure the DTO has a default constructor or Jackson annotations, and the client sends `Content-Type: application/json`.'],
+  },
+  {
     match: /OutOfMemoryError/,
     title: 'OutOfMemoryError (Java)',
     explain: 'The JVM ran out of heap (or metaspace).',
@@ -363,6 +375,12 @@ const KNOWN = [
     title: 'Duplicate value (SQL)',
     explain: 'An insert or update would create a second row with a value that must be unique.',
     fix: ['Check the constraint name in the message to see which column it protects.', 'Look the row up first, or use an upsert (`ON CONFLICT` / `ON DUPLICATE KEY UPDATE`).'],
+  },
+  {
+    match: /DataIntegrityViolationException|ConstraintViolationException|violates (?:foreign key|not-null) constraint/i,
+    title: 'Database constraint violated',
+    explain: 'The database refused a write because it broke a rule: a duplicate unique value, a missing required column, or a foreign key that points nowhere.',
+    fix: ['Read the `Caused by:` line, it names the constraint or column.', 'Check the entity has the field set and the value is not already in the table.', 'For a foreign key, save the parent row first.'],
   },
   {
     match: /UnsupportedClassVersionError|class file version \d+/,

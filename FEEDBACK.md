@@ -1205,3 +1205,13 @@ As a user, ending a session with "good night" or "bye" cost a full model call an
 Fixed: goodbyes get an instant sleepy reply, and the thanks and greeting patterns take those spellings. Cases added in test/brain.test.js and checked to fail before the change.
 
 Left for later: "ok", "yes", "lol" and "nice" still go to the model on purpose, since "yes" can answer a question Loon just asked. "how are you", "are you there" and "who made you" still go to the model. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-04 — developer help, Spring Boot errors (eighth pass)
+
+Tried 22 Java and Spring errors such as UnsatisfiedDependencyException, DataIntegrityViolationException, MismatchedInputException, HttpMediaTypeNotSupportedException, the Whitelabel error page, OutOfMemoryError, ClassCastException and a few JavaScript, Python and HTTP ones.
+
+As a user, the worst miss was the most common Spring startup failure. A "Error creating bean" stack trace went to the model, as did a Jackson 400 body error and a database constraint exception.
+
+Fixed: three new table entries for bean creation failures, database constraint exceptions and unreadable request bodies. The constraint entry sits after the SQL duplicate entry so that one keeps its own answer. Tests added in test/modes.test.js.
+
+Left for later: HttpMediaTypeNotSupportedException and the Whitelabel error page are still not in the table. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
