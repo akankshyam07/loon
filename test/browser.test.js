@@ -182,3 +182,10 @@ test('redaction hides quoted secrets with spaces and a lowercase bearer header',
   assert.equal(redact("client_secret: 'abc def ghi'").text, "client_secret: '[redacted:secret]'");
   assert.equal(redact('authorization: bearer abcdefghijklmnop1234').text, 'authorization: [redacted:token]');
 });
+
+test('redaction hides French, Spanish and German "is" passwords and curl user:password', () => {
+  assert.equal(redact('Mon mot de passe est azerty123').text, 'Mon mot de passe est [redacted:secret]');
+  assert.equal(redact('curl -u admin:hunter2 https://x.com').text, 'curl -u admin:[redacted:secret] https://x.com');
+  assert.equal(redact('curl --user "bob:s3cret!" https://x.com').count, 1);
+  assert.strictEqual(redact('use curl -u admin to log in').count, 0);
+});

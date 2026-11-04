@@ -40,10 +40,15 @@ const RULES = [
     re: /\b([\w.-]*(?:password|passwd|pwd|secret|token|api[_-]?key|access[_-]?key|client[_-]?secret|session[_-]?id|sessid)[\w-]*)(\s*[:=]\s*)(?:(["'])([^"'\n]{4,})\3|([^\s"',;]{4,}))/gi,
     replace: (m, name, sep, quote) => `${name}${sep}${quote || ''}[redacted:secret]${quote || ''}`,
   },
+  {
+    kind: 'secret',
+    re: /(\s(?:-u|--user)\s+["']?[^\s:"']+:)(?!\[redacted)([^\s"']{3,})/g,
+    replace: (m, head) => `${head}[redacted:secret]`,
+  },
   { kind: 'token', re: /\bBasic\s+[A-Za-z0-9+\/]{12,}={0,2}/g },
   {
     kind: 'secret',
-    re: /\b(password|passcode|passphrase|mot de passe|mdp|contraseña|clave|passwort|kennwort|pw|pin|cvv|cvc)(\s+is\s*[:=]?\s*|\s*[:=]\s*)(?:(["'])(?!\[redacted)([^"'\n]{3,})\3|(?!\[redacted)([^\s"',;]{3,}))/gi,
+    re: /\b(password|passcode|passphrase|mot de passe|mdp|contraseña|clave|passwort|kennwort|pw|pin|cvv|cvc)(\s+(?:is|est|es|ist)\s*[:=]?\s*|\s*[:=]\s*)(?:(["'])(?!\[redacted)([^"'\n]{3,})\3|(?!\[redacted)([^\s"',;]{3,}))/gi,
     replace: (m, name, sep, quote) => `${name}${sep}${quote || ''}[redacted:secret]${quote || ''}`,
   },
   { kind: 'secret', re: /\b(pin|cvv|cvc)(\s+)\d{3,8}\b/gi, replace: (m, name, sep) => `${name}${sep}[redacted:secret]` },

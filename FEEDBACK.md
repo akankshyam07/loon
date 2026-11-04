@@ -1125,3 +1125,13 @@ As a user, the worst problem was a wrong count stated with confidence. "12 ct (2
 Fixed: a count that is spelled out again as a grid ("12 ct (2 x 6)") is no longer multiplied, while "12 count (pack of 2)" still is. Added kilo, gm and "set of N". Test added in test/modes.test.js.
 
 Left for later: "a pound", "25 ft" and "100 sheets" are not parsed. "$20.00 $15.00" takes the first number and "$5 - $7" takes the low end. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-04 — memory and privacy, redaction (seventh pass)
+
+Tried 31 snippets such as card numbers in several shapes, connection strings, .env lines, bearer headers, curl commands with credentials, and passwords written in French, Spanish and German.
+
+As a user, the worst problem was a password left in plain text in a curl command. `curl -u admin:hunter2 https://x.com` went to the model untouched. "Mon mot de passe est azerty123" was also left alone, because only the English "is" was accepted after the label.
+
+Fixed: curl `-u` and `--user` credentials are redacted, and "est", "es" and "ist" now work like "is" after a password label. Test added in test/browser.test.js.
+
+Left for later: an unquoted password with a space ("password: p@ss w0rd") leaks the second word. "pass:" and "login with username bob password bob123" are not matched. Emails and phone numbers are not redacted, which may be intended. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
