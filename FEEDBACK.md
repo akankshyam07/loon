@@ -1185,3 +1185,13 @@ As a user, the worst problem was that short error lines got the wrong chips. "EC
 Fixed: Node system error codes (ECONNREFUSED, ENOENT, EADDRINUSE and similar) and a lone HTTP 4xx or 5xx status line now count as stack traces, so the error help chips appear. Prose like "the file was not found yesterday" stays a sentence. Tests added in test/browser.test.js and checked to fail before the change.
 
 Left for later: "ReferenceError" and "HTTP 500" alone are still words. "What is this?" is a word because it has three words, so it offers Define. "x = 5" is a word. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-04 — writing tools by voice (fifth pass)
+
+Tried 43 spoken edit phrasings such as "simplify this paragraph", "rewrite this email", "explain this sentence", "make this a lot shorter", "rewrite this in a professional tone", "explain this in simple terms", "fix grammer" and "summarize in 3 bullets".
+
+As a user, naming the thing I selected is natural ("this paragraph", "this email"). Every one of those went to the slow question path with no selection attached, so nothing was offered to replace my text.
+
+Fixed: route in brain/intents.js now reads "this paragraph", "this email" and similar as "this" before matching templates, and also accepts "a lot shorter", "in a professional tone" and "in simple terms". Cases added in test/voice.test.js and checked to fail before the change.
+
+Left for later: "make it less wordy", "fix grammer" (typo), "make it shorter and more professional", "summarize this in one sentence" and "summarize in 3 bullets" still go to the model. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

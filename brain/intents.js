@@ -13,7 +13,7 @@ const TEMPLATES = [
   { re: /^(simplify( this| that| it)?|make (this|that|it) (simpler|easier))$|^explain (this|that|it) (to me )?simply$|^eli5( (this|that|it))?$|^explain( this| that| it)? like i'?m (5|five)$|^dumb (this|that|it) down$/, route: { type: 'task', task: 'simplify', needs: 'selection' } },
   { re: /^(make (this|that|it) ((a (bit|little)|way|much) )?(shorter|short|more concise|concise)|(shorten|tighten|trim)( up)? (this|that|it)( up)?|cut (this|that|it) (down|short))( for me)?$/, route: { type: 'task', task: 'shorter', needs: 'selection' } },
   { re: /^(rewrite|reword|rephrase|paraphrase) (this|that|it)$|^say (this|that|it) (differently|another way)$/, route: { type: 'task', task: 'rewrite', needs: 'selection' } },
-  { re: /^make (this|that|it) (sound )?(more )?(professional|formal|polite)$|^(rewrite|reword|rephrase) (this|that|it) (more |to be more |to sound more )?(professionally|formally|politely|professional|formal|polite)$/, route: { type: 'task', task: 'professional', needs: 'selection' } },
+  { re: /^make (this|that|it) (sound )?(more )?(professional|formal|polite)$|^(rewrite|reword|rephrase) (this|that|it) (more |to be more |to sound more |in a )?(professionally|formally|politely|professional|formal|polite)( tone)?$/, route: { type: 'task', task: 'professional', needs: 'selection' } },
   { re: /^(make (this|that|it) (sound )?(more )?|(rewrite|reword|rephrase) (this|that|it) (to be |to sound |in a )?)(warmer|friendlier|nicer|friendly|warm|nice)( tone)?$/, route: { type: 'task', task: 'warmer', needs: 'selection' } },
   { re: /^(fix|correct|proofread|check) (the |my )?(grammar|spelling|typos)( (in|of) (this|that|it))?$|^(fix|correct|proofread) (this|that|it)( for me)?$|^proofread$|^check (this|that|it) for (typos|spelling|grammar)( mistakes| errors)?$/, route: { type: 'task', task: 'fix_grammar', needs: 'selection' } },
   { re: /^(summari[sz]e|sum up|sum) (this|that|it|the selection)( up)?( for me)?$|^summari[sz]e$|^tl;?dr( (this|that|it))?$/, route: { type: 'task', task: 'summarize', needs: 'selection' } },
@@ -56,8 +56,10 @@ function route(transcript, { awaitingConfirmation = false, speaking = false } = 
     if (NO.test(text)) return { type: 'no' };
   }
   if (STOP.test(text)) return { type: 'stop' };
+  // "simplify this paragraph" means the same as "simplify this"; the selection is what gets edited.
+  const key = text.replace(/\b(this|that) (paragraph|sentence|text|passage|message|email|section|selection)\b/g, '$1').replace(/\ba (lot|ton) (shorter|simpler)\b/, '$2').replace(/ in (a )?simple terms$/, ' simply');
   for (const { re, route: r } of TEMPLATES) {
-    const m = text.match(re);
+    const m = key.match(re);
     if (m) return r.slot ? { ...r, text: m[1] } : { ...r };
   }
   const command = parseCommand(normalizeSpoken(transcript.replace(/^(hey |ok |okay )?loon[,\s]+/i, '')));
