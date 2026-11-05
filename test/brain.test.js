@@ -234,3 +234,11 @@ test('synonymTerm reads "synonym for X" and "another word for X"; synonyms lists
   assert.doesNotMatch(text, /\(a\)|_/);
   assert.strictEqual(await synonyms('zzqxv'), null);
 });
+
+test('dictionary, synonym and antonym asks accept "definition for" and "X synonym"', () => {
+  const { dictionaryTerm, synonymTerm, antonymTerm } = require('../brain/define');
+  assert.strictEqual(dictionaryTerm('definition for ephemeral'), 'ephemeral');
+  assert.strictEqual(dictionaryTerm('meaning for ephemeral'), 'ephemeral');
+  assert.strictEqual(synonymTerm('happy synonyms'), 'happy');
+  assert.strictEqual(antonymTerm('happy antonym'), 'happy');
+});

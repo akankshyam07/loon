@@ -1335,3 +1335,13 @@ As a user, the worst problem was "turn private mode off" going to the language m
 Fixed: "turn private mode off" and "turn privacy mode off" now switch privacy off. The page summary template also takes article, webpage and site. The shopping template accepts "what's cheapest" without "the" and "what is the cheapest one". Test added in test/voice.test.js and checked to fail before the change.
 
 Left for later: "stop listening", "do not disturb", "un-focus", "make it more casual" and "translate this to spanish" have no template and go to the model. "what does this word mean" and "explain this code" also go to the model without using the selection. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-05 — translation and definitions (ninth pass)
+
+Tried 40 typed phrasings such as "definition for ephemeral", "meaning for ephemeral", "what does ephemeral mean in english", "def ephemeral", "happy synonym", "happy antonyms", "wat does ephmeral mean" and "what does carpe diem mean".
+
+As a user, "definition for ephemeral" was read as the two-word term "for ephemeral", so the lookup failed and the question went to the model. "meaning for X", "X synonym" and "X antonym" were not recognised at all.
+
+Fixed: dictionaryTerm accepts "definition for" and "meaning for", and synonymTerm and antonymTerm accept the short "X synonym(s)" and "X antonym(s)" forms in brain/define.js. Test added in test/brain.test.js and checked to fail before the change.
+
+Left for later: "what is ennui", "def ephemeral" and "tell me what ephemeral means" still go to the model. "meaning of life" is defined as the word "life". "what does ephemeral mean in spanish" has no translate-out path. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

@@ -62,7 +62,7 @@ async function define(phrase, { maxSenses = 4 } = {}) {
 
 // A typed dictionary question ("define ephemeral", "what does ephemeral mean?", "meaning of the word ephemeral") → the
 // term, or null. Pronouns and "the error" style phrases are left to the model, since they point at something on screen.
-const DICTIONARY_ASK = /^(?:define:?|definition:?|definition of|meaning of|wh?[au]t(?:'?s| is| does)(?: the)? (?:meaning|definition) of|wh?[au]t does)\s+(?:the (?:word|term) )?["'“‘]?([\p{L}-]+(?: [\p{L}-]+)??)["'”’]?(?: means?)?$|^wh?[au]t(?:'?s| is) ([\p{L}-]+) mean$|^([\p{L}-]+) (?:meaning|definition|means)$/iu;
+const DICTIONARY_ASK = /^(?:define:?|(?:definition|meaning) (?:of|for)|definition:?|wh?[au]t(?:'?s| is| does)(?: the)? (?:meaning|definition) (?:of|for)|wh?[au]t does)\s+(?:the (?:word|term) )?["'“‘]?([\p{L}-]+(?: [\p{L}-]+)??)["'”’]?(?: means?)?$|^wh?[au]t(?:'?s| is) ([\p{L}-]+) mean$|^([\p{L}-]+) (?:meaning|definition|means)$/iu;
 const NOT_A_TERM = /^(?:this|that|it|these|those|here|there|the|my|your|his|her|our|their|a|an|going on|wrong|new|up|happening|next|today|time)\b/i;
 
 function dictionaryTerm(question) {
@@ -76,7 +76,7 @@ function dictionaryTerm(question) {
 }
 
 // "synonym for happy", "another word for big" → the word, or null.
-const SYNONYM_ASK = /^(?:(?:give me |find me |what(?:'?s| is| are) )?(?:a |some |the )?(?:synonyms?|another word|other words|different word|similar words?|words similar)\s+(?:for|of|to)|(?:what(?:'?s| is) )?(?:a |another )?word for)\s+(?:the (?:word|term) )?["'“‘]?([\p{L}-]+)["'”’]?$/iu;
+const SYNONYM_ASK = /^(?:(?:give me |find me |what(?:'?s| is| are) )?(?:a |some |the )?(?:synonyms?|another word|other words|different word|similar words?|words similar)\s+(?:for|of|to)|(?:what(?:'?s| is) )?(?:a |another )?word for)\s+(?:the (?:word|term) )?["'“‘]?([\p{L}-]+)["'”’]?$|^([\p{L}-]+) synonyms?$/iu;
 
 function cleanAsk(question) {
   return String(question || '').trim().replace(/[’‘]/g, "'")
@@ -86,15 +86,15 @@ function cleanAsk(question) {
 
 function synonymTerm(question) {
   const m = cleanAsk(question).match(SYNONYM_ASK);
-  return m ? m[1] : null;
+  return m ? m[1] || m[2] : null;
 }
 
 // "opposite of happy", "antonym for big" → the word, or null.
-const ANTONYM_ASK = /^(?:(?:give me |find me |what(?:'?s| is| are) )?(?:the |an |some )?(?:opposites?|antonyms?)\s+(?:of|for|to)|what(?:'?s| is) the opposite of)\s+(?:the (?:word|term) )?["'“‘]?([\p{L}-]+)["'”’]?$/iu;
+const ANTONYM_ASK = /^(?:(?:give me |find me |what(?:'?s| is| are) )?(?:the |an |some )?(?:opposites?|antonyms?)\s+(?:of|for|to)|what(?:'?s| is) the opposite of)\s+(?:the (?:word|term) )?["'“‘]?([\p{L}-]+)["'”’]?$|^([\p{L}-]+) antonyms?$/iu;
 
 function antonymTerm(question) {
   const m = cleanAsk(question).match(ANTONYM_ASK);
-  return m ? m[1] : null;
+  return m ? m[1] || m[2] : null;
 }
 
 // Markdown list of words that share a WordNet sense with the term, commonest senses first, or null.
