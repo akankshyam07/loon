@@ -1295,3 +1295,13 @@ As a user, the worst problem was informal words and code names rewritten into ot
 Fixed: fixGrammar now skips spelling suggestions for camelCase identifiers, words with a letter repeated three times and words with no vowel. Real typos such as "recieve" still get fixed. Test added in test/modes.test.js, it fails without the change.
 
 Left for later: "I seen him" and "Their going home" are not flagged, "bring you're laptop" is not caught, and "cancelled" still becomes "canceled". The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-05 — developer help, error table (eighth pass)
+
+Tried 50 errors from Java, Python, JavaScript, TypeScript, Rust, Go, git, Docker and SQL, pasted as a user would copy them from a terminal or console.
+
+As a user, the worst misses were the most common beginner errors. A Python NameError, a Python SyntaxError, an ImportError "cannot import name" and the browser's "Unexpected token '<'" all went to the language model.
+
+Fixed: four new table entries. The "Unexpected token '<'" entry skips the "in JSON" wording so the Invalid JSON entry keeps its own answer. Tests added in test/modes.test.js.
+
+Left for later: Maven compilation failures, Rust borrow errors, Go "imported and not used", Docker name conflicts, exit code 137 and SSL handshake failures are still not in the table. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

@@ -227,6 +227,30 @@ const KNOWN = [
     fix: ['Log the raw response text before parsing.', 'Check the status code and `Content-Type` first.'],
   },
   {
+    match: /Unexpected token '?<'?(?! in JSON)|<!DOCTYPE/,
+    title: 'Got an HTML page instead of JavaScript or JSON',
+    explain: 'The browser or your code asked for a script or data file and received an HTML page, usually the app’s index.html or an error page.',
+    fix: ['Open the failing URL in a new tab: if you see a web page, the path is wrong or the server rewrote it.', 'Check the `<script src>` path, the build output folder and the dev server proxy.', 'In an API call, log the status code first, a 404 or 500 page starts with `<`.'],
+  },
+  {
+    match: /NameError: name '\w+' is not defined/,
+    title: 'NameError (Python)',
+    explain: 'Python met a name it has never seen: a typo, a missing import, or a variable used before it was set.',
+    fix: ['Check the spelling and capital letters of the name in the message.', 'Add the missing `import`, or define the variable above the line that uses it.', 'A name set only inside a function or `if` block is not visible outside it.'],
+  },
+  {
+    match: /ImportError: cannot import name/,
+    title: 'ImportError (Python)',
+    explain: 'The module was found, but it has nothing with that name. Either the name is misspelled, your version is older, or two files import each other.',
+    fix: ['Check the name exists in that module and your installed version (`pip show <pkg>`).', 'If the message says "partially initialized module", you have a circular import: move the shared code to a third file.', 'A file of yours named like a library (`random.py`, `json.py`) hides the real one.'],
+  },
+  {
+    match: /SyntaxError: (?:invalid syntax|'[(\[{]' was never closed|unterminated string literal|unexpected EOF while parsing|Missing parentheses in call to|expected ':')/,
+    title: 'SyntaxError (Python)',
+    explain: 'Python can’t read the code as written. The mistake is often on the line above the one it points to.',
+    fix: ['Look at the marked line and the one before it for a missing `)`, `]`, quote or `:`.', 'Check that `print` has parentheses and `==` is used in comparisons, not `=`.', 'Let your editor’s bracket matching find the unclosed one.'],
+  },
+  {
     match: /ModuleNotFoundError|No module named/,
     title: 'ModuleNotFoundError (Python)',
     explain: 'Python can’t import a package: it isn’t installed in *this* environment.',

@@ -161,6 +161,12 @@ test('errors: fingerprint ignores paths/values; known errors answer from the tab
   assert.match(lookupKnown("TypeError: Cannot read property 'length' of undefined"), /Reading a property/);
   assert.match(lookupKnown("TypeError: Cannot set property 'x' of undefined"), /Setting a property/);
   assert.match(lookupKnown("Module not found: Error: Can't resolve 'react' in '/app/src'"), /Module not found/);
+  assert.match(lookupKnown("NameError: name 'totl' is not defined"), /NameError \(Python\)/);
+  assert.match(lookupKnown("ImportError: cannot import name 'x' from 'y' (y.py)"), /ImportError \(Python\)/);
+  assert.match(lookupKnown('  File "a.py", line 3\n    print "hi"\nSyntaxError: Missing parentheses in call to \'print\'.'), /SyntaxError \(Python\)/);
+  assert.match(lookupKnown("Uncaught SyntaxError: Unexpected token '<'"), /HTML page/);
+  assert.match(lookupKnown('Unexpected token < in JSON at position 0'), /Invalid JSON/, 'the JSON entry keeps its own answer');
+  assert.strictEqual(lookupKnown("SyntaxError: Unexpected token '}'"), null, 'a stray brace is not an HTML page');
   assert.match(lookupKnown('java.net.BindException: Address already in use'), /Port already in use/);
   assert.match(lookupKnown('Web server failed to start. Port 8080 was already in use.'), /Port already in use/);
   assert.match(lookupKnown('zsh: command not found: nvm'), /Command not found/);
