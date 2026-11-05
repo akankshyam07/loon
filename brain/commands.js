@@ -4,7 +4,9 @@ const chrono = require('chrono-node');
 
 // Pulls the first date/time phrase out of text: { date, text-without-it } or { date: null }.
 function extractWhen(text, now = new Date(), { morning = false } = {}) {
-  text = dayOfMonth(text, now);
+  text = dayOfMonth(text, now)
+    .replace(/\b(\d+) and a half (hour|minute|day|week)/gi, '$1.5 $2')
+    .replace(/\ban? (hour|minute|day|week) and a half\b/gi, '1.5 $1s');
   const [found] = chrono.parse(text, now, { forwardDate: true });
   if (!found) return { date: null, rest: text.trim() };
   const rest = (text.slice(0, found.index) + text.slice(found.index + found.text.length))

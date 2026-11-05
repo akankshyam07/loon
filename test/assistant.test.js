@@ -292,3 +292,11 @@ test('commands: midnight is the next 00:00, and plain "focus mode" starts a defa
   assert.deepStrictEqual(parseCommand('focus mode', NOW), { action: 'focus', minutes: 25 });
   assert.strictEqual(parseCommand('focus on my essay', NOW), null);
 });
+
+test('commands: "and a half" durations are read as one and a half, not dropped', () => {
+  const mins = (s) => (parseCommand(s, NOW).when - NOW) / 60000;
+  assert.strictEqual(mins('set a timer for 2 and a half minutes'), 2.5);
+  assert.strictEqual(mins('remind me in 2 and a half hours to call'), 150);
+  assert.strictEqual(mins('remind me in an hour and a half to eat'), 90);
+  assert.strictEqual(parseCommand('remind me in an hour and a half to eat', NOW).title, 'eat');
+});

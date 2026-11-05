@@ -1245,3 +1245,13 @@ As a user, the redactor held up well. The gap was keys with an underscore prefix
 Fixed: two rules in brain/redact.js for Stripe style keys and npm tokens. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: "passcode 8842" without "is" or a colon is not hidden. SSH public key lines and dates of birth are not hidden. A bare "the code is 482913" is left alone because it is too ambiguous. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-05 — reminders, timers and focus (seventh pass)
+
+Tried 33 phrasings such as "set a timer for 2 and a half minutes", "remind me in an hour and a half to eat", "remind me tonight to lock up", "remind me on dec 25", calendar bookings with weekdays and dates, "remind me in 2h", "remind me after lunch to call" and "cancel my reminder".
+
+As a user, the worst problem was a wrong time stated with confidence. "2 and a half minutes" became a 30 second timer, "2 and a half hours" became 30 minutes, and "an hour and a half" gave one hour with "and a half to eat" as the title.
+
+Fixed: extractWhen now rewrites "N and a half <unit>" and "an hour and a half" to a decimal amount before parsing, so every caller benefits. Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: "remind me after lunch to call" makes a reminder with no time and "after lunch to call" as the title. "cancel my reminder" and "snooze 10 minutes" are not understood. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
