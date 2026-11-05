@@ -74,7 +74,7 @@ function parseCommand(input, now = new Date()) {
     const { date } = extractWhen(m[1], now, { morning: true });
     return date ? { action: 'reminder', title: 'Wake up', when: date } : null;
   }
-  if ((m = text.match(/^(?:set (?:an? )?)?reminder(?: for| to| about|:)?\s+(.+)$/i))) return parseCommand(`remind me ${m[1]}`, now);
+  if ((m = text.match(/^(?:(?:set|create|add|make)(?: me)? (?:an? )?)?reminder(?: for| to| about|:)?\s+(.+)$/i))) return parseCommand(`remind me ${m[1]}`, now);
   // "remind me what I asked" wants the history, not a reminder titled "what I asked".
   if (/^remind me (?:of )?what i (?:asked|searched(?: for)?|looked up)(?: you)?\??$/i.test(text)) return { action: 'recall', query: '' };
   if ((m = text.match(/^remind me (?:to |about )?(.+)$/i))) {

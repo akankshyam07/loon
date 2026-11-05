@@ -1275,3 +1275,13 @@ As a user, the worst problem was that "remind me what I asked" created a reminde
 Fixed: "history for/on/about X" searches history, a number in "my last 5 searches" is accepted, and "remind me what I asked" shows history. Bare words such as "searches" still do nothing. Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: typos such as "wat did i ask", "what have I been looking at", "history of docker" and "what were we talking about" are not matched. There is still no spoken "clear my history". The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-05 — reminders, calendar, timers, focus (eighth pass)
+
+Tried 35 typed and spoken-style inputs. Earlier passes had already fixed polite prefixes, stray "to" in titles, timers and most focus phrasings.
+
+As a user, "create a reminder to email bob on friday" still made a calendar event, not a reminder. "add a reminder…" did the same.
+
+Fixed: the reminder pattern now accepts "create", "add" and "make" before "a reminder". Test added in test/assistant.test.js.
+
+Left for later: "remind me about the 5pm meeting at 4:30" uses 5pm instead of 4:30. "focus 1.5 hours" and "remindme to…" are not matched.

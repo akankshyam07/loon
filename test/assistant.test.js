@@ -25,6 +25,11 @@ test('commands: reminders, events, open, find, notes, memory; questions fall thr
   assert.strictEqual(parseCommand('remind me to', NOW), null);
   assert.strictEqual(parseCommand('Could you please remind me to call mom at 5, thanks!', NOW).title, 'call mom');
   assert.deepStrictEqual(parseCommand('can you open Spotify', NOW), { action: 'open', target: 'Spotify', kind: 'app' });
+  // "create a reminder" is a reminder, not a calendar event.
+  for (const q of ['create a reminder to email bob on friday', 'add a reminder to email bob on friday']) {
+    const r = parseCommand(q, NOW);
+    assert.deepStrictEqual([r.action, r.title, r.when.getDay()], ['reminder', 'email bob', 5], q);
+  }
   const event = parseCommand('schedule meeting with Sam next Tuesday 10am', NOW);
   assert.deepStrictEqual([event.action, event.title, event.start.getDay(), event.start.getHours()], ['event', 'meeting with Sam', 2, 10]);
   assert.deepStrictEqual(parseCommand('open github.com', NOW), { action: 'open', target: 'https://github.com', kind: 'url' });
