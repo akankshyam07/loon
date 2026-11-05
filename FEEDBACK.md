@@ -1305,3 +1305,13 @@ As a user, the worst misses were the most common beginner errors. A Python NameE
 Fixed: four new table entries. The "Unexpected token '<'" entry skips the "in JSON" wording so the Invalid JSON entry keeps its own answer. Tests added in test/modes.test.js.
 
 Left for later: Maven compilation failures, Rust borrow errors, Go "imported and not used", Docker name conflicts, exit code 137 and SSL handshake failures are still not in the table. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-05 — shopping and unit price (eighth pass)
+
+Tried 35 size strings and 16 price strings such as "a pound", "25 ft", "100 sheets", "Case of 24", "3 pairs", "12 x 1 L", "500 g (17.6 oz)", "half gallon", "US $12.99", "From $5" and "$.99".
+
+As a user, the worst problem was products dropping out of the unit price ranking without a word. "Case of 24", "a pound", "3 pairs" and "100 sheets" were not read, so those items never got a price per unit. The other sizes and prices I tried came out right.
+
+Fixed: "case of", "box of" and "bundle of" count like "pack of". "A pound", "one gallon" and similar spelled-out single units read as one. Pairs, sheets and wipes count as pieces. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: lengths such as "25 ft" have no base unit yet. "$20.00 $15.00" takes the first number and "$5 - $7" takes the low end. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

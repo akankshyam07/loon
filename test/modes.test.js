@@ -316,6 +316,13 @@ test('parseQuantity: a count spelled out twice is not doubled, "kilo", "gm" and 
   assert.deepStrictEqual(shopping.parseQuantity('Set of 4'), { amount: 4, unit: 'count' });
 });
 
+test('parseQuantity: "a pound", "case of 24", pairs and sheets parse', () => {
+  assert.deepStrictEqual(shopping.parseQuantity('a pound'), { amount: 453.59237, unit: 'g' });
+  assert.deepStrictEqual(shopping.parseQuantity('Case of 24'), { amount: 24, unit: 'count' });
+  assert.deepStrictEqual(shopping.parseQuantity('3 pairs'), { amount: 3, unit: 'count' });
+  assert.deepStrictEqual(shopping.parseQuantity('100 sheets'), { amount: 100, unit: 'count' });
+});
+
 test('menu: one-digit cents keep the whole price, em dashes are trimmed, "Veg Burger" is vegetarian', () => {
   const items = food.extractMenu('Side salad $4.5\nCheese pizza 9.5€\nTofu Stir-fry — $13\nVeg Burger $12');
   assert.deepStrictEqual(items.map((i) => [i.name, i.price]), [['Side salad', 4.5], ['Cheese pizza', 9.5], ['Tofu Stir-fry', 13], ['Veg Burger', 12]]);
