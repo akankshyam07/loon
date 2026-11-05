@@ -1225,3 +1225,13 @@ As a user, asking what a selected foreign sentence says is natural. "What does t
 Fixed: the translate template in brain/intents.js now also accepts "the selection", "what does this say in english", "what's this in english" and "this in english". Cases added in test/voice.test.js and checked to fail before the change.
 
 Left for later: "translate this to spanish", "translate hello to spanish" and "how do you say hello in french" still go to the model, since the on-device translator only goes into English. "what language is this" also goes to the model. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-05 — food and menu (eighth pass)
+
+Tried 12 dishes whose names hide meat or fish, such as Caesar Salad, Cobb Salad, Spaghetti Carbonara, Ragù Pappardelle, Pasta Bolognese, Pancetta Flatbread and French Onion Soup, and asked which ones are vegetarian.
+
+As a user, every one of them came back as likely vegetarian. A vegetarian following that advice would have eaten anchovy, bacon, guanciale or beef stock.
+
+Fixed: the meat check now knows caesar, cobb, carbonara, bolognese, ragu, pancetta, guanciale, mortadella, bresaola, fish sauce and french onion, and it ignores accents so "Ragù" matches. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: Pad Thai (fish sauce is common but tofu versions exist), risotto (often made with chicken stock) and Worcestershire sauce are still called vegetarian when the menu text does not say otherwise. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

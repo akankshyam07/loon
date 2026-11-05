@@ -137,6 +137,13 @@ test('menu: lightest, protein and vegetarian picks with tips and a warning', () 
   assert.match(veg, /ask the restaurant about allergens/);
 });
 
+test('menu: dishes with hidden meat or fish are not called vegetarian', () => {
+  for (const name of ['Caesar Salad', 'Cobb Salad', 'Spaghetti Carbonara', 'Ragù Pappardelle', 'French Onion Soup']) {
+    assert.strictEqual(food.score({ name, description: '' }).likelyVegetarian, false, name);
+  }
+  assert.strictEqual(food.score({ name: 'Garden Salad', description: '' }).likelyVegetarian, true);
+});
+
 test('errors: fingerprint ignores paths/values; known errors answer from the table', () => {
   const a = fingerprint('TypeError: Cannot read properties of undefined (reading "id")\n    at /Users/a/app.js:12:5');
   const b = fingerprint('TypeError: Cannot read properties of undefined (reading "name")\n    at /srv/x.js:99:1');
