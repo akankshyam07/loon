@@ -27,6 +27,8 @@ function ibanValid(iban) {
 const RULES = [
   { kind: 'private-key', re: /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g },
   { kind: 'api-key', re: /\b(?:sk|pk|rk)-(?:proj-|ant-|live_|test_)?[A-Za-z0-9_-]{20,}\b/g },
+  { kind: 'api-key', re: /\b(?:sk|pk|rk)_(?:live|test)_[A-Za-z0-9]{16,}\b/g },
+  { kind: 'api-key', re: /\bnpm_[A-Za-z0-9]{36}\b/g },
   { kind: 'api-key', re: /\b(?:AKIA|ASIA)[0-9A-Z]{16}\b/g },
   { kind: 'api-key', re: /\bgh[pousr]_[A-Za-z0-9]{36,}\b/g },
   { kind: 'api-key', re: /\bgithub_pat_[A-Za-z0-9_]{50,}\b/g },

@@ -193,3 +193,9 @@ test('redaction hides French, Spanish and German "is" passwords and curl user:pa
   assert.equal(redact('curl --user "bob:s3cret!" https://x.com').count, 1);
   assert.strictEqual(redact('use curl -u admin to log in').count, 0);
 });
+
+test('redaction hides Stripe and npm tokens', () => {
+  const { text, count } = redact(`stripe ${['sk', 'live', 'abcdefghijklmnopqrstuvwx'].join('_')} and ${['npm', 'abcdefghijklmnopqrstuvwxyz0123456789'].join('_')}`);
+  assert.strictEqual(count, 2);
+  assert.doesNotMatch(text, /sk_live|npm_abc/);
+});

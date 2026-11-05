@@ -1235,3 +1235,13 @@ As a user, every one of them came back as likely vegetarian. A vegetarian follow
 Fixed: the meat check now knows caesar, cobb, carbonara, bolognese, ragu, pancetta, guanciale, mortadella, bresaola, fish sauce and french onion, and it ignores accents so "Ragù" matches. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: Pad Thai (fish sauce is common but tofu versions exist), risotto (often made with chicken stock) and Worcestershire sauce are still called vegetarian when the menu text does not say otherwise. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-05 — memory and privacy, redaction (first pass)
+
+Tried 30 messy snippets such as passwords in prose and in Spanish, card numbers with dashes, AWS and OpenAI env lines, SSNs, bearer tokens, connection strings, private keys, PINs and verification codes.
+
+As a user, the redactor held up well. The gap was keys with an underscore prefix. A Stripe key like sk_live_... and an npm token went through to the model untouched.
+
+Fixed: two rules in brain/redact.js for Stripe style keys and npm tokens. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: "passcode 8842" without "is" or a colon is not hidden. SSH public key lines and dates of birth are not hidden. A bare "the code is 482913" is left alone because it is too ambiguous. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
