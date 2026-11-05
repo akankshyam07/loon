@@ -1265,3 +1265,13 @@ As a user, the worst problem was privacy. A government or payment form asking fo
 Fixed: input names such as ssn, social security, iban, routing number and account number now make a page sensitive. The short names must match exactly, so a field called classname stays ordinary. Test added in test/browser.test.js.
 
 Left for later: a field called passcode is not caught. German "In den Warenkorb" pages are not seen as shopping because the buy signal is English only. Hosts such as web.whatsapp.com and walgreens.com/pharmacy are not treated as sensitive. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-05 — history (seventh pass)
+
+Tried 30 phrasings such as "history for docker", "my last 5 searches", "show last 10 searches", "remind me what I asked", "wat did i ask", "clear my history", "history of docker" and "what were we talking about".
+
+As a user, the worst problem was that "remind me what I asked" created a reminder titled "what I asked". "History for docker" and "my last 5 searches" were not understood and went to the language model, which cannot see my history.
+
+Fixed: "history for/on/about X" searches history, a number in "my last 5 searches" is accepted, and "remind me what I asked" shows history. Bare words such as "searches" still do nothing. Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: typos such as "wat did i ask", "what have I been looking at", "history of docker" and "what were we talking about" are not matched. There is still no spoken "clear my history". The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
