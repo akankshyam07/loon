@@ -97,6 +97,9 @@ test('page kinds: sensitive wins, shops and articles are recognized', async () =
   const { parseHTML } = await import('linkedom');
   const page = (html, url = 'https://example.com/') => detectPage(parseHTML(`<!doctype html><html><body>${html}</body></html>`).document, new URL(url));
   assert.strictEqual(page('<form><input type="password"></form>').kind, 'sensitive');
+  assert.strictEqual(page('<form><input name="ssn"><input name="dob"></form>').kind, 'sensitive');
+  assert.strictEqual(page('<form><input name="routing_number"><input name="account_number"></form>').kind, 'sensitive');
+  assert.notStrictEqual(page('<form><input name="classname"></form>').kind, 'sensitive');
   assert.strictEqual(page('<p>hi</p>', 'https://www.chase.com/login').sensitive, true);
   for (const url of ['https://www.hsbc.com/', 'https://secure.login.gov/', 'https://mychart.stanfordhealthcare.org/']) {
     assert.strictEqual(page('<p>hi</p>', url).sensitive, true, url);

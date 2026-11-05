@@ -1255,3 +1255,13 @@ As a user, the worst problem was a wrong time stated with confidence. "2 and a h
 Fixed: extractWhen now rewrites "N and a half <unit>" and "an hour and a half" to a decimal amount before parsing, so every caller benefits. Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: "remind me after lunch to call" makes a reminder with no time and "after lunch to call" as the title. "cancel my reminder" and "snooze 10 minutes" are not understood. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-05 — page kinds (seventh pass)
+
+Tried 22 pages such as login forms with odd field names, bank and health hosts, a Social Security number form, a routing and account number form, a one-time-code field, German shop pages and mail hosts.
+
+As a user, the worst problem was privacy. A government or payment form asking for an SSN, or for a bank routing and account number, was treated as an ordinary page, so the cat would offer to read it.
+
+Fixed: input names such as ssn, social security, iban, routing number and account number now make a page sensitive. The short names must match exactly, so a field called classname stays ordinary. Test added in test/browser.test.js.
+
+Left for later: a field called passcode is not caught. German "In den Warenkorb" pages are not seen as shopping because the buy signal is English only. Hosts such as web.whatsapp.com and walgreens.com/pharmacy are not treated as sensitive. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

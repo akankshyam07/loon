@@ -75,8 +75,10 @@
     const host = location.hostname.replace(/^www\./, '');
     const passwordField = doc.querySelector('input[type="password" i], input[autocomplete="current-password"], input[autocomplete="one-time-code"]');
     const cardField = doc.querySelector('input[autocomplete^="cc-"], input[name*="card" i][inputmode="numeric"], input[name*="cardnumber" i], input[name*="card-number" i], input[name*="card_number" i], input[name*="cvv" i], input[name*="cvc" i]');
-    if (hostMatches(host, SENSITIVE_DOMAINS) || SENSITIVE_BRANDS.test(host) || SENSITIVE_LABELS.test(host) || passwordField || cardField) {
-      return { kind: 'sensitive', sensitive: true, reason: passwordField ? 'password field' : cardField ? 'card field' : 'sensitive site' };
+    // Exact names for short ones: a substring "ssn" would also match "classname".
+    const idField = doc.querySelector('input:is([name="ssn" i], [id="ssn" i], [name="iban" i], [id="iban" i], [name*="social_security" i], [name*="social-security" i], [name*="socialsecurity" i], [name*="routing_number" i], [name*="routing-number" i], [name*="routingnumber" i], [name*="account_number" i], [name*="account-number" i], [name*="accountnumber" i])');
+    if (hostMatches(host, SENSITIVE_DOMAINS) || SENSITIVE_BRANDS.test(host) || SENSITIVE_LABELS.test(host) || passwordField || cardField || idField) {
+      return { kind: 'sensitive', sensitive: true, reason: passwordField ? 'password field' : cardField ? 'card field' : idField ? 'identity or bank field' : 'sensitive site' };
     }
 
     const text = mainText(doc);
