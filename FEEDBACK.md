@@ -1285,3 +1285,13 @@ As a user, "create a reminder to email bob on friday" still made a calendar even
 Fixed: the reminder pattern now accepts "create", "add" and "make" before "a reminder". Test added in test/assistant.test.js.
 
 Left for later: "remind me about the 5pm meeting at 4:30" uses 5pm instead of 4:30. "focus 1.5 hours" and "remindme to…" are not matched.
+
+## 2026-11-05 — writing tools, fix grammar (fifth pass)
+
+Tried 17 texts such as "i has a apple", "Thx for ur help, i'll send it tmrw", "LOL that was sooo funny", "using useState hook in react", "I would of gone", "he dont know" and a short email with a sign-off.
+
+As a user, the worst problem was informal words and code names rewritten into other words. "tmrw" became "thaw", "sooo" became "solo" and "useState" became "use State", each offered as a replacement of my selection.
+
+Fixed: fixGrammar now skips spelling suggestions for camelCase identifiers, words with a letter repeated three times and words with no vowel. Real typos such as "recieve" still get fixed. Test added in test/modes.test.js, it fails without the change.
+
+Left for later: "I seen him" and "Their going home" are not flagged, "bring you're laptop" is not caught, and "cancelled" still becomes "canceled". The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

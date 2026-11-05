@@ -114,6 +114,9 @@ function linter() {
   return linterPromise;
 }
 
+// Words that are not typos, so a spelling "fix" would damage them: code identifiers (useState), stretched words (sooo)
+// and vowel-less abbreviations (tmrw → thaw).
+const NOT_A_TYPO = /[a-z][A-Z]|(.)\1\1|^[^aeiouyAEIOUY]+$/;
 const CHAT_SHORTHAND = new Set('u ur ok k lol omg ty thx pls plz idk imo brb sec ya'.split(' '));
 
 // Harper only knows English and "fixes" other languages into nonsense (Hola → Hold), so a text of three or more words
@@ -152,6 +155,7 @@ async function fixGrammar(text) {
     const to = first.get_replacement_text();
     // An unknown name has no near match ("Akankshya" → "Changsha"), and en dashes in phone numbers are style, not errors.
     if (l.lint_kind() === 'Formatting') return false;
+    if (['Spelling', 'Typo'].includes(l.lint_kind()) && NOT_A_TYPO.test(word)) return false;
     if (l.lint_kind() === 'Spelling' && editDistance(word.toLowerCase(), to.toLowerCase()) > Math.max(2, Math.ceil(word.length / 3))) return false;
     return !(/^[A-Z][a-z]/.test(word) && to === word.toUpperCase()) && !(word.length > 1 && to.length === 1);
   };

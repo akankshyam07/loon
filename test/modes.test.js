@@ -326,3 +326,10 @@ test('menu: chicken-fried steak is not counted as chicken protein', () => {
   const [item] = food.extractMenu('Chicken-fried Steak $16');
   assert.deepStrictEqual(food.score(item).proteins, ['steak']);
 });
+
+test('grammar fixer leaves code identifiers, stretched words and vowel-less abbreviations alone', async () => {
+  for (const text of ['using useState hook to fetch data', 'that was sooo funny', 'see you tmrw at the office']) {
+    assert.strictEqual((await fixGrammar(text)).changes.filter((c) => /use|soo|tmrw/.test(c)).length, 0, text);
+  }
+  assert.ok((await fixGrammar('I recieve it')).fixed.includes('receive'));
+});
