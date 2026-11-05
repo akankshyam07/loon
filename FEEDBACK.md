@@ -1315,3 +1315,13 @@ As a user, the worst problem was products dropping out of the unit price ranking
 Fixed: "case of", "box of" and "bundle of" count like "pack of". "A pound", "one gallon" and similar spelled-out single units read as one. Pairs, sheets and wipes count as pieces. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: lengths such as "25 ft" have no base unit yet. "$20.00 $15.00" takes the first number and "$5 - $7" takes the low end. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-05 — memory commands (sixth pass)
+
+Tried 55 phrasings such as "forget what you know about me", "delete everything you remember", "wipe everything you know about me", "forget it all", "erase everything", "remember 🍕 is my favourite", "please forget that I like tea" and "remembr that i like tea".
+
+As a user, the worst problem was that "forget what you know about me" was read as forgetting facts that contain the word "know". "forget it all" did nothing and "delete everything you remember" went to the language model, which can claim it wiped memory when nothing was deleted.
+
+Fixed: "what" and "wipe" join "everything" and "all" in the wipe-all phrasing, the "about me" tail is optional, and "forget it all" counts as wipe-all. All of them now point to Settings → Memory. Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: bare "erase everything" and "delete all my data" are ambiguous, so they still go to the model. "call me Sam", "you should know I'm vegan", "stop remembering things" and the typo "remembr" are still not matched. "note that I prefer metric" keeps the word "that" in the saved note. `npm test` shows 5 failures here, all WordNet and demo tests from the sandbox install.

@@ -119,14 +119,14 @@ function parseCommand(input, now = new Date()) {
   // "remember to buy milk" is a to-do, so it becomes a reminder. A bare "remember to" or "remember me" saves nothing.
   if ((m = text.match(/^(?:remember|(?:do not|don'?t|never) forget) to\s+(.+)$/i))) return parseCommand(`remind me to ${m[1]}`, now);
   if (/^(?:remember|(?:do not|don'?t|never) forget)(?: to| me| that| this)?[:,]?$/i.test(text)) return null;
-  if (/^(?:delete|remove|erase|forget|clear) (?:absolutely )?(?:everything|all) (?:that )?you (?:know|remember|have saved|saved) (?:about|on) me$/i.test(text)) return { action: 'forget', text: 'everything', all: true };
+  if (/^(?:delete|remove|erase|forget|clear|wipe) (?:absolutely )?(?:everything|all|what) (?:that )?you (?:know|remember|have saved|saved)(?: (?:about|on) me)?$/i.test(text)) return { action: 'forget', text: 'everything', all: true };
   if ((m = text.match(/^(?:delete|remove|erase|clear) (?:the |my |your )?(?:memory|memories|saved facts?) (?:about|of|on) (.+)$/i)) && tidy(m[1])) return { action: 'forget', text: tidy(m[1]), all: false };
   if (/^(?:delete|clear|wipe|erase|reset) (?:all )?(?:of )?(?:my |your |the )?(?:memory|memories)$/i.test(text)) return { action: 'forget', text: 'everything', all: true };
   if ((m = text.match(/^(?:remember|(?:do not|don'?t|never) forget|keep in mind)(?: this)?[:,]?\s+(?:that )?(.+)$/i)) && tidy(m[1])) return { action: 'remember', text: tidy(m[1]) };
   if ((m = text.match(/^(.+?),?\s+(?:please )?remember (?:that|this|it)$/i)) && !/^(?:do not|don'?t|never|stop)$/i.test(tidy(m[1]))) return { action: 'remember', text: tidy(m[1]) };
   // "forget it" and "forget about it" are idioms, not a request to delete a memory.
   if ((m = text.match(/^forget[:,]?\s+(?:that )?(.+)$/i)) && !/^(?:about )?(?:it|that|this|me not)$/i.test(tidy(m[1]))) {
-    return { action: 'forget', text: tidy(m[1]), all: /^(?:about )?(?:everything|all|all of it)\b/i.test(tidy(m[1])) };
+    return { action: 'forget', text: tidy(m[1]), all: /^(?:about )?(?:everything|all|all of it|it all)\b/i.test(tidy(m[1])) };
   }
   if (/^(?:good morning|(?:what'?s|what is) (?:on )?my (?:day|schedule|agenda)(?: (?:like )?today)?|my day|plan my day|what do i have today)\??$/i.test(text)) return { action: 'today' };
   if ((m = text.match(/^(?:start (?:a )?)?focus(?: mode| timer| session)?(?: for)? (\d+|an?)\s*(m|mins?|minutes?|h|hrs?|hours?)?$/i)) || (m = text.match(/^(?:start |set )?(?:a |an )?(\d+)[\s-]*(m|mins?|minutes?|h|hrs?|hours?)? focus(?: mode| timer| session)?$/i))) {

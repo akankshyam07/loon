@@ -124,6 +124,13 @@ test('commands: bare "remember that" saves nothing, "never forget" saves a fact,
   assert.strictEqual(parseCommand('delete everything you know about me').all, true);
 });
 
+test('commands: "forget what you know", "wipe everything you remember" and "forget it all" point to the wipe path, not a word match', () => {
+  for (const t of ['forget what you know about me', 'delete everything you remember', 'wipe everything you know about me', 'forget it all']) {
+    assert.strictEqual(parseCommand(t).all, true, t);
+  }
+  assert.strictEqual(parseCommand('forget what you know about me').text, 'everything');
+});
+
 test('commands: dont forget, keep in mind and trailing remember that all save a fact', () => {
   assert.deepStrictEqual(parseCommand("don't forget I'm vegan"), { action: 'remember', text: "I'm vegan" });
   assert.deepStrictEqual(parseCommand('keep in mind that I am allergic to nuts'), { action: 'remember', text: 'I am allergic to nuts' });
