@@ -50,6 +50,9 @@ test('spoken edits and explanations of a selection are templates', () => {
   assert.strictEqual(route('Summarize this page').task, 'page_summary');
   for (const said of ['explain this page', 'tell me what this page is about']) assert.strictEqual(route(said).task, 'page_summary', said);
   for (const said of ["what's the cheapest one", 'which one is cheaper']) assert.strictEqual(route(said).task, 'shop_value', said);
+  for (const said of ['summarise this article', 'summarize the website']) assert.strictEqual(route(said).task, 'page_summary', said);
+  for (const said of ["what's cheapest", 'what is the cheapest one']) assert.strictEqual(route(said).task, 'shop_value', said);
+  assert.deepStrictEqual(route('turn private mode off'), { type: 'toggle', key: 'privacy', value: false });
 });
 
 test('open questions still go to the model; yes/no only count while confirming', () => {

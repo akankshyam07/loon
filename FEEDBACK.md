@@ -1325,3 +1325,13 @@ As a user, the worst problem was that "forget what you know about me" was read a
 Fixed: "what" and "wipe" join "everything" and "all" in the wipe-all phrasing, the "about me" tail is optional, and "forget it all" counts as wipe-all. All of them now point to Settings → Memory. Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: bare "erase everything" and "delete all my data" are ambiguous, so they still go to the model. "call me Sam", "you should know I'm vegan", "stop remembering things" and the typo "remembr" are still not matched. "note that I prefer metric" keeps the word "that" in the saved note. `npm test` shows 5 failures here, all WordNet and demo tests from the sandbox install.
+
+## 2026-11-05 — voice intents (sixth pass)
+
+Tried 40 spoken phrasings such as "summarise this article", "tell me what this says", "what's cheapest", "what is the cheapest one", "turn private mode off", "stop listening", "turn on do not disturb", "un-focus", "Loon, make it more casual" and "translate this to spanish".
+
+As a user, the worst problem was "turn private mode off" going to the language model as a question. The cat could answer that privacy is off while nothing changed. "summarise this article" and "what's cheapest" also missed their instant tasks.
+
+Fixed: "turn private mode off" and "turn privacy mode off" now switch privacy off. The page summary template also takes article, webpage and site. The shopping template accepts "what's cheapest" without "the" and "what is the cheapest one". Test added in test/voice.test.js and checked to fail before the change.
+
+Left for later: "stop listening", "do not disturb", "un-focus", "make it more casual" and "translate this to spanish" have no template and go to the model. "what does this word mean" and "explain this code" also go to the model without using the selection. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
