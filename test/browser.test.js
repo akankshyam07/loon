@@ -62,6 +62,11 @@ test('selection kinds treat unspaced CJK text by length', () => {
   assert.strictEqual(classifySelection('I got an Exception: it was funny, not code'), 'sentence');
   assert.strictEqual(classifySelection('Mr. Jones arrived at 5 p.m. today.'), 'sentence');
   assert.strictEqual(classifySelection('你好，今天天气很好。我们去公园玩吧。'), 'paragraph');
+  assert.strictEqual(classifySelection('NullPointerException'), 'stacktrace');
+  assert.strictEqual(classifySelection('java.lang.IllegalStateException'), 'stacktrace');
+  assert.strictEqual(classifySelection("Cannot read properties of undefined (reading 'x')"), 'stacktrace');
+  assert.strictEqual(classifySelection("error TS2322: Type 'string' is not assignable to type 'number'."), 'stacktrace');
+  assert.strictEqual(classifySelection('Error'), 'word');
   assert.strictEqual(classifySelection('console.log("hi")'), 'code');
   assert.strictEqual(classifySelection('x => x * 2'), 'code');
   assert.strictEqual(classifySelection('fn main() { println!("hi"); }'), 'code');

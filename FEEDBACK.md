@@ -1365,3 +1365,13 @@ As a user, the worst problem was "@" as a time marker. "every day @ 9pm journal"
 Fixed: "@ 9pm" is now read like "at 9pm" in parseSchedule. Tests added in test/routines.test.js and checked to fail before the change.
 
 Left for later: "every last friday of the month" and the typo "evry day" are not understood and go to the model. "every day at 9am and 5pm" is refused on purpose, but the card could say why. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-06 — selection chips and classification (eighth pass)
+
+Tried 41 selections such as bare exception names, "Cannot read properties of undefined", TypeScript compiler errors, "zsh: command not found", Windows and Unix paths, prices, emails, URLs, SQL, HTML and a Python traceback line.
+
+As a user, the worst problem was that a selected exception name like "NullPointerException" or "java.lang.IllegalStateException" got the Define chip. The browser console message "Cannot read properties of undefined" and TypeScript lines starting with "error TS2322:" were treated as plain sentences, so no error help was offered.
+
+Fixed: bare exception and error class names, the browser console messages for undefined, null and "is not a function", and TypeScript compiler lines now count as errors. A lone word "Error" stays a word. Tests added in test/browser.test.js and checked to fail before the change.
+
+Left for later: file paths, "exit code 1", "BUILD FAILURE" and "FAILED tests/test_a.py::test_b" are still words or sentences. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
