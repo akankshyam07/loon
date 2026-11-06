@@ -43,6 +43,15 @@ test('parseQuantity reads fractions, counted cans and "12-ct"; parsePrice splits
   assert.strictEqual(shopping.parsePrice('5 for $10'), 2);
 });
 
+test('parseQuantity reads spelled-out packs, a bare dozen and "pt"', () => {
+  const q = (s) => shopping.parseQuantity(s);
+  assert.deepStrictEqual(q('six pack'), { amount: 6, unit: 'count' });
+  assert.deepStrictEqual(q('Dozen eggs'), { amount: 12, unit: 'count' });
+  assert.deepStrictEqual(q('half dozen'), { amount: 6, unit: 'count' });
+  assert.strictEqual(Math.round(q('1 pt').amount), 473);
+  assert.strictEqual(Math.round(q('two-pack, 8 oz').amount), 454);
+});
+
 test('parseQuantity reads hyphenated sizes, pints and "gr"; parsePrice takes the sale price', () => {
   const q = (s) => shopping.parseQuantity(s);
   assert.strictEqual(Math.round(q('32-oz bottle').amount), 907);

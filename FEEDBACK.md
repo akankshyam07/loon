@@ -1425,3 +1425,13 @@ As a user, the worst problem was pasted JSON. A config like `{"password": "hunte
 Fixed: the name=value secret rule in brain/redact.js accepts a closing quote after the name. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: "passcode 8842" with no verb, "pass: x", "my pass is x", the Chinese label 密码, "Your code is 482913", spaced codes and recovery codes. An unquoted password with a space still leaks the second word. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-06 — shopping and unit price (ninth pass)
+
+Tried 48 size strings and 15 price strings such as "six pack", "Dozen eggs", "1 pt", "Pack of 2, 16 oz each", "8 oz (Pack of 3)", "1 kg 200 g", "454g/16oz", "$5 – $7" and "Save $5! $15".
+
+As a user, most sizes came out right. The misses were products dropping out of the unit price ranking without a word. "six pack", "ten pack", "Dozen eggs" and "1 pt" were not read.
+
+Fixed: spelled-out pack counts (two to ten and twelve) read like digits, a bare "dozen" counts as twelve, and "pt" is a pint. Test added in test/modes.test.js, it fails without the change.
+
+Left for later: lengths such as "25 ft" still have no base unit. "$20.00 $15.00" takes the first number and "$5 – $7" takes the low end. "$0.99/oz" is returned as a plain price. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
