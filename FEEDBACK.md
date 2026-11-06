@@ -1375,3 +1375,13 @@ As a user, the worst problem was that a selected exception name like "NullPointe
 Fixed: bare exception and error class names, the browser console messages for undefined, null and "is not a function", and TypeScript compiler lines now count as errors. A lone word "Error" stays a word. Tests added in test/browser.test.js and checked to fail before the change.
 
 Left for later: file paths, "exit code 1", "BUILD FAILURE" and "FAILED tests/test_a.py::test_b" are still words or sentences. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-06 — follow-up conversations (seventh pass)
+
+Tried instant answers both as the first message and mid-thread after "explain big o", with "time", "date", "2+2", "and times 3", "20% of 80", "hi", "who are you", "help" and "what can you do".
+
+As a user, typing just "time" in a thread about complexity got the clock ("It's 6:08 AM") instead of a follow-up about time complexity. "date" did the same.
+
+Fixed: a bare "time" or "date" only answers the clock as the first message of a thread, like bare "help" already did. Test added in test/brain.test.js and checked to fail before the change.
+
+Left for later: "and times 3" after a calculation goes to the model, since Loon keeps no running result for code answers. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

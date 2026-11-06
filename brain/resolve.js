@@ -29,10 +29,13 @@ const MOODS = ['happy', 'curious', 'judgy', 'sleepy', 'suspicious', 'focused', '
 const CODE_ANSWERS = [
   {
     match: /^(what('?s| is) the |tell me the )?(current )?time( is it)?( now)?$|^what time is it$/,
+    // A bare "time" inside a conversation is a follow-up ("time complexity?"), not a clock question.
+    openingOnly: /^(?:the |current )*time$/,
     answer: () => ({ mood: 'happy', text: `It's ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.` }),
   },
   {
     match: /^(what('?s| is) (the |today'?s )?(current )?date|(today'?s |current |the )?date|what day is (it|today)|what'?s (the )?day|what is today|what'?s today)( today)?$/,
+    openingOnly: /^(?:the |current |today'?s )*date$/,
     answer: () => ({ mood: 'happy', text: `It's ${new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}.` }),
   },
   {

@@ -73,6 +73,19 @@ test('ladder: instant answers survive smart quotes, "?!", "right now" and a wake
   }
 });
 
+test('ladder: a bare "time" or "date" inside a conversation is a follow-up, not a clock question', async () => {
+  const brain = { modelId: () => 'fake', chat: async () => ({ text: 'model' }), chatStream: async () => ({ text: 'model' }) };
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));
+  const resolver = new Resolver({ brain, cacheFile: path.join(dir, 'c.json'), countsFile: path.join(dir, 'n.json') });
+  const history = [{ question: 'explain big o', answer: 'It measures growth.', target: 'fast' }];
+  for (const q of ['time', 'time?', 'date', 'the date']) {
+    assert.strictEqual((await resolver.ask(q, { onText: () => {}, firstInThread: true })).tier, 'code', q);
+    let failed = false;
+    const out = await resolver.ask(q, { onText: () => {}, firstInThread: false, history }).catch(() => { failed = true; });
+    assert.ok(failed || out.tier !== 'code', `${q} mid-thread must not answer the clock`);
+  }
+});
+
 test('ladder: date questions and trailing emoji are answered by code, not guessed by the model', async () => {
   const brain = { modelId: () => 'fake', chat: async () => { throw new Error('model should not run'); } };
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));
