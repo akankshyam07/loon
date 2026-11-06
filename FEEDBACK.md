@@ -1345,3 +1345,13 @@ As a user, "definition for ephemeral" was read as the two-word term "for ephemer
 Fixed: dictionaryTerm accepts "definition for" and "meaning for", and synonymTerm and antonymTerm accept the short "X synonym(s)" and "X antonym(s)" forms in brain/define.js. Test added in test/brain.test.js and checked to fail before the change.
 
 Left for later: "what is ennui", "def ephemeral" and "tell me what ephemeral means" still go to the model. "meaning of life" is defined as the word "life". "what does ephemeral mean in spanish" has no translate-out path. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-06 — typed questions, math and bill splitting (seventh pass)
+
+Tried 42 inputs such as "7 mod 3", "5 factorial", "double 45", "3 dozen", "$50 split 3 ways", "5 squared plus 3", "2 ** 3", "60 mph in kph" and a spread of conversions and percentages.
+
+As a user, the worst problem was bill splitting, which comes up at every group dinner. "$50 split 3 ways" went to the language model. "5 squared plus 3" and "2 ** 3" also fell through, and "7 mod 3" was not understood.
+
+Fixed: calc answers "N split K ways" and "split N between K" (keeping the money symbol), "A mod B", "**" as a power, and "squared plus". Cases added in test/brain.test.js.
+
+Left for later: "5 factorial", "double 45", "3 dozen", speed units such as mph and kph, and "split the bill" wording with a tip. `npm test` still shows the 5 WordNet and demo failures that come from skipping the native build in this sandbox.

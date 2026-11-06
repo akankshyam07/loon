@@ -90,7 +90,9 @@ function calc(question) {
     .replace(/^how many (\w+) (?:are |is )?(?:in|per) (?:(?:a|an|one) |(\d+(?:\.\d+)?) )?(\w+)$/, (_, to, n, from) => `${n || 1} ${from} to ${to}`).replace(/^to\s+/, '').replace(/°|\s+degrees?(?=\s+[cfk]\b|\s+(?:celsius|fahrenheit|kelvin))/g, '').replace(/\bpercent\b/g, '%')
     .replace(/(\d)\s*(?:times|multiplied by)\s*(?=[\d(])/g, '$1*').replace(/(\d)\s*plus\s*(?=[\d(])/g, '$1+')
     .replace(/(\d)\s*minus\s*(?=[\d(])/g, '$1 - ').replace(/(\d)\s*(?:divided by|over)\s*(?=[\d(])/g, '$1/')
-    .replace(/(\d)\s*to the power of\s*(?=[\d(])/g, '$1^').replace(/(\d)\s*squared\b/g, '$1^2').trim();
+    .replace(/(\d)\s*to the power of\s*(?=[\d(])/g, '$1^').replace(/(\d)\s*\*\*\s*(?=[\d(])/g, '$1^')
+    .replace(/(\d)\s*mod(?:ulo)?\s*(?=\d)/g, '$1 mod ').replace(/(\d)\s*squared\b/g, '$1^2')
+    .replace(/(\d(?:\^2)?)\s*plus\s*(?=[\d(])/g, '$1+').trim();
 
   let m = body.match(/^(\d+(?:\.\d+)?)\s*%\s*of\s+(\d+(?:\.\d+)?)$/);
   if (m) return `${cash(m[1] * m[2] / 100)}.`;
@@ -111,6 +113,17 @@ function calc(question) {
     const pct = (m[2] - m[1]) / m[1] * 100;
     return `${pct >= 0 ? 'Up' : 'Down'} ${fmt(Math.abs(pct))}% (${fmt(+m[1])} to ${fmt(+m[2])}).`;
   }
+
+  // "$120 split 4 ways", "split 120 between 4"
+  m = body.match(/^(?:split\s+(\d+(?:\.\d+)?)\s+(?:between|among|by)\s+(\d+)(?:\s+people)?|(\d+(?:\.\d+)?)\s+split\s+(\d+)\s+ways?)$/);
+  if (m) {
+    const [total, ways] = [+(m[1] || m[3]), +(m[2] || m[4])];
+    if (!ways) return 'Splitting between nobody has no answer.';
+    return `${cash(total / ways)} each.`;
+  }
+
+  m = body.match(/^(\d+) mod (\d+)$/);
+  if (m) return +m[2] ? `${m[1]} mod ${m[2]} = ${+m[1] % +m[2]}` : 'That divides by zero, which has no answer.';
 
   m = body.match(/^(half|a third|a quarter|one third|one quarter) of (\d+(?:\.\d+)?)$/);
   if (m) return `${cash(m[2] / { half: 2, 'a third': 3, 'one third': 3, 'a quarter': 4, 'one quarter': 4 }[m[1]])}.`;
