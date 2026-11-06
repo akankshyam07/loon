@@ -39,7 +39,7 @@ const RULES = [
   { kind: 'connection-string', re: /\b[a-z][a-z0-9+.-]*:\/\/[^\s:/@]+:[^\s@/]+@[^\s]+/gi },
   {
     kind: 'secret',
-    re: /\b([\w.-]*(?:password|passwd|pwd|secret|token|api[_-]?key|access[_-]?key|client[_-]?secret|session[_-]?id|sessid)[\w-]*)(\s*[:=]\s*)(?:(["'])([^"'\n]{4,})\3|([^\s"',;]{4,}))/gi,
+    re: /\b([\w.-]*(?:password|passwd|pwd|secret|token|api[_-]?key|access[_-]?key|client[_-]?secret|session[_-]?id|sessid)[\w-]*)(["']?\s*[:=]\s*)(?:(["'])([^"'\n]{4,})\3|([^\s"',;]{4,}))/gi,
     replace: (m, name, sep, quote) => `${name}${sep}${quote || ''}[redacted:secret]${quote || ''}`,
   },
   {

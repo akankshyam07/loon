@@ -207,3 +207,10 @@ test('redaction hides Stripe and npm tokens', () => {
   assert.strictEqual(count, 2);
   assert.doesNotMatch(text, /sk_live|npm_abc/);
 });
+
+test('redaction hides secrets in quoted JSON keys', () => {
+  const json = redact('{"password": "hunter2", "apiKey":"abcd1234efgh", "name": "Bob"}');
+  assert.strictEqual(json.count, 2);
+  assert.doesNotMatch(json.text, /hunter2|abcd1234/);
+  assert.match(json.text, /"name": "Bob"/);
+});

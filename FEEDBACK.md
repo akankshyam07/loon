@@ -1415,3 +1415,13 @@ As a user, the base URL checks held up. Plenty of natural style requests did not
 Fixed: parseFeedback in brain/personal.js now accepts those wordings, plus "be funny" and "answer me in X". A bare "serious?" is still left alone. Test added in test/personal.test.js.
 
 Left for later: "in spanish please" with no verb and "explain more" are not matched. "be nicer" and "simpler words" still have no setting to map to. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-06 — memory and privacy, redaction (eighth pass)
+
+Tried 30 snippets such as `"password": "hunter2"`, `{"apiKey":"..."}`, URLs with `?api_key=` and `?access_token=`, "passcode 8842", "pass: abc12345", "login code 123 456", an ssh public key line and plain sentences about passwords.
+
+As a user, the worst problem was pasted JSON. A config like `{"password": "hunter2"}` went to the model untouched, because the closing quote of the key sat between the name and the colon. This is the most common way people paste settings.
+
+Fixed: the name=value secret rule in brain/redact.js accepts a closing quote after the name. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: "passcode 8842" with no verb, "pass: x", "my pass is x", the Chinese label 密码, "Your code is 482913", spaced codes and recovery codes. An unquoted password with a space still leaks the second word. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
