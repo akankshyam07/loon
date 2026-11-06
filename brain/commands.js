@@ -91,13 +91,13 @@ function parseCommand(input, now = new Date()) {
       return { action: 'event', title: title || 'Event', start: date, end: end || new Date(date.getTime() + 60 * 60 * 1000) };
     }
   }
-  if (/^(?:(?:show|open|pull up)(?: me)? )?(?:my )?(?:(?:recent|past|previous) (?:questions|searches|lookups|history)|history|recent activity)\??$/i.test(text) || /^(?:(?:what(?:'?s| is| was| were| are)?|show me|show|pull up) )?(?:my (?:(?:last|latest|recent|previous)(?: \d+)? )?|(?:last|latest|recent|previous)(?: \d+)? )(?:questions?|searches|lookups?|history)\??$/i.test(text) || /^(?:what(?:'?s| is| was) )?(?:my |the )?(?:last|latest|previous) (?:thing i (?:asked|searched(?: for)?|looked up)|search|question|lookup)\??$/i.test(text) || /^(?:show me |tell me )?what (?:(?:have|did) )?i (?:been )?(?:ask(?:ed)?|asking|look(?:ed|ing)? up|search(?:ed|ing)?|google[d]?|googling)(?: you| for)*(?: (?:so far|lately|recently|earlier|today|yesterday|last (?:week|month|time)))?\??$/i.test(text) || /^what (?:did|have) we (?:talk(?:ed)?|chat(?:ted)?) about(?: (?:today|yesterday|earlier|lately|recently))?\??$/i.test(text)) return { action: 'recall', query: '' };
+  if (/^(?:(?:show|open|pull up)(?: me)? )?(?:my )?(?:(?:recent|past|previous) (?:questions|searches|lookups|history)|history|recent activity)\??$/i.test(text) || /^(?:(?:what(?:'?s| is| was| were| are)?|show me|show|pull up) )?(?:my (?:(?:last|latest|recent|previous)(?: \d+)? )?|(?:last|latest|recent|previous)(?: \d+)? )(?:questions?|searches|lookups?|history)\??$/i.test(text) || /^(?:what(?:'?s| is| was) )?(?:my |the )?(?:last|latest|previous) (?:thing i (?:asked(?: you)?|searched(?: for)?|looked up)|search|question|lookup)\??$/i.test(text) || /^(?:show me |tell me )?what (?:(?:have|did) )?i (?:been )?(?:ask(?:ed)?|asking|look(?:ed|ing)? up|search(?:ed|ing)?|google[d]?|googling)(?: you| for)*(?: (?:so far|lately|recently|earlier|today|yesterday|last (?:week|month|time)))?\??$/i.test(text) || /^what (?:did|have) we (?:talk(?:ed)?|chat(?:ted)?) about(?: (?:today|yesterday|earlier|lately|recently))?\??$/i.test(text)) return { action: 'recall', query: '' };
   if ((m = text.match(/^open (.+)$/i))) {
     const target = tidy(m[1]);
     const isUrl = /^(https?:\/\/)?[\w-]+(\.[\w-]+)+(\/\S*)?$/i.test(target);
     return { action: 'open', target: isUrl && !/^https?:/i.test(target) ? `https://${target}` : target, kind: isUrl ? 'url' : 'app' };
   }
-  if ((m = text.match(/^(?:(?:search|look (?:through|in)|find in|pull up)(?: my)? history(?: for)?|(?:my )?history (?:for|on|about)) (.+?)\??$/i))) return { action: 'recall', query: recallQuery(m[1]) };
+  if ((m = text.match(/^(?:(?:search|look (?:through|in)|find in|pull up)(?: my)? history(?: for)?|(?:(?:show|pull up)(?: me)? )?(?:my )?history (?:for|on|about)) (.+?)\??$/i)) || (m = text.match(/^(?:find|search for|look for) (.+?) in (?:my )?history\??$/i))) return { action: 'recall', query: recallQuery(m[1]) };
   if (!/^find my (?:question|search)\b/i.test(text) && (m = text.match(/^(?:find|search for|look for|where is|where's)(?: my)? (.+?)(?: files?)?\??$/i))) {
     return { action: 'find', query: tidy(m[1]) };
   }
@@ -143,7 +143,7 @@ function parseCommand(input, now = new Date()) {
 // time words and the "you (about)" of "what did I ask you about X".
 function recallQuery(raw) {
   return tidy(raw.replace(/\b(?:today|yesterday|recently|lately|earlier|before|(?:last|this) (?:week|month|night|morning|time)|last)\b/gi, ' ').replace(/\s+/g, ' ')
-    .replace(/^\s*(?:(?:you|u)(?: (?:about|on|for))?|about|on|for)\b/i, ' ').replace(/\s+/g, ' '));
+    .replace(/^\s*(?:(?:you|u|loon)(?: (?:about|on|for))?|about|on|for)\b/i, ' ').replace(/\s+/g, ' '));
 }
 
 // Plain-language summary for confirm cards and voice ("Reminder to call mom, today at 5:00 PM").

@@ -1435,3 +1435,13 @@ As a user, most sizes came out right. The misses were products dropping out of t
 Fixed: spelled-out pack counts (two to ten and twelve) read like digits, a bare "dozen" counts as twelve, and "pt" is a pint. Test added in test/modes.test.js, it fails without the change.
 
 Left for later: lengths such as "25 ft" still have no base unit. "$20.00 $15.00" takes the first number and "$5 – $7" takes the low end. "$0.99/oz" is returned as a plain price. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-06 — history (eighth pass)
+
+Tried 38 phrasings such as "find docker in my history", "show me history for docker", "what did i ask loon", "what was the last thing I asked you", "clear my history", "history of docker" and "what did we discuss".
+
+As a user, the worst problem was that "find docker in my history" started a file search for "docker in my history". "What did i ask loon" searched history for the word "loon", and "show me history for docker" went to the language model, which cannot see my history.
+
+Fixed: "find X in history", "show me history for X" and "what was the last thing I asked you" now open history, and "loon" is dropped from the search words like "you". Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: "history of docker", "what did we discuss" and "wat did i ask" are still not matched. "Clear my history" has no spoken command. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
