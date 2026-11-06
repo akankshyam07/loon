@@ -1405,3 +1405,13 @@ As a user, the worst problem was JSON pasted from Notes, Slack or a word process
 Fixed: the loose reader now treats curly double quotes as string delimiters, opening and closing with either glyph. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: a number written as 10.0 still becomes `long` (the decimal is lost when the sample is parsed), and a 20-digit id becomes `double`. An empty paste shows a raw "Unexpected end of JSON input". The 5 failures in `npm test` here are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-06 — settings UI, reply style feedback (sixth pass)
+
+Tried 34 style requests such as "be serious", "stop the jokes", "be funny", "be more brief", "reply only in spanish", "answer me in french" and "in spanish please", and 10 custom base URLs.
+
+As a user, the base URL checks held up. Plenty of natural style requests did nothing and went to the model as a normal question, so the setting never changed. "be serious", "stop the jokes", "be more brief" and "reply only in Spanish" were the common ones.
+
+Fixed: parseFeedback in brain/personal.js now accepts those wordings, plus "be funny" and "answer me in X". A bare "serious?" is still left alone. Test added in test/personal.test.js.
+
+Left for later: "in spanish please" with no verb and "explain more" are not matched. "be nicer" and "simpler words" still have no setting to map to. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

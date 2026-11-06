@@ -293,3 +293,13 @@ test('onboarding name keeps only the name from greetings and intros', () => {
   assert.deepStrictEqual(name('Imani'), ['Call me Imani']);
   assert.deepStrictEqual(name('Itsuki'), ['Call me Itsuki']);
 });
+
+test('more ways to ask for a plainer tone, shorter replies or one language', () => {
+  assert.deepStrictEqual(parseFeedback('be serious').patch, { tone: 'plain' });
+  assert.deepStrictEqual(parseFeedback('stop the jokes').patch, { tone: 'plain' });
+  assert.deepStrictEqual(parseFeedback('be funny').patch, { tone: 'playful' });
+  assert.deepStrictEqual(parseFeedback('be more brief').patch, { length: 'short' });
+  assert.deepStrictEqual(parseFeedback('reply only in spanish').patch, { language: 'Spanish' });
+  assert.deepStrictEqual(parseFeedback('answer me in french').patch, { language: 'French' });
+  assert.strictEqual(parseFeedback('serious?'), null);
+});
