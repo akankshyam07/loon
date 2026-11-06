@@ -1385,3 +1385,13 @@ As a user, typing just "time" in a thread about complexity got the clock ("It's 
 Fixed: a bare "time" or "date" only answers the clock as the first message of a thread, like bare "help" already did. Test added in test/brain.test.js and checked to fail before the change.
 
 Left for later: "and times 3" after a calculation goes to the model, since Loon keeps no running result for code answers. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-06 — onboarding first run, name box (eighth pass)
+
+Tried 20 things a person types into the "Call me" box, such as "Hi, I'm Ada", "Hi! My name is Ada", "hey its Ada", "My name’s Ada" with a curly apostrophe, "you can call me Ada", "everyone calls me Ada", "call me Ada please", a bare "my name is", and names like Imani and Itsuki. I also reran allergy answers such as "none", "nope" and "peanuts, ,shellfish.".
+
+As a user, a greeting in front of the intro defeated the earlier fix. "Hi, I'm Ada" was saved as "Call me Hi I'm Ada", and that fact is pinned and sent with every question. "you can call me Ada", "my name's Ada" and "hey its Ada" had the same problem, and a bare "my name is" saved a fact made of those words.
+
+Fixed: onboardingResult now strips greetings and intro phrases before it filters characters, understands the curly apostrophe, drops a trailing "please" or "thanks", and saves nothing when no name is left. Names that start like an intro (Imani, Itsuki) are kept. Test added in test/personal.test.js, it fails without the change.
+
+Left for later: "peanuts & shellfish" and "dairy/gluten" are still kept as one allergy. "Ada Lovelace (Ada)" becomes "Ada Lovelace Ada". The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

@@ -281,3 +281,15 @@ test('onboarding drops a typed "my name is" and repeated list items', () => {
   assert.deepStrictEqual(onboardingResult({ name: "I'm Sam" }).facts, ['Call me Sam']);
   assert.deepStrictEqual(onboardingResult({ allergies: 'Peanuts, peanuts, shellfish' }).facts, ["I'm allergic to Peanuts and shellfish"]);
 });
+
+test('onboarding name keeps only the name from greetings and intros', () => {
+  const name = (n) => onboardingResult({ name: n }).facts;
+  assert.deepStrictEqual(name("Hi, I'm Ada"), ['Call me Ada']);
+  assert.deepStrictEqual(name('hey its Ada'), ['Call me Ada']);
+  assert.deepStrictEqual(name("My name’s Ada"), ['Call me Ada']);
+  assert.deepStrictEqual(name('you can call me Ada'), ['Call me Ada']);
+  assert.deepStrictEqual(name('call me Ada please'), ['Call me Ada']);
+  assert.deepStrictEqual(name('my name is'), []);
+  assert.deepStrictEqual(name('Imani'), ['Call me Imani']);
+  assert.deepStrictEqual(name('Itsuki'), ['Call me Itsuki']);
+});

@@ -219,11 +219,14 @@ const list = (text) => tidy(text, 200).replace(/^(?:i(?:'m| am)\s+)?(?:allergic 
   .filter((x, i, all) => all.findIndex((y) => y.toLowerCase() === x.toLowerCase()) === i).slice(0, 6);
 const joinList = (items) => (items.length > 1 ? `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}` : items[0] || '');
 
+// "Hi, I'm Ada", "my name's Ada" and "you can call me Ada" are typed into the name box; only the name is kept.
+const NAME_LEAD = /^(?:(?:(?:hi|hello|hey|yo)\b[\s,!.]*|(?:you can |please |just |everyone |everybody |they )*calls? me\b[\s,:]*|my name(?:'s| is)\b[\s,:]*|name(?:'s| is)\b[\s,:]*|this is\b\s*|it'?s\b\s*|i'?m\b\s*|i am\b\s*))+/i;
+
 // answers: { name, role, length, tone, diets: [], allergies, interests } (every one optional) → what the review screen
 // shows: { facts: [text] (saved pinned), personal: patch for cleanPersonal, role }. Plain code, no model.
 function onboardingResult(answers = {}) {
   const facts = [];
-  const name = tidy(answers.name, 40).replace(/<[^>]*>/g, '').replace(/[^\p{L}\p{N} .'-]/gu, '').replace(/^(?:(?:my name is|call me|i'?m|i am|it'?s|name'?s) )+/i, '').trim();
+  const name = tidy(answers.name, 40).replace(/<[^>]*>/g, '').replace(/[\u2018\u2019]/g, "'").replace(NAME_LEAD, '').replace(/[^\p{L}\p{N} .'-]/gu, '').replace(/ (?:please|thanks?)$/i, '').trim();
   if (name) facts.push(`Call me ${name}`);
   const role = Object.hasOwn(ROLES, answers.role) ? answers.role : '';
   if (role && ROLES[role].fact) facts.push(ROLES[role].fact);
