@@ -150,6 +150,10 @@ test('menu: dishes with hidden meat or fish are not called vegetarian', () => {
   for (const name of ['Caesar Salad', 'Cobb Salad', 'Spaghetti Carbonara', 'Ragù Pappardelle', 'French Onion Soup']) {
     assert.strictEqual(food.score({ name, description: '' }).likelyVegetarian, false, name);
   }
+  for (const name of ['Salade Nicoise', 'Chicken Gyro', 'Doner Kebab', 'Wiener Schnitzel', 'Tonkotsu Ramen', 'Philly Cheesesteak', 'BLT', 'Meat Lovers Pizza', 'Seafood Paella', 'Surf and Turf', 'Sloppy Joe', 'Beef Pho', 'Banh Mi', 'Tacos de Carnitas', 'Poke Bowl', 'Lox Bagel']) {
+    assert.strictEqual(food.score({ name, description: '' }).likelyVegetarian, false, name);
+  }
+  assert.strictEqual(food.score({ name: 'Meat-free Chili', description: '' }).likelyVegetarian, true);
   assert.strictEqual(food.score({ name: 'Garden Salad', description: '' }).likelyVegetarian, true);
 });
 

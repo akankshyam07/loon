@@ -1445,3 +1445,13 @@ As a user, the worst problem was that "find docker in my history" started a file
 Fixed: "find X in history", "show me history for X" and "what was the last thing I asked you" now open history, and "loon" is dropped from the search words like "you". Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: "history of docker", "what did we discuss" and "wat did i ask" are still not matched. "Clear my history" has no spoken command. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-06 — food and menu (ninth pass)
+
+Tried about 85 dish names and asked which ones are vegetarian, including gyro, doner, schnitzel, Nicoise, tonkotsu ramen, Philly cheesesteak, BLT, meat lovers pizza, paella, surf and turf, sloppy joe, pho, banh mi, carnitas, poke and lox.
+
+As a user, 30 of them came back as likely vegetarian. A vegetarian would have been steered to meat, fish or shellfish dishes that do not name the animal.
+
+Fixed: the meat check now knows those dishes and the word "meat" itself ("Meat-free Chili" stays vegetarian). Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: dishes that are often meat but have common vegetarian versions (fajitas, tikka masala, dim sum, gyoza, katsu curry, eggs benedict) and dishes with hidden stock (Pad Thai, risotto, Tom Yum, miso soup) are still called vegetarian when the menu text is silent. A "Vegetarian Pho" is now wrongly called meat. The other `npm test` failures are from the sandbox install without dependencies.
