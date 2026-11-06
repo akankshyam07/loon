@@ -112,7 +112,7 @@ function parseSchedule(input, now = new Date(), { allowOnce = false } = {}) {
   if (daily) part = { nightly: 'night', daily: null, everyday: null, day: null }[daily[1].toLowerCase()] ?? daily[1].toLowerCase();
   const partWord = take(state, /\b(?:in\s+the\s+|at\s+)?(morning|afternoon|evening|night)s?\b/i);
   if (partWord && !part) part = partWord[1].toLowerCase();
-  const timeMatch = take(state, new RegExp(String.raw`\bat\s+(${TIME})(?![\w:])`, 'i')) || take(state, /\b(\d{1,2}(?::\d{2})?\s*(?:am|pm)|noon|midnight)\b/i);
+  const timeMatch = take(state, new RegExp(String.raw`(?:\bat\s+|@\s*)(${TIME})(?![\w:])`, 'i')) || take(state, /\b(\d{1,2}(?::\d{2})?\s*(?:am|pm)|noon|midnight)\b/i);
   const time = timeMatch ? parseTime(timeMatch[1], part) : PART_TIMES[part] || '09:00';
   // A routine has one time of day: "at 9am and 5pm" must not quietly keep only the first.
   if (timeMatch && /(?:,|\band|&)\s*(?:at\s+)?(?:\d{1,2}(?::\d{2})?\s*(?:am|pm)|noon|midnight)\b/i.test(state.text)) return { schedule: null, rest: tidyRest(state.text) };

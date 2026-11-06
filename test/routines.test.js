@@ -17,6 +17,12 @@ const PAGE = 'https://shop.example.com/p/oats';
 const at = (s) => new Date(s).getTime();
 const MIN = 60 * 1000;
 
+test('routines: "@ 9pm" is a time, not part of the message', () => {
+  const d = R.parseRoutine('every day @ 9pm journal', { now: NOW });
+  assert.strictEqual(d.payload.message, 'Journal');
+  assert.strictEqual(R.describeSchedule(d.schedule), 'every day at 9:00 PM');
+});
+
 test('routines: ~20 phrasings parse in code, and their wording reads back to the same schedule', () => {
   const cases = [
     ['every morning at 9 tell me my day', 'today', 'every day at 9:00 AM'],
@@ -25,6 +31,7 @@ test('routines: ~20 phrasings parse in code, and their wording reads back to the
     ['every Friday at 5 summarize what I worked on this week', 'weekSummary', 'every Friday at 5:00 PM'],
     ['every Monday check the price of this page', 'priceWatch', 'every Monday at 9:00 AM'],
     ['every night at 10 tell me to sleep 😴', 'notify', 'every day at 10:00 PM'],
+    ['every day @9pm remind me to journal', 'reminder', 'every day at 9:00 PM'],
     ['every day at 12am tell me to take my meds', 'notify', 'every day at 12:00 AM'],
     ['every day at 12pm tell me lunch time', 'notify', 'every day at 12:00 PM'],
     ['every night at 12 remind me to lock the door', 'reminder', 'every day at 12:00 AM'],

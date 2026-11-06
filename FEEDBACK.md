@@ -1355,3 +1355,13 @@ As a user, the worst problem was bill splitting, which comes up at every group d
 Fixed: calc answers "N split K ways" and "split N between K" (keeping the money symbol), "A mod B", "**" as a power, and "squared plus". Cases added in test/brain.test.js.
 
 Left for later: "5 factorial", "double 45", "3 dozen", speed units such as mph and kph, and "split the bill" wording with a tip. `npm test` still shows the 5 WordNet and demo failures that come from skipping the native build in this sandbox.
+
+## 2026-11-06 — routines (eighth pass)
+
+Tried 28 routine phrasings such as "every weekday at 9am summarize my notes", "every day @ 9pm journal", "every month on the 1st pay rent", "evry day at 9am drink water", "every day at 9am and 5pm take pills", "nightly at 10 remind me to lock up" and "every other week on friday report".
+
+As a user, the worst problem was "@" as a time marker. "every day @ 9pm journal" got the right time but the card message read "@ journal". Most other phrasings were read correctly.
+
+Fixed: "@ 9pm" is now read like "at 9pm" in parseSchedule. Tests added in test/routines.test.js and checked to fail before the change.
+
+Left for later: "every last friday of the month" and the typo "evry day" are not understood and go to the model. "every day at 9am and 5pm" is refused on purpose, but the card could say why. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
