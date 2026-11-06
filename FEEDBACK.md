@@ -1455,3 +1455,13 @@ As a user, 30 of them came back as likely vegetarian. A vegetarian would have be
 Fixed: the meat check now knows those dishes and the word "meat" itself ("Meat-free Chili" stays vegetarian). Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: dishes that are often meat but have common vegetarian versions (fajitas, tikka masala, dim sum, gyoza, katsu curry, eggs benedict) and dishes with hidden stock (Pad Thai, risotto, Tom Yum, miso soup) are still called vegetarian when the menu text is silent. A "Vegetarian Pho" is now wrongly called meat. The other `npm test` failures are from the sandbox install without dependencies.
+
+## 2026-11-06 — developer help, error table (ninth pass)
+
+Tried 30 terminal errors such as "command not found: pnpm", EADDRINUSE, ERESOLVE, KeyError, "Permission denied (publickey)", a docker container name conflict, a git pathspec error and an ssh connection timeout.
+
+As a user, the table covered nearly everything. The git "pathspec 'main' did not match any file(s)" error fell through to the model, though it is a common one after cloning or switching branches.
+
+Fixed: added a table entry for the pathspec error with a fetch and branch check. Test added in test/modes.test.js.
+
+Left for later: the docker "container name already in use" error and "ssh ... Connection timed out" still go to the model. The SSH publickey error stays with the model on purpose, an earlier test requires it. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

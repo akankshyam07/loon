@@ -191,6 +191,12 @@ const KNOWN = [
     fix: ['Point the tool at the right CA file (`NODE_EXTRA_CA_CERTS` or `SSL_CERT_FILE`).', 'Do not turn verification off except for a local test server.'],
   },
   {
+    match: /pathspec '[^']*' did not match/,
+    title: 'Git cannot find that branch or file',
+    explain: 'The name you gave to checkout or add is not a local branch, tag or file here.',
+    fix: ['Run `git fetch` and then `git branch -a` to see the names git knows.', 'Check the spelling and the case, since branch names are case sensitive.'],
+  },
+  {
     match: /failed to push some refs/,
     title: 'Git push rejected',
     explain: 'The remote has commits you do not have, so git refused to overwrite them.',

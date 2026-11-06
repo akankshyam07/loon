@@ -163,6 +163,7 @@ test('errors: fingerprint ignores paths/values; known errors answer from the tab
   assert.strictEqual(a.hash, b.hash);
   assert.match(lookupKnown('java.lang.NullPointerException\n at com.x.A.run(A.java:3)'), /NullPointerException \(Java\)[\s\S]*Likely fix/);
   assert.match(lookupKnown('Access to fetch at x has been blocked by CORS policy'), /CORS/);
+  assert.match(lookupKnown("error: pathspec 'main' did not match any file(s) known to git"), /branch or file/);
   assert.strictEqual(lookupKnown('SomethingTotallyNewError: flux capacitor'), null);
   assert.strictEqual(lookupKnown('ValueError: bad input\n  at run (/src/app.js:404:3)'), null, 'a line number is not an HTTP status');
   assert.strictEqual(lookupKnown('Process failed at line 500'), null);
