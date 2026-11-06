@@ -22,14 +22,17 @@ function looseToJson(text) {
   let out = '';
   for (let i = 0; i < text.length; ) {
     const c = text[i];
-    if (c === '"' || c === "'") {
+    if (c === '"' || c === "'" || c === '“' || c === '”') {
+      // Word processors and chat apps turn straight quotes into curly ones, which open and close with either glyph.
+      const curly = c === '“' || c === '”';
+      const closes = (ch) => (curly ? ch === '“' || ch === '”' : ch === c);
       let j = i + 1;
       let body = '';
-      while (j < text.length && text[j] !== c) {
+      while (j < text.length && !closes(text[j])) {
         if (text[j] === '\\' && j + 1 < text.length) body += text[j++];
         body += text[j++];
       }
-      if (c === "'") body = body.replace(/\\'/g, "'").replace(/(^|[^\\])"/g, '$1\\"');
+      if (c !== '"') body = body.replace(/\\'/g, "'").replace(/(^|[^\\])"/g, '$1\\"');
       out += `"${body}"`;
       i = j + 1;
     } else if (text.startsWith('//', i) || text.startsWith('/*', i)) {

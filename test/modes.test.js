@@ -235,6 +235,11 @@ test('JSON → DTO reads Python literals, JSON lines and JSON with prose around 
   assert.throws(() => parseJson('hello world\nnothing here'));
 });
 
+test('JSON → DTO reads curly quotes from word processors and chat apps', () => {
+  assert.deepStrictEqual(parseJson('{“id”: 7, “name”: “it’s Loon”}'), { id: 7, name: 'it’s Loon' });
+  assert.deepStrictEqual(parseJson('{”a”: ”b”}'), { a: 'b' });
+});
+
 test('JSON → DTO keeps the other fields when a value is NaN, Infinity or undefined', () => {
   assert.deepStrictEqual(parseJson('{"a": NaN, "b": -Infinity, "c": Infinity, "d": undefined, "e": 1}'), { a: null, b: null, c: null, d: null, e: 1 });
   assert.deepStrictEqual(parseJson('{"NaN": 1}'), { NaN: 1 });

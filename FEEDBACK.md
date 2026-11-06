@@ -1395,3 +1395,13 @@ As a user, a greeting in front of the intro defeated the earlier fix. "Hi, I'm A
 Fixed: onboardingResult now strips greetings and intro phrases before it filters characters, understands the curly apostrophe, drops a trailing "please" or "thanks", and saves nothing when no name is left. Names that start like an intro (Imani, Itsuki) are kept. Test added in test/personal.test.js, it fails without the change.
 
 Left for later: "peanuts & shellfish" and "dairy/gluten" are still kept as one allergy. "Ada Lovelace (Ada)" becomes "Ada Lovelace Ada". The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-06 — developer help, JSON to DTO (seventh pass)
+
+Tried 16 inputs such as JSON with comments, a BOM, a fenced block, text before the object, JS and Python literals, a curl command, a scalar, an empty string, a 20-digit id and JSON with curly quotes.
+
+As a user, the worst problem was JSON pasted from Notes, Slack or a word processor. Curly quotes (“id”: 1) were refused with a raw parser message, though the content was fine.
+
+Fixed: the loose reader now treats curly double quotes as string delimiters, opening and closing with either glyph. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: a number written as 10.0 still becomes `long` (the decimal is lost when the sample is parsed), and a 20-digit id becomes `double`. An empty paste shows a raw "Unexpected end of JSON input". The 5 failures in `npm test` here are the WordNet and demo ones from the sandbox install.
