@@ -1575,3 +1575,13 @@ As a user, the worst problem was money. `{"price": 10.0}` produced `private long
 Fixed: a decimal written with a zero fraction (10.0, -3.00) is now kept as a decimal before parsing, skipping anything inside quoted strings. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: a 20-digit id still becomes `double`, and exponent numbers like 1e3 become `long`. Empty objects produce an empty class with no note. The 5 failures in `npm test` here are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-07 — food and menu (tenth pass)
+
+Tried a 24 line menu with starters, bowls, a vegan burger, euro prices, a bare price, "Plant-based nuggets, $8", falafel, tom yum, beef pho and "Bacon Cheeseburger + fries", then ran the lightest, protein and vegetarian picks.
+
+As a user, the picks were sensible. Small misses were a dish name that kept a trailing comma, falafel showing no protein, and tom yum (fish sauce, often shrimp) and lard being listed as likely vegetarian.
+
+Fixed: the menu reader drops a trailing comma from the dish name, falafel counts as a protein, and tom yum, lard, Worcestershire and bone broth count as meat. Test added in test/modes.test.js. I tried adding pad thai too, but an existing test treats "Chicken-free Pad Thai" as vegetarian, so I left it.
+
+Left for later: a bare whole-number price ("Caesar Salad 11") is dropped, and protein ranking only counts keywords, so a dish with two proteins beats a bigger single one. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

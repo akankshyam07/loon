@@ -378,3 +378,11 @@ test('grammar fixer leaves code identifiers, stretched words and vowel-less abbr
   }
   assert.ok((await fixGrammar('I recieve it')).fixed.includes('receive'));
 });
+
+test('menu: a trailing comma after the dish name is dropped, and falafel counts as protein, tom yum and lard as not vegetarian', () => {
+  const [item] = food.extractMenu('Plant-based nuggets, $8');
+  assert.strictEqual(item.name, 'Plant-based nuggets');
+  assert.deepStrictEqual(food.score({ name: 'Falafel wrap', description: '' }).proteins, ['falafel']);
+  assert.strictEqual(food.score({ name: 'Tom Yum soup', description: '' }).likelyVegetarian, false);
+  assert.strictEqual(food.score({ name: 'Refried beans cooked in lard', description: '' }).likelyVegetarian, false);
+});
