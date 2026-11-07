@@ -486,3 +486,13 @@ test('"every fortnight" is every 14 days and "until" with an interval is not sil
   assert.strictEqual(R.parseSchedule('every 2 hours until 6pm remind me to drink water', NOW).schedule, null);
   assert.ok(R.parseSchedule('every 2 hours from 9am to 6pm remind me to drink water', NOW).schedule.window);
 });
+
+test('"every 1st" means the date, and "half past 8" is read as a clock time', () => {
+  const m = R.parseRoutine('every 1st of the month pay rent', { now: NOW });
+  assert.strictEqual(m.schedule.monthDay, 1);
+  assert.strictEqual(m.label, 'Pay rent');
+  assert.strictEqual(R.parseSchedule('every 15th remind me to file', NOW).schedule.monthDay, 15);
+  assert.strictEqual(R.parseSchedule('every day at half past 8 tea', NOW).schedule.time, '08:30');
+  assert.strictEqual(R.parseSchedule('every day at quarter to 9 tea', NOW).schedule.time, '08:45');
+  assert.strictEqual(R.parseRoutine('every day at half past 8 tea', { now: NOW }).label, 'Tea');
+});

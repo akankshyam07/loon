@@ -1545,3 +1545,13 @@ As a user, the worst problem was that turning private mode on by voice only work
 Fixed: the privacy and focus toggle templates accept turn, switch, enable, disable and exit wordings. The page summary and shopping templates take "to me", "what's this page", "summarize page" and "which one's the cheapest". Test added in test/voice.test.js.
 
 Left for later: "stop listening", "do not disturb", "un-focus", "make it more casual", "translate to spanish", "explain this code" and "what does this word mean" still go to the model. The 5 failures in `npm test` are the same ones as on main in this sandbox.
+
+## 2026-11-07 — routines (ninth pass)
+
+Tried 30 routine phrasings such as "every 1st of the month pay rent", "every day at half past 8 tea", "every sunday evening plan the week", "every 45 min take a break", "every mon wed fri at 7am gym", "every weekday at 9am except fridays standup" and "todos los días a las 9 beber agua".
+
+As a user, the worst problem was that "every day at half past 8 tea" gave a card at 9:00 AM with the message "Half past 8 tea". The time was wrong and nothing warned about it. "every 1st of the month pay rent" was not understood at all.
+
+Fixed: "half past 8" and "quarter to 9" are read as clock times in parseSchedule, and "every 1st" or "every 15th" now means that date of the month. Test added in test/routines.test.js and checked to fail before the change.
+
+Left for later: "evry day", "every last friday of the month" and Spanish phrasing are not understood. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

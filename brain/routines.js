@@ -46,6 +46,14 @@ function parseTime(raw, part = null) {
   return `${pad(h)}:${pad(min)}`;
 }
 
+// "half past 8" → "8:30", "quarter to 9" → "8:45" (am/pm is decided later, like any bare hour).
+function clockWords(_, size, dir, hour) {
+  const h = Number(hour);
+  const minutes = /^half/i.test(size) ? 30 : 15;
+  if (/^past/i.test(dir)) return `${h}:${pad(minutes)}`;
+  return `${h === 1 ? 12 : h - 1}:${pad(60 - minutes)}`;
+}
+
 function formatTime(time) {
   const [h, m] = hm(time);
   return new Date(2000, 0, 1, h, m).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).replace(/\s/g, ' ');
@@ -76,7 +84,7 @@ const unitMinutes = (u) => (/^h/i.test(u) ? 60 : 1);
 // allowOnce: also accept a plain date ("tomorrow at 9") as a one-off, for the confirm card's When field.
 function parseSchedule(input, now = new Date(), { allowOnce = false } = {}) {
   // "7.30pm" reads as 7:30pm.
-  const state = { text: ` ${String(input).replace(/[()]/g, ' ').replace(/\b(\d{1,2})\.(\d{2})(?=\s*[ap]\.?m\b)/gi, '$1:$2')} ` };
+  const state = { text: ` ${String(input).replace(/[()]/g, ' ').replace(/\b(\d{1,2})\.(\d{2})(?=\s*[ap]\.?m\b)/gi, '$1:$2').replace(/\b(half|quarter) (past|to) (\d{1,2})\b(?!:)/gi, clockWords)} ` };
   const at = now.getTime();
   const done = (schedule) => ({ schedule, rest: tidyRest(state.text) });
 
@@ -90,6 +98,7 @@ function parseSchedule(input, now = new Date(), { allowOnce = false } = {}) {
   const monthDay = take(state, /\b(?:on\s+)?the\s+(\d{1,2})(?:st|nd|rd|th)?\s+of\s+(?:every|each|the)\s+month\b/i)
     || take(state, /\b(?:every|each)\s+month\s+on\s+the\s+(\d{1,2})(?:st|nd|rd|th)?\b/i)
     || take(state, /\bmonthly\s+on\s+the\s+(\d{1,2})(?:st|nd|rd|th)?\b/i)
+    || take(state, /\b(?:every|each)\s+(\d{1,2})(?:st|nd|rd|th)\b(?:\s+of\s+the\s+month)?/i)
     // No day named: today's date, the same way a bare "weekly" means today's weekday. The confirm card shows it.
     || take(state, /\b(?:monthly|(?:every|each)\s+month)\b/i);
   const everyN = take(state, /\bevery\s+(other|second|\d+)\s+days?\b/i);
