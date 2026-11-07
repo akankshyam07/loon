@@ -255,3 +255,14 @@ test('dictionary, synonym and antonym asks accept "definition for" and "X synony
   assert.strictEqual(synonymTerm('happy synonyms'), 'happy');
   assert.strictEqual(antonymTerm('happy antonym'), 'happy');
 });
+
+test('dictionaryTerm accepts "def", "look up" and "tell me" wordings but not pronouns', () => {
+  const { dictionaryTerm } = require('../brain/define');
+  assert.strictEqual(dictionaryTerm('def ephemeral'), 'ephemeral');
+  assert.strictEqual(dictionaryTerm('look up ephemeral'), 'ephemeral');
+  assert.strictEqual(dictionaryTerm('tell me what ephemeral means'), 'ephemeral');
+  assert.strictEqual(dictionaryTerm('tell me the meaning of ephemeral'), 'ephemeral');
+  assert.strictEqual(dictionaryTerm('what ephemeral means'), 'ephemeral');
+  assert.strictEqual(dictionaryTerm('tell me what this means'), null);
+  assert.strictEqual(dictionaryTerm('what it means'), null);
+});

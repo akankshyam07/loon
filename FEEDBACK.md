@@ -1475,3 +1475,13 @@ As a user, the worst problem was that fix grammar changed things that were not m
 Fixed: fixGrammar now skips spelling suggestions for all-caps abbreviations, skips spelling suggestions that only differ by regional convention, and skips expanding initialisms such as ASAP. Real fixes such as "friday" to "Friday" and "a orange" to "an orange" still work. Test added in test/modes.test.js, it fails without the change.
 
 Left for later: "Me and him goes to school" and "I don't no what to do" are not flagged.
+
+## 2026-11-07 — translation and definitions (tenth pass)
+
+Tried 38 typed phrasings such as "def ephemeral", "look up ephemeral", "tell me what ephemeral means", "tell me the meaning of ephemeral", "what ephemeral means", "define: serendipity", "what does ephemeral mean 🤔", "what does it mean" and "what does e.g. mean".
+
+As a user, "def ephemeral", "look up ephemeral" and the "tell me ..." forms skipped the WordNet lookup and went to the model, which is slower and can invent a definition. This was already listed as left for later.
+
+Fixed: dictionaryTerm in brain/define.js accepts "def" and "look up", a "tell me" or "give me" lead-in, "the meaning of X" and "what X means". Pronouns such as "what this means" still go to the model. Test added in test/brain.test.js.
+
+Left for later: "what is ennui", "explain the word X", "what does X mean in simple terms", "how do you spell X" and "meaning of life" (read as the word "life") are unchanged. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
