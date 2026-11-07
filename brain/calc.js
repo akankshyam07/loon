@@ -5,6 +5,7 @@ const UNITS = {
   length: { m: 1, km: 1000, cm: 0.01, mm: 0.001, mi: 1609.344, yd: 0.9144, ft: 0.3048, in: 0.0254 },
   mass: { kg: 1, g: 0.001, mg: 1e-6, lb: 0.45359237, oz: 0.028349523125 },
   volume: { l: 1, ml: 0.001, gal: 3.785411784, qt: 0.946352946, pt: 0.473176473, cup: 0.2365882365, floz: 0.0295735295625, tbsp: 0.01478676478125, tsp: 0.00492892159375 },
+  speed: { mps: 1, kph: 1 / 3.6, mph: 0.44704, kn: 0.514444 },
   time: { sec: 1, min: 60, hr: 3600, day: 86400, wk: 604800, yr: 31536000 },
 };
 const ALIASES = {
@@ -18,6 +19,7 @@ const ALIASES = {
   tsp: 'tsp', teaspoon: 'tsp', teaspoons: 'tsp',
   second: 'sec', seconds: 'sec', sec: 'sec', secs: 'sec', minute: 'min', minutes: 'min', min: 'min', mins: 'min',
   hour: 'hr', hours: 'hr', hr: 'hr', hrs: 'hr', day: 'day', days: 'day', week: 'wk', weeks: 'wk', year: 'yr', years: 'yr',
+  mph: 'mph', kph: 'kph', kmh: 'kph', kmph: 'kph', mps: 'mps', knot: 'kn', knots: 'kn',
   c: 'C', celsius: 'C', f: 'F', fahrenheit: 'F', k: 'K', kelvin: 'K',
 };
 
@@ -92,12 +94,17 @@ function calc(question) {
     .replace(/(\d)\s*minus\s*(?=[\d(])/g, '$1 - ').replace(/(\d)\s*(?:divided by|over)\s*(?=[\d(])/g, '$1/')
     .replace(/(\d)\s*to the power of\s*(?=[\d(])/g, '$1^').replace(/(\d)\s*\*\*\s*(?=[\d(])/g, '$1^')
     .replace(/(\d)\s*mod(?:ulo)?\s*(?=\d)/g, '$1 mod ').replace(/(\d)\s*squared\b/g, '$1^2')
-    .replace(/(\d(?:\^2)?)\s*plus\s*(?=[\d(])/g, '$1+').trim();
+    .replace(/(\d(?:\^2)?)\s*plus\s*(?=[\d(])/g, '$1+')
+    .replace(/^(\d+(?:\.\d+)?)\s+with\s+(?:a\s+)?(\d+(?:\.\d+)?)\s*%\s*tip$/, '$2% tip on $1').trim();
 
   let m = body.match(/^(\d+(?:\.\d+)?)\s*%\s*of\s+(\d+(?:\.\d+)?)$/);
   if (m) return `${cash(m[1] * m[2] / 100)}.`;
 
-  // "tip on 45 at 18%" and "18% tip on 45"
+  // "250 plus 10%" and "250 minus 10%"
+  m = body.match(/^(\d+(?:\.\d+)?)\s*(\+|-|plus|minus)\s*(\d+(?:\.\d+)?)\s*%$/);
+  if (m) return `${cash(m[1] * (1 + (/^(?:\+|plus)$/.test(m[2]) ? 1 : -1) * m[3] / 100))}.`;
+
+  // "tip on 45 at 18%", "18% tip on 45" and "45 with 18% tip"
   m = body.match(/^(?:(?:a|the)\s+)?(?:(\d+(?:\.\d+)?)\s*%\s*)?tip\s+(?:on|for)\s+(\d+(?:\.\d+)?)(?:\s+at\s+(\d+(?:\.\d+)?)\s*%)?$/);
   if (m && (m[1] || m[3])) {
     const [bill, tip] = [parseFloat(m[2]), m[2] * (m[1] || m[3]) / 100];
@@ -128,7 +135,7 @@ function calc(question) {
   m = body.match(/^(half|a third|a quarter|one third|one quarter) of (\d+(?:\.\d+)?)$/);
   if (m) return `${cash(m[2] / { half: 2, 'a third': 3, 'one third': 3, 'a quarter': 4, 'one quarter': 4 }[m[1]])}.`;
 
-  m = body.match(/^(?:sqrt\s*\(?|square root of\s+)(\d+(?:\.\d+)?)\)?$/);
+  m = body.match(/^(?:sqrt\s*\(?|sqrt of\s+|square root of\s+)(\d+(?:\.\d+)?)\)?$/);
   if (m) return `√${m[1]} = ${fmt(Math.sqrt(m[1]))}`;
 
   m = body.match(/^(\d+(?:\.\d+)?)\s*cubed$/);

@@ -1515,3 +1515,13 @@ As a user, "remind me about the 5pm meeting at 4:30" set the reminder for 5pm an
 Fixed: when a sentence holds two times, extractWhen now prefers the one introduced by at, on, by, in or for. Focus accepts decimal lengths and rounds to whole minutes. Test added in test/assistant.test.js.
 
 Left for later: "remindme to…" and "cancel timer" are not matched. "remind me every day…" and "end of day" produce a reminder with no time and the phrase in the title, which should ask or say it is not recurring. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install and also fail on a clean checkout.
+
+## 2026-11-07 — typed questions, math and conversions (eighth pass)
+
+Tried 40 inputs such as "sqrt of 144", "$80 with 18% tip", "250 minus 10%", "60 mph in kph", "5 factorial", "3 dozen", "1 gb in mb" and "100 usd in eur".
+
+As a user, the worst problems were everyday shop and road maths going to the language model. "250 minus 10%" and "$80 with 18% tip" fell through, as did speed units and "sqrt of 144" when "square root of 144" worked.
+
+Fixed: calc now answers "N plus/minus P%", "N with P% tip", "sqrt of N" and speed conversions (mph, kph, kmh, mps, knots). Cases added to the ladder test in test/brain.test.js and checked to fail before the change.
+
+Left for later: factorials, "3 dozen", data sizes such as gb and mb, and currency (needs live rates, so the cat should say it cannot know them). `npm test` still shows the 5 WordNet and demo failures from the sandbox install.
