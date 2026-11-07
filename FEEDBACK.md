@@ -1525,3 +1525,13 @@ As a user, the worst problems were everyday shop and road maths going to the lan
 Fixed: calc now answers "N plus/minus P%", "N with P% tip", "sqrt of N" and speed conversions (mph, kph, kmh, mps, knots). Cases added to the ladder test in test/brain.test.js and checked to fail before the change.
 
 Left for later: factorials, "3 dozen", data sizes such as gb and mb, and currency (needs live rates, so the cat should say it cannot know them). `npm test` still shows the 5 WordNet and demo failures from the sandbox install.
+
+## 2026-11-07 — open and launch commands (first pass)
+
+Tried 32 phrasings such as "open the calculator", "open the notes app", "launch chrome", "open Node.js", "open file.txt", "open v1.2", "open it", "open that link", "open localhost:3000" and "open reddit.com/r/cats".
+
+As a user, "open the calculator" asked macOS for an app called "the calculator", which does not exist. "launch chrome" did nothing. "open file.txt" and "open Node.js" would have opened a made-up website, and "open it" tried to launch an app named "it".
+
+Fixed: "the" and a trailing "app" are dropped from app names, "launch" works like "open", file names and version numbers are no longer treated as web addresses, and "open it" or "open that link" fall through to the chat. Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: "open youtube and search cats" still tries to open an app with that whole name, and "open localhost:3000" is treated as an app. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

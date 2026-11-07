@@ -34,6 +34,12 @@ test('commands: reminders, events, open, find, notes, memory; questions fall thr
   assert.deepStrictEqual([event.action, event.title, event.start.getDay(), event.start.getHours()], ['event', 'meeting with Sam', 2, 10]);
   assert.deepStrictEqual(parseCommand('open github.com', NOW), { action: 'open', target: 'https://github.com', kind: 'url' });
   assert.deepStrictEqual(parseCommand('open Spotify', NOW), { action: 'open', target: 'Spotify', kind: 'app' });
+  // App names lose "the" and "app", file names are not websites, and "open it" has nothing to open.
+  assert.deepStrictEqual(parseCommand('open the Calculator app', NOW), { action: 'open', target: 'Calculator', kind: 'app' });
+  assert.deepStrictEqual(parseCommand('launch chrome', NOW), { action: 'open', target: 'chrome', kind: 'app' });
+  assert.deepStrictEqual(parseCommand('open notes.txt', NOW), { action: 'open', target: 'notes.txt', kind: 'app' });
+  assert.deepStrictEqual(parseCommand('open reddit.com/r/cats', NOW), { action: 'open', target: 'https://reddit.com/r/cats', kind: 'url' });
+  assert.strictEqual(parseCommand('open that link', NOW), null);
   assert.deepStrictEqual(parseCommand('find my resume', NOW), { action: 'find', query: 'resume' });
   assert.deepStrictEqual(parseCommand('note: buy cat food', NOW), { action: 'note', text: 'buy cat food' });
   assert.deepStrictEqual(parseCommand('remember that I am vegetarian', NOW), { action: 'remember', text: 'I am vegetarian' });
