@@ -1485,3 +1485,13 @@ As a user, "def ephemeral", "look up ephemeral" and the "tell me ..." forms skip
 Fixed: dictionaryTerm in brain/define.js accepts "def" and "look up", a "tell me" or "give me" lead-in, "the meaning of X" and "what X means". Pronouns such as "what this means" still go to the model. Test added in test/brain.test.js.
 
 Left for later: "what is ennui", "explain the word X", "what does X mean in simple terms", "how do you spell X" and "meaning of life" (read as the word "life") are unchanged. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-07 — page kinds (eighth pass)
+
+Tried 17 pages such as passcode, pin, pwd and security code fields, web.whatsapp.com, a pharmacy path, German, French and Spanish shop buttons, a look-alike mail host and German and Indian bank hosts.
+
+As a user, the worst problem was privacy. A form with a passcode, pin or plain text "pwd" field, or a card form whose field is called security code, was treated as an ordinary page. WhatsApp Web, which shows private chats, was also ordinary. Shops with "In den Warenkorb" or "Ajouter au panier" buttons were not seen as shopping.
+
+Fixed: those field names now make a page sensitive (short names match exactly), WhatsApp Web, Telegram Web, Signal, Sparkasse and Axis Bank hosts are sensitive, and the buy signal knows German, French, Spanish and Italian cart buttons. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: walgreens.com/pharmacy paths, a field called routing or ssn4, and api_secret fields are still not caught. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

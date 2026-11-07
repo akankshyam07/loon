@@ -105,6 +105,13 @@ test('page kinds: sensitive wins, shops and articles are recognized', async () =
   assert.strictEqual(page('<form><input name="ssn"><input name="dob"></form>').kind, 'sensitive');
   assert.strictEqual(page('<form><input name="routing_number"><input name="account_number"></form>').kind, 'sensitive');
   assert.notStrictEqual(page('<form><input name="classname"></form>').kind, 'sensitive');
+  assert.strictEqual(page('<form><input name="passcode"></form>').kind, 'sensitive');
+  assert.strictEqual(page('<form><input type="text" name="pwd"></form>').kind, 'sensitive');
+  assert.strictEqual(page('<form><input id="security-code"></form>').kind, 'sensitive');
+  assert.strictEqual(page('<p>chat</p>', 'https://web.whatsapp.com/').kind, 'sensitive');
+  const prices = '<p>$3.99</p><p>$4.99</p><p>$5.99</p>';
+  assert.strictEqual(page(`${prices}<button>In den Warenkorb</button>`).kind, 'shopping');
+  assert.strictEqual(page(`${prices}<button>Ajouter au panier</button>`).kind, 'shopping');
   assert.strictEqual(page('<p>hi</p>', 'https://www.chase.com/login').sensitive, true);
   for (const url of ['https://www.hsbc.com/', 'https://secure.login.gov/', 'https://mychart.stanfordhealthcare.org/']) {
     assert.strictEqual(page('<p>hi</p>', url).sensitive, true, url);

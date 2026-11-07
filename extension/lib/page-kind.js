@@ -14,7 +14,7 @@
     'myaccount.google.com', 'signin.aws.amazon.com',
     'tiaa.org', 'ameriprise.com', 'merrilledge.com', 'edwardjones.com', 'login.yahoo.com', 'account.proton.me',
     'accounts.intuit.com', 'turbotax.intuit.com', 'dashboard.stripe.com', 'cash.app',
-    'td.com', 'rbc.com', 'santander.co.uk', 'sbi.co.in', 'onlinesbi.sbi', 'zerodha.com', 'hmrc.gov.uk', 'tax.service.gov.uk',
+    'td.com', 'rbc.com', 'santander.co.uk', 'sbi.co.in', 'sparkasse.de', 'axisbank.com', 'web.whatsapp.com', 'web.telegram.org', 'app.signal.org', 'onlinesbi.sbi', 'zerodha.com', 'hmrc.gov.uk', 'tax.service.gov.uk',
     'cigna.com', 'aetna.com', 'bcbs.com', 'healthequity.com',
   ];
   // Country sites of the same banks (wellsfargo.com.au, hsbc.co.uk, chase.co.uk); a look-alike such as
@@ -74,9 +74,9 @@
   function detectPage(doc, location) {
     const host = location.hostname.replace(/^www\./, '');
     const passwordField = doc.querySelector('input[type="password" i], input[autocomplete="current-password"], input[autocomplete="one-time-code"]');
-    const cardField = doc.querySelector('input[autocomplete^="cc-"], input[name*="card" i][inputmode="numeric"], input[name*="cardnumber" i], input[name*="card-number" i], input[name*="card_number" i], input[name*="cvv" i], input[name*="cvc" i]');
+    const cardField = doc.querySelector('input[autocomplete^="cc-"], input[name*="card" i][inputmode="numeric"], input[name*="cardnumber" i], input[name*="card-number" i], input[name*="card_number" i], input[name*="cvv" i], input[name*="cvc" i], input[name*="security_code" i], input[name*="security-code" i], input[name*="securitycode" i], input[id*="security-code" i]');
     // Exact names for short ones: a substring "ssn" would also match "classname".
-    const idField = doc.querySelector('input:is([name="ssn" i], [id="ssn" i], [name="iban" i], [id="iban" i], [name*="social_security" i], [name*="social-security" i], [name*="socialsecurity" i], [name*="routing_number" i], [name*="routing-number" i], [name*="routingnumber" i], [name*="account_number" i], [name*="account-number" i], [name*="accountnumber" i])');
+    const idField = doc.querySelector('input:is([name="ssn" i], [id="ssn" i], [name="iban" i], [id="iban" i], [name="pin" i], [id="pin" i], [name="pwd" i], [id="pwd" i], [name*="passcode" i], [id*="passcode" i], [name*="social_security" i], [name*="social-security" i], [name*="socialsecurity" i], [name*="routing_number" i], [name*="routing-number" i], [name*="routingnumber" i], [name*="account_number" i], [name*="account-number" i], [name*="accountnumber" i])');
     if (hostMatches(host, SENSITIVE_DOMAINS) || SENSITIVE_BRANDS.test(host) || SENSITIVE_LABELS.test(host) || passwordField || cardField || idField) {
       return { kind: 'sensitive', sensitive: true, reason: passwordField ? 'password field' : cardField ? 'card field' : idField ? 'identity or bank field' : 'sensitive site' };
     }
@@ -86,7 +86,7 @@
     const types = jsonLdTypes(doc);
     const prices = body.match(PRICE) || [];
     // No leading \b: sites often render "$9.99Add to cart" with no space between price and button.
-    const buyText = /(add to (cart|bag|basket)|buy now|checkout)\b/i.test(body);
+    const buyText = /(add to (cart|bag|basket)|buy now|checkout|in den warenkorb|ajouter au panier|a[ñn]adir al carrito|aggiungi al carrello)\b/i.test(body);
     const foodWords = new Set((body.match(FOOD_WORDS) || []).map((w) => w.toLowerCase()));
     const { grade, avgSentence, words } = readability(text);
     const dense = words > 300 && (grade > 12 || avgSentence > 25);
