@@ -1555,3 +1555,13 @@ As a user, the worst problem was that "every day at half past 8 tea" gave a card
 Fixed: "half past 8" and "quarter to 9" are read as clock times in parseSchedule, and "every 1st" or "every 15th" now means that date of the month. Test added in test/routines.test.js and checked to fail before the change.
 
 Left for later: "evry day", "every last friday of the month" and Spanish phrasing are not understood. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-07 — follow-up conversations (eighth pass)
+
+Tried 60 inputs inside an open thread such as "ok", "why?", "double it", "thanks for that", "thanks a bunch", "much appreciated", "appreciate it", "that helped, thanks", "tell me more" and "what about udp?".
+
+As a user, the worst problem was that polite closers went to the model. "thanks for the help" and "appreciate it" cost a full model call and came back as a long reply, while "thanks!" was instant.
+
+Fixed: the thanks reply also matches "thanks for that/this/the help/helping", "a bunch", "appreciate it", "much appreciated" and a leading "that helped". Thanks followed by a real request still goes to the model. Cases added in test/brain.test.js and checked to fail before the change.
+
+Left for later: "nice one", "good kitty", "love it" and "you are great" go to the model, and "10% of that" or "double it" depend on the model reading the previous answer. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

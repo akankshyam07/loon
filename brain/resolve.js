@@ -76,7 +76,7 @@ const CODE_ANSWERS = [
     answer: () => ({ mood: 'happy', text: 'Hi! Highlight something, or ask me anything.' }),
   },
   {
-    match: /^(?:(?:ok|okay|great|perfect|cool|awesome|nice|got it|gotcha|makes sense)[ ,]+)?(?:(?:many )?thanks|thank you|thank u|thankyou|thx|thnx|thanx|tysm|tyvm|ty|cheers)(?:[ ,]+(?:a lot|a ton|so much|very much|again|kindly|mate|that helps|that helped|loon))*$/,
+    match: /^(?:(?:ok|okay|great|perfect|cool|awesome|nice|got it|gotcha|makes sense|that helped)[ ,]+)?(?:(?:many )?thanks|thank you|thank u|thankyou|thx|thnx|thanx|tysm|tyvm|ty|cheers|(?:much )?appreciated?(?: it)?)(?:[ ,]+(?:a lot|a ton|a bunch|so much|very much|again|kindly|mate|that helps|that helped|loon|for (?:that|this|the (?:help|answer|explanation)|your help|helping|explaining)))*$/,
     answer: () => ({ mood: 'happy', text: 'Anytime. *purrs*' }),
   },
   {
