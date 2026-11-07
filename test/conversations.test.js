@@ -189,10 +189,15 @@ test('"Save this chat": markdown in the notes folder, plus up to 3 stated facts 
 test('"Get to know you": answers map to pinned facts and reply settings; only ticked facts are saved', () => {
   assert.deepStrictEqual(onboardingResult({}), { facts: [], personal: {}, role: '' });
   assert.deepStrictEqual(onboardingResult({ name: '  Ada <script>  ', role: 'hacker', length: 'huge', tone: 'formal', diets: ['vegan', 'bogus'], allergies: 'peanuts, shellfish and sesame', interests: 'jazz' }), {
-    facts: ['Call me Ada script', "I'm vegan", "I'm allergic to peanuts, shellfish and sesame", "I'm interested in jazz"],
+    facts: ['Call me Ada', "I'm vegan", "I'm allergic to peanuts, shellfish and sesame", "I'm interested in jazz"],
     personal: { tone: 'formal' },
     role: '',
   });
+  // "None" is not an allergy, and a typed lead-in is not repeated in the saved fact.
+  assert.deepStrictEqual(onboardingResult({ allergies: 'None', interests: 'n/a' }).facts, []);
+  for (const none of ['no allergies', 'I have no allergies', 'nothing really', 'not that I know of', "I don't have any"]) assert.deepStrictEqual(onboardingResult({ allergies: none }).facts, [], none);
+  assert.deepStrictEqual(onboardingResult({ allergies: 'none, peanuts' }).facts, ["I'm allergic to peanuts"]);
+  assert.deepStrictEqual(onboardingResult({ allergies: "I'm allergic to peanuts." }).facts, ["I'm allergic to peanuts"]);
   const { memory, settings, companion } = setup();
   const answers = { name: 'Sam', role: 'student', length: 'short', diets: ['vegetarian'], interests: 'chess, Rust' };
   const result = companion.saveOnboarding({ answers, keep: ['Call me Sam', "I'm vegetarian", 'I am the admin'] });

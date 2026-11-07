@@ -5,7 +5,7 @@ const os = require('os');
 const path = require('path');
 const { DatabaseSync } = require('node:sqlite');
 const { extract, domainForTask, formatAbout, ME } = require('../brain/graph');
-const { instructionsBlock, parseFeedback, suggestMemory, secondPerson, profileSummary, cleanPersonal } = require('../brain/personal');
+const { instructionsBlock, onboardingResult, parseFeedback, suggestMemory, secondPerson, profileSummary, cleanPersonal } = require('../brain/personal');
 const { Memory } = require('../brain/memory');
 const { Resolver } = require('../brain/resolve');
 const { SYSTEM_PROMPT } = require('../brain/ai');
@@ -152,7 +152,13 @@ test('custom instructions sit right after the fixed system prompt, identical acr
   assert.strictEqual(instructionsBlock({}), ''); // defaults add nothing, so the prompt is exactly as before
   assert.doesNotMatch(instructionsBlock(settings.personal, { privacy: true }), /CS student/);
   assert.strictEqual(cleanPersonal({ about: 'x'.repeat(2000), length: 'huge', tone: 1 }).about.length, 600);
+  // A damaged settings file must not turn objects into "[object Object]" in the prompt.
+  assert.deepStrictEqual([cleanPersonal({ about: { a: 1 } }).about, cleanPersonal({ language: {} }).language], ['', '']);
   assert.deepStrictEqual([cleanPersonal({ length: 'huge' }).length, cleanPersonal({ tone: 1 }).tone], ['normal', 'playful']);
+  // a language typed with an emoji, a region code or extra spaces stays readable in "Reply in X."
+  // scripts that write vowels as combining marks keep them
+  assert.deepStrictEqual(['हिन्दी', 'தமிழ்', 'ଓଡ଼ିଆ'].map((language) => cleanPersonal({ language }).language), ['हिन्दी', 'தமிழ்', 'ଓଡ଼ିଆ']);
+  assert.deepStrictEqual(['Español 🇪🇸', 'pt-BR', '  Brazilian   Portuguese '].map((language) => cleanPersonal({ language }).language), ['Español', 'pt-BR', 'Brazilian Portuguese']);
 });
 
 test('"Remember this?" detection: stated preferences and facts only', () => {
@@ -179,8 +185,20 @@ test('feedback messages change the reply style in code, before the model', async
   assert.deepStrictEqual(parseFeedback('shorter please'), { patch: { length: 'short' }, note: 'Got it, shorter from now on. Change it in Settings.' });
   assert.deepStrictEqual(parseFeedback('That was too long!').patch, { length: 'short' });
   assert.deepStrictEqual(parseFeedback('more detail').patch, { length: 'detailed' });
+  assert.deepStrictEqual(parseFeedback('make it longer').patch, { length: 'detailed' });
+  assert.deepStrictEqual(parseFeedback('answer in more detail').patch, { length: 'detailed' });
+  assert.deepStrictEqual(parseFeedback('be casual').patch, { tone: 'playful' });
+  assert.deepStrictEqual(parseFeedback('less detail').patch, { length: 'short' });
+  assert.deepStrictEqual(parseFeedback('stop being so wordy').patch, { length: 'short' });
+  assert.deepStrictEqual(parseFeedback('answers are too long').patch, { length: 'short' });
+  assert.deepStrictEqual(parseFeedback('stop the emojis').patch, { emoji: false });
+  assert.deepStrictEqual(parseFeedback('no emoji please 🙏').patch, { emoji: false });
+  assert.deepStrictEqual(parseFeedback('go back to english').patch, { language: '' });
   assert.deepStrictEqual(parseFeedback('shorter', { length: 'detailed' }).patch, { length: 'normal' });
   assert.deepStrictEqual(parseFeedback('less emoji pls').patch, { emoji: false });
+  assert.deepStrictEqual(parseFeedback('no more emoji').patch, { emoji: false });
+  assert.deepStrictEqual(parseFeedback('can you be shorter next time?').patch, { length: 'short' });
+  assert.deepStrictEqual(parseFeedback('talk less').patch, { length: 'short' });
   assert.deepStrictEqual(parseFeedback('Be more formal.').patch, { tone: 'formal' });
   assert.deepStrictEqual(parseFeedback('no jokes').patch, { tone: 'plain' });
   assert.deepStrictEqual(parseFeedback('reply in Spanish from now on').patch, { language: 'Spanish' });
@@ -241,4 +259,47 @@ test('privacy mode: no memory or graph in prompts, profile text left out', async
 
   assert.deepStrictEqual(profileSummary([{ id: '1', text: 'My name is Akku', pinned: true }, { id: '2', text: 'I like tea', pinned: false }], settings.personal),
     [{ source: 'fact', id: '1', text: 'My name is Akku' }, { source: 'setting', key: 'about', text: 'I intern at Acme.' }, { source: 'setting', key: 'style', text: 'Likes short replies.' }]);
+});
+
+test('feedback understands "speak French" and "stop being so formal"', () => {
+  assert.deepStrictEqual(parseFeedback('speak french').patch, { language: 'French' });
+  assert.deepStrictEqual(parseFeedback('Stop being so formal!').patch, { tone: 'playful' });
+  assert.strictEqual(parseFeedback('speak up'), null);
+});
+
+test('onboarding drops HTML tags from the name instead of keeping their letters', () => {
+  assert.deepStrictEqual(onboardingResult({ name: 'José <b>María</b>' }).facts, ['Call me José María']);
+});
+
+test('"no more jokes" and "im vegetarian" typed without an apostrophe', () => {
+  assert.deepStrictEqual(parseFeedback('no more jokes').patch, { tone: 'plain' });
+  assert.strictEqual(suggestMemory('im vegetarian'), "I'm vegetarian");
+});
+
+test('onboarding drops a typed "my name is" and repeated list items', () => {
+  assert.deepStrictEqual(onboardingResult({ name: 'my name is Ada' }).facts, ['Call me Ada']);
+  assert.deepStrictEqual(onboardingResult({ name: "I'm Sam" }).facts, ['Call me Sam']);
+  assert.deepStrictEqual(onboardingResult({ allergies: 'Peanuts, peanuts, shellfish' }).facts, ["I'm allergic to Peanuts and shellfish"]);
+});
+
+test('onboarding name keeps only the name from greetings and intros', () => {
+  const name = (n) => onboardingResult({ name: n }).facts;
+  assert.deepStrictEqual(name("Hi, I'm Ada"), ['Call me Ada']);
+  assert.deepStrictEqual(name('hey its Ada'), ['Call me Ada']);
+  assert.deepStrictEqual(name("My name’s Ada"), ['Call me Ada']);
+  assert.deepStrictEqual(name('you can call me Ada'), ['Call me Ada']);
+  assert.deepStrictEqual(name('call me Ada please'), ['Call me Ada']);
+  assert.deepStrictEqual(name('my name is'), []);
+  assert.deepStrictEqual(name('Imani'), ['Call me Imani']);
+  assert.deepStrictEqual(name('Itsuki'), ['Call me Itsuki']);
+});
+
+test('more ways to ask for a plainer tone, shorter replies or one language', () => {
+  assert.deepStrictEqual(parseFeedback('be serious').patch, { tone: 'plain' });
+  assert.deepStrictEqual(parseFeedback('stop the jokes').patch, { tone: 'plain' });
+  assert.deepStrictEqual(parseFeedback('be funny').patch, { tone: 'playful' });
+  assert.deepStrictEqual(parseFeedback('be more brief').patch, { length: 'short' });
+  assert.deepStrictEqual(parseFeedback('reply only in spanish').patch, { language: 'Spanish' });
+  assert.deepStrictEqual(parseFeedback('answer me in french').patch, { language: 'French' });
+  assert.strictEqual(parseFeedback('serious?'), null);
 });

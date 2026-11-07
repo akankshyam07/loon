@@ -3,8 +3,13 @@
 const chrono = require('chrono-node');
 
 // Pulls the first date/time phrase out of text: { date, text-without-it } or { date: null }.
-function extractWhen(text, now = new Date()) {
-  const [found] = chrono.parse(text, now, { forwardDate: true });
+function extractWhen(text, now = new Date(), { morning = false } = {}) {
+  text = dayOfMonth(text, now)
+    .replace(/\b(\d+) and a half (hour|minute|day|week)/gi, '$1.5 $2')
+    .replace(/\ban? (hour|minute|day|week) and a half\b/gi, '1.5 $1s');
+  // "the 5pm meeting at 4:30" holds two times; the one after a preposition is the reminder time.
+  const parsed = chrono.parse(text, now, { forwardDate: true });
+  const found = parsed.find((r) => /^(?:at|on|by|in|for)\s/i.test(r.text) || /\b(?:at|on|by|in|for)\s+$/i.test(text.slice(0, r.index))) || parsed[0];
   if (!found) return { date: null, rest: text.trim() };
   const rest = (text.slice(0, found.index) + text.slice(found.index + found.text.length))
     .replace(/\s+(at|on|by|for|in)\s*$/i, '')
@@ -15,7 +20,8 @@ function extractWhen(text, now = new Date()) {
   const DAY = 24 * 60 * 60 * 1000;
   // "at 5" with no am/pm means 5pm, the next sensible waking-hours time. chrono may already have pushed 5am to
   // tomorrow, so after switching to pm, pull it back to today if today's 5pm is still ahead.
-  if (!found.start.isCertain('meridiem') && found.start.isCertain('hour') && date.getHours() < 7) {
+  // An alarm for "6:45" is never 6:45pm, so alarms skip this, and neither is "midnight".
+  if (!morning && !/midnight/i.test(found.text) && !found.start.isCertain('meridiem') && found.start.isCertain('hour') && date.getHours() < 7) {
     date.setHours(date.getHours() + 12);
     if (!found.start.isCertain('day') && date.getTime() - DAY > now.getTime()) date.setTime(date.getTime() - DAY);
   }
@@ -23,6 +29,19 @@ function extractWhen(text, now = new Date()) {
   if (/morning/i.test(found.text) && !found.start.isCertain('hour')) date.setHours(9, 0, 0, 0);
   if (date < now && !found.start.isCertain('day')) date.setTime(date.getTime() + DAY);
   return { date, rest, end: found.end ? found.end.date() : null };
+}
+
+// chrono does not read "on the 1st" or "the 15th"; rewrite it to the next such day as "Nov 1".
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function dayOfMonth(text, now) {
+  return text.replace(/\b(?:on )?the (\d{1,2})(?:st|nd|rd|th)\b/i, (all, d) => {
+    const day = Number(d);
+    for (let i = 0; i < 13 && day >= 1; i++) {
+      const c = new Date(now.getFullYear(), now.getMonth() + i, day);
+      if (c.getDate() === day && (i > 0 || day >= now.getDate())) return `${MONTHS[c.getMonth()]} ${day}`;
+    }
+    return all;
+  });
 }
 
 const tidy = (s) => s.replace(/^[\s,:-]+|[\s,.!?]+$/g, '');
@@ -40,11 +59,32 @@ function normalizeSpoken(text) {
 }
 
 function parseCommand(input, now = new Date()) {
-  const text = input.trim();
+  // Politeness doesn't change the command: "please remind me…", "can you open Spotify", "…, thanks".
+  const text = input.trim()
+    .replace(/^(?:(?:hey|ok|okay) )?(?:loon[,\s]+)?(?:(?:please|pls|plz|can you|could you|would you|will you)\s+)+/i, '')
+    .replace(/[,\s]+(?:please|pls|plz|thanks|thank you)[.!?]*$/i, '')
+    .trim();
   let m;
+  // Loon has no alarm clock of its own. Timers, alarms and "wake me" become Reminders, which the confirm card names.
+  if ((m = text.match(/^(?:set |start )?(?:an? )?(?:timer|countdown)(?: for| of)? (?:in )?(.+)$/i)) || (m = text.match(/^(?:set |start )?(?:an? )?(.+?)[\s-]timer(?: for (.+))?$/i))) {
+    // "timer 1h30" and "timer 5" (minutes) are how people type it.
+    const length = m[1].replace(/^in /i, '').replace(/^(\d+)h(?:ours?|rs?)?\s*(\d+)(?:m(?:ins?)?)?$/i, '$1 hours $2 minutes').replace(/^(\d+)$/, '$1 minutes');
+    const { date } = extractWhen(`in ${length}`, now);
+    return date ? { action: 'reminder', title: m[2] ? `Timer is up for ${tidy(m[2])}` : 'Timer is up', when: date } : null;
+  }
+  if ((m = text.match(/^(?:set (?:an? )?alarm(?: for| at)?|wake me(?: up)?) (.+)$/i))) {
+    const { date } = extractWhen(m[1], now, { morning: true });
+    return date ? { action: 'reminder', title: 'Wake up', when: date } : null;
+  }
+  if ((m = text.match(/^(?:(?:set|create|add|make)(?: me)? (?:an? )?)?reminder(?: for| to| about|:)?\s+(.+)$/i))) return parseCommand(`remind me ${m[1]}`, now);
+  // "remind me what I asked" wants the history, not a reminder titled "what I asked".
+  if (/^remind me (?:of )?what i (?:asked|searched(?: for)?|looked up)(?: you)?\??$/i.test(text)) return { action: 'recall', query: '' };
   if ((m = text.match(/^remind me (?:to |about )?(.+)$/i))) {
     const { date, rest } = extractWhen(m[1], now);
-    return { action: 'reminder', title: tidy(rest) || tidy(m[1]), when: date };
+    // "remind me tomorrow to buy milk" and "next friday about the dentist" leave the "to"/"about" in front of the task.
+    // "remind me on friday" has no task; a reminder titled "on friday" would be noise.
+    const title = tidy(rest.replace(/^(?:to|about)\s+/i, '')) || (date ? 'Reminder' : tidy(m[1]));
+    return /^(?:to|about)$/i.test(title) ? null : { action: 'reminder', title, when: date };
   }
   if ((m = text.match(/^(?:add|create|schedule|put|book) (?:an? )?(.+)$/i))) {
     const { date, rest, end } = extractWhen(m[1], now);
@@ -53,35 +93,62 @@ function parseCommand(input, now = new Date()) {
       return { action: 'event', title: title || 'Event', start: date, end: end || new Date(date.getTime() + 60 * 60 * 1000) };
     }
   }
-  if ((m = text.match(/^open (.+)$/i))) {
-    const target = tidy(m[1]);
-    const isUrl = /^(https?:\/\/)?[\w-]+(\.[\w-]+)+(\/\S*)?$/i.test(target);
+  if (/^(?:(?:show|open|pull up)(?: me)? )?(?:my )?(?:(?:recent|past|previous) (?:questions|searches|lookups|history)|history|recent activity)\??$/i.test(text) || /^(?:(?:what(?:'?s| is| was| were| are)?|show me|show|pull up) )?(?:my (?:(?:last|latest|recent|previous)(?: \d+)? )?|(?:last|latest|recent|previous)(?: \d+)? )(?:questions?|searches|lookups?|history)\??$/i.test(text) || /^(?:what(?:'?s| is| was) )?(?:my |the )?(?:last|latest|previous) (?:thing i (?:asked(?: you)?|searched(?: for)?|looked up)|search|question|lookup)\??$/i.test(text) || /^(?:show me |tell me )?what (?:(?:have|did) )?i (?:been )?(?:ask(?:ed)?|asking|look(?:ed|ing)? up|search(?:ed|ing)?|google[d]?|googling)(?: you| for)*(?: (?:so far|lately|recently|earlier|today|yesterday|last (?:week|month|time)))?\??$/i.test(text) || /^what (?:did|have) we (?:talk(?:ed)?|chat(?:ted)?) about(?: (?:today|yesterday|earlier|lately|recently))?\??$/i.test(text)) return { action: 'recall', query: '' };
+  if ((m = text.match(/^(?:open|launch) (.+)$/i))) {
+    // "the Calculator app" is a name macOS doesn't know. Files like "notes.txt" and "Node.js" are not websites.
+    const target = tidy(m[1]).replace(/^the /i, '').replace(/ app$/i, '');
+    if (!target || /^(?:it|that|this|them)(?: \w+)?$/i.test(target)) return null;
+    const isUrl = /^(https?:\/\/)?[\w-]+(\.[\w-]+)+(\/\S*)?$/i.test(target) && (/^https?:|\/|^www\./i.test(target) || !/\.(?:js|ts|txt|md|py|json|java|pdf|png|jpe?g|csv|zip|docx?|xlsx?|html?)$|^v?\d+(?:\.\d+)+$/i.test(target) || /^\d+(?:\.\d+){3}$/.test(target));
     return { action: 'open', target: isUrl && !/^https?:/i.test(target) ? `https://${target}` : target, kind: isUrl ? 'url' : 'app' };
   }
-  if ((m = text.match(/^(?:find|search for|look for|where is|where's)(?: my)? (.+?)(?: files?)?\??$/i))) {
+  if ((m = text.match(/^(?:(?:search|look (?:through|in)|find in|pull up)(?: my)? history(?: for)?|(?:(?:show|pull up)(?: me)? )?(?:my )?history (?:for|on|about)) (.+?)\??$/i)) || (m = text.match(/^(?:find|search for|look for) (.+?) in (?:my )?history\??$/i))) return { action: 'recall', query: recallQuery(m[1]) };
+  if (!/^find my (?:question|search)\b/i.test(text) && (m = text.match(/^(?:find|search for|look for|where is|where's)(?: my)? (.+?)(?: files?)?\??$/i))) {
     return { action: 'find', query: tidy(m[1]) };
   }
   if ((m = text.match(/^(?:where did i leave off|what was i (?:working on|doing)|catch me up)(?: (?:in|on|with) (.+?))?\??$/i))) {
     return { action: 'briefing', project: m[1] ? tidy(m[1]) : null };
   }
   if (/^(?:show |list )?my projects\??$/i.test(text)) return { action: 'briefing', project: null };
-  if (/^what do you (?:know|remember) about me\??$/i.test(text)) return { action: 'recall', facts: true };
+  if (/^what do you (?:know|remember) about me\??$/i.test(text) || /^(?:what(?:'?s| is) (?:in|saved in|stored in) (?:your|my) memor(?:y|ies)|(?:show|list|open) (?:me )?(?:my |your )?(?:memory|memories|saved facts)|what (?:have|did) you (?:saved?|stored?|remembered?)(?: about me)?)\??$/i.test(text)) return { action: 'recall', facts: true };
   if ((m = text.match(/^what do you (?:know|remember) about (?:my |the )?(.+?)\??$/i))) return { action: 'recall', about: tidy(m[1]) };
   if (/^what (?:did|have) i (?:ask(?:ed)?|look(?:ed)? up|search(?:ed)?(?: for)?|do(?:ne)?) (?:today|recently|lately)\??$/i.test(text)) return { action: 'recall', query: '' };
   if ((m = text.match(/^(?:what did i (?:ask|look up|search(?: for)?|read|learn|find out)|when did i (?:ask|look up|read)|find my (?:question|search)) (?:about |on |for )?(.+?)\??$/i))) {
-    return { action: 'recall', query: tidy(m[1]) };
+    return { action: 'recall', query: recallQuery(m[1]) };
+  }
+  if ((m = text.match(/^(?:did i|have i) (?:ever )?(?:look(?:ed)? up|search(?:ed)?(?: for)?|ask(?:ed)?(?: about)?|read about) (.+?)(?: before)?\??$/i))) {
+    return { action: 'recall', query: recallQuery(m[1]) };
   }
   if ((m = text.match(/^run (?:the |my )?(?:shortcut )?(.+?)(?: shortcut)?$/i))) return { action: 'shortcut', name: tidy(m[1]) };
-  if ((m = text.match(/^(?:note|take a note|save a note|jot down)[:\s]+(.+)$/i))) return { action: 'note', text: tidy(m[1]) };
-  if ((m = text.match(/^remember (?:that )?(.+)$/i))) return { action: 'remember', text: tidy(m[1]) };
-  if ((m = text.match(/^forget (?:that )?(.+)$/i))) return { action: 'forget', text: tidy(m[1]) };
-  if (/^(?:good morning|(?:what'?s|what is) (?:on )?my (?:day|schedule|agenda)(?: (?:like )?today)?|my day|plan my day|what do i have today)\??$/i.test(text)) return { action: 'today' };
-  if ((m = text.match(/^(?:start (?:a )?)?focus(?: mode| timer| session)?(?: for)? (\d+)\s*(m|mins?|minutes?|h|hrs?|hours?)$/i))) {
-    return { action: 'focus', minutes: Math.min(Number(m[1]) * (/^h/i.test(m[2]) ? 60 : 1), 240) };
+  // A bare "note" needs a cue ("note: ...", "note that ..."), so "note taking tips" still goes to the model.
+  if ((m = text.match(/^(?:(?:take|save|make|add) (?:a |this )?note|jot (?:this )?down|write (?:this )?down|note(?= *:| that\b| this\b| to self\b))(?:\s+(?:of|that|this|to self))?[:\s]+(.+)$/i)) && !/^(?:that|this|of|to self)$/i.test(tidy(m[1])) && tidy(m[1])) return { action: 'note', text: tidy(m[1]) };
+  // "remember to buy milk" is a to-do, so it becomes a reminder. A bare "remember to" or "remember me" saves nothing.
+  if ((m = text.match(/^(?:remember|(?:do not|don'?t|never) forget) to\s+(.+)$/i))) return parseCommand(`remind me to ${m[1]}`, now);
+  if (/^(?:remember|(?:do not|don'?t|never) forget)(?: to| me| that| this)?[:,]?$/i.test(text)) return null;
+  if (/^(?:delete|remove|erase|forget|clear|wipe) (?:absolutely )?(?:everything|all|what) (?:that )?you (?:know|remember|have saved|saved)(?: (?:about|on) me)?$/i.test(text)) return { action: 'forget', text: 'everything', all: true };
+  if ((m = text.match(/^(?:delete|remove|erase|clear) (?:the |my |your )?(?:memory|memories|saved facts?) (?:about|of|on) (.+)$/i)) && tidy(m[1])) return { action: 'forget', text: tidy(m[1]), all: false };
+  if (/^(?:delete|clear|wipe|erase|reset) (?:all )?(?:of )?(?:my |your |the )?(?:memory|memories)$/i.test(text)) return { action: 'forget', text: 'everything', all: true };
+  if ((m = text.match(/^(?:remember|(?:do not|don'?t|never) forget|keep in mind)(?: this)?[:,]?\s+(?:that )?(.+)$/i)) && tidy(m[1])) return { action: 'remember', text: tidy(m[1]) };
+  if ((m = text.match(/^(.+?),?\s+(?:please )?remember (?:that|this|it)$/i)) && !/^(?:do not|don'?t|never|stop)$/i.test(tidy(m[1]))) return { action: 'remember', text: tidy(m[1]) };
+  // "forget it" and "forget about it" are idioms, not a request to delete a memory.
+  if ((m = text.match(/^forget[:,]?\s+(?:that )?(.+)$/i)) && !/^(?:about )?(?:it|that|this|me not)$/i.test(tidy(m[1]))) {
+    return { action: 'forget', text: tidy(m[1]), all: /^(?:about )?(?:everything|all|all of it|it all)\b/i.test(tidy(m[1])) };
   }
-  if (/^(?:start (?:a )?focus(?: timer| session)?|pomodoro)$/i.test(text)) return { action: 'focus', minutes: 25 };
+  if (/^(?:good morning|(?:what'?s|what is) (?:on )?my (?:day|schedule|agenda)(?: (?:like )?today)?|my day|plan my day|what do i have today)\??$/i.test(text)) return { action: 'today' };
+  if ((m = text.match(/^(?:start (?:a )?)?focus(?: mode| timer| session)?(?: for)? (\d+(?:\.\d+)?|an?)\s*(m|mins?|minutes?|h|hrs?|hours?)?$/i)) || (m = text.match(/^(?:start |set )?(?:a |an )?(\d+(?:\.\d+)?)[\s-]*(m|mins?|minutes?|h|hrs?|hours?)? focus(?: mode| timer| session)?$/i))) {
+    const n = /^an?$/i.test(m[1]) ? 1 : Number(m[1]);
+    if (/^an?$/i.test(m[1]) && !/^h/i.test(m[2] || '')) return null; // "focus a" is not a duration
+    return { action: 'focus', minutes: Math.min(Math.round(n * (/^h/i.test(m[2] || '') ? 60 : 1)), 240) };
+  }
+  if (/^(?:start (?:a )?)?focus(?: mode| timer| session)?$|^pomodoro$/i.test(text)) return { action: 'focus', minutes: 25 };
   if (/^(?:stop|end|cancel) (?:the )?focus(?: mode| timer| session)?$/i.test(text)) return { action: 'focus', minutes: 0 };
   return null;
+}
+
+// History search has no date filter, so "yesterday" or "last week" as a search word only finds nothing. Drop the
+// time words and the "you (about)" of "what did I ask you about X".
+function recallQuery(raw) {
+  return tidy(raw.replace(/\b(?:today|yesterday|recently|lately|earlier|before|(?:last|this) (?:week|month|night|morning|time)|last)\b/gi, ' ').replace(/\s+/g, ' ')
+    .replace(/^\s*(?:(?:you|u|loon)(?: (?:about|on|for))?|about|on|for)\b/i, ' ').replace(/\s+/g, ' '));
 }
 
 // Plain-language summary for confirm cards and voice ("Reminder to call mom, today at 5:00 PM").
