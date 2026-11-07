@@ -1465,3 +1465,13 @@ As a user, the table covered nearly everything. The git "pathspec 'main' did not
 Fixed: added a table entry for the pathspec error with a fetch and branch check. Test added in test/modes.test.js.
 
 Left for later: the docker "container name already in use" error and "ssh ... Connection timed out" still go to the model. The SSH publickey error stays with the model on purpose, an earlier test requires it. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-07 — writing tools, fix grammar (sixth pass)
+
+Tried 20 texts such as a formal email with "cancelled", "meet at 3pm on friday", "send me the report by EOD? thx", "an apple and a orange", "Their going to the store", "colour and favourite", emails, URLs and file names.
+
+As a user, the worst problem was that fix grammar changed things that were not mistakes. "by EOD" became "by End", and British spellings such as "cancelled", "colour" and "favourite" were switched to American ones without asking. Both change my meaning or voice and show up as a replacement of my selection.
+
+Fixed: fixGrammar now skips spelling suggestions for all-caps abbreviations, skips spelling suggestions that only differ by regional convention, and skips expanding initialisms such as ASAP. Real fixes such as "friday" to "Friday" and "a orange" to "an orange" still work. Test added in test/modes.test.js, it fails without the change.
+
+Left for later: "Me and him goes to school" and "I don't no what to do" are not flagged.
