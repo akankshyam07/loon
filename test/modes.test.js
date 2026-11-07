@@ -259,6 +259,13 @@ test('JSON → DTO keeps the other fields when a value is NaN, Infinity or undef
   assert.deepStrictEqual(parseJson('{"NaN": 1}'), { NaN: 1 });
 });
 
+test('JSON → DTO types a number written as 10.0 as a decimal, not a long', async () => {
+  const out = await jsonToDto('{"price": 10.0, "qty": 2, "note": "v1.0 is 2.0", "tags": [1.0, 2]}');
+  assert.match(out, /double price;/);
+  assert.match(out, /long qty;/);
+  assert.match(out, /List<Double> tags;/);
+});
+
 test('JSON → DTO handles top-level arrays, plain values and multi-class Java', async () => {
   const list = await jsonToDto('[{"id": 1}, {"id": 2, "name": "x"}]', 'java');
   assert.match(list, /one per item/);

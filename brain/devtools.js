@@ -85,11 +85,15 @@ function parseJson(text) {
   JSON.parse(json);
 }
 
+// JSON.parse turns 10.0 into the integer 10, so a price would become `long`. Only types are generated, so a written
+// decimal point is kept by giving the sample a fraction. Strings are skipped so quoted text is left alone.
+const keepDecimals = (text) => String(text).replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|(?<![\w.])(-?\d+)\.0+(?![\w.])/g, (m, int) => (int === undefined ? m : `${int}.5`));
+
 async function jsonToDto(json, language = 'java', name = 'Root') {
   const { quicktype, InputData, jsonInputForTargetLanguage } = await import('quicktype-core');
   const { lang, options, label } = DTO_LANGUAGES[language];
   // A top-level array (a typical API response) means "one of these"; Java renders nothing for it, so type the elements.
-  const parsed = parseJson(json);
+  const parsed = parseJson(keepDecimals(json));
   const samples = Array.isArray(parsed) ? parsed : [parsed];
   const objects = samples.filter((v) => v && typeof v === 'object' && !Array.isArray(v));
   if (!objects.length) return "That JSON has no fields (just plain values), so there are no types to make from it.";

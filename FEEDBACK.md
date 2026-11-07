@@ -1565,3 +1565,13 @@ As a user, the worst problem was that polite closers went to the model. "thanks 
 Fixed: the thanks reply also matches "thanks for that/this/the help/helping", "a bunch", "appreciate it", "much appreciated" and a leading "that helped". Thanks followed by a real request still goes to the model. Cases added in test/brain.test.js and checked to fail before the change.
 
 Left for later: "nice one", "good kitty", "love it" and "you are great" go to the model, and "10% of that" or "double it" depend on the model reading the previous answer. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-07 — developer help, JSON to DTO (eighth pass)
+
+Tried 17 inputs such as an empty paste, `{}`, `[]`, `{"price": 10.0}`, keys with dashes, spaces and digits, a 20-digit id, an empty array, null values, an ISO date, duplicate keys, truncated JSON and plain prose.
+
+As a user, the worst problem was money. `{"price": 10.0}` produced `private long price`, so a Java class built from it would fail or truncate a real price like 10.99. Quicktype only sees the parsed value, and JSON.parse drops the `.0`.
+
+Fixed: a decimal written with a zero fraction (10.0, -3.00) is now kept as a decimal before parsing, skipping anything inside quoted strings. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: a 20-digit id still becomes `double`, and exponent numbers like 1e3 become `long`. Empty objects produce an empty class with no note. The 5 failures in `npm test` here are the WordNet and demo ones from the sandbox install.
