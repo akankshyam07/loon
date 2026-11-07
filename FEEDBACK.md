@@ -1495,3 +1495,13 @@ As a user, the worst problem was privacy. A form with a passcode, pin or plain t
 Fixed: those field names now make a page sensitive (short names match exactly), WhatsApp Web, Telegram Web, Signal, Sparkasse and Axis Bank hosts are sensitive, and the buy signal knows German, French, Spanish and Italian cart buttons. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: walgreens.com/pharmacy paths, a field called routing or ssn4, and api_secret fields are still not caught. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-07 — memory commands and notes (seventh pass)
+
+Tried 38 phrasings such as "note that I prefer metric", "note to self: call mom", "make a note that the meeting moved", "write this down: ping Bob", "note taking tips", "remember my wifi password is hunter2", "call me Sam" and "stop remembering things".
+
+As a user, the worst problem was that "note taking tips" was read as a command and saved "taking tips" as a note instead of answering my question. "note that I prefer metric" kept the word "that" in the saved note, and "make a note…" and "write this down…" were not understood at all. Saving a password with "remember" is already refused, which is good.
+
+Fixed: the note command now accepts "make/add/save a note", "write (this) down" and "jot (this) down", drops "that", "this", "of" and "to self" from the saved text, and needs a cue after a bare "note". Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: "call me Sam", "my name is Sam", "stop remembering things" and "you should know I'm vegan" still go to the model, which may claim it saved something. "add to my notes: milk" is not matched. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

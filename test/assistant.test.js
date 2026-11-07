@@ -318,3 +318,14 @@ test('commands: "and a half" durations are read as one and a half, not dropped',
   assert.strictEqual(mins('remind me in an hour and a half to eat'), 90);
   assert.strictEqual(parseCommand('remind me in an hour and a half to eat', NOW).title, 'eat');
 });
+
+test('commands: note phrasings drop their lead-in word, and "note taking tips" is a question', () => {
+  const note = (t) => (parseCommand(t, NOW) || {}).text;
+  assert.strictEqual(note('note that I prefer metric'), 'I prefer metric');
+  assert.strictEqual(note('note to self: call mom'), 'call mom');
+  assert.strictEqual(note('make a note that the meeting moved'), 'the meeting moved');
+  assert.strictEqual(note('write this down: ping Bob'), 'ping Bob');
+  assert.strictEqual(note('jot down that the meeting moved'), 'the meeting moved');
+  assert.strictEqual(parseCommand('note taking tips', NOW), null);
+  assert.strictEqual(parseCommand('note that', NOW), null);
+});

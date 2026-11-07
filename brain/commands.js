@@ -115,7 +115,8 @@ function parseCommand(input, now = new Date()) {
     return { action: 'recall', query: recallQuery(m[1]) };
   }
   if ((m = text.match(/^run (?:the |my )?(?:shortcut )?(.+?)(?: shortcut)?$/i))) return { action: 'shortcut', name: tidy(m[1]) };
-  if ((m = text.match(/^(?:note|take a note|save a note|jot down)[:\s]+(.+)$/i))) return { action: 'note', text: tidy(m[1]) };
+  // A bare "note" needs a cue ("note: ...", "note that ..."), so "note taking tips" still goes to the model.
+  if ((m = text.match(/^(?:(?:take|save|make|add) (?:a |this )?note|jot (?:this )?down|write (?:this )?down|note(?= *:| that\b| this\b| to self\b))(?:\s+(?:of|that|this|to self))?[:\s]+(.+)$/i)) && !/^(?:that|this|of|to self)$/i.test(tidy(m[1])) && tidy(m[1])) return { action: 'note', text: tidy(m[1]) };
   // "remember to buy milk" is a to-do, so it becomes a reminder. A bare "remember to" or "remember me" saves nothing.
   if ((m = text.match(/^(?:remember|(?:do not|don'?t|never) forget) to\s+(.+)$/i))) return parseCommand(`remind me to ${m[1]}`, now);
   if (/^(?:remember|(?:do not|don'?t|never) forget)(?: to| me| that| this)?[:,]?$/i.test(text)) return null;
