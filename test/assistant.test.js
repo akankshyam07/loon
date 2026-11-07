@@ -63,6 +63,14 @@ test('commands: focus with the length first, and a reminder with only a day gets
   assert.strictEqual(parseCommand('remind me on friday', NOW).title, 'Reminder');
 });
 
+test('commands: the time after "at" wins over a time inside the title, and focus takes decimals', () => {
+  const r = parseCommand('remind me about the 5pm meeting at 4:30', NOW);
+  assert.strictEqual(new Date(r.when).getHours(), 16);
+  assert.strictEqual(new Date(r.when).getMinutes(), 30);
+  assert.strictEqual(r.title, 'the 5pm meeting');
+  assert.deepStrictEqual(parseCommand('focus 1.5 hours', NOW), { action: 'focus', minutes: 90 });
+});
+
 test('notes: markdown per day, entries with sources, search', () => {
   const notes = new Notes(tmp());
   const file = notes.save({ title: 'Why cats love boxes', text: 'Enclosed spaces feel safe.', url: 'https://example.com/cats' });

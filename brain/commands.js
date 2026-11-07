@@ -7,7 +7,9 @@ function extractWhen(text, now = new Date(), { morning = false } = {}) {
   text = dayOfMonth(text, now)
     .replace(/\b(\d+) and a half (hour|minute|day|week)/gi, '$1.5 $2')
     .replace(/\ban? (hour|minute|day|week) and a half\b/gi, '1.5 $1s');
-  const [found] = chrono.parse(text, now, { forwardDate: true });
+  // "the 5pm meeting at 4:30" holds two times; the one after a preposition is the reminder time.
+  const parsed = chrono.parse(text, now, { forwardDate: true });
+  const found = parsed.find((r) => /^(?:at|on|by|in|for)\s/i.test(r.text) || /\b(?:at|on|by|in|for)\s+$/i.test(text.slice(0, r.index))) || parsed[0];
   if (!found) return { date: null, rest: text.trim() };
   const rest = (text.slice(0, found.index) + text.slice(found.index + found.text.length))
     .replace(/\s+(at|on|by|for|in)\s*$/i, '')
@@ -130,10 +132,10 @@ function parseCommand(input, now = new Date()) {
     return { action: 'forget', text: tidy(m[1]), all: /^(?:about )?(?:everything|all|all of it|it all)\b/i.test(tidy(m[1])) };
   }
   if (/^(?:good morning|(?:what'?s|what is) (?:on )?my (?:day|schedule|agenda)(?: (?:like )?today)?|my day|plan my day|what do i have today)\??$/i.test(text)) return { action: 'today' };
-  if ((m = text.match(/^(?:start (?:a )?)?focus(?: mode| timer| session)?(?: for)? (\d+|an?)\s*(m|mins?|minutes?|h|hrs?|hours?)?$/i)) || (m = text.match(/^(?:start |set )?(?:a |an )?(\d+)[\s-]*(m|mins?|minutes?|h|hrs?|hours?)? focus(?: mode| timer| session)?$/i))) {
+  if ((m = text.match(/^(?:start (?:a )?)?focus(?: mode| timer| session)?(?: for)? (\d+(?:\.\d+)?|an?)\s*(m|mins?|minutes?|h|hrs?|hours?)?$/i)) || (m = text.match(/^(?:start |set )?(?:a |an )?(\d+(?:\.\d+)?)[\s-]*(m|mins?|minutes?|h|hrs?|hours?)? focus(?: mode| timer| session)?$/i))) {
     const n = /^an?$/i.test(m[1]) ? 1 : Number(m[1]);
     if (/^an?$/i.test(m[1]) && !/^h/i.test(m[2] || '')) return null; // "focus a" is not a duration
-    return { action: 'focus', minutes: Math.min(n * (/^h/i.test(m[2] || '') ? 60 : 1), 240) };
+    return { action: 'focus', minutes: Math.min(Math.round(n * (/^h/i.test(m[2] || '') ? 60 : 1)), 240) };
   }
   if (/^(?:start (?:a )?)?focus(?: mode| timer| session)?$|^pomodoro$/i.test(text)) return { action: 'focus', minutes: 25 };
   if (/^(?:stop|end|cancel) (?:the )?focus(?: mode| timer| session)?$/i.test(text)) return { action: 'focus', minutes: 0 };

@@ -1505,3 +1505,13 @@ As a user, the worst problem was that "note taking tips" was read as a command a
 Fixed: the note command now accepts "make/add/save a note", "write (this) down" and "jot (this) down", drops "that", "this", "of" and "to self" from the saved text, and needs a cue after a bare "note". Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: "call me Sam", "my name is Sam", "stop remembering things" and "you should know I'm vegan" still go to the model, which may claim it saved something. "add to my notes: milk" is not matched. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-07 — reminders, timers and focus (ninth pass)
+
+Tried 30 inputs such as "remind me about the 5pm meeting at 4:30", "remindme to call mom at 6pm", "focus 1.5 hours", "remind me in half an hour", "set an alarm for 6:30am", "remind me every day to take pills" and "remind me end of day to submit".
+
+As a user, "remind me about the 5pm meeting at 4:30" set the reminder for 5pm and left "at 4:30" in the title. Reminding me at the time of the thing I asked to be reminded about is the wrong way round. "focus 1.5 hours" was ignored and went to the model.
+
+Fixed: when a sentence holds two times, extractWhen now prefers the one introduced by at, on, by, in or for. Focus accepts decimal lengths and rounds to whole minutes. Test added in test/assistant.test.js.
+
+Left for later: "remindme to…" and "cancel timer" are not matched. "remind me every day…" and "end of day" produce a reminder with no time and the phrase in the title, which should ask or say it is not recurring. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install and also fail on a clean checkout.
