@@ -1535,3 +1535,13 @@ As a user, "open the calculator" asked macOS for an app called "the calculator",
 Fixed: "the" and a trailing "app" are dropped from app names, "launch" works like "open", file names and version numbers are no longer treated as web addresses, and "open it" or "open that link" fall through to the chat. Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: "open youtube and search cats" still tries to open an app with that whole name, and "open localhost:3000" is treated as an app. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-07 — voice intents (seventh pass)
+
+Tried 50 spoken phrasings such as "turn private mode on", "enable privacy mode", "exit focus mode", "disable focus mode", "explain this page to me", "what's this page", "summarize page", "which one's the cheapest" and "what's the cheapest option".
+
+As a user, the worst problem was that turning private mode on by voice only worked for a few exact words. "turn private mode on" and "enable privacy mode" went to the model, which could say privacy was on while nothing changed. "exit focus mode" and "disable focus mode" had the same problem.
+
+Fixed: the privacy and focus toggle templates accept turn, switch, enable, disable and exit wordings. The page summary and shopping templates take "to me", "what's this page", "summarize page" and "which one's the cheapest". Test added in test/voice.test.js.
+
+Left for later: "stop listening", "do not disturb", "un-focus", "make it more casual", "translate to spanish", "explain this code" and "what does this word mean" still go to the model. The 5 failures in `npm test` are the same ones as on main in this sandbox.

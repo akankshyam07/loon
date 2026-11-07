@@ -138,3 +138,14 @@ test('spoken fillers, "turn focus off", private mode and "what\'s the cheapest" 
   assert.strictEqual(route('uh yes', { awaitingConfirmation: true }).type, 'yes');
   assert.strictEqual(route('yeah sure', { awaitingConfirmation: true }).type, 'yes');
 });
+
+test('spoken privacy and focus toggles, page and shopping variants reach their templates', () => {
+  const toggle = (t) => { const r = route(t); return `${r.type}:${r.key}:${r.value}`; };
+  assert.strictEqual(toggle('turn private mode on'), 'toggle:privacy:true');
+  assert.strictEqual(toggle('enable privacy mode'), 'toggle:privacy:true');
+  assert.strictEqual(toggle('disable private mode'), 'toggle:privacy:false');
+  assert.strictEqual(toggle('exit focus mode'), 'toggle:focus:false');
+  assert.strictEqual(toggle('disable focus mode'), 'toggle:focus:false');
+  for (const t of ['explain this page to me', "what's this page", 'summarize page']) assert.strictEqual(route(t).task, 'page_summary', t);
+  for (const t of ["which one's the cheapest", "what's the cheapest option", 'which is cheaper']) assert.strictEqual(route(t).task, 'shop_value', t);
+});
