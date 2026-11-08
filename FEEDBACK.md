@@ -1625,3 +1625,13 @@ As a user, the worst problem was that "what did we discuss" and "look up my past
 Fixed: "what did we discuss" now opens history like "what did we talk about", and "past/previous/recent searches/questions about X" and "everything I asked about X" search history for X. Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: "history of docker" is left alone on purpose, because "history of Rome" is a normal question. Typos like "wat did i ask" and "hisotry", and "clear my history" by typing, are still not matched. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-08 — writing tools by voice (sixth pass)
+
+Tried 41 spoken edit phrasings such as "make it less wordy", "make it brief", "improve this", "polish this", "make this better", "fix grammer", "make it more casual", "expand this" and "summarize in 3 bullets".
+
+As a user, the plain asks for a shorter or better version of my selection went to the slow question path, so nothing was offered to replace my text. "make it less wordy" and "fix grammer" are things people actually say.
+
+Fixed: brain/intents.js now reads "less wordy", "less verbose", "brief" and "briefer" as shorter, "improve", "polish" and "make it better" as rewrite, and the "grammer" typo as fix grammar. Cases added in test/voice.test.js and checked to fail before the change.
+
+Left for later: "make it more casual", "make it longer", "expand this" and "say it nicer" have no matching task or template. "make it shorter and more professional" and "summarize in 3 bullets" still go to the model. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

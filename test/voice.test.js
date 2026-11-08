@@ -41,6 +41,7 @@ test('spoken edits and explanations of a selection are templates', () => {
     'rewrite this to be more polite': 'professional', 'rewrite it in a friendlier tone': 'warmer',
     'make this sound more friendly': 'warmer', 'proofread this for me': 'fix_grammar', 'check this for typos': 'fix_grammar',
     'simplify this paragraph': 'simplify', 'rewrite this email': 'rewrite', 'explain this sentence': 'explain',
+    'make it less wordy': 'shorter', 'make it brief': 'shorter', 'improve this': 'rewrite', 'polish it': 'rewrite', 'make this better': 'rewrite', 'fix grammer': 'fix_grammar',
     'make this a lot shorter': 'shorter', 'rewrite this in a professional tone': 'professional', 'explain this in simple terms': 'simplify',
     'Translate it': 'translate', 'Loon, translate this for me': 'translate', 'translate that into English': 'translate', 'translate the selection': 'translate', 'What does this say in English?': 'translate', "what's this in english": 'translate', 'this in english please': 'translate',
   };
