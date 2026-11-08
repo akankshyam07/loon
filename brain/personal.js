@@ -214,7 +214,7 @@ const DIETS = { vegetarian: "I'm vegetarian", vegan: "I'm vegan", pescatarian: "
 const tidy = (text, max = 80) => String(text || '').replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
 // "None" and "n/a" are answers, not allergies; "I'm allergic to peanuts" is typed often, so the lead-in is dropped.
 const NO_ANSWER = /^(?:i (?:have|got|don'?t have)(?: any)? )?(?:(?:none|no|nope|nil|nothing|n\/?a|na|-+|idk)(?: (?:known |food )?(?:allergies|really|at all|thanks?|that i know of))*|not (?:that i know of|really|sure)|i'?m not allergic to anything|i don'?t have any(?: allergies)?)$/i;
-const list = (text) => tidy(text, 200).replace(/^(?:i(?:'m| am)\s+)?(?:allergic to|interested in)\s+/i, '').split(/\s*(?:,|;|\band\b)\s*/i)
+const list = (text, split = /\s*(?:,|;|\band\b| & )\s*/i) => tidy(text, 200).replace(/^(?:i(?:'m| am)\s+)?(?:allergic to|interested in)\s+/i, '').split(split)
   .map((x) => x.replace(/[.!]+$/, '').trim()).filter((x) => x && !NO_ANSWER.test(x))
   .filter((x, i, all) => all.findIndex((y) => y.toLowerCase() === x.toLowerCase()) === i).slice(0, 6);
 const joinList = (items) => (items.length > 1 ? `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}` : items[0] || '');
@@ -226,13 +226,18 @@ const NAME_LEAD = /^(?:(?:(?:hi|hello|hey|yo)\b[\s,!.]*|(?:you can |please |just
 // shows: { facts: [text] (saved pinned), personal: patch for cleanPersonal, role }. Plain code, no model.
 function onboardingResult(answers = {}) {
   const facts = [];
-  const name = tidy(answers.name, 40).replace(/<[^>]*>/g, '').replace(/[\u2018\u2019]/g, "'").replace(NAME_LEAD, '').replace(/[^\p{L}\p{N} .'-]/gu, '').replace(/ (?:please|thanks?)$/i, '').trim();
+  const name = tidy(answers.name, 40).replace(/<[^>]*>/g, '').replace(/[\u2018\u2019]/g, "'").replace(NAME_LEAD, '').replace(/[^\p{L}\p{N} .'-]/gu, '').replace(/ (?:please|thanks?)$/i, '').replace(/[. ]+$/, '').trim();
   if (name) facts.push(`Call me ${name}`);
   const role = Object.hasOwn(ROLES, answers.role) ? answers.role : '';
   if (role && ROLES[role].fact) facts.push(ROLES[role].fact);
   for (const d of answers.diets || []) if (Object.hasOwn(DIETS, d)) facts.push(DIETS[d]);
-  const allergies = list(answers.allergies);
+  // "peanuts/shellfish" is two allergies; "lactose intolerant" is not an allergy and gets its own wording.
+  const intolerant = /\s+intoleran(?:t|ce)$/i;
+  const food = list(answers.allergies, /\s*(?:,|;|\/|\band\b| & )\s*/i);
+  const allergies = food.filter((x) => !intolerant.test(x));
   if (allergies.length) facts.push(`I'm allergic to ${joinList(allergies)}`);
+  const intolerances = food.filter((x) => intolerant.test(x)).map((x) => x.replace(intolerant, ''));
+  if (intolerances.length) facts.push(`I'm intolerant to ${joinList(intolerances)}`);
   const interests = list(answers.interests);
   if (interests.length) facts.push(`I'm interested in ${joinList(interests)}`);
   const personal = {};

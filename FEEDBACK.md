@@ -1635,3 +1635,13 @@ As a user, the plain asks for a shorter or better version of my selection went t
 Fixed: brain/intents.js now reads "less wordy", "less verbose", "brief" and "briefer" as shorter, "improve", "polish" and "make it better" as rewrite, and the "grammer" typo as fix grammar. Cases added in test/voice.test.js and checked to fail before the change.
 
 Left for later: "make it more casual", "make it longer", "expand this" and "say it nicer" have no matching task or template. "make it shorter and more professional" and "summarize in 3 bullets" still go to the model. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-08 — onboarding first run, allergies and name (ninth pass)
+
+Tried 33 answers for the "Get to know you" boxes, such as "Ada.", "Ada Lovelace (Ada)", emoji only, a very long name, "lactose intolerant", "peanuts & shellfish", "dairy/gluten", "I'm allergic to peanuts", "AI/ML & cats" and a free-text role.
+
+As a user, the worst problem was that "lactose intolerant" was saved as the pinned fact "I'm allergic to lactose intolerant", which is wrong and goes with every question. "peanuts & shellfish" and "dairy/gluten" were kept as one allergy. A name typed with a full stop, "Ada.", was saved with the stop.
+
+Fixed: onboardingResult splits allergies on "/" and "&", words intolerances as "I'm intolerant to X", and trims a trailing full stop from the name. Interests only split on "&" so "AI/ML" stays whole. Test added in test/personal.test.js.
+
+Left for later: "Ada Lovelace (Ada)" becomes "Ada Lovelace Ada". A free-text role is ignored without telling the user. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

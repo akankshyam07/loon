@@ -303,3 +303,11 @@ test('more ways to ask for a plainer tone, shorter replies or one language', () 
   assert.deepStrictEqual(parseFeedback('answer me in french').patch, { language: 'French' });
   assert.strictEqual(parseFeedback('serious?'), null);
 });
+
+test('onboardingResult splits slash and ampersand allergies, words intolerances honestly and drops a trailing full stop in the name', () => {
+  assert.deepStrictEqual(onboardingResult({ allergies: 'peanuts & shellfish' }).facts, ["I'm allergic to peanuts and shellfish"]);
+  assert.deepStrictEqual(onboardingResult({ allergies: 'dairy/gluten' }).facts, ["I'm allergic to dairy and gluten"]);
+  assert.deepStrictEqual(onboardingResult({ allergies: 'peanuts, lactose intolerant' }).facts, ["I'm allergic to peanuts", "I'm intolerant to lactose"]);
+  assert.deepStrictEqual(onboardingResult({ interests: 'AI/ML & cats' }).facts, ["I'm interested in AI/ML and cats"]);
+  assert.deepStrictEqual(onboardingResult({ name: 'Ada.' }).facts, ['Call me Ada']);
+});
