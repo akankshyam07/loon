@@ -62,6 +62,10 @@ test('selection kinds treat unspaced CJK text by length', () => {
   assert.strictEqual(classifySelection('I got an Exception: it was funny, not code'), 'sentence');
   assert.strictEqual(classifySelection('Mr. Jones arrived at 5 p.m. today.'), 'sentence');
   assert.strictEqual(classifySelection('你好，今天天气很好。我们去公园玩吧。'), 'paragraph');
+  for (const line of ['Process finished with exit code 1', 'BUILD FAILURE', 'FAILED tests/test_a.py::test_b', 'Failed to compile.', "undefined reference to `foo'", 'HTTP 500', '  at com.app.Main.run(Main.java:12)']) {
+    assert.strictEqual(classifySelection(line), 'stacktrace', line);
+  }
+  assert.strictEqual(classifySelection('Process finished with exit code 0'), 'sentence');
   assert.strictEqual(classifySelection('NullPointerException'), 'stacktrace');
   assert.strictEqual(classifySelection('java.lang.IllegalStateException'), 'stacktrace');
   assert.strictEqual(classifySelection("Cannot read properties of undefined (reading 'x')"), 'stacktrace');

@@ -1595,3 +1595,13 @@ As a user, the short labels were the gap. "pass: x", a bare "passcode 8842" and 
 Fixed: brain/redact.js hides the value after "pass:" or "pass=" and after 密码 or 密碼 (full-width colon too), and "passcode" followed by digits. "bypass: allowed" is left alone. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: "my pass is x" is not hidden because "the pass is closed" would be hurt. Recovery codes, SSH public key lines, dates of birth and "Your code is 482913" are not hidden. An unquoted password with a space still leaks the second word. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-08 — selection chips and classification (ninth pass)
+
+Tried 42 selections such as file paths, "exit code 1", "BUILD FAILURE", pytest "FAILED tests/test_a.py::test_b", a single Java stack frame, "HTTP 500", "Failed to compile.", "undefined reference to", shell lines, prices, emails and short questions.
+
+As a user, the worst problem was that build and test failure lines got the Define chip or the sentence chips instead of error help. "Process finished with exit code 1", "BUILD FAILURE", a failed pytest line and a lone stack frame are what people select right after something breaks.
+
+Fixed: non-zero exit codes, BUILD FAILURE or FAILED, pytest failure lines, "Failed to compile", "Compilation error", linker "undefined reference to", a lone stack frame and a bare "HTTP 4xx or 5xx" now count as errors. "exit code 0" stays a sentence. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: file paths, "What is this?", "x = 5" and a short bullet list are still words or sentences. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
