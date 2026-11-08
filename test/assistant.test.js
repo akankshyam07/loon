@@ -40,6 +40,12 @@ test('commands: reminders, events, open, find, notes, memory; questions fall thr
   assert.deepStrictEqual(parseCommand('open notes.txt', NOW), { action: 'open', target: 'notes.txt', kind: 'app' });
   assert.deepStrictEqual(parseCommand('open reddit.com/r/cats', NOW), { action: 'open', target: 'https://reddit.com/r/cats', kind: 'url' });
   assert.strictEqual(parseCommand('open that link', NOW), null);
+  // Two-step requests go to the chat, local servers are web links, quotes around an app name are dropped.
+  assert.strictEqual(parseCommand('open youtube and search cats', NOW), null);
+  assert.strictEqual(parseCommand('launch safari and go to apple.com', NOW), null);
+  assert.deepStrictEqual(parseCommand('open localhost:3000', NOW), { action: 'open', target: 'http://localhost:3000', kind: 'url' });
+  assert.deepStrictEqual(parseCommand('open http://127.0.0.1:8080/app', NOW), { action: 'open', target: 'http://127.0.0.1:8080/app', kind: 'url' });
+  assert.deepStrictEqual(parseCommand('open "Visual Studio Code"', NOW), { action: 'open', target: 'Visual Studio Code', kind: 'app' });
   assert.deepStrictEqual(parseCommand('find my resume', NOW), { action: 'find', query: 'resume' });
   assert.deepStrictEqual(parseCommand('note: buy cat food', NOW), { action: 'note', text: 'buy cat food' });
   assert.deepStrictEqual(parseCommand('remember that I am vegetarian', NOW), { action: 'remember', text: 'I am vegetarian' });

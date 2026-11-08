@@ -1675,3 +1675,13 @@ As a user, recurring wording is fine in the app because routines run before the 
 Fixed: extractWhen reads "end of day", "end of the work day", "eod", "close of business" and "cob" as 5pm. The reminder pattern accepts "remindme". Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: "cancel timer" and "stop the timer" are not matched. "remind me yesterday…" sets a time in the past and "at 25:00" leaves the phrase in the title. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-08 — open and launch commands (second pass)
+
+Tried 28 phrasings such as "open youtube and search cats", "launch safari and go to apple.com", "open WhatsApp and message mom", "open localhost:3000", "open 127.0.0.1:8080", "open "Visual Studio Code"", "open my downloads folder" and "open ~/Documents".
+
+As a user, two-step requests tried to launch an app with the whole sentence as its name, so macOS would show an error instead of Loon helping. "open localhost:3000" was also treated as an app, which is the first thing a developer would type. Quotes around an app name were passed on to macOS.
+
+Fixed: two-step requests now fall through to the chat, local addresses with a port or "localhost" open as http links, and quotes around an app name are dropped. Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: "open my downloads folder" and "open ~/Documents" are still treated as apps. "open chrome, then spotify" only splits on a known list of verbs. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

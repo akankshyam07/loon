@@ -97,8 +97,11 @@ function parseCommand(input, now = new Date()) {
   if (/^(?:(?:show|open|pull up)(?: me)? )?(?:my )?(?:(?:recent|past|previous) (?:questions|searches|lookups|history)|history|recent activity)\??$/i.test(text) || /^(?:(?:what(?:'?s| is| was| were| are)?|show me|show|pull up) )?(?:my (?:(?:last|latest|recent|previous)(?: \d+)? )?|(?:last|latest|recent|previous)(?: \d+)? )(?:questions?|searches|lookups?|history)\??$/i.test(text) || /^(?:what(?:'?s| is| was) )?(?:my |the )?(?:last|latest|previous) (?:thing i (?:asked(?: you)?|searched(?: for)?|looked up)|search|question|lookup)\??$/i.test(text) || /^(?:show me |tell me )?what (?:(?:have|did) )?i (?:been )?(?:ask(?:ed)?|asking|look(?:ed|ing)? up|search(?:ed|ing)?|google[d]?|googling)(?: you| for)*(?: (?:so far|lately|recently|earlier|today|yesterday|last (?:week|month|time)))?\??$/i.test(text) || /^what (?:did|have) we (?:talk(?:ed)?|chat(?:ted)?|discuss(?:ed)?)(?: about)?(?: (?:today|yesterday|earlier|lately|recently))?\??$/i.test(text)) return { action: 'recall', query: '' };
   if ((m = text.match(/^(?:open|launch) (.+)$/i))) {
     // "the Calculator app" is a name macOS doesn't know. Files like "notes.txt" and "Node.js" are not websites.
-    const target = tidy(m[1]).replace(/^the /i, '').replace(/ app$/i, '');
-    if (!target || /^(?:it|that|this|them)(?: \w+)?$/i.test(target)) return null;
+    const target = tidy(m[1]).replace(/^(["'“‘])(.+)["'”’]$/, '$2').replace(/^the /i, '').replace(/ app$/i, '');
+    // Two-step requests ("open youtube and search cats") are not an app name, so the chat gets them.
+    if (!target || /(?:,| and| then| &) (?:then )?(?:search|go|message|text|play|type|write|send|find|look|click|show|make|create|start|open|launch|take|ask|check)\b/i.test(target)) return null;
+    if (/^(?:https?:\/\/)?(?:localhost|\d{1,3}(?:\.\d{1,3}){3})(?::\d+)?(?:\/\S*)?$/i.test(target) && (/localhost|:\d/i.test(target) || /^https?:/i.test(target))) return { action: 'open', target: /^https?:/i.test(target) ? target : `http://${target}`, kind: 'url' };
+    if ( /^(?:it|that|this|them)(?: \w+)?$/i.test(target)) return null;
     const isUrl = /^(https?:\/\/)?[\w-]+(\.[\w-]+)+(\/\S*)?$/i.test(target) && (/^https?:|\/|^www\./i.test(target) || !/\.(?:js|ts|txt|md|py|json|java|pdf|png|jpe?g|csv|zip|docx?|xlsx?|html?)$|^v?\d+(?:\.\d+)+$/i.test(target) || /^\d+(?:\.\d+){3}$/.test(target));
     return { action: 'open', target: isUrl && !/^https?:/i.test(target) ? `https://${target}` : target, kind: isUrl ? 'url' : 'app' };
   }
