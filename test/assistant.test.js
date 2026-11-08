@@ -347,3 +347,13 @@ test('commands: note phrasings drop their lead-in word, and "note taking tips" i
   assert.strictEqual(parseCommand('note taking tips', NOW), null);
   assert.strictEqual(parseCommand('note that', NOW), null);
 });
+
+test('commands: "end of day" and "eod" mean 5pm, and "remindme" without a space still works', () => {
+  const eod = parseCommand('remind me end of day to submit the report', NOW);
+  assert.strictEqual(eod.title, 'submit the report');
+  assert.strictEqual(eod.when.getHours(), 17);
+  assert.strictEqual(parseCommand('remind me eod to send notes', NOW).when.getHours(), 17);
+  const glued = parseCommand('remindme to call mom at 6pm', NOW);
+  assert.strictEqual(glued.title, 'call mom');
+  assert.strictEqual(glued.when.getHours(), 18);
+});

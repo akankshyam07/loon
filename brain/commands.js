@@ -5,6 +5,7 @@ const chrono = require('chrono-node');
 // Pulls the first date/time phrase out of text: { date, text-without-it } or { date: null }.
 function extractWhen(text, now = new Date(), { morning = false } = {}) {
   text = dayOfMonth(text, now)
+    .replace(/\b(?:end of (?:the )?(?:work ?)?day|eod|close of business|cob)\b/gi, 'at 5pm')
     .replace(/\b(\d+) and a half (hour|minute|day|week)/gi, '$1.5 $2')
     .replace(/\ban? (hour|minute|day|week) and a half\b/gi, '1.5 $1s');
   // "the 5pm meeting at 4:30" holds two times; the one after a preposition is the reminder time.
@@ -79,7 +80,7 @@ function parseCommand(input, now = new Date()) {
   if ((m = text.match(/^(?:(?:set|create|add|make)(?: me)? (?:an? )?)?reminder(?: for| to| about|:)?\s+(.+)$/i))) return parseCommand(`remind me ${m[1]}`, now);
   // "remind me what I asked" wants the history, not a reminder titled "what I asked".
   if (/^remind me (?:of )?what i (?:asked|searched(?: for)?|looked up)(?: you)?\??$/i.test(text)) return { action: 'recall', query: '' };
-  if ((m = text.match(/^remind me (?:to |about )?(.+)$/i))) {
+  if ((m = text.match(/^remind ?me (?:to |about )?(.+)$/i))) {
     const { date, rest } = extractWhen(m[1], now);
     // "remind me tomorrow to buy milk" and "next friday about the dentist" leave the "to"/"about" in front of the task.
     // "remind me on friday" has no task; a reminder titled "on friday" would be noise.

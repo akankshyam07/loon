@@ -1665,3 +1665,13 @@ As a user, the table covered almost all of them. Three gaps were left. A psql "c
 Fixed: added table entries for the Postgres connection failure (placed before the file-not-found rule), the docker name conflict and the ssh timeout. Test added in test/modes.test.js, it fails without the change.
 
 Left for later: the SSH publickey error still goes to the model on purpose. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-08 — reminders, timers and focus (tenth pass)
+
+Tried 22 inputs such as "remind me every monday to water plants", "remind me end of day to submit", "remindme to call mom at 6pm", "cancel timer", "remind me at 25:00 to x" and "remind me yesterday to x".
+
+As a user, recurring wording is fine in the app because routines run before the reminder parser. The gaps were "remind me end of day to submit", which made a reminder with no time and the phrase in the title, and "remindme to…", which was not matched at all.
+
+Fixed: extractWhen reads "end of day", "end of the work day", "eod", "close of business" and "cob" as 5pm. The reminder pattern accepts "remindme". Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: "cancel timer" and "stop the timer" are not matched. "remind me yesterday…" sets a time in the past and "at 25:00" leaves the phrase in the title. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
