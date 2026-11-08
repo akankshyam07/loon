@@ -1645,3 +1645,13 @@ As a user, the worst problem was that "lactose intolerant" was saved as the pinn
 Fixed: onboardingResult splits allergies on "/" and "&", words intolerances as "I'm intolerant to X", and trims a trailing full stop from the name. Interests only split on "&" so "AI/ML" stays whole. Test added in test/personal.test.js.
 
 Left for later: "Ada Lovelace (Ada)" becomes "Ada Lovelace Ada". A free-text role is ignored without telling the user. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-08 — settings UI, reply style feedback (seventh pass)
+
+Tried 38 style requests such as "tone down the jokes", "less sass", "stop being so sassy", "be nicer", "simpler words", "in spanish please", "talk like a pirate", "answer in one sentence" and the length, emoji, formal and language wordings from earlier passes.
+
+As a user, the length, emoji, formal and language requests all worked. Asking Loon to tone down the sass or the humor did nothing and went to the model as a normal question, so the setting never changed.
+
+Fixed: parseFeedback in brain/personal.js now reads "tone down the jokes", "less sass", "no attitude" and "stop being so snarky" as the plain tone. Test added in test/personal.test.js.
+
+Left for later: "in spanish please" with no verb is ambiguous with a translation request, so it is left alone. "be nicer", "simpler words" and "answer in one sentence" have no matching setting.

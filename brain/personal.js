@@ -56,7 +56,7 @@ const FEEDBACK = [
   [/^(?:(?:use |with )?(?:less|fewer|no(?: more)?)|stop using|stop with the|stop the|without|don'?t use|drop the|too many) emojis?$/, () => ({ emoji: false })],
   [/^(?:use|more|add|with) emojis?$/, () => ({ emoji: true })],
   [/^(?:be |sound )?(?:more )?(?:formal|professional)$|^too (?:casual|informal|silly)$/, () => ({ tone: 'formal' })],
-  [/^(?:be (?:more )?serious|more serious|(?:be )?less playful|less silly|less cute|no jokes|fewer jokes|less jokes|no more jokes|stop (?:the )?jokes|stop joking(?: around)?|plainer|plain)$|^too (?:playful|silly|cute)$/, () => ({ tone: 'plain' })],
+  [/^(?:be (?:more )?serious|more serious|(?:be )?less playful|less silly|less cute|no jokes|fewer jokes|less jokes|no more jokes|stop (?:the )?jokes|stop joking(?: around)?|tone down (?:the )?(?:jokes|humou?r|sass|snark|sarcasm)|(?:less|no) (?:sass|snark|sarcasm|humou?r|attitude)|stop being (?:so |too )?(?:sassy|snarky|sarcastic)|plainer|plain)$|^too (?:playful|silly|cute)$/, () => ({ tone: 'plain' })],
   [/^(?:be )?(?:(?:more )?(?:playful|fun|funny|casual|cute)|less formal|less serious)$|^too (?:formal|serious|stiff)$|^stop being (?:so |too )?(?:formal|serious|stiff)$/, () => ({ tone: 'playful' })],
 ];
 const NOTES = {

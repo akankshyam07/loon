@@ -297,6 +297,7 @@ test('onboarding name keeps only the name from greetings and intros', () => {
 test('more ways to ask for a plainer tone, shorter replies or one language', () => {
   assert.deepStrictEqual(parseFeedback('be serious').patch, { tone: 'plain' });
   assert.deepStrictEqual(parseFeedback('stop the jokes').patch, { tone: 'plain' });
+  for (const t of ['tone down the jokes', 'less sass', 'stop being so sarcastic', 'no attitude']) assert.deepStrictEqual(parseFeedback(t).patch, { tone: 'plain' }, t);
   assert.deepStrictEqual(parseFeedback('be funny').patch, { tone: 'playful' });
   assert.deepStrictEqual(parseFeedback('be more brief').patch, { length: 'short' });
   assert.deepStrictEqual(parseFeedback('reply only in spanish').patch, { language: 'Spanish' });
