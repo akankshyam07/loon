@@ -267,6 +267,11 @@ test('memory store: profile, BM25 recall with site boost, budget, history search
   assert.deepStrictEqual(parseCommand('what did I look up about kubernetes?'), { action: 'recall', query: 'kubernetes' });
   assert.deepStrictEqual(parseCommand('What do you know about me?'), { action: 'recall', facts: true });
   assert.deepStrictEqual(parseCommand('what did I ask today'), { action: 'recall', query: '' });
+  // Typed shorthand and "save to memory" must reach the memory code, not the model that may claim to have saved something.
+  assert.deepStrictEqual(parseCommand('what do u know about me'), { action: 'recall', facts: true });
+  assert.deepStrictEqual(parseCommand('what do you remember'), { action: 'recall', facts: true });
+  assert.deepStrictEqual(parseCommand('save to memory: I work at Acme'), { action: 'remember', text: 'I work at Acme' });
+  assert.deepStrictEqual(parseCommand("add to memory I'm left handed"), { action: 'remember', text: "I'm left handed" });
 });
 
 test('history questions drop time words and "you" instead of searching for them', () => {

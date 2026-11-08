@@ -1695,3 +1695,13 @@ As a user, "whats 2+2" without the apostrophe went to the model, and so did "wha
 Fixed: the calculator lead-in now accepts "whats". A new instant answer in brain/resolve.js counts the days to Christmas, New Year's Day, Halloween and Valentine's Day from the clock. Cases added in test/brain.test.js and checked to fail before the change.
 
 Left for later: factorials ("7 factorial", "5!"), "average of 4, 8, 15", "1e3 * 5", "what is 1/3 as a percent", "pi" and countdowns to a named weekday or date still go to the model. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-08 — memory commands (second pass)
+
+Tried 33 phrasings such as "remember my name is Sam", "can you remember my dog is called Rex", "what do u know about me", "what do you remember", "save to memory: I work at Acme", "add to memory I'm left handed", "forget what I said about pork", "wipe my memory" and "remember my wifi password is hunter2".
+
+As a user, "what do you remember" and "what do u know about me" went to the language model, which can only guess what is saved. "save to memory" and "add to memory" were not understood, so the model might say it saved something when nothing was stored. Passwords in "remember" are already refused by the action, so that earlier note is closed.
+
+Fixed: parseCommand reads "what do you/u remember" and "u know about me" as a memory listing, and "save/add/put/store (this) to/in memory" as remember. Test added in test/assistant.test.js.
+
+Left for later: "private mode on", "go private" and "don't save this conversation" are not commands, so they go to the model. "remember nothing" saves a fact "nothing". The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
