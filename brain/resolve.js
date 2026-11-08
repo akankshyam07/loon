@@ -54,6 +54,20 @@ const CODE_ANSWERS = [
     },
   },
   {
+    match: /^(?:how (?:many days|long)|days) (?:is it |are there )?(?:until|till|to|before) (christmas|new year'?s?(?: day)?|halloween|valentine'?s(?: day)?)$/,
+    answer: (key) => {
+      const [month, day] = /christmas/.test(key) ? [11, 25] : /halloween/.test(key) ? [9, 31] : /valentine/.test(key) ? [1, 14] : [0, 1];
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      let target = new Date(now.getFullYear(), month, day);
+      if (target < today) target = new Date(now.getFullYear() + 1, month, day);
+      const days = Math.round((target - today) / 864e5);
+      const name = key.match(/(christmas|new year|halloween|valentine)/)[1].replace(/^./, (c) => c.toUpperCase());
+      const label = name === 'New year' ? "New Year's Day" : name === 'Valentine' ? "Valentine's Day" : name;
+      return { mood: 'happy', text: days === 0 ? `${label} is today.` : `${days} day${days === 1 ? '' : 's'} until ${label}.` };
+    },
+  },
+  {
     match: /^(what can (you|u) do( for me)?|help( me)?|what do you do|how do (i|you) use (you|this))$/,
     // A bare "help" inside a conversation asks for help with that conversation, not for this list.
     openingOnly: /^help( me)?$/,

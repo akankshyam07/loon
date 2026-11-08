@@ -1685,3 +1685,13 @@ As a user, two-step requests tried to launch an app with the whole sentence as i
 Fixed: two-step requests now fall through to the chat, local addresses with a port or "localhost" open as http links, and quotes around an app name are dropped. Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: "open my downloads folder" and "open ~/Documents" are still treated as apps. "open chrome, then spotify" only splits on a known list of verbs. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-08 — typed questions and instant answers (ninth pass)
+
+Tried 39 typed questions such as "whats 2+2", "how many days until christmas", "days till new year", "what is 7 factorial", "average of 4, 8, 15", "1e3 * 5", "what day was it yesterday" and the usual maths, units, date and small talk ones.
+
+As a user, "whats 2+2" without the apostrophe went to the model, and so did "whats 15% of 80". People skip the apostrophe all the time. "how many days until christmas" also went to the model, which does not know today's date and can only guess.
+
+Fixed: the calculator lead-in now accepts "whats". A new instant answer in brain/resolve.js counts the days to Christmas, New Year's Day, Halloween and Valentine's Day from the clock. Cases added in test/brain.test.js and checked to fail before the change.
+
+Left for later: factorials ("7 factorial", "5!"), "average of 4, 8, 15", "1e3 * 5", "what is 1/3 as a percent", "pi" and countdowns to a named weekday or date still go to the model. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
