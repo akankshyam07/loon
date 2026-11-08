@@ -143,6 +143,24 @@ const KNOWN = [
     fix: ['Check the base case really stops the recursion.', 'Make sure each call moves closer to it (a smaller input).', 'For very deep data, loop with your own stack instead.'],
   },
   {
+    match: /connection to server (on socket|at) .*failed/i,
+    title: 'Postgres connection failed',
+    explain: 'psql could not reach a Postgres server, so it is not running, or it listens somewhere other than where the client looks.',
+    fix: ['Start the server (`brew services start postgresql`, `sudo systemctl start postgresql` or your Docker container).', 'Pass the host and port explicitly: `psql -h localhost -p 5432`.', 'If the message mentions a socket path, the server may be using a different socket directory.'],
+  },
+  {
+    match: /container name .* is already in use/i,
+    title: 'Docker container name already in use',
+    explain: 'A container with that name exists already, running or stopped, so Docker will not create a second one.',
+    fix: ['See it with `docker ps -a`.', 'Remove it with `docker rm -f <name>`, or start the old one with `docker start <name>`.', 'Or pick another name with `--name`, or add `--rm` so it cleans up after itself.'],
+  },
+  {
+    match: /ssh: connect to host .*(Connection timed out|Operation timed out)/i,
+    title: 'SSH connection timed out',
+    explain: 'The host did not answer on that port, so a firewall, a wrong address or a sleeping server is dropping the traffic.',
+    fix: ['Check the hostname or IP and the port (`ssh -p`).', 'Check the server is up and its firewall or security group allows port 22 from your address.', 'Try another network or turn off the VPN, then run `ssh -v` for detail.'],
+  },
+  {
     match: /FileNotFoundError|No such file or directory/,
     title: 'File not found',
     explain: 'The path doesn’t exist from where the program is running.',

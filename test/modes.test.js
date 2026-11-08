@@ -171,6 +171,9 @@ test('errors: fingerprint ignores paths/values; known errors answer from the tab
   assert.match(lookupKnown('java.lang.NullPointerException\n at com.x.A.run(A.java:3)'), /NullPointerException \(Java\)[\s\S]*Likely fix/);
   assert.match(lookupKnown('Access to fetch at x has been blocked by CORS policy'), /CORS/);
   assert.match(lookupKnown("error: pathspec 'main' did not match any file(s) known to git"), /branch or file/);
+  assert.match(lookupKnown('docker: Error response from daemon: Conflict. The container name "/web" is already in use by container abc.'), /docker rm/);
+  assert.match(lookupKnown('ssh: connect to host example.com port 22: Operation timed out'), /SSH connection timed out/);
+  assert.match(lookupKnown('psql: error: connection to server on socket "/tmp/.s.PGSQL.5432" failed: No such file or directory'), /Postgres/);
   assert.strictEqual(lookupKnown('SomethingTotallyNewError: flux capacitor'), null);
   assert.strictEqual(lookupKnown('ValueError: bad input\n  at run (/src/app.js:404:3)'), null, 'a line number is not an HTTP status');
   assert.strictEqual(lookupKnown('Process failed at line 500'), null);

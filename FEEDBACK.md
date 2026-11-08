@@ -1655,3 +1655,13 @@ As a user, the length, emoji, formal and language requests all worked. Asking Lo
 Fixed: parseFeedback in brain/personal.js now reads "tone down the jokes", "less sass", "no attitude" and "stop being so snarky" as the plain tone. Test added in test/personal.test.js.
 
 Left for later: "in spanish please" with no verb is ambiguous with a translation request, so it is left alone. "be nicer", "simpler words" and "answer in one sentence" have no matching setting.
+
+## 2026-11-08 — developer help, error table (tenth pass)
+
+Tried 30 terminal errors such as Python ValueError and ZeroDivisionError, npm ELIFECYCLE, Rust borrow errors, segfaults, 429 and 503, React key warnings, git push rejections, a Postgres socket failure, a docker name conflict and an ssh timeout.
+
+As a user, the table covered almost all of them. Three gaps were left. A psql "connection to server on socket ... failed: No such file or directory" was answered as a missing file, which sends me to check paths when the server is simply not running. The docker "container name is already in use" and "ssh: connect to host ... Connection timed out" errors went to the model.
+
+Fixed: added table entries for the Postgres connection failure (placed before the file-not-found rule), the docker name conflict and the ssh timeout. Test added in test/modes.test.js, it fails without the change.
+
+Left for later: the SSH publickey error still goes to the model on purpose. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
