@@ -1605,3 +1605,13 @@ As a user, the worst problem was that build and test failure lines got the Defin
 Fixed: non-zero exit codes, BUILD FAILURE or FAILED, pytest failure lines, "Failed to compile", "Compilation error", linker "undefined reference to", a lone stack frame and a bare "HTTP 4xx or 5xx" now count as errors. "exit code 0" stays a sentence. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: file paths, "What is this?", "x = 5" and a short bullet list are still words or sentences. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-08 — shopping and unit price (tenth pass)
+
+Tried 44 size strings such as "Pack of 12 x 355 ml cans", "1 lb 8 oz", "3 Count (Pack of 4)", "Pack of 2 - 32 fl oz each", "half dozen eggs" and "1/2 lb", plus 25 price strings in dollars, euros, krona, rupees and rubles.
+
+As a user, sizes were solid. The price reader was not for Central European and Nordic shops, where thousands are grouped with a space. "1 000 Kč" was read as 1 and "12 500 Ft" as 12, so a unit price would come out a thousand times too small and a cheap-looking item would win.
+
+Fixed: parsePrice joins digit groups separated by a space or a non-breaking space when each group after the first has three digits and no decimals follow. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: "12 eggs" has no size, "x2 500ml" ignores the multiplier, and a price split as "$12 99" reads as 12. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

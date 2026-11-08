@@ -74,6 +74,13 @@ test('parsePrice reads decimal-comma prices with a thousands separator', () => {
   assert.strictEqual(shopping.parsePrice('12,5'), 12.5);
 });
 
+test('parsePrice reads prices that group thousands with a space', () => {
+  assert.strictEqual(shopping.parsePrice('1 000 Kč'), 1000);
+  assert.strictEqual(shopping.parsePrice('12\u00a0500 Ft'), 12500);
+  assert.strictEqual(shopping.parsePrice('2 500 ₽'), 2500);
+  assert.strictEqual(shopping.parsePrice('$12 99'), 12);
+});
+
 test('shop page: structured data → unit prices, best value, warnings, judgy verdict', async () => {
   const doc = await dom(fixture('shop.html'));
   const items = shopping.extractStructured(doc);
