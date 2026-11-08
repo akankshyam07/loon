@@ -221,3 +221,10 @@ test('redaction hides secrets in quoted JSON keys', () => {
   assert.doesNotMatch(json.text, /hunter2|abcd1234/);
   assert.match(json.text, /"name": "Bob"/);
 });
+
+test('redaction hides short "pass:" labels, bare passcodes and Chinese password labels', () => {
+  assert.equal(redact('passcode 8842').text, 'passcode [redacted:secret]');
+  assert.equal(redact('pass: abc12345').text, 'pass: [redacted:secret]');
+  assert.equal(redact('密码：abc12345').text, '密码：[redacted:secret]');
+  assert.equal(redact('bypass: allowed').count, 0);
+});

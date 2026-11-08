@@ -53,7 +53,12 @@ const RULES = [
     re: /\b(password|passcode|passphrase|mot de passe|mdp|contraseña|clave|passwort|kennwort|pw|pin|cvv|cvc)(\s+(?:is|est|es|ist)\s*[:=]?\s*|\s*[:=]\s*)(?:(["'])(?!\[redacted)([^"'\n]{3,})\3|(?!\[redacted)([^\s"',;]{3,}))/gi,
     replace: (m, name, sep, quote) => `${name}${sep}${quote || ''}[redacted:secret]${quote || ''}`,
   },
-  { kind: 'secret', re: /\b(pin|cvv|cvc)(\s+)\d{3,8}\b/gi, replace: (m, name, sep) => `${name}${sep}[redacted:secret]` },
+  {
+    kind: 'secret',
+    re: /(?:\bpass|密码|密碼)(\s*[:=：]\s*)(?!\[redacted)([^\s"',;]{3,})/gi,
+    replace: (m) => m.replace(/(?<=[:=：]\s*)[^\s"',;]{3,}$/, '[redacted:secret]'),
+  },
+  { kind: 'secret', re: /\b(pin|passcode|cvv|cvc)(\s+)\d{3,8}\b/gi, replace: (m, name, sep) => `${name}${sep}[redacted:secret]` },
   {
     kind: 'secret',
     re: /\b((?:set-)?cookie\s*:\s*)([^\r\n]+)/gi,

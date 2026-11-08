@@ -1585,3 +1585,13 @@ As a user, the picks were sensible. Small misses were a dish name that kept a tr
 Fixed: the menu reader drops a trailing comma from the dish name, falafel counts as a protein, and tom yum, lard, Worcestershire and bone broth count as meat. Test added in test/modes.test.js. I tried adding pad thai too, but an existing test treats "Chicken-free Pad Thai" as vegetarian, so I left it.
 
 Left for later: a bare whole-number price ("Caesar Salad 11") is dropped, and protein ranking only counts keywords, so a dish with two proteins beats a bigger single one. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-08 — memory and privacy, redaction (ninth pass)
+
+Tried 25 snippets such as "passcode 8842", "pass: abc12345", "my pass is hunter22", "密码：abc12345", "Your code is 482913", recovery codes, DB_PASSWORD=abc, wifi passwords, PINs, Basic auth headers, card plus cvv and German and Spanish labels.
+
+As a user, the short labels were the gap. "pass: x", a bare "passcode 8842" and the Chinese label 密码 all went to the model untouched, even though "password: x" and "pin 4821" were hidden.
+
+Fixed: brain/redact.js hides the value after "pass:" or "pass=" and after 密码 or 密碼 (full-width colon too), and "passcode" followed by digits. "bypass: allowed" is left alone. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: "my pass is x" is not hidden because "the pass is closed" would be hurt. Recovery codes, SSH public key lines, dates of birth and "Your code is 482913" are not hidden. An unquoted password with a space still leaks the second word. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
