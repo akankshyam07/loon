@@ -1615,3 +1615,13 @@ As a user, sizes were solid. The price reader was not for Central European and N
 Fixed: parsePrice joins digit groups separated by a space or a non-breaking space when each group after the first has three digits and no decimals follow. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: "12 eggs" has no size, "x2 500ml" ignores the multiplier, and a price split as "$12 99" reads as 12. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-08 — history (ninth pass)
+
+Tried 36 phrasings such as "what did we discuss", "look up my past searches about rust", "show me everything I asked about python", "history of docker", "wat did I ask", "hisotry", "history docker" and "clear my history".
+
+As a user, the worst problem was that "what did we discuss" and "look up my past searches about X" returned nothing from Loon's history and went to the language model, which cannot see it.
+
+Fixed: "what did we discuss" now opens history like "what did we talk about", and "past/previous/recent searches/questions about X" and "everything I asked about X" search history for X. Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: "history of docker" is left alone on purpose, because "history of Rome" is a normal question. Typos like "wat did i ask" and "hisotry", and "clear my history" by typing, are still not matched. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
