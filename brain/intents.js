@@ -25,10 +25,10 @@ const TEMPLATES = [
   { re: /^what should i (order|eat)( here)?$|^what'?s the lightest( option)?$/, route: { type: 'task', task: 'food_lightest' } },
   { re: /^(quiz me|test me)( on this( page)?)?$/, route: { type: 'task', task: 'quiz' } },
   { re: /^(what have i found|summari[sz]e my notes)$/, route: { type: 'task', task: 'research_found' } },
-  { re: /^(?:(?:turn on |start )focus(?: mode)?(?: on)?|focus mode(?: on)?)$|^go to sleep$/, route: { type: 'toggle', key: 'focus', value: true } },
-  { re: /^(turn off |stop |exit |disable |end )focus( mode)?$|^(turn )?focus (mode )?off$|^wake up$/, route: { type: 'toggle', key: 'focus', value: false } },
+  { re: /^(?:(?:turn on |start )focus(?: mode)?(?: on)?|focus mode(?: on)?)$|^go to sleep$|^(do not|don'?t) disturb( me)?$/, route: { type: 'toggle', key: 'focus', value: true } },
+  { re: /^(turn off |stop |exit |disable |end |leave )focus( mode)?$|^un-?focus$|^(turn )?focus (mode )?off$|^wake up$/, route: { type: 'toggle', key: 'focus', value: false } },
   { re: /^((turn|switch) on |enable )?priv(acy|ate) mode( on)?$|^(turn|switch) priv(acy|ate) mode on$|^go private$/, route: { type: 'toggle', key: 'privacy', value: true } },
-  { re: /^(turn )?priv(acy|ate) mode off$|^(turn off|switch off|disable|exit) priv(acy|ate) mode$/, route: { type: 'toggle', key: 'privacy', value: false } },
+  { re: /^(turn )?priv(acy|ate) mode off$|^(turn off|switch off|disable|exit|leave|end|stop) priv(acy|ate) mode$/, route: { type: 'toggle', key: 'privacy', value: false } },
   { re: /^define:? (?:the word )?(.+)$/, route: { type: 'task', task: 'define', slot: 'text' } },
 ];
 

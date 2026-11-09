@@ -150,3 +150,10 @@ test('spoken privacy and focus toggles, page and shopping variants reach their t
   for (const t of ['explain this page to me', "what's this page", 'summarize page']) assert.strictEqual(route(t).task, 'page_summary', t);
   for (const t of ["which one's the cheapest", "what's the cheapest option", 'which is cheaper']) assert.strictEqual(route(t).task, 'shop_value', t);
 });
+
+test('spoken ways to leave private or focus mode and to ask for quiet turn the toggle off or focus on', () => {
+  const toggle = (t) => { const r = route(t); return `${r.type}:${r.key}:${r.value}`; };
+  for (const t of ['leave private mode', 'end privacy mode', 'stop private mode', 'turn private mode off please']) assert.strictEqual(toggle(t), 'toggle:privacy:false', t);
+  for (const t of ['do not disturb', "don't disturb me", 'unfocus', 'un-focus']) assert.strictEqual(toggle(t), t.includes('focus') ? 'toggle:focus:false' : 'toggle:focus:true', t);
+  assert.strictEqual(toggle('leave focus mode'), 'toggle:focus:false');
+});

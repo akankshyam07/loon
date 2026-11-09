@@ -1805,3 +1805,13 @@ As a user, the worst problem was a wrong number stated with confidence. A price 
 Fixed: parsePrice reads cents ("99¢", "75 cents") as a fraction of a dollar. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: "24-pack 12 oz cans" counts oz as weight, so cans of drinks cannot compare with bottles in ml. "x2 500ml" ignores the multiplier, "12 eggs" has no size and "$12 99" reads as 12. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-09 — voice intents (eighth pass)
+
+Tried 36 spoken phrasings such as "stop listening", "do not disturb", "unfocus", "leave private mode", "end privacy mode", "go back to normal", "translate to spanish", "explain this code" and "shorter".
+
+As a user, the worst problem was that natural ways to leave private mode ("leave private mode", "end privacy mode") and to ask for quiet ("do not disturb", "unfocus") went to the model, which could say it was done while nothing changed.
+
+Fixed: the privacy and focus toggle templates accept leave, end and stop for private mode, leave and "unfocus" for focus off, and "do not disturb" for focus on. Test added in test/voice.test.js.
+
+Left for later: "stop listening", "make it more casual", bare "shorter", "translate to spanish", "explain this code", "what does this word mean" and "go back to normal" still go to the model. The 5 failures in `npm test` are the same WordNet and demo ones as on main in this sandbox.
