@@ -389,6 +389,13 @@ test('grammar fixer leaves code identifiers, stretched words and vowel-less abbr
   assert.ok((await fixGrammar('I recieve it')).fixed.includes('receive'));
 });
 
+test('grammar fixer leaves room numbers, "It\'s Dr. Smith\'s" and "Your the" alone', async () => {
+  for (const text of ['The meeting is in room 4B', "It's Dr. Smith's office", 'Your the best']) {
+    assert.strictEqual((await fixGrammar(text)).fixed, text);
+  }
+  assert.ok((await fixGrammar('Its a nice day')).fixed.startsWith("It's"));
+});
+
 test('menu: a trailing comma after the dish name is dropped, and falafel counts as protein, tom yum and lard as not vegetarian', () => {
   const [item] = food.extractMenu('Plant-based nuggets, $8');
   assert.strictEqual(item.name, 'Plant-based nuggets');

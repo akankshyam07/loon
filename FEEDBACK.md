@@ -1785,3 +1785,13 @@ As a user, the gap was command lines pasted from a terminal. `deploy --token abc
 Fixed: brain/redact.js hides the value after `--password`, `--token`, `--secret`, `--api-key` and similar flags written with a space, quoted or not, and treats `private_key` as a secret name. `--secret --verbose` is left alone. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: an unquoted password with spaces still leaks the words after the first ("password is: correct horse battery staple"). `mysql -p hunter22`, ssh public key lines and dates of birth are not hidden. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-09 — writing tools, fix grammar (seventh pass)
+
+Tried 21 texts such as "room 4B", "It's Dr. Smith's office", "Your the best", "Thanks for you're help", a French sentence, code in backticks, URLs and emails, "She dont like it" and "the the cat sat on on the mat".
+
+As a user, the worst problem was edits that change what I meant. "room 4B" became "room 4 bytes", "It's Dr. Smith's office" became "Its Dr. Smith's office", and "Your the best" became "Your best".
+
+Fixed: fixGrammar now skips word-choice suggestions that start with a space, skips repetition fixes where the two words differ, and skips the "it's" to "its" suggestion when a capitalized name follows. Real fixes such as "Its a nice day" still work. Test added in test/modes.test.js, it fails without the change.
+
+Left for later: "writting" becomes "writhing" because Harper lists it first and it ties with "writing" on edit distance. "I seen him", "Me and him goes", "1 cats", "Lets meet" and "you're help" are not flagged. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

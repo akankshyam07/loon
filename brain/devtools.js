@@ -168,6 +168,10 @@ async function fixGrammar(text) {
     if (l.lint_kind() === 'Formatting' || (l.lint_kind() === 'Miscellaneous' && /^[A-Z]{2,}$/.test(word))) return false;
     // An all-caps abbreviation (EOD, PDF) is not a misspelling, and a dialect spelling is the user's choice.
     if (l.lint_kind() === 'Spelling' && (/^[A-Z]{2,}s?$/.test(word) || (word.toLowerCase() !== to.toLowerCase() && dialectKey(word) === dialectKey(to)))) return false;
+    // Harper reads "4B" as "4 bytes", "Your the" as a repeat of "Your" and "It's Dr. Smith's" as a wrong "its".
+    if (l.lint_kind() === 'WordChoice' && /^\s/.test(to)) return false;
+    if (l.lint_kind() === 'Repetition' && new Set(word.toLowerCase().split(/\s+/)).size > 1) return false;
+    if (l.lint_kind() === 'Agreement' && /^it's$/i.test(word) && /^\s+[A-Z]/.test(fixed.slice(end))) return false;
     if (['Spelling', 'Typo'].includes(l.lint_kind()) && NOT_A_TYPO.test(word)) return false;
     if (l.lint_kind() === 'Spelling' && editDistance(word.toLowerCase(), to.toLowerCase()) > Math.max(2, Math.ceil(word.length / 3))) return false;
     return !(/^[A-Z][a-z]/.test(word) && to === word.toUpperCase()) && !(word.length > 1 && to.length === 1);
