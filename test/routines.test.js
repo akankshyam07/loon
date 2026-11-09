@@ -62,6 +62,11 @@ test('routines: ~20 phrasings parse in code, and their wording reads back to the
   assert.deepStrictEqual(R.parseRoutine('every night at 10 tell me to sleep 😴', { now: NOW }).payload, { message: 'Time to sleep 😴' });
   assert.deepStrictEqual(R.parseRoutine('every Monday check the price of this page', { now: NOW, pageUrl: PAGE }).payload, { url: PAGE });
   assert.strictEqual(R.parseRoutine('every Monday check the price of this page', { now: NOW }).understood, false); // no page open
+  // politeness must not turn a routine into a one-time reminder titled "every to email bob"
+  for (const wording of ['can you remind me every monday at 9 to email bob', 'please every Monday at 9 remind me to email bob', 'every Monday at 9 please remind me to email bob']) {
+    const polite = R.parseRoutine(wording, { now: NOW });
+    assert.deepStrictEqual([polite.action, polite.payload, polite.understood], ['reminder', { message: 'email bob' }, true], wording);
+  }
   // two times of day are not understood, so the card asks instead of keeping only 9am
   const twice = R.parseRoutine('every day at 9am and 5pm remind me to stretch', { now: NOW });
   assert.strictEqual(twice.schedule, null);

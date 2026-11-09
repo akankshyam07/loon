@@ -1705,3 +1705,13 @@ As a user, "what do you remember" and "what do u know about me" went to the lang
 Fixed: parseCommand reads "what do you/u remember" and "u know about me" as a memory listing, and "save/add/put/store (this) to/in memory" as remember. Test added in test/assistant.test.js.
 
 Left for later: "private mode on", "go private" and "don't save this conversation" are not commands, so they go to the model. "remember nothing" saves a fact "nothing". The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-09 — routines (tenth pass)
+
+Tried 45 phrasings such as "every morning at 8 remind me to take vitamins", "every weekday except friday at 9", "twice a day remind me to stretch", "every tuesday at 7 am y 7 pm", "can you remind me every monday at 9 to email bob", "please every day at 9 remind me to stretch" and a routine with an emoji after the schedule.
+
+As a user, the worst problem was that a polite word broke routines. "Can you remind me every monday at 9 to email bob" was not read as a routine, so it fell through to the one-time reminder code and made a single reminder titled "every to email bob". "Please every day at 9 remind me to stretch" became a plain message reading "Please remind me to stretch".
+
+Fixed: parseRoutine now removes the same politeness words as parseCommand, through one shared stripPoliteness in brain/commands.js, and the action part drops a leading "please". Test added in test/routines.test.js and checked to fail before the change.
+
+Left for later: "twice a day" and "3 times a day" are not routines, so "remind me to stretch twice a day" makes a one-time reminder titled "stretch twice", which is quietly wrong. "Every quarter" and "every first monday of the month" give a card with no schedule, which is honest. An emoji right after the schedule ("every morning ☀️ remind me to stretch") makes the action a plain message. "At 7 am y 7 pm" in Spanish keeps only the first time. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

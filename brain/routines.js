@@ -4,6 +4,7 @@
 const crypto = require('crypto');
 const chrono = require('chrono-node');
 const { parseQuantity, money, short } = require('./shopping');
+const { stripPoliteness, extractWhen } = require('./commands');
 
 const MINUTE = 60 * 1000;
 const DAY = 24 * 60 * MINUTE;
@@ -131,7 +132,6 @@ function parseSchedule(input, now = new Date(), { allowOnce = false } = {}) {
     if (!allowOnce) return { schedule: null, rest: tidyRest(input) };
     const [found] = chrono.parse(String(input), now, { forwardDate: true });
     if (!found) return { schedule: null, rest: tidyRest(input) };
-    const { extractWhen } = require('./commands');
     return { schedule: { type: 'once', at: extractWhen(found.text, now).date.getTime() }, rest: '' };
   }
   if (!time) return { schedule: null, rest: tidyRest(state.text) };
@@ -268,7 +268,7 @@ const ACTION_RULES = [
 
 // The action part of a routine: { action, payload, understood }.
 function parseAction(rest, { pageUrl = null } = {}) {
-  const text = rest.trim().replace(/^(?:to|and|then)\s+/i, '');
+  const text = rest.trim().replace(/^(?:(?:to|and|then|please|pls)\s+)+/i, '');
   let m;
   if ((m = text.match(/^remind me (?:to |about |of )?(.+)$/i))) {
     const message = /^(?:to|about|of)$/i.test(m[1]) ? '' : tidyMessage(m[1]); // "remind me to" with nothing after it
@@ -320,7 +320,7 @@ function labelFor(action, payload = {}) {
 // "every weekday at 8:30 summarize my calendar" → a routine draft, or null when the text isn't a routine.
 // Drafts with understood: false still become a confirm card, with whatever was read filled in.
 function parseRoutine(input, { now = new Date(), pageUrl = null } = {}) {
-  const text = String(input).trim().replace(/[.!]+$/, '');
+  const text = stripPoliteness(input).replace(/[.!]+$/, '');
   // Questions about schedules ("what runs every day at 9?") stay questions.
   if (/^(?:what|how|why|when|where|who|which|is|are|does|do|can|could|should|would|explain|define)\b/i.test(text)) return null;
   const { schedule, rest } = parseSchedule(text, now);

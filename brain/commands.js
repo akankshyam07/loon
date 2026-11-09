@@ -59,12 +59,16 @@ function normalizeSpoken(text) {
   return out.replace(/\s{2,}/g, ' ').trim();
 }
 
-function parseCommand(input, now = new Date()) {
-  // Politeness doesn't change the command: "please remind me…", "can you open Spotify", "…, thanks".
-  const text = input.trim()
+// Politeness doesn't change the command: "please remind me…", "can you open Spotify", "…, thanks".
+function stripPoliteness(input) {
+  return String(input).trim()
     .replace(/^(?:(?:hey|ok|okay) )?(?:loon[,\s]+)?(?:(?:please|pls|plz|can you|could you|would you|will you)\s+)+/i, '')
     .replace(/[,\s]+(?:please|pls|plz|thanks|thank you)[.!?]*$/i, '')
     .trim();
+}
+
+function parseCommand(input, now = new Date()) {
+  const text = stripPoliteness(input);
   let m;
   // Loon has no alarm clock of its own. Timers, alarms and "wake me" become Reminders, which the confirm card names.
   if ((m = text.match(/^(?:set |start )?(?:an? )?(?:timer|countdown)(?: for| of)? (?:in )?(.+)$/i)) || (m = text.match(/^(?:set |start )?(?:an? )?(.+?)[\s-]timer(?: for (.+))?$/i))) {
@@ -173,4 +177,4 @@ function describe(command) {
   }
 }
 
-module.exports = { parseCommand, extractWhen, describe, normalizeSpoken };
+module.exports = { parseCommand, extractWhen, describe, normalizeSpoken, stripPoliteness };
