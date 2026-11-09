@@ -1825,3 +1825,13 @@ As a user, "remind me yesterday to call bob" made a reminder dated yesterday, wh
 Fixed: a reminder whose parsed time is not in the future now has no time, so the card says "(no time)" like any reminder without a time. Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: "cancel timer", "stop the timer", "start a pomodoro", "pause focus", "list my reminders" and "what timers do i have" are not matched. "remind me 10 minutes before the meeting to prep" gives the title "the meeting to prep". "at 25:00" still leaves the phrase in the title. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-09 — typed questions, math and conversions (ninth pass)
+
+Tried 50 inputs such as "5 factorial", "3 dozen", "1 gb in mb", "100 usd in eur", "5 ft 10 in to cm", "100 mph in km/h", "5 - -3", "10 / -2" and "1.5k + 2k".
+
+As a user, the worst problems were everyday questions going to the language model. Height in feet and inches was not understood, "km/h" and "m/s" were not units, factorials were missing, and a negative second number ("5 - -3", "10 / -2") was not read as maths.
+
+Fixed: calc now reads feet and inches together, km/h and m/s, "N factorial" and "factorial of N", and a minus sign after an operator. Cases added to the ladder test in test/brain.test.js and checked to fail before the change.
+
+Left for later: "5!" cannot work because trailing punctuation is stripped first. Data sizes (gb, mb) need a decision between 1000 and 1024. Also missing are "3 dozen", "1.5k", "1 ton", area units and currency (needs live rates, so the cat should say it cannot know them). `npm test` still shows the 5 WordNet and demo failures from the sandbox install.

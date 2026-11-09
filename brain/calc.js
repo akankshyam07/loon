@@ -89,7 +89,8 @@ function calc(question) {
   const money = q.match(/[$€£]/) || (words && [words[1] === 'euros' ? '€' : '$']);
   const cash = (n) => (money ? money[0] + n.toFixed(2).replace(/\B(?=(\d{3})+\.)/g, ',') : fmt(n));
   const body = q.slice(lead.length).replace(/[$€£]\s*(?=\d)/g, '').replace(/\s*(?:dollars|euros|bucks)$/, '')
-    .replace(/^how many (\w+) (?:are |is )?(?:in|per) (?:(?:a|an|one) |(\d+(?:\.\d+)?) )?(\w+)$/, (_, to, n, from) => `${n || 1} ${from} to ${to}`).replace(/^to\s+/, '').replace(/°|\s+degrees?(?=\s+[cfk]\b|\s+(?:celsius|fahrenheit|kelvin))/g, '').replace(/\bpercent\b/g, '%')
+    .replace(/^how many (\w+) (?:are |is )?(?:in|per) (?:(?:a|an|one) |(\d+(?:\.\d+)?) )?(\w+)$/, (_, to, n, from) => `${n || 1} ${from} to ${to}`).replace(/^to\s+/, '').replace(/°|\s+degrees?(?=\s+[cfk]\b|\s+(?:celsius|fahrenheit|kelvin))/g, '').replace(/\bpercent\b/g, '%').replace(/\bkm\/h\b/g, 'kph').replace(/\bm\/s\b/g, 'mps')
+    .replace(/^(?:(\d+)\s+factorial|factorial of\s+(\d+))$/, (_, a, b) => `${a || b} factorial`)
     .replace(/(\d)\s*(?:times|multiplied by)\s*(?=[\d(])/g, '$1*').replace(/(\d)\s*plus\s*(?=[\d(])/g, '$1+')
     .replace(/(\d)\s*minus\s*(?=[\d(])/g, '$1 - ').replace(/(\d)\s*(?:divided by|over)\s*(?=[\d(])/g, '$1/')
     .replace(/(\d)\s*to the power of\s*(?=[\d(])/g, '$1^').replace(/(\d)\s*\*\*\s*(?=[\d(])/g, '$1^')
@@ -138,6 +139,17 @@ function calc(question) {
   m = body.match(/^(?:sqrt\s*\(?|sqrt of\s+|square root of\s+)(\d+(?:\.\d+)?)\)?$/);
   if (m) return `√${m[1]} = ${fmt(Math.sqrt(m[1]))}`;
 
+  m = body.match(/^(\d+) factorial$/);
+  if (m) return +m[1] <= 170 ? `${m[1]}! = ${fmt(Array.from({ length: +m[1] }, (_, i) => i + 1).reduce((a, b) => a * b, 1))}` : `${m[1]}! is too big for me to write out.`;
+
+  // "5 ft 10 in to cm" and "5'10 to cm": two sizes side by side are one height
+  m = body.match(/^(\d+(?:\.\d+)?)\s*(?:ft|feet|foot|')\s*(\d+(?:\.\d+)?)\s*(?:in|inch|inches|")?\s+(?:to|in|into|as)\s+([a-z]+)$/);
+  if (m && ALIASES[m[3]]) {
+    const inches = m[1] * 12 + +m[2];
+    const out = convert(inches, 'in', ALIASES[m[3]]);
+    if (out !== null) return `${m[1]} ft ${m[2]} in is about ${fmt(out)} ${m[3]}.`;
+  }
+
   m = body.match(/^(\d+(?:\.\d+)?)\s*cubed$/);
   if (m) return `${m[1]}^3 = ${fmt(m[1] ** 3)}`;
 
@@ -153,7 +165,7 @@ function calc(question) {
   }
 
   const expression = body.replace(/[x×]/g, '*').replace(/÷/g, '/');
-  if (/^[\d\s.+\-*/^()]+$/.test(expression) && /\d\s*[-+*/^]+\s*[\d(]|\d\s*\)/.test(expression)) {
+  if (/^[\d\s.+\-*/^()]+$/.test(expression) && /\d\s*[-+*/^][-+*/^\s]*[\d(]|\d\s*\)/.test(expression)) {
     // "555-1234" is a phone number unless asked as a question or spaced out
     if (!lead && !/[+*/^]| - /.test(expression)) return null;
     const v = evaluate(expression);
