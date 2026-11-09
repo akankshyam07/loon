@@ -1755,3 +1755,13 @@ As a user, the worst problem was that kind words cost a full model call. "nice o
 Fixed: short praise now gets an instant reply from code. It covers "nice one", "good job", "good kitty", "love it", "you are great", "perfect", "that was helpful" and "well done". Praise followed by a request ("perfect but shorter", "nice, what about ports") still goes to the model. Test added in test/brain.test.js.
 
 Left for later: "that's all", "never mind", "sorry", "thanks that was helpful", "night" and "take care" still go to the model. Plain "ok", "yes" and "no" are left alone on purpose because they can answer a question from the cat. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-09 — translation and definitions (eleventh pass)
+
+Tried 32 typed dictionary phrasings such as "what does ephemeral mean, loon", "explain the word ennui", "meaning of life", "what does ephemeral stand for", "what does it mean to be ephemeral" and "define ephemeral and ubiquitous".
+
+As a user, "explain the word ennui" and a polite ", loon" tail skipped the offline WordNet lookup. "meaning of life" was read as a request to define the word "life", which is not what anyone asking that wants.
+
+Fixed: dictionaryTerm accepts "explain the word X" and a ", loon" tail, and leaves the bare "meaning of life" to the model. Test added in test/brain.test.js.
+
+Left for later: "what is ennui" still goes to the model, because it cannot be told apart from "what is python". "what does X stand for" and two-word lists also go to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

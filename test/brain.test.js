@@ -281,3 +281,12 @@ test('dictionaryTerm accepts "def", "look up" and "tell me" wordings but not pro
   assert.strictEqual(dictionaryTerm('tell me what this means'), null);
   assert.strictEqual(dictionaryTerm('what it means'), null);
 });
+
+test('dictionaryTerm takes "explain the word X" and a ", loon" tail but leaves "meaning of life" to the model', () => {
+  const { dictionaryTerm } = require('../brain/define');
+  assert.strictEqual(dictionaryTerm('explain the word ennui'), 'ennui');
+  assert.strictEqual(dictionaryTerm('what does ephemeral mean, loon'), 'ephemeral');
+  assert.strictEqual(dictionaryTerm('meaning of life'), null);
+  assert.strictEqual(dictionaryTerm('what is the meaning of the word life'), 'life');
+  assert.strictEqual(dictionaryTerm('explain this error'), null);
+});
