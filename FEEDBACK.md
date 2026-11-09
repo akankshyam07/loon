@@ -1745,3 +1745,13 @@ As a user, the worst problems were small but wrong. `{"rate": 1e3}` became a `lo
 Fixed: keepDecimals now also keeps exponent numbers as decimals, and an input with only empty objects says it is empty instead of showing an empty class. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: a mixed-type array in Java produces a union class with public fields and an unused import. A map keyed by names (`{"alice": 1, "bob": 2}`) becomes a class rather than a Map. A 20-digit id still becomes `double`. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-09 — follow-up conversations (ninth pass)
+
+Tried 60 short replies inside an open thread such as "nice one", "good kitty", "love it", "you are great", "perfect", "that was helpful", "ok", "lol", "that's all", "never mind" and "take care".
+
+As a user, the worst problem was that kind words cost a full model call. "nice one" or "love it" after an answer started the local model, which is slow and can reply with a long unrelated explanation.
+
+Fixed: short praise now gets an instant reply from code. It covers "nice one", "good job", "good kitty", "love it", "you are great", "perfect", "that was helpful" and "well done". Praise followed by a request ("perfect but shorter", "nice, what about ports") still goes to the model. Test added in test/brain.test.js.
+
+Left for later: "that's all", "never mind", "sorry", "thanks that was helpful", "night" and "take care" still go to the model. Plain "ok", "yes" and "no" are left alone on purpose because they can answer a question from the cat. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

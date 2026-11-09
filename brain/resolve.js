@@ -94,6 +94,10 @@ const CODE_ANSWERS = [
     answer: () => ({ mood: 'happy', text: 'Anytime. *purrs*' }),
   },
   {
+    match: /^(?:(?:wow|aw+|ok|okay)[ ,]+)?(?:(?:that(?:'s| was| is)|this is|you(?:'re| are)|u r|it(?:'s| was)) )?(?:(?:so|very|really|super|pretty) )?(?:great|awesome|amazing|perfect|brilliant|helpful|wonderful|clever|smart|excellent|fantastic|the best|nice|good)(?: (?:one|job|work|answer|help|cat|kitty|bot))?(?: (?:loon|kitty))?$|^(?:well done|you (?:rock|rule)|love (?:it|that|this|you))(?: loon)?$/,
+    answer: () => ({ mood: 'happy', text: 'Aw, thanks. *purrs*' }),
+  },
+  {
     match: /^(?:good ?night|night night|nighty night|gn|bye|bye bye|goodbye|see (?:you|ya)(?: later| soon| tomorrow)?|cya|ttyl|later)(?: loon)?$/,
     answer: () => ({ mood: 'sleepy', text: "Night! I'll keep watch. *curls up*" }),
   },
