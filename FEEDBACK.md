@@ -1725,3 +1725,13 @@ As a user, the worst problem was privacy. Most login pages have a "show password
 Fixed: a visible input whose name or id contains "password" (or is "passwd") now makes the page sensitive, as does a field starting with "ssn". Checkboxes, buttons and hidden inputs are skipped so a "show password" checkbox does not trigger it. Five more finance hosts were added. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: walgreens and cvs pharmacy paths, a field called routing or api_secret, and one-time code fields named otp or verification_code are still not caught. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-09 — CI repair, sign-up pages were private again
+
+Tried the failing `e2e-browser` run on 61a2de9. Four screen-control steps said "This is a private page, so I won't act on it" on the sign-up fixture.
+
+What went wrong was the password-name check added in the ninth pass. The fixture has a field named "password" with `autocomplete="new-password"`, so the sign-up page counted as private and Loon refused to click Sign up or Buy now. That is the same mistake as the one fixed earlier for the autocomplete selector.
+
+Fixed: a field marked `autocomplete="new-password"` is skipped by the name check. Real login fields and show-password toggles on login forms still make the page sensitive. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: the sign-up page rule is only as good as the autocomplete attribute, so a sign-up form without it still reads as private, which errs on the safe side. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
