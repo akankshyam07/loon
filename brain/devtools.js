@@ -86,8 +86,8 @@ function parseJson(text) {
 }
 
 // JSON.parse turns 10.0 into the integer 10, so a price would become `long`. Only types are generated, so a written
-// decimal point is kept by giving the sample a fraction. Strings are skipped so quoted text is left alone.
-const keepDecimals = (text) => String(text).replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|(?<![\w.])(-?\d+)\.0+(?![\w.])/g, (m, int) => (int === undefined ? m : `${int}.5`));
+// decimal point or exponent (1e3) is kept by giving the sample a fraction. Strings are skipped so quoted text is left alone.
+const keepDecimals = (text) => String(text).replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|(?<![\w.])(-?\d+)(?:\.0+(?![\w.])|(?:\.\d+)?[eE][+-]?\d+(?![\w.]))/g, (m, int) => (int === undefined ? m : `${int}.5`));
 
 async function jsonToDto(json, language = 'java', name = 'Root') {
   const { quicktype, InputData, jsonInputForTargetLanguage } = await import('quicktype-core');
@@ -97,6 +97,7 @@ async function jsonToDto(json, language = 'java', name = 'Root') {
   const samples = Array.isArray(parsed) ? parsed : [parsed];
   const objects = samples.filter((v) => v && typeof v === 'object' && !Array.isArray(v));
   if (!objects.length) return "That JSON has no fields (just plain values), so there are no types to make from it.";
+  if (objects.every((o) => !Object.keys(o).length)) return 'That JSON is empty, so there are no fields to make types from.';
   // Plain getters only bind to JSON keys that are already simple lowercase words. Any other key (first-name, created_at,
   // userId) needs Jackson's @JsonProperty or Spring Boot silently leaves the field null.
   const needsNames = lang === 'java' && keysOf(parsed).some((k) => !/^[a-z][a-z0-9]*$/.test(k));

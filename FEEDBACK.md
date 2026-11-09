@@ -1735,3 +1735,13 @@ What went wrong was the password-name check added in the ninth pass. The fixture
 Fixed: a field marked `autocomplete="new-password"` is skipped by the name check. Real login fields and show-password toggles on login forms still make the page sensitive. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: the sign-up page rule is only as good as the autocomplete attribute, so a sign-up form without it still reads as private, which errs on the safe side. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-09 — developer help, JSON to DTO (ninth pass)
+
+Tried 24 inputs such as an empty object, nested empty objects, null-only fields, mixed-type arrays, keys with spaces, reserved words and emoji, exponent numbers, a 20-digit id, dates, UUIDs, snake_case keys, a key named Root, nested arrays of objects, matrices and name-keyed maps.
+
+As a user, the worst problems were small but wrong. `{"rate": 1e3}` became a `long`, so a decimal rate would fail to bind. An empty `{}` produced an empty class with no explanation.
+
+Fixed: keepDecimals now also keeps exponent numbers as decimals, and an input with only empty objects says it is empty instead of showing an empty class. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: a mixed-type array in Java produces a union class with public fields and an unused import. A map keyed by names (`{"alice": 1, "bob": 2}`) becomes a class rather than a Map. A 20-digit id still becomes `double`. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

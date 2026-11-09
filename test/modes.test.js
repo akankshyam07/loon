@@ -396,3 +396,12 @@ test('menu: a trailing comma after the dish name is dropped, and falafel counts 
   assert.strictEqual(food.score({ name: 'Tom Yum soup', description: '' }).likelyVegetarian, false);
   assert.strictEqual(food.score({ name: 'Refried beans cooked in lard', description: '' }).likelyVegetarian, false);
 });
+
+test('JSON to DTO keeps exponent numbers as decimals and says so for an empty object', async () => {
+  const java = await jsonToDto('{"rate": 1e3, "small": 2.5E-3, "n": 4}', 'java');
+  assert.match(java, /double rate/);
+  assert.match(java, /double small/);
+  assert.match(java, /long n/);
+  assert.match(await jsonToDto('{}', 'java'), /empty/);
+  assert.match(await jsonToDto('[{}, {}]', 'typescript'), /empty/);
+});
