@@ -1775,3 +1775,13 @@ As a user, the picks were sensible, but any dish priced with a whole number and 
 Fixed: a trailing whole number of up to three digits counts as a price, except after words like table, page, serves or size, and a trailing slash is dropped from the dish name. Lamb, duck, paneer, dal and chana count as proteins. Test added in test/modes.test.js.
 
 Left for later: protein ranking still counts keywords only, and a size list such as "Soup of the day 4 / 6" keeps the first size in the dish name. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-09 — memory and privacy, redaction (tenth pass)
+
+Tried 25 snippets such as an exported OpenAI key, a Wi-Fi password sentence, curl headers, connection strings, card numbers, ssh keys, JSON passwords, `mysql -p`, `--password=` and `--token` flags.
+
+As a user, the gap was command lines pasted from a terminal. `deploy --token abc123def456` and `login --password "my pass"` went to the model untouched, and so did `private_key: "..."`.
+
+Fixed: brain/redact.js hides the value after `--password`, `--token`, `--secret`, `--api-key` and similar flags written with a space, quoted or not, and treats `private_key` as a secret name. `--secret --verbose` is left alone. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: an unquoted password with spaces still leaks the words after the first ("password is: correct horse battery staple"). `mysql -p hunter22`, ssh public key lines and dates of birth are not hidden. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

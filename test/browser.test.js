@@ -240,3 +240,10 @@ test('redaction hides short "pass:" labels, bare passcodes and Chinese password 
   assert.equal(redact('密码：abc12345').text, '密码：[redacted:secret]');
   assert.equal(redact('bypass: allowed').count, 0);
 });
+
+test('redaction hides CLI secret flags and quoted private_key values', () => {
+  assert.equal(redact('deploy --token abc123def456 --force').text, 'deploy --token [redacted:secret] --force');
+  assert.equal(redact('login --password "my pass"').text, 'login --password "[redacted:secret]"');
+  assert.equal(redact('private_key: "abcdef"').text, 'private_key: "[redacted:secret]"');
+  assert.equal(redact('run --secret --verbose').count, 0);
+});

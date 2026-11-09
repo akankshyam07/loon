@@ -39,13 +39,18 @@ const RULES = [
   { kind: 'connection-string', re: /\b[a-z][a-z0-9+.-]*:\/\/[^\s:/@]+:[^\s@/]+@[^\s]+/gi },
   {
     kind: 'secret',
-    re: /\b([\w.-]*(?:password|passwd|pwd|secret|token|api[_-]?key|access[_-]?key|client[_-]?secret|session[_-]?id|sessid)[\w-]*)(["']?\s*[:=]\s*)(?:(["'])([^"'\n]{4,})\3|([^\s"',;]{4,}))/gi,
+    re: /\b([\w.-]*(?:password|passwd|pwd|secret|token|api[_-]?key|access[_-]?key|client[_-]?secret|private[_-]?key|session[_-]?id|sessid)[\w-]*)(["']?\s*[:=]\s*)(?:(["'])([^"'\n]{4,})\3|([^\s"',;]{4,}))/gi,
     replace: (m, name, sep, quote) => `${name}${sep}${quote || ''}[redacted:secret]${quote || ''}`,
   },
   {
     kind: 'secret',
     re: /(\s(?:-u|--user)\s+["']?[^\s:"']+:)(?!\[redacted)([^\s"']{3,})/g,
     replace: (m, head) => `${head}[redacted:secret]`,
+  },
+  {
+    kind: 'secret',
+    re: /((?:^|\s)--(?:password|passwd|token|secret|api-?key|access-?token|auth-?token)\s+)(?!\[redacted|-)(?:(["'])[^"'\n]{4,}\2|[^\s"']{4,})/gi,
+    replace: (m, head, quote) => `${head}${quote || ''}[redacted:secret]${quote || ''}`,
   },
   { kind: 'token', re: /\bBasic\s+[A-Za-z0-9+\/]{12,}={0,2}/g },
   {
