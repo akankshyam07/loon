@@ -1815,3 +1815,13 @@ As a user, the worst problem was that natural ways to leave private mode ("leave
 Fixed: the privacy and focus toggle templates accept leave, end and stop for private mode, leave and "unfocus" for focus off, and "do not disturb" for focus on. Test added in test/voice.test.js.
 
 Left for later: "stop listening", "make it more casual", bare "shorter", "translate to spanish", "explain this code", "what does this word mean" and "go back to normal" still go to the model. The 5 failures in `npm test` are the same WordNet and demo ones as on main in this sandbox.
+
+## 2026-11-09 — reminders, timers and focus (eleventh pass)
+
+Tried 33 inputs such as "remind me yesterday to call bob", "remind me at 25:00 to x", "timer 5 min", "set a timer for 1 hour 30 minutes", "remind me on the 15th to pay rent", "remind me in a couple of hours", "pause focus", "list my reminders" and "schedule a meeting friday at 10am".
+
+As a user, "remind me yesterday to call bob" made a reminder dated yesterday, which would never fire or fire at once, and the card looked normal.
+
+Fixed: a reminder whose parsed time is not in the future now has no time, so the card says "(no time)" like any reminder without a time. Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: "cancel timer", "stop the timer", "start a pomodoro", "pause focus", "list my reminders" and "what timers do i have" are not matched. "remind me 10 minutes before the meeting to prep" gives the title "the meeting to prep". "at 25:00" still leaves the phrase in the title. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

@@ -368,3 +368,10 @@ test('commands: "end of day" and "eod" mean 5pm, and "remindme" without a space 
   assert.strictEqual(glued.title, 'call mom');
   assert.strictEqual(glued.when.getHours(), 18);
 });
+
+test('a reminder for a time that has already passed has no time instead of a past one', () => {
+  const past = parseCommand('remind me yesterday to call bob', NOW);
+  assert.strictEqual(past.title, 'call bob');
+  assert.strictEqual(past.when, null);
+  assert.ok(parseCommand('remind me tomorrow to call bob', NOW).when > NOW);
+});
