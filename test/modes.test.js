@@ -405,3 +405,10 @@ test('JSON to DTO keeps exponent numbers as decimals and says so for an empty ob
   assert.match(await jsonToDto('{}', 'java'), /empty/);
   assert.match(await jsonToDto('[{}, {}]', 'typescript'), /empty/);
 });
+
+test('menu: a bare whole-number price counts, table and serving counts do not, lamb and dal are proteins', () => {
+  const items = food.extractMenu('Caesar Salad 11\nSoup of the day 4 / 6\nTable 5\nServes 4\nEst. 1998\nLamb Kofta Plate $17');
+  assert.deepStrictEqual(items.map((i) => [i.name, i.price]), [['Caesar Salad', 11], ['Soup of the day 4', 6], ['Lamb Kofta Plate', 17]]);
+  assert.deepStrictEqual(food.score({ name: 'Lamb Kofta Plate', description: '' }).proteins, ['lamb']);
+  assert.deepStrictEqual(food.score({ name: 'Dal Makhani', description: '' }).proteins, ['dal']);
+});

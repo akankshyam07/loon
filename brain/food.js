@@ -1,13 +1,15 @@
 // Food Cat (DESIGN.md §3.7): picks from keywords, no model. Numbers only when the user asks ("Estimate calories"),
 // and those are labelled estimated. Allergens are never promised.
 
-// "$9", "€11,50", "14.00 €" or a bare "13.50" at the end of the line. "$11 - 14" is one price (the lower one)
-const PRICE = /([$€£])\s?(\d+(?:[.,]\d{1,2})?)(?:\s?[-–—]\s?\d+(?:[.,]\d{1,2})?(?!\s?[a-z%\d]))?|(\d+(?:[.,]\d{1,2})?)\s?([€£])|\s(\d+[.,]\d{2})\s*$/;
+// "$9", "€11,50", "14.00 €" or a bare "13.50" or "11" at the end of the line. "$11 - 14" is one price (the lower one)
+const PRICE = /([$€£])\s?(\d+(?:[.,]\d{1,2})?)(?:\s?[-–—]\s?\d+(?:[.,]\d{1,2})?(?!\s?[a-z%\d]))?|(\d+(?:[.,]\d{1,2})?)\s?([€£])|\s(\d+[.,]\d{2}|\d{1,3})\s*$/;
 // Promos, fees and add-ons share the line shape of a dish but are not dishes. "gluten-free" is a dish.
 const NOT_A_DISH = /\b(off|(?<!-)free|delivery|tax|tip|service charge|discount|coupon|minimum|surcharge)\b|^\s*(add|extra|\+)/i;
+// A bare whole number after these words is a table, page or serving count, not a price
+const NOT_A_PRICE_NUMBER = /\b(table|section|page|step|serves?|size|no|number|pcs|pieces|day|days|menu|part|course|item|call|tel|phone|open|level|floor)\s+\d+\s*$/i;
 const HEAVY = { fried: 3, 'deep-fried': 4, crispy: 2, battered: 3, breaded: 2, creamy: 2, cream: 2, cheese: 1.5, cheesy: 2, alfredo: 3, aioli: 2, mayo: 2, butter: 1.5, bacon: 2, sausage: 2, loaded: 2, smothered: 2, gravy: 2, carbonara: 3, ranch: 1.5, fries: 2, 'double': 1.5, pastry: 2, 'pork belly': 3 };
 const LIGHT = { grilled: -2, steamed: -3, baked: -1, roasted: -1, poached: -2, salad: -2, broth: -2, 'raw': -1, sashimi: -2, vinaigrette: -1, greens: -1, vegetable: -1, veggie: -1, lean: -2 };
-const PROTEIN = /\b(chicken|turkey|salmon|tuna|shrimp|prawns?|beef|steak|pork|tofu|tempeh|egg whites?|eggs?|lentils?|chickpeas?|beans|edamame|greek yogurt|cod|fish|seitan|falafel)\b/gi;
+const PROTEIN = /\b(chicken|turkey|salmon|tuna|shrimp|prawns?|beef|steak|pork|tofu|tempeh|egg whites?|eggs?|lentils?|chickpeas?|beans|edamame|greek yogurt|cod|fish|seitan|falafel|lamb|duck|paneer|dal|chana)\b/gi;
 // Classic recipes hide meat or fish in these dishes (anchovy in Caesar, bacon in Cobb, guanciale in carbonara, beef stock in French onion)
 const MEAT = /\b(chicken|turkey|beef|steak|pork|bacon|ham|sausage|salami|pepperoni|lamb|veal|venison|duck|prosciutto|chorizo|meatballs?|(?:ham|cheese)?burger|hot dogs?|brisket|pastrami|ribs|anchov(y|ies)|fish|salmon|tuna|shrimp|prawns?|cod|crab|lobster|clams?|mussels|oysters?|scallops?|squid|calamari|octopus|gelatin|pancetta|guanciale|mortadella|bresaola|bolognese|ragu|carbonara|caesar|cobb|fish sauce|french onion|gyros?|doner|shawarma|schnitzel|paella|bouillabaisse|poke|tonkotsu|cheesesteak|blt|reuben|meat|meatloaf|gumbo|jambalaya|carne|carnitas|al pastor|lox|ceviche|foie gras|escargot|unagi|nicoise|surf and turf|sloppy joes?|bangers|haggis|pho|banh mi|california roll|corn dogs?|pigs in a blanket|shepherd'?s pie|cottage pie|bulgogi|tom yum|worcestershire|lard|bone broth)\b/i;
 // "veggie burger" and friends name a meat dish on purpose without meat
@@ -28,9 +30,9 @@ function extractMenu(text) {
   const items = [];
   for (let i = 0; i < lines.length; i++) {
     const m = lines[i].match(PRICE);
-    if (!m || NOT_A_DISH.test(lines[i])) continue;
+    if (!m || NOT_A_DISH.test(lines[i]) || NOT_A_PRICE_NUMBER.test(lines[i])) continue;
     // "Soup $6 | Bowl $8": the dish is the text before the first price
-    const name = (lines[i].match(new RegExp(PRICE.source, 'g')).length > 1 ? lines[i].slice(0, m.index) : lines[i].replace(PRICE, '')).replace(/[.,·…\-–—|]+\s*$/, '').replace(/^[.·…\-–—|\s]+/, '').replace(/\s{2,}/g, ' ').trim();
+    const name = (lines[i].match(new RegExp(PRICE.source, 'g')).length > 1 ? lines[i].slice(0, m.index) : lines[i].replace(PRICE, '')).replace(/[.,·…\-–—|/]+\s*$/, '').replace(/^[.·…\-–—|\s]+/, '').replace(/\s{2,}/g, ' ').trim();
     if (!name || name.length > 80) continue;
     const next = lines[i + 1];
     const description = next && !PRICE.test(next) && next.length > 15 ? next : '';

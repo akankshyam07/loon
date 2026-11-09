@@ -1765,3 +1765,13 @@ As a user, "explain the word ennui" and a polite ", loon" tail skipped the offli
 Fixed: dictionaryTerm accepts "explain the word X" and a ", loon" tail, and leaves the bare "meaning of life" to the model. Test added in test/brain.test.js.
 
 Left for later: "what is ennui" still goes to the model, because it cannot be told apart from "what is python". "what does X stand for" and two-word lists also go to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-09 — food and menu (eleventh pass)
+
+Tried a 24 line menu with a bare "Caesar Salad 11", "Soup of the day 4 / 6", lamb kofta, dal makhani, chana masala, a "(v)" tag, "Table 5" and "Est. 1998", then ran the lightest, protein and vegetarian picks.
+
+As a user, the picks were sensible, but any dish priced with a whole number and no currency symbol vanished from the menu, which is common on menus outside the US. Lamb, duck, paneer and lentil dishes never showed up in the protein pick.
+
+Fixed: a trailing whole number of up to three digits counts as a price, except after words like table, page, serves or size, and a trailing slash is dropped from the dish name. Lamb, duck, paneer, dal and chana count as proteins. Test added in test/modes.test.js.
+
+Left for later: protein ranking still counts keywords only, and a size list such as "Soup of the day 4 / 6" keeps the first size in the dish name. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
