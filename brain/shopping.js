@@ -60,6 +60,9 @@ function parsePrice(value) {
   if (value == null) return null;
   // "1.299,99 €" and "1 299,00 €" write the decimal comma after the thousands separator.
   // "Was $20 Now $15" is the sale price.
+  // "99¢" is cents, so it is 0.99 and not 99.
+  const cents = String(value).match(/^\D*(\d+(?:\.\d+)?)\s*(?:¢|cents?\b)/i);
+  if (cents) return Number(cents[1]) / 100;
   const forN = String(value).match(/\b(\d+)\s*for\s*\D*?(\d+(?:\.\d{1,2})?)/i);
   if (forN) return Number(forN[2]) / Number(forN[1]);
   // Indian grouping ("₹1,29,999") puts commas every two digits before the last three.

@@ -419,3 +419,9 @@ test('menu: a bare whole-number price counts, table and serving counts do not, l
   assert.deepStrictEqual(food.score({ name: 'Lamb Kofta Plate', description: '' }).proteins, ['lamb']);
   assert.deepStrictEqual(food.score({ name: 'Dal Makhani', description: '' }).proteins, ['dal']);
 });
+
+test('parsePrice reads cents as a fraction of a dollar', () => {
+  assert.strictEqual(shopping.parsePrice('99¢'), 0.99);
+  assert.strictEqual(shopping.parsePrice('75 cents'), 0.75);
+  assert.strictEqual(shopping.parsePrice('C$10'), 10);
+});

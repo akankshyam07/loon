@@ -1795,3 +1795,13 @@ As a user, the worst problem was edits that change what I meant. "room 4B" becam
 Fixed: fixGrammar now skips word-choice suggestions that start with a space, skips repetition fixes where the two words differ, and skips the "it's" to "its" suggestion when a capitalized name follows. Real fixes such as "Its a nice day" still work. Test added in test/modes.test.js, it fails without the change.
 
 Left for later: "writting" becomes "writhing" because Harper lists it first and it ties with "writing" on edit distance. "I seen him", "Me and him goes", "1 cats", "Lets meet" and "you're help" are not flagged. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-09 — shopping and unit price (eleventh pass)
+
+Tried 28 size strings and 16 price strings such as "6 x 1.5L", "Case of 24 - 16.9 oz", "500g (17.6oz)", "x2 500ml", "99¢", "$5.00 - $7.00", "£1,000" and "C$10".
+
+As a user, the worst problem was a wrong number stated with confidence. A price of "99¢" was read as 99 dollars, so a cheap item would look the most expensive on the page.
+
+Fixed: parsePrice reads cents ("99¢", "75 cents") as a fraction of a dollar. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: "24-pack 12 oz cans" counts oz as weight, so cans of drinks cannot compare with bottles in ml. "x2 500ml" ignores the multiplier, "12 eggs" has no size and "$12 99" reads as 12. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
