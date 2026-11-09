@@ -1715,3 +1715,13 @@ As a user, the worst problem was that a polite word broke routines. "Can you rem
 Fixed: parseRoutine now removes the same politeness words as parseCommand, through one shared stripPoliteness in brain/commands.js, and the action part drops a leading "please". Test added in test/routines.test.js and checked to fail before the change.
 
 Left for later: "twice a day" and "3 times a day" are not routines, so "remind me to stretch twice a day" makes a one-time reminder titled "stretch twice", which is quietly wrong. "Every quarter" and "every first monday of the month" give a card with no schedule, which is honest. An emoji right after the schedule ("every morning ☀️ remind me to stretch") makes the action a plain message. "At 7 am y 7 pm" in Spanish keeps only the first time. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-09 — page kinds (ninth pass)
+
+Tried 40 pages such as login forms with odd field names, shop pages in euros and pounds, mail and code hosts, look-alike bank hosts and several banks and finance sites.
+
+As a user, the worst problem was privacy. Most login pages have a "show password" toggle, which turns the field into plain text, so the page looked ordinary while I was typing my password. A field called ssn4 was also missed, and USAA, Navy Federal, Credit Karma, Mint and Zelle were treated as normal sites.
+
+Fixed: a visible input whose name or id contains "password" (or is "passwd") now makes the page sensitive, as does a field starting with "ssn". Checkboxes, buttons and hidden inputs are skipped so a "show password" checkbox does not trigger it. Five more finance hosts were added. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: walgreens and cvs pharmacy paths, a field called routing or api_secret, and one-time code fields named otp or verification_code are still not caught. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

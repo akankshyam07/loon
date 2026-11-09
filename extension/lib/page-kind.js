@@ -15,7 +15,7 @@
     'tiaa.org', 'ameriprise.com', 'merrilledge.com', 'edwardjones.com', 'login.yahoo.com', 'account.proton.me',
     'accounts.intuit.com', 'turbotax.intuit.com', 'dashboard.stripe.com', 'cash.app',
     'td.com', 'rbc.com', 'santander.co.uk', 'sbi.co.in', 'sparkasse.de', 'axisbank.com', 'web.whatsapp.com', 'web.telegram.org', 'app.signal.org', 'onlinesbi.sbi', 'zerodha.com', 'hmrc.gov.uk', 'tax.service.gov.uk',
-    'cigna.com', 'aetna.com', 'bcbs.com', 'healthequity.com',
+    'usaa.com', 'navyfederal.org', 'creditkarma.com', 'mint.intuit.com', 'zellepay.com', 'cigna.com', 'aetna.com', 'bcbs.com', 'healthequity.com',
   ];
   // Country sites of the same banks (wellsfargo.com.au, hsbc.co.uk, chase.co.uk); a look-alike such as
   // bankofamerica.com.evil.com does not match because only a two or three letter suffix may follow.
@@ -76,9 +76,11 @@
     const passwordField = doc.querySelector('input[type="password" i], input[autocomplete="current-password"], input[autocomplete="one-time-code"]');
     const cardField = doc.querySelector('input[autocomplete^="cc-"], input[name*="card" i][inputmode="numeric"], input[name*="cardnumber" i], input[name*="card-number" i], input[name*="card_number" i], input[name*="cvv" i], input[name*="cvc" i], input[name*="security_code" i], input[name*="security-code" i], input[name*="securitycode" i], input[id*="security-code" i]');
     // Exact names for short ones: a substring "ssn" would also match "classname".
-    const idField = doc.querySelector('input:is([name="ssn" i], [id="ssn" i], [name="iban" i], [id="iban" i], [name="pin" i], [id="pin" i], [name="pwd" i], [id="pwd" i], [name*="passcode" i], [id*="passcode" i], [name*="social_security" i], [name*="social-security" i], [name*="socialsecurity" i], [name*="routing_number" i], [name*="routing-number" i], [name*="routingnumber" i], [name*="account_number" i], [name*="account-number" i], [name*="accountnumber" i])');
-    if (hostMatches(host, SENSITIVE_DOMAINS) || SENSITIVE_BRANDS.test(host) || SENSITIVE_LABELS.test(host) || passwordField || cardField || idField) {
-      return { kind: 'sensitive', sensitive: true, reason: passwordField ? 'password field' : cardField ? 'card field' : idField ? 'identity or bank field' : 'sensitive site' };
+    // A show-password toggle turns type="password" into type="text", so the field name has to count too.
+    const nameField = doc.querySelector('input:not([type="hidden" i], [type="checkbox" i], [type="radio" i], [type="button" i], [type="submit" i]):is([name*="password" i], [id*="password" i], [name="passwd" i], [id="passwd" i])');
+    const idField = doc.querySelector('input:is([name^="ssn" i], [id^="ssn" i], [name="iban" i], [id="iban" i], [name="pin" i], [id="pin" i], [name="pwd" i], [id="pwd" i], [name*="passcode" i], [id*="passcode" i], [name*="social_security" i], [name*="social-security" i], [name*="socialsecurity" i], [name*="routing_number" i], [name*="routing-number" i], [name*="routingnumber" i], [name*="account_number" i], [name*="account-number" i], [name*="accountnumber" i])');
+    if (hostMatches(host, SENSITIVE_DOMAINS) || SENSITIVE_BRANDS.test(host) || SENSITIVE_LABELS.test(host) || passwordField || nameField || cardField || idField) {
+      return { kind: 'sensitive', sensitive: true, reason: passwordField || nameField ? 'password field' : cardField ? 'card field' : idField ? 'identity or bank field' : 'sensitive site' };
     }
 
     const text = mainText(doc);

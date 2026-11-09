@@ -113,6 +113,12 @@ test('page kinds: sensitive wins, shops and articles are recognized', async () =
   assert.strictEqual(page('<form><input type="text" name="pwd"></form>').kind, 'sensitive');
   assert.strictEqual(page('<form><input id="security-code"></form>').kind, 'sensitive');
   assert.strictEqual(page('<p>chat</p>', 'https://web.whatsapp.com/').kind, 'sensitive');
+  // A show-password toggle makes the field type text, so its name has to count
+  assert.strictEqual(page('<input type="text" name="password">').kind, 'sensitive');
+  assert.strictEqual(page('<input type="text" id="user_password">').kind, 'sensitive');
+  assert.notStrictEqual(page('<input type="checkbox" name="show_password"><input type="hidden" name="password">').kind, 'sensitive');
+  assert.strictEqual(page('<input name="ssn4">').kind, 'sensitive');
+  assert.strictEqual(page('<p>hi</p>', 'https://www.usaa.com/').kind, 'sensitive');
   const prices = '<p>$3.99</p><p>$4.99</p><p>$5.99</p>';
   assert.strictEqual(page(`${prices}<button>In den Warenkorb</button>`).kind, 'shopping');
   assert.strictEqual(page(`${prices}<button>Ajouter au panier</button>`).kind, 'shopping');
