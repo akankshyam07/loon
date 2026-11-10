@@ -65,6 +65,10 @@ const realExecutors = {
       await openExternal(target);
       return `Opened ${target}.`;
     }
+    if (kind === 'folder') {
+      await run('open', [target.replace(/^~/, require('os').homedir())]);
+      return `Opened ${target}.`;
+    }
     await run('open', ['-a', target]);
     return `Opened ${target}.`;
   },

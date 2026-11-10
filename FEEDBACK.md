@@ -1865,3 +1865,13 @@ As a user, the worst problem was that "what have I asked about docker" went to t
 Fixed: "what have I asked/looked up/searched for/read about X" now searches history like the "did" form, and "last week" and "last month" are accepted after "what did we talk about".
 
 Left for later: typos ("wat did i ask", "hisotry"), typed "clear my history", "what were we talking about", "anything about X in my history" and a trailing emoji are still not matched. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-10 — open and launch commands (third pass)
+
+Tried 28 phrasings such as "open my downloads folder", "open ~/Documents", "open downloads", "open my calendar", "open Chrome please", "open the app store", "open a new tab", "open file:///etc/hosts" and "open Slack and Teams".
+
+As a user, "open my downloads folder" and "open ~/Documents" tried to launch an app with that name, so macOS showed an error. "open my calendar" and "open my notes" asked for apps called "my calendar" and "my notes".
+
+Fixed: Downloads, Documents, Desktop, Pictures, Movies, Music and Applications open as folders in Finder (still behind the confirm card), and a leading "my" is dropped from app names. Test added in test/assistant.test.js.
+
+Left for later: "open a new tab", "open the file report.pdf" and "open Slack and Teams" still try to launch an app with that whole text. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

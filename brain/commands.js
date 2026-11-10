@@ -102,11 +102,13 @@ function parseCommand(input, now = new Date()) {
   if (/^(?:(?:show|open|pull up)(?: me)? )?(?:my )?(?:(?:recent|past|previous) (?:questions|searches|lookups|history)|history|recent activity)\??$/i.test(text) || /^(?:(?:what(?:'?s| is| was| were| are)?|show me|show|pull up) )?(?:my (?:(?:last|latest|recent|previous)(?: \d+)? )?|(?:last|latest|recent|previous)(?: \d+)? )(?:questions?|searches|lookups?|history)\??$/i.test(text) || /^(?:what(?:'?s| is| was) )?(?:my |the )?(?:last|latest|previous) (?:thing i (?:asked(?: you)?|searched(?: for)?|looked up)|search|question|lookup)\??$/i.test(text) || /^(?:show me |tell me )?what (?:(?:have|did) )?i (?:been )?(?:ask(?:ed)?|asking|look(?:ed|ing)? up|search(?:ed|ing)?|google[d]?|googling)(?: you| for)*(?: (?:so far|lately|recently|earlier|today|yesterday|last (?:week|month|time)))?\??$/i.test(text) || /^what (?:did|have) we (?:talk(?:ed)?|chat(?:ted)?|discuss(?:ed)?)(?: about)?(?: (?:today|yesterday|earlier|lately|recently|last (?:week|month)))?\??$/i.test(text)) return { action: 'recall', query: '' };
   if ((m = text.match(/^(?:open|launch) (.+)$/i))) {
     // "the Calculator app" is a name macOS doesn't know. Files like "notes.txt" and "Node.js" are not websites.
-    const target = tidy(m[1]).replace(/^(["'“‘])(.+)["'”’]$/, '$2').replace(/^the /i, '').replace(/ app$/i, '');
+    const target = tidy(m[1]).replace(/^(["'“‘])(.+)["'”’]$/, '$2').replace(/^(?:the|my) /i, '').replace(/ app$/i, '');
     // Two-step requests ("open youtube and search cats") are not an app name, so the chat gets them.
     if (!target || /(?:,| and| then| &) (?:then )?(?:search|go|message|text|play|type|write|send|find|look|click|show|make|create|start|open|launch|take|ask|check)\b/i.test(target)) return null;
     if (/^(?:https?:\/\/)?(?:localhost|\d{1,3}(?:\.\d{1,3}){3})(?::\d+)?(?:\/\S*)?$/i.test(target) && (/localhost|:\d/i.test(target) || /^https?:/i.test(target))) return { action: 'open', target: /^https?:/i.test(target) ? target : `http://${target}`, kind: 'url' };
     if ( /^(?:it|that|this|them)(?: \w+)?$/i.test(target)) return null;
+    const folder = target.match(/^(?:~\/|(?:my )?(?:the )?)(downloads|documents|desktop|pictures|movies|music|applications)(?: folder)?$/i);
+    if (folder) return { action: 'open', target: `~/${folder[1][0].toUpperCase()}${folder[1].slice(1).toLowerCase()}`.replace('~/Applications', '/Applications'), kind: 'folder' };
     const isUrl = /^(https?:\/\/)?[\w-]+(\.[\w-]+)+(\/\S*)?$/i.test(target) && (/^https?:|\/|^www\./i.test(target) || !/\.(?:js|ts|txt|md|py|json|java|pdf|png|jpe?g|csv|zip|docx?|xlsx?|html?)$|^v?\d+(?:\.\d+)+$/i.test(target) || /^\d+(?:\.\d+){3}$/.test(target));
     return { action: 'open', target: isUrl && !/^https?:/i.test(target) ? `https://${target}` : target, kind: isUrl ? 'url' : 'app' };
   }
@@ -167,7 +169,7 @@ function describe(command) {
   switch (command.action) {
     case 'reminder': return `Reminder: ${command.title}${command.when ? `, ${at(command.when)}` : ' (no time)'}`;
     case 'event': return `Calendar event: ${command.title}, ${at(command.start)}`;
-    case 'open': return `Open ${command.kind === 'url' ? command.target : `the ${command.target} app`}`;
+    case 'open': return `Open ${command.kind === 'url' ? command.target : command.kind === 'folder' ? `your ${command.target.replace(/^.*\//, '')} folder` : `the ${command.target} app`}`;
     case 'find': return `Find files matching "${command.query}"`;
     case 'briefing': return command.project ? `Catch up on ${command.project}` : 'Catch up on your projects';
     case 'shortcut': return `Run the Shortcut "${command.name}"`;
