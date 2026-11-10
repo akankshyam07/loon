@@ -60,14 +60,16 @@
     const t = text.trim();
     if (editable) return 'editable';
     if (looksLikeJson(t)) return 'json';
-    if (STACK_TRACE.some((re) => re.test(t)) && (t.includes('\n') || /(error|exception|ERR!|fault|not found|fatal)/i.test(t))) return 'stacktrace';
+    if (STACK_TRACE.some((re) => re.test(t)) && (t.includes('\n') || /(error|exception|ERR!|fault|not found|fatal|traceback)/i.test(t))) return 'stacktrace';
     if (ERROR_LINE.test(t) || ERROR_NAME.test(t)) return 'stacktrace';
     if (looksLikeCode(t, { monospace }) || looksLikeCommand(t)) return 'code';
     // CJK text has no spaces, so count roughly one word per two characters
     const cjk = (t.match(/[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/g) || []).length;
     const words = t.split(/\s+/).filter(Boolean);
     const wordCount = cjk > 0 ? words.length + Math.floor(cjk / 2) : words.length;
-    if (wordCount <= 3) return 'word';
+    // A short question such as "What is this?" is not a word to define
+    const isQuestion = words.length > 1 && /\?$|^¿/.test(t);
+    if (wordCount <= 3 && !isQuestion) return 'word';
     const sentences = (t.replace(/\b(?:mr|mrs|ms|dr|prof|st|vs|etc)\.|\b[ap]\.m\.|\b(?:e\.g|i\.e)\./gi, ' ').match(/[.!?](\s|$)|[。！？]/g) || []).length;
     if (sentences <= 1 && t.length < 260) return 'sentence';
     return 'paragraph';

@@ -1845,3 +1845,13 @@ As a user, the worst problem was that "N/A" in the allergy box was split on the 
 Fixed: onboardingResult checks the whole answer for a "no answer" phrase before splitting, and the phrase list now knows "skip", "pass" and "prefer not to say". The name box uses the same check and drops a bracketed nickname. Test added in test/personal.test.js and checked to fail before the change.
 
 Left for later: a free-text role is still ignored without telling the user.
+
+## 2026-11-10 — selection chips and classification (tenth pass)
+
+Tried 36 selections such as "What is this?", "¿Qué significa esto?", "x = 5", file paths, a short bullet list, prices, emails, URLs, dates, a lone "Traceback (most recent call last):" line, git and npm errors and single emoji.
+
+As a user, the worst problem was that a short question like "What is this?" or "¿Qué significa esto?" got the Define chip, because it has three words or fewer. A copied "Traceback (most recent call last):" header on its own was treated as a sentence, so no error help was offered.
+
+Fixed: classifySelection in extension/lib/classify.js now treats a multi-word selection that ends in a question mark (or starts with ¿) as a sentence, and counts a lone Traceback header as an error. A single word with a question mark stays a word. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: file paths, "x = 5" and a short bullet list are still words or sentences. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

@@ -71,6 +71,10 @@ test('selection kinds treat unspaced CJK text by length', () => {
   assert.strictEqual(classifySelection("Cannot read properties of undefined (reading 'x')"), 'stacktrace');
   assert.strictEqual(classifySelection("error TS2322: Type 'string' is not assignable to type 'number'."), 'stacktrace');
   assert.strictEqual(classifySelection('Error'), 'word');
+  assert.strictEqual(classifySelection('What is this?'), 'sentence');
+  assert.strictEqual(classifySelection('¿Qué significa esto?'), 'sentence');
+  assert.strictEqual(classifySelection('Traceback (most recent call last):'), 'stacktrace');
+  assert.strictEqual(classifySelection('why?'), 'word');
   assert.strictEqual(classifySelection('console.log("hi")'), 'code');
   assert.strictEqual(classifySelection('x => x * 2'), 'code');
   assert.strictEqual(classifySelection('fn main() { println!("hi"); }'), 'code');
