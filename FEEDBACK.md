@@ -1915,3 +1915,13 @@ As a user, the plain wordings worked. A few natural ones did nothing and went to
 Fixed: parseFeedback in brain/personal.js now reads "make answers/replies shorter", "stop rambling", "less rambling", "answers too short", "remove the emojis", "get rid of emojis" and "switch to / change to <language>". Test added in test/personal.test.js.
 
 Left for later: "emoji please", "talk normally", "go back to normal" and "reset" have no clear meaning for a single setting. "Just the answer", "be nicer" and "use simple words" have no matching setting. The 5 failing tests in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-10 — routines (eleventh pass)
+
+Tried 23 phrasings such as "remind me to stretch twice a day", "3 times a day", "once a day", "every 2 hours", "every other day", "hourly remind me to stand", "every month on the 1st", an emoji after the schedule and "every friday at 5 say have a good weekend".
+
+As a user, the worst problem was that "remind me to stretch twice a day" quietly made a one-time reminder titled "stretch twice". "Once a day" did the same. Also, a day word inside the message changed the schedule, so "every friday at 5 say have a good weekend" ran on Sunday and Saturday.
+
+Fixed: parseSchedule reads "once/twice/N times a day" (once is daily at 9, more is spread between 9am and 9pm, which the confirm card shows). A named day now wins over the words weekday and weekend. Tests added in test/routines.test.js and checked to fail before the change.
+
+Left for later: "say …" is not a routine action, so that card still asks. An emoji right after the schedule still turns the action into a plain message. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

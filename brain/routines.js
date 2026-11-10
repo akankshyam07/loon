@@ -95,6 +95,9 @@ function parseSchedule(input, now = new Date(), { allowOnce = false } = {}) {
 
   let part = null;
   const window = take(state, new RegExp(String.raw`\b(?:between|from)\s+(${TIME})\s+(?:and|to|until|-|–)\s+(${TIME})`, 'i'));
+  // "twice a day": spread across 9am to 9pm, which the confirm card spells out.
+  const perDay = take(state, /\b(?:(once|twice)|(\d+|two|three|four|five|six)\s+times?)\s+(?:a|per|each)\s+day\b|\b(once|twice)\s+daily\b/i);
+  const dayCount = perDay && ({ once: 1, twice: 2, two: 2, three: 3, four: 4, five: 5, six: 6 }[(perDay[1] || perDay[3] || perDay[2]).toLowerCase()] || Number(perDay[2]));
   const interval = take(state, /\bevery\s+(\d+|other|an?|one|half an?)?\s*(minutes?|mins?|hours?|hrs?)\b(?:\s+on the hour)?/i) || take(state, /\b(hourly)\b/i);
   const monthDay = take(state, /\b(?:on\s+)?the\s+(\d{1,2})(?:st|nd|rd|th)?\s+of\s+(?:every|each|the)\s+month\b/i)
     || take(state, /\b(?:every|each)\s+month\s+on\s+the\s+(\d{1,2})(?:st|nd|rd|th)?\b/i)
@@ -106,12 +109,11 @@ function parseSchedule(input, now = new Date(), { allowOnce = false } = {}) {
   const everyWeeks = take(state, /\bevery\s+(other|second|\d+)\s+weeks?\b/i) || take(state, /\b(?:bi-?weekly|fortnight(?:ly)?|every\s+fortnight)\b/i);
   const except = take(state, new RegExp(String.raw`\b(?:except(?:\s+on)?|but\s+not|excluding|other\s+than)\s+(${DAY_WORD}(?:(?:\s*(?:,|and|&|or)\s*|\s+)${DAY_WORD})*)\b`, 'i'));
   let days = null;
-  if (take(state, /\b(?:every\s+|on\s+)?(?:weekdays?|work\s?days?)\b/i)) days = WEEKDAYS;
+  // A named day wins, so "every friday say have a good weekend" keeps its message.
+  const list = take(state, DAY_LIST) || take(state, DAY_PLURAL);
+  if (list) days = [...new Set(list[1].split(/\s*(?:,|and|&)\s*|\s+/).map(dayIndex).filter((d) => d >= 0))].sort();
+  else if (take(state, /\b(?:every\s+|on\s+)?(?:weekdays?|work\s?days?)\b/i)) days = WEEKDAYS;
   else if (take(state, /\b(?:every\s+|on\s+)?weekends?\b/i)) days = WEEKEND;
-  else {
-    const list = take(state, DAY_LIST) || take(state, DAY_PLURAL);
-    if (list) days = [...new Set(list[1].split(/\s*(?:,|and|&)\s*|\s+/).map(dayIndex).filter((d) => d >= 0))].sort();
-  }
   if (except) {
     const skip = except[1].split(/\s*(?:,|and|&|or)\s*|\s+/).map(dayIndex);
     days = (days || ALL_DAYS).filter((d) => !skip.includes(d));
@@ -127,7 +129,7 @@ function parseSchedule(input, now = new Date(), { allowOnce = false } = {}) {
   // A routine has one time of day: "at 9am and 5pm" must not quietly keep only the first.
   if (timeMatch && /(?:,|\band|&)\s*(?:at\s+)?(?:\d{1,2}(?::\d{2})?\s*(?:am|pm)|noon|midnight)\b/i.test(state.text)) return { schedule: null, rest: tidyRest(state.text) };
 
-  const recurring = window || interval || monthDay || everyN || everyWeeks || days || weekly || daily;
+  const recurring = window || interval || perDay || monthDay || everyN || everyWeeks || days || weekly || daily;
   if (!recurring) {
     if (!allowOnce) return { schedule: null, rest: tidyRest(input) };
     const [found] = chrono.parse(String(input), now, { forwardDate: true });
@@ -135,6 +137,10 @@ function parseSchedule(input, now = new Date(), { allowOnce = false } = {}) {
     return { schedule: { type: 'once', at: extractWhen(found.text, now).date.getTime() }, rest: '' };
   }
   if (!time) return { schedule: null, rest: tidyRest(state.text) };
+  if (dayCount > 1 && !interval && !window) {
+    if (dayCount > 12) return { schedule: null, rest: tidyRest(state.text) };
+    return done({ type: 'interval', minutes: Math.round(720 / (dayCount - 1)), window: { start: '09:00', end: '21:00' }, days: days || ALL_DAYS });
+  }
   if (interval || window) {
     const minutes = !interval || /hourly/i.test(interval[0]) ? 60 : Math.round(countWord(interval[1]) * unitMinutes(interval[2]));
     let span = null;

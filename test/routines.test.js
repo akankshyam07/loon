@@ -72,6 +72,14 @@ test('routines: ~20 phrasings parse in code, and their wording reads back to the
   assert.strictEqual(twice.schedule, null);
   assert.strictEqual(twice.understood, false);
   assert.deepStrictEqual(twice.payload, { message: 'stretch' });
+  // "N times a day" is a routine spread over 9am to 9pm, not a one-off titled "stretch twice"
+  const perDay = R.parseRoutine('remind me to stretch twice a day', { now: NOW });
+  assert.deepStrictEqual(perDay.schedule, { type: 'interval', minutes: 720, window: { start: '09:00', end: '21:00' }, days: R.ALL_DAYS });
+  assert.deepStrictEqual(perDay.payload, { message: 'stretch' });
+  assert.strictEqual(R.parseRoutine('3 times a day remind me to drink water', { now: NOW }).schedule.minutes, 360);
+  assert.deepStrictEqual(R.parseRoutine('remind me to take pills once a day', { now: NOW }).schedule, { type: 'daily', time: '09:00', days: R.ALL_DAYS });
+  // a day word inside the message must not change the days
+  assert.deepStrictEqual(R.parseRoutine('every friday at 5 say have a good weekend', { now: NOW }).schedule.days, [5]);
   assert.strictEqual(R.parseRoutine('on weekends at 10am catch me up on Loon', { now: NOW }).payload.project, 'Loon');
   assert.strictEqual(R.describeSchedule(R.parseRoutine('everyday at 8 remind me to take meds', { now: NOW }).schedule), 'every day at 8:00 AM'); // one-word spelling
   const empty = R.parseRoutine('every day at 9 remind me to', { now: NOW }); // the card asks what to say, not a reminder called "To"
