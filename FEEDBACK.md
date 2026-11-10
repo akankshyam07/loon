@@ -1855,3 +1855,13 @@ As a user, the worst problem was that a short question like "What is this?" or "
 Fixed: classifySelection in extension/lib/classify.js now treats a multi-word selection that ends in a question mark (or starts with ¿) as a sentence, and counts a lone Traceback header as an error. A single word with a question mark stays a word. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: file paths, "x = 5" and a short bullet list are still words or sentences. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-10 — history (tenth pass)
+
+Tried 34 phrasings such as "what have I asked you about docker", "what have I looked up about react", "what did we talk about last week", "clear my history", "wat did i ask", "hisotry", "anything about rust in my history" and "show my recent questions" with an emoji.
+
+As a user, the worst problem was that "what have I asked about docker" went to the language model, which cannot see Loon's history, while "what did I ask about docker" worked. "what did we talk about last week" had the same problem.
+
+Fixed: "what have I asked/looked up/searched for/read about X" now searches history like the "did" form, and "last week" and "last month" are accepted after "what did we talk about".
+
+Left for later: typos ("wat did i ask", "hisotry"), typed "clear my history", "what were we talking about", "anything about X in my history" and a trailing emoji are still not matched. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
