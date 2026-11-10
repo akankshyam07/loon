@@ -1935,3 +1935,13 @@ As a user, "5!" and "average of 4, 8, 15" went to the model. Both are plain arit
 Fixed: brain/calc.js now answers "N!" and "average of" or "mean of" a list of numbers (commas, "and" or "&"). A trailing "!" is kept only when the whole question is a number followed by "!", so "2+2!" still works. Cases added in test/brain.test.js.
 
 Left for later: "1e3 * 5", "pi", "double 45", "cube of 3", "abs(-4)", "log of 100" and "1/3 as a percent" still go to the model. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-10 — page kinds (tenth pass)
+
+Tried 40 pages with sign-in, verification and developer forms, such as fields named otp, verification_code, routing, api_secret and client-secret, plus look-alike names like route-notes and otpion.
+
+As a user, the worst problem was privacy. A page asking for my one-time code or a bank routing number looked like an ordinary form, so Loon stayed active while I typed it. Developer consoles showing a client secret field were also treated as normal pages.
+
+Fixed: the identity and bank field rule now also covers fields named otp, routing, verification code, api secret and client secret. Names are matched exactly or by a specific phrase so ordinary fields stay normal. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: walgreens and cvs pharmacy paths are still not caught, because cvs.com is also a normal shop and a host rule would silence it. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

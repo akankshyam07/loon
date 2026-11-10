@@ -135,6 +135,10 @@ test('page kinds: sensitive wins, shops and articles are recognized', async () =
     assert.strictEqual(page(`<input type="text" name="${name}">`).sensitive, true, name);
   }
   assert.strictEqual(page('<input name="discard-notes">').sensitive, false);
+  for (const name of ['otp', 'verification_code', 'verificationCode', 'routing', 'api_secret', 'client-secret']) {
+    assert.strictEqual(page(`<input type="text" name="${name}">`).sensitive, true, name);
+  }
+  assert.strictEqual(page('<input name="route-notes"><input name="otpion">').sensitive, false);
   assert.strictEqual(page('<script type="application/ld+json">{"@type":"ProductGroup"}</script>').kind, 'shopping');
   assert.strictEqual(page('<input type="text" autocomplete="current-password">').sensitive, true);
   assert.strictEqual(page('<input type="text" autocomplete="one-time-code">').sensitive, true);
