@@ -1925,3 +1925,13 @@ As a user, the worst problem was that "remind me to stretch twice a day" quietly
 Fixed: parseSchedule reads "once/twice/N times a day" (once is daily at 9, more is spread between 9am and 9pm, which the confirm card shows). A named day now wins over the words weekday and weekend. Tests added in test/routines.test.js and checked to fail before the change.
 
 Left for later: "say …" is not a routine action, so that card still asks. An emoji right after the schedule still turns the action into a plain message. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-10 — typed questions, math (tenth pass)
+
+Tried 32 typed questions such as "5!", "average of 4, 8, 15", "mean of 2 and 4", "1e3 * 5", "pi", "double 45", "cube of 3", "abs(-4)", "log of 100" and the usual percent, root and unit ones.
+
+As a user, "5!" and "average of 4, 8, 15" went to the model. Both are plain arithmetic, and the model can get them wrong. The calculator also stripped the "!" from "5!" before it could match.
+
+Fixed: brain/calc.js now answers "N!" and "average of" or "mean of" a list of numbers (commas, "and" or "&"). A trailing "!" is kept only when the whole question is a number followed by "!", so "2+2!" still works. Cases added in test/brain.test.js.
+
+Left for later: "1e3 * 5", "pi", "double 45", "cube of 3", "abs(-4)", "log of 100" and "1/3 as a percent" still go to the model. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

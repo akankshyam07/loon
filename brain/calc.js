@@ -82,7 +82,8 @@ function convert(value, from, to) {
 
 // Returns the answer text, or null when the question isn't plain math.
 function calc(question) {
-  const q = question.toLowerCase().replace(/[’‘]/g, "'").replace(/(\d),(?=\d{3}\b)/g, '$1').replace(/[\s?!.=]+$/, '').trim();
+  const q = question.toLowerCase().replace(/[’‘]/g, "'").replace(/(\d),(?=\d{3}\b)/g, '$1').replace(/[\s?!.=]+$/, (tail, at, all) => (tail[0] === '!' && /^\D*\d+$/.test(all.slice(0, at)) ? '!' : '')).trim(); // "5!" keeps its "!"
+
   const lead = q.match(LEAD)[0];
   // "15% of $80" is money: drop the symbol to calculate, put it back on the answer
   const words = q.match(/\b(dollars|bucks|euros)$/);
@@ -90,7 +91,7 @@ function calc(question) {
   const cash = (n) => (money ? money[0] + n.toFixed(2).replace(/\B(?=(\d{3})+\.)/g, ',') : fmt(n));
   const body = q.slice(lead.length).replace(/[$€£]\s*(?=\d)/g, '').replace(/\s*(?:dollars|euros|bucks)$/, '')
     .replace(/^how many (\w+) (?:are |is )?(?:in|per) (?:(?:a|an|one) |(\d+(?:\.\d+)?) )?(\w+)$/, (_, to, n, from) => `${n || 1} ${from} to ${to}`).replace(/^to\s+/, '').replace(/°|\s+degrees?(?=\s+[cfk]\b|\s+(?:celsius|fahrenheit|kelvin))/g, '').replace(/\bpercent\b/g, '%').replace(/\bkm\/h\b/g, 'kph').replace(/\bm\/s\b/g, 'mps')
-    .replace(/^(?:(\d+)\s+factorial|factorial of\s+(\d+))$/, (_, a, b) => `${a || b} factorial`)
+    .replace(/^(?:(\d+)\s*(?:factorial|!)|factorial of\s+(\d+))$/, (_, a, b) => `${a || b} factorial`)
     .replace(/(\d)\s*(?:times|multiplied by)\s*(?=[\d(])/g, '$1*').replace(/(\d)\s*plus\s*(?=[\d(])/g, '$1+')
     .replace(/(\d)\s*minus\s*(?=[\d(])/g, '$1 - ').replace(/(\d)\s*(?:divided by|over)\s*(?=[\d(])/g, '$1/')
     .replace(/(\d)\s*to the power of\s*(?=[\d(])/g, '$1^').replace(/(\d)\s*\*\*\s*(?=[\d(])/g, '$1^')
@@ -138,6 +139,13 @@ function calc(question) {
 
   m = body.match(/^(?:sqrt\s*\(?|sqrt of\s+|square root of\s+)(\d+(?:\.\d+)?)\)?$/);
   if (m) return `√${m[1]} = ${fmt(Math.sqrt(m[1]))}`;
+
+  // "average of 4, 8, 15" and "mean of 2 and 4"
+  m = body.match(/^(?:the\s+)?(?:average|mean)\s+of\s+(-?\d+(?:\.\d+)?(?:\s*(?:,|and|&)\s*(?:and\s+)?-?\d+(?:\.\d+)?)+)$/);
+  if (m) {
+    const nums = m[1].match(/-?\d+(?:\.\d+)?/g).map(Number);
+    return `The average of ${nums.map(fmt).join(', ')} is ${fmt(nums.reduce((a, b) => a + b, 0) / nums.length)}.`;
+  }
 
   m = body.match(/^(\d+) factorial$/);
   if (m) return +m[1] <= 170 ? `${m[1]}! = ${fmt(Array.from({ length: +m[1] }, (_, i) => i + 1).reduce((a, b) => a * b, 1))}` : `${m[1]}! is too big for me to write out.`;
