@@ -1945,3 +1945,13 @@ As a user, the worst problem was privacy. A page asking for my one-time code or 
 Fixed: the identity and bank field rule now also covers fields named otp, routing, verification code, api secret and client secret. Names are matched exactly or by a specific phrase so ordinary fields stay normal. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: walgreens and cvs pharmacy paths are still not caught, because cvs.com is also a normal shop and a host rule would silence it. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-10 — food and menu (twelfth pass)
+
+Tried a 32 line menu with a size list ("Soup of the day 4 / 6"), a footnote star after a price, phone and opening hours lines, wraps, bowls, ramen and a set of dishes people often assume are vegetarian.
+
+As a user, the picks were sensible. Two things annoyed me. The soup was listed as "Soup of the day 4" because the size list kept its first size in the name, and "Nachos Supreme *" kept the star. Mapo tofu, bibimbap, miso soup and tom kha were offered as likely vegetarian although they are usually made with pork, beef, dashi or fish sauce.
+
+Fixed: a trailing "4 /" size is dropped from the dish name, footnote marks are trimmed, and those four dishes count as meat. Test added in test/modes.test.js. I changed one older expectation that had recorded the "Soup of the day 4" name as a known flaw.
+
+Left for later: Pad Thai and mushroom risotto are still called vegetarian, since an existing test relies on Pad Thai and stock use varies. Protein ranking still counts keywords only. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

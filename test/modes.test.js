@@ -419,7 +419,7 @@ test('JSON to DTO keeps exponent numbers as decimals and says so for an empty ob
 
 test('menu: a bare whole-number price counts, table and serving counts do not, lamb and dal are proteins', () => {
   const items = food.extractMenu('Caesar Salad 11\nSoup of the day 4 / 6\nTable 5\nServes 4\nEst. 1998\nLamb Kofta Plate $17');
-  assert.deepStrictEqual(items.map((i) => [i.name, i.price]), [['Caesar Salad', 11], ['Soup of the day 4', 6], ['Lamb Kofta Plate', 17]]);
+  assert.deepStrictEqual(items.map((i) => [i.name, i.price]), [['Caesar Salad', 11], ['Soup of the day', 6], ['Lamb Kofta Plate', 17]]);
   assert.deepStrictEqual(food.score({ name: 'Lamb Kofta Plate', description: '' }).proteins, ['lamb']);
   assert.deepStrictEqual(food.score({ name: 'Dal Makhani', description: '' }).proteins, ['dal']);
 });
@@ -428,4 +428,12 @@ test('parsePrice reads cents as a fraction of a dollar', () => {
   assert.strictEqual(shopping.parsePrice('99¢'), 0.99);
   assert.strictEqual(shopping.parsePrice('75 cents'), 0.75);
   assert.strictEqual(shopping.parsePrice('C$10'), 10);
+});
+
+test('menu: a size list keeps one dish name, footnote stars are dropped, dashi and pork hide in classic dishes', () => {
+  const items = food.extractMenu('Soup of the day 4 / 6\nNachos Supreme $11 *');
+  assert.deepStrictEqual(items.map((i) => [i.name, i.price]), [['Soup of the day', 6], ['Nachos Supreme', 11]]);
+  for (const name of ['Mapo Tofu', 'Bibimbap', 'Miso Soup', 'Tom Kha Soup']) {
+    assert.strictEqual(food.score({ name, description: '' }).likelyVegetarian, false, name);
+  }
 });

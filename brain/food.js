@@ -11,7 +11,7 @@ const HEAVY = { fried: 3, 'deep-fried': 4, crispy: 2, battered: 3, breaded: 2, c
 const LIGHT = { grilled: -2, steamed: -3, baked: -1, roasted: -1, poached: -2, salad: -2, broth: -2, 'raw': -1, sashimi: -2, vinaigrette: -1, greens: -1, vegetable: -1, veggie: -1, lean: -2 };
 const PROTEIN = /\b(chicken|turkey|salmon|tuna|shrimp|prawns?|beef|steak|pork|tofu|tempeh|egg whites?|eggs?|lentils?|chickpeas?|beans|edamame|greek yogurt|cod|fish|seitan|falafel|lamb|duck|paneer|dal|chana)\b/gi;
 // Classic recipes hide meat or fish in these dishes (anchovy in Caesar, bacon in Cobb, guanciale in carbonara, beef stock in French onion)
-const MEAT = /\b(chicken|turkey|beef|steak|pork|bacon|ham|sausage|salami|pepperoni|lamb|veal|venison|duck|prosciutto|chorizo|meatballs?|(?:ham|cheese)?burger|hot dogs?|brisket|pastrami|ribs|anchov(y|ies)|fish|salmon|tuna|shrimp|prawns?|cod|crab|lobster|clams?|mussels|oysters?|scallops?|squid|calamari|octopus|gelatin|pancetta|guanciale|mortadella|bresaola|bolognese|ragu|carbonara|caesar|cobb|fish sauce|french onion|gyros?|doner|shawarma|schnitzel|paella|bouillabaisse|poke|tonkotsu|cheesesteak|blt|reuben|meat|meatloaf|gumbo|jambalaya|carne|carnitas|al pastor|lox|ceviche|foie gras|escargot|unagi|nicoise|surf and turf|sloppy joes?|bangers|haggis|pho|banh mi|california roll|corn dogs?|pigs in a blanket|shepherd'?s pie|cottage pie|bulgogi|tom yum|worcestershire|lard|bone broth)\b/i;
+const MEAT = /\b(chicken|turkey|beef|steak|pork|bacon|ham|sausage|salami|pepperoni|lamb|veal|venison|duck|prosciutto|chorizo|meatballs?|(?:ham|cheese)?burger|hot dogs?|brisket|pastrami|ribs|anchov(y|ies)|fish|salmon|tuna|shrimp|prawns?|cod|crab|lobster|clams?|mussels|oysters?|scallops?|squid|calamari|octopus|gelatin|pancetta|guanciale|mortadella|bresaola|bolognese|ragu|carbonara|caesar|cobb|fish sauce|french onion|gyros?|doner|shawarma|schnitzel|paella|bouillabaisse|poke|tonkotsu|cheesesteak|blt|reuben|meat|meatloaf|gumbo|jambalaya|carne|carnitas|al pastor|lox|ceviche|foie gras|escargot|unagi|nicoise|surf and turf|sloppy joes?|bangers|haggis|pho|banh mi|california roll|corn dogs?|pigs in a blanket|shepherd'?s pie|cottage pie|bulgogi|mapo|bibimbap|miso soup|tom kha|tom yum|worcestershire|lard|bone broth)\b/i;
 // "veggie burger" and friends name a meat dish on purpose without meat
 const MEAT_FREE = /\b(veggie|veg|vegetarian|vegan|plant-based|meatless|impossible|beyond)\s+(?:(?:meat|beef)\s+)?(?:(?:ham|cheese)?burgers?|sausages?|hot dogs?|meatballs?|bacon|chicken|ribs)\b/gi;
 const TIPS = [
@@ -32,7 +32,7 @@ function extractMenu(text) {
     const m = lines[i].match(PRICE);
     if (!m || NOT_A_DISH.test(lines[i]) || NOT_A_PRICE_NUMBER.test(lines[i])) continue;
     // "Soup $6 | Bowl $8": the dish is the text before the first price
-    const name = (lines[i].match(new RegExp(PRICE.source, 'g')).length > 1 ? lines[i].slice(0, m.index) : lines[i].replace(PRICE, '')).replace(/[.,·…\-–—|/]+\s*$/, '').replace(/^[.·…\-–—|\s]+/, '').replace(/\s{2,}/g, ' ').trim();
+    const name = (lines[i].match(new RegExp(PRICE.source, 'g')).length > 1 ? lines[i].slice(0, m.index) : lines[i].replace(PRICE, '')).replace(/\s\d{1,3}\s*\/\s*$/, '').replace(/[.,·…\-–—|/*†]+\s*$/, '').replace(/^[.·…\-–—|\s]+/, '').replace(/\s{2,}/g, ' ').trim();
     if (!name || name.length > 80) continue;
     const next = lines[i + 1];
     const description = next && !PRICE.test(next) && next.length > 15 ? next : '';
