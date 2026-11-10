@@ -312,3 +312,10 @@ test('onboardingResult splits slash and ampersand allergies, words intolerances 
   assert.deepStrictEqual(onboardingResult({ interests: 'AI/ML & cats' }).facts, ["I'm interested in AI/ML and cats"]);
   assert.deepStrictEqual(onboardingResult({ name: 'Ada.' }).facts, ['Call me Ada']);
 });
+
+test('onboarding: "N/A", "skip" and "none" are not saved as facts, and a nickname in brackets is dropped', () => {
+  for (const a of ['N/A', 'skip', 'None.', 'prefer not to say']) {
+    assert.deepStrictEqual(onboardingResult({ name: a, allergies: a, interests: a }).facts, [], a);
+  }
+  assert.deepStrictEqual(onboardingResult({ name: 'Ada Lovelace (Ada)' }).facts, ['Call me Ada Lovelace']);
+});

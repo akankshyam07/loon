@@ -1835,3 +1835,13 @@ As a user, the worst problems were everyday questions going to the language mode
 Fixed: calc now reads feet and inches together, km/h and m/s, "N factorial" and "factorial of N", and a minus sign after an operator. Cases added to the ladder test in test/brain.test.js and checked to fail before the change.
 
 Left for later: "5!" cannot work because trailing punctuation is stripped first. Data sizes (gb, mb) need a decision between 1000 and 1024. Also missing are "3 dozen", "1.5k", "1 ton", area units and currency (needs live rates, so the cat should say it cannot know them). `npm test` still shows the 5 WordNet and demo failures from the sandbox install.
+
+## 2026-11-10 — onboarding first run, skipped boxes (tenth pass)
+
+Tried 19 answers for the "Get to know you" boxes, such as "none", "N/A", "skip", "no allergies", "I have none", "peanuts, none", "Ada Lovelace (Ada)" and a name box left as "n/a".
+
+As a user, the worst problem was that "N/A" in the allergy box was split on the slash and saved as "I'm allergic to N and A". "skip" in the interests box became "I'm interested in skip". A name of "none" or "n/a" was saved as "Call me none" and "Call me na". "Ada Lovelace (Ada)" became "Call me Ada Lovelace Ada".
+
+Fixed: onboardingResult checks the whole answer for a "no answer" phrase before splitting, and the phrase list now knows "skip", "pass" and "prefer not to say". The name box uses the same check and drops a bracketed nickname. Test added in test/personal.test.js and checked to fail before the change.
+
+Left for later: a free-text role is still ignored without telling the user.
