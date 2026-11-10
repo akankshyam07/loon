@@ -1875,3 +1875,13 @@ As a user, "open my downloads folder" and "open ~/Documents" tried to launch an 
 Fixed: Downloads, Documents, Desktop, Pictures, Movies, Music and Applications open as folders in Finder (still behind the confirm card), and a leading "my" is dropped from app names. Test added in test/assistant.test.js.
 
 Left for later: "open a new tab", "open the file report.pdf" and "open Slack and Teams" still try to launch an app with that whole text. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-10 — writing tools by voice (seventh pass)
+
+Tried 41 spoken edit phrasings such as "make it sound more professional", "say it nicer", "make it more casual", "make it sound better", "make it clearer", "tone it down", "fix grammar and spelling" and "turn this into bullet points".
+
+As a user, "make it sound better" and "make it clearer" are very natural asks, and they went to the slow question path with no selection attached. So did "say it nicer" and "fix grammar and spelling".
+
+Fixed: brain/intents.js now reads "make it sound better" and "make it clearer" as rewrite, "say it nicer" as warmer, and "fix grammar and spelling" as fix grammar. Cases added in test/voice.test.js and checked to fail before the change.
+
+Left for later: "make it more casual", "make this less formal", "tone it down", "make it longer", "expand this" and "turn this into bullet points" have no matching task. "make this shorter and more professional" still goes to the model. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
