@@ -380,3 +380,15 @@ test('a reminder for a time that has already passed has no time instead of a pas
   assert.strictEqual(past.when, null);
   assert.ok(parseCommand('remind me tomorrow to call bob', NOW).when > NOW);
 });
+
+test('commands: "forget everything about X" forgets X and only a bare "forget everything" is a wipe', () => {
+  assert.deepStrictEqual(parseCommand('forget everything about pork'), { action: 'forget', text: 'pork', all: false });
+  assert.deepStrictEqual(parseCommand('forget all about pork'), { action: 'forget', text: 'pork', all: false });
+  assert.deepStrictEqual(parseCommand('forget about pork'), { action: 'forget', text: 'pork', all: false });
+  assert.strictEqual(parseCommand('forget everything').all, true);
+  assert.strictEqual(parseCommand('forget about everything').all, true);
+});
+
+test('commands: "remember nothing" and "remember it" save no fact', () => {
+  for (const t of ['remember nothing', 'remember it', 'remember everything', 'remember all of this']) assert.strictEqual(parseCommand(t), null, t);
+});

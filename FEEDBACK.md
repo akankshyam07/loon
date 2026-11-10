@@ -1895,3 +1895,13 @@ As a user, the table covered most of them. The gaps that would send me to the mo
 Fixed: added table entries for the pip message and the database login, widened the certificate rule to the lowercase wording and the index rule to the Go panic. Test added in test/modes.test.js, it fails without the change.
 
 Left for later: "Unhandled Promise Rejection: fetch failed", an aborted request DOMException, Postgres `relation does not exist` and a bare "Connection refused" still go to the model. The 36 failures in `npm test` are the same ones as on main in this sandbox (missing built data and dependencies).
+
+## 2026-11-10 — memory commands (third pass)
+
+Tried 38 phrasings such as "forget everything about pork", "forget about pork", "remember nothing", "remember it", "remember everything", "stop remembering things", "do you remember my name?" and "forget I said that".
+
+As a user, "forget everything about pork" was treated as a full wipe, so the cat told me to go to Settings instead of forgetting pork. "forget about pork" searched for the words "about pork". "remember nothing" and "remember it" saved a fact called "nothing" or "it".
+
+Fixed: only a bare "forget everything" or "forget all" is a wipe, and "forget (everything/all) about X" forgets X. "remember nothing/it/everything" no longer save anything. Tests added in test/assistant.test.js.
+
+Left for later: "stop remembering things", "don't remember that" and "do you remember my name?" go to the model, which may claim it did something. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
