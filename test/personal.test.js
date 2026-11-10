@@ -305,6 +305,14 @@ test('more ways to ask for a plainer tone, shorter replies or one language', () 
   assert.strictEqual(parseFeedback('serious?'), null);
 });
 
+test('style requests about answers, rambling, removing emoji and switching language', () => {
+  for (const t of ['make answers shorter', 'stop rambling', 'less rambling']) assert.deepStrictEqual(parseFeedback(t).patch, { length: 'short' }, t);
+  assert.deepStrictEqual(parseFeedback('answers too short').patch, { length: 'detailed' });
+  for (const t of ['remove the emojis', 'get rid of emojis']) assert.deepStrictEqual(parseFeedback(t).patch, { emoji: false }, t);
+  assert.deepStrictEqual(parseFeedback('switch to french').patch, { language: 'French' });
+  assert.strictEqual(parseFeedback('make this shorter'), null);
+});
+
 test('onboardingResult splits slash and ampersand allergies, words intolerances honestly and drops a trailing full stop in the name', () => {
   assert.deepStrictEqual(onboardingResult({ allergies: 'peanuts & shellfish' }).facts, ["I'm allergic to peanuts and shellfish"]);
   assert.deepStrictEqual(onboardingResult({ allergies: 'dairy/gluten' }).facts, ["I'm allergic to dairy and gluten"]);

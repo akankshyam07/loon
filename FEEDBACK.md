@@ -1905,3 +1905,13 @@ As a user, "forget everything about pork" was treated as a full wipe, so the cat
 Fixed: only a bare "forget everything" or "forget all" is a wipe, and "forget (everything/all) about X" forgets X. "remember nothing/it/everything" no longer save anything. Tests added in test/assistant.test.js.
 
 Left for later: "stop remembering things", "don't remember that" and "do you remember my name?" go to the model, which may claim it did something. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-10 — settings UI, reply style feedback (eighth pass)
+
+Tried 46 style requests such as "make answers shorter", "stop rambling", "answers too short", "remove the emojis", "emoji please", "switch to english", "be nicer", "just the answer" and "talk normally".
+
+As a user, the plain wordings worked. A few natural ones did nothing and went to the model as normal questions, so the setting never changed. "Make answers shorter" missed because only "make it" and "make them" were read. "Remove the emojis" and "switch to english" were not read either.
+
+Fixed: parseFeedback in brain/personal.js now reads "make answers/replies shorter", "stop rambling", "less rambling", "answers too short", "remove the emojis", "get rid of emojis" and "switch to / change to <language>". Test added in test/personal.test.js.
+
+Left for later: "emoji please", "talk normally", "go back to normal" and "reset" have no clear meaning for a single setting. "Just the answer", "be nicer" and "use simple words" have no matching setting. The 5 failing tests in `npm test` are the WordNet and demo ones from the sandbox install.
