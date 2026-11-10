@@ -174,6 +174,10 @@ test('errors: fingerprint ignores paths/values; known errors answer from the tab
   assert.match(lookupKnown('docker: Error response from daemon: Conflict. The container name "/web" is already in use by container abc.'), /docker rm/);
   assert.match(lookupKnown('ssh: connect to host example.com port 22: Operation timed out'), /SSH connection timed out/);
   assert.match(lookupKnown('psql: error: connection to server on socket "/tmp/.s.PGSQL.5432" failed: No such file or directory'), /Postgres/);
+  assert.match(lookupKnown('error: externally-managed-environment\n\n× This environment is externally managed'), /virtual environment/);
+  assert.match(lookupKnown("java.sql.SQLException: Access denied for user 'root'@'localhost' (using password: YES)"), /Database login/);
+  assert.match(lookupKnown('ssl.SSLCertVerificationError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed'), /certificate/i);
+  assert.match(lookupKnown('panic: runtime error: index out of range [3] with length 3'), /Index out of range/);
   assert.strictEqual(lookupKnown('SomethingTotallyNewError: flux capacitor'), null);
   assert.strictEqual(lookupKnown('ValueError: bad input\n  at run (/src/app.js:404:3)'), null, 'a line number is not an HTTP status');
   assert.strictEqual(lookupKnown('Process failed at line 500'), null);

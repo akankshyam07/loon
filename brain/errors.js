@@ -203,7 +203,7 @@ const KNOWN = [
     fix: ['Run it in a debugger (`lldb` or `gdb`) or with AddressSanitizer to see the line.', 'Check for null pointers, freed memory and out of range array access.', 'If it comes from a package, update it or try another version.'],
   },
   {
-    match: /CERTIFICATE_VERIFY_FAILED|unable to verify the first certificate|UNABLE_TO_VERIFY_LEAF_SIGNATURE|self[- ]signed certificate/i,
+    match: /CERTIFICATE_VERIFY_FAILED|certificate verify failed|unable to verify the first certificate|UNABLE_TO_VERIFY_LEAF_SIGNATURE|self[- ]signed certificate/i,
     title: 'Certificate not trusted',
     explain: 'The TLS certificate could not be verified. Common causes are a company proxy, a self-signed certificate or a missing CA bundle.',
     fix: ['Point the tool at the right CA file (`NODE_EXTRA_CA_CERTS` or `SSL_CERT_FILE`).', 'Do not turn verification off except for a local test server.'],
@@ -299,7 +299,7 @@ const KNOWN = [
     fix: ['Find where the value is assigned; check functions `return` on every path.'],
   },
   {
-    match: /IndexError: list index out of range|ArrayIndexOutOfBoundsException|IndexOutOfBoundsException/,
+    match: /IndexError: list index out of range|ArrayIndexOutOfBoundsException|IndexOutOfBoundsException|index out of range \[\d+\] with length/,
     title: 'Index out of range',
     explain: 'Code read past the end (or before the start) of a list/array.',
     fix: ['Check the length before indexing.', 'Watch off-by-one loops: `< length`, not `<= length`.'],
@@ -471,6 +471,18 @@ const KNOWN = [
     title: 'Hydration mismatch (React / Next.js)',
     explain: 'The HTML the server sent is different from what React rendered in the browser on first load.',
     fix: ['Look for values that differ per render, like `Date.now()`, `Math.random()` or `window` checks.', 'Move those into `useEffect`, or invalid HTML nesting such as a `<div>` inside a `<p>` can also cause it.'],
+  },
+  {
+    match: /externally-managed-environment/,
+    title: 'pip refuses to install system-wide (Python)',
+    explain: 'Your OS marks its Python as managed by the system package manager, so pip will not add packages to it.',
+    fix: ['Make a virtual environment: `python3 -m venv .venv && source .venv/bin/activate`, then run pip again.', 'For a command-line tool, `pipx install <name>` keeps it isolated.', 'Avoid `--break-system-packages`, it can break tools that depend on the system Python.'],
+  },
+  {
+    match: /Access denied for user/,
+    title: 'Database login refused',
+    explain: 'The database server was reached but rejected the username, password or the host you connected from.',
+    fix: ['Check the username and password in your config or environment variables.', 'Make sure that user is allowed from this host, for example `\'root\'@\'localhost\'` is a different account from `\'root\'@\'%\'`.'],
   },
 ];
 

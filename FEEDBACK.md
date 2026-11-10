@@ -1885,3 +1885,13 @@ As a user, "make it sound better" and "make it clearer" are very natural asks, a
 Fixed: brain/intents.js now reads "make it sound better" and "make it clearer" as rewrite, "say it nicer" as warmer, and "fix grammar and spelling" as fix grammar. Cases added in test/voice.test.js and checked to fail before the change.
 
 Left for later: "make it more casual", "make this less formal", "tone it down", "make it longer", "expand this" and "turn this into bullet points" have no matching task. "make this shorter and more professional" still goes to the model. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-10 — developer help, error table (eleventh pass)
+
+Tried 40 errors such as TypeError and ReferenceError from Node, Python import and type errors, Java memory errors, Rust moves, git conflicts, CORS, npm ERESOLVE, a Go index panic, a MySQL login failure, pip's externally-managed-environment message and a Python SSL certificate failure.
+
+As a user, the table covered most of them. The gaps that would send me to the model were pip refusing to install on a system Python (very common on new Macs and Linux), the "Access denied for user" database login error, Python's SSL "certificate verify failed" in its lowercase form, and the Go "index out of range [3] with length 3" panic.
+
+Fixed: added table entries for the pip message and the database login, widened the certificate rule to the lowercase wording and the index rule to the Go panic. Test added in test/modes.test.js, it fails without the change.
+
+Left for later: "Unhandled Promise Rejection: fetch failed", an aborted request DOMException, Postgres `relation does not exist` and a bare "Connection refused" still go to the model. The 36 failures in `npm test` are the same ones as on main in this sandbox (missing built data and dependencies).
