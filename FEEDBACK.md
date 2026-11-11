@@ -2055,3 +2055,13 @@ As a user, the save and forget phrasings all worked. The gap was "stop rememberi
 Fixed: these phrasings now get a short code answer that says Loon only keeps what you tell it, and that Privacy mode turns recall and learning off. Test added in test/brain.test.js, it fails without the change.
 
 Left for later: "do you remember my name?" still goes to the model, which has no view of the memory list unless recall picks it up. "from now on call me Sam" and "call me Sam" are not parsed as name changes. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-11 — typed questions and instant answers (tenth pass)
+
+Tried 40 phrasings such as "what is the weekday", "what day of the week is it", "what's the date tomorrow", "what is tomorrow's date", "what's the time rn", "what's your name", "time in tokyo", "days till christmas" and "what year is it".
+
+As a user, the worst problem was clock and calendar questions going to the language model, which cannot know today. "What is the weekday" and "what's the date tomorrow" are the kind of question where a guess looks believable and is wrong. "What's your name" also took a model call for a fixed answer.
+
+Fixed: weekday questions and "tomorrow's date" or "the date yesterday" now get a code answer, "rn" counts like "right now", and "what's your name" gets the identity answer. Test extended in test/brain.test.js and checked to fail before the change.
+
+Left for later: "what week is it", "how many days until easter" or "thanksgiving", "is it the weekend", "your name?" without a verb and "what month" still go to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

@@ -46,12 +46,17 @@ const CODE_ANSWERS = [
     },
   },
   {
-    match: /^what day is (tomorrow|yesterday)$/,
+    match: /^what day is (tomorrow|yesterday)$|^what(?:'s| is) (?:the date (tomorrow|yesterday)|(tomorrow|yesterday)'?s date)$/,
     answer: (key) => {
+      const when = key.match(/tomorrow|yesterday/)[0];
       const d = new Date();
-      d.setDate(d.getDate() + (/tomorrow/.test(key) ? 1 : -1));
-      return { mood: 'happy', text: `${key.slice(12).replace(/^./, (c) => c.toUpperCase())} is ${d.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}.` };
+      d.setDate(d.getDate() + (when === 'tomorrow' ? 1 : -1));
+      return { mood: 'happy', text: `${when.replace(/^./, (c) => c.toUpperCase())} is ${d.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}.` };
     },
+  },
+  {
+    match: /^what(?:'s| is) the (?:weekday|day of the week)$|^what day of the week is (?:it|today)$/,
+    answer: () => ({ mood: 'happy', text: `It's ${new Date().toLocaleDateString([], { weekday: 'long' })}.` }),
   },
   {
     match: /^(?:how (?:many days|long)|days) (?:is it |are there )?(?:until|till|to|before) (christmas|new year'?s?(?: day)?|halloween|valentine'?s(?: day)?)$/,
@@ -110,7 +115,7 @@ const CODE_ANSWERS = [
     }),
   },
   {
-    match: /^(who|what) are you$/,
+    match: /^(?:(?:who|what) are you|what(?:'s| is) your name|who are you again)$/,
     answer: () => ({ mood: 'happy', text: "I'm Loon, a small black cat who lives on your screen. I run on your Mac, and nothing you ask leaves it unless you switch on Smarter answers in Settings." }),
   },
 ];
@@ -124,7 +129,7 @@ function instantKey(text) {
   return normalize(text)
     .replace(/[’‘]/g, "'")
     .replace(/^(?:(?:hey |hi |ok |okay )?loon|please|pls)[,:]?\s+/, '')
-    .replace(/\s+(?:right now|please|pls)(?=[\s?!.]*$)/, '')
+    .replace(/\s+(?:right now|rn|please|pls)(?=[\s?!.]*$)/, '')
     .replace(/[\s?!.\p{Extended_Pictographic}\uFE0F]+$/u, '');
 }
 
