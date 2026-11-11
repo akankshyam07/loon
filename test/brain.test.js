@@ -98,6 +98,17 @@ test('ladder: date questions and trailing emoji are answered by code, not guesse
   }
 });
 
+test('ladder: "stop remembering" is answered honestly by code, not promised by the model', async () => {
+  const brain = { modelId: () => 'fake', chat: async () => { throw new Error('model should not run'); } };
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));
+  const resolver = new Resolver({ brain, cacheFile: path.join(dir, 'c.json'), countsFile: path.join(dir, 'n.json') });
+  for (const q of ['stop remembering things', "don't remember that", 'Turn off memory please', 'stop learning about me']) {
+    const r = await resolver.ask(q, { onText: () => {}, firstInThread: true });
+    assert.strictEqual(r.tier, 'code', q);
+    assert.match(r.text, /Privacy mode/, q);
+  }
+});
+
 test('ladder: time in another city is answered by code, unknown places go to the model', async () => {
   let asked = 0;
   const brain = { modelId: () => 'fake', chat: async (_p, { onText }) => { asked++; onText('Hm.'); } };

@@ -2045,3 +2045,13 @@ As a user, the worst problem was a wrong date with no warning. On a Wednesday, "
 Fixed: the pull-back now skips dates where the weekday is given. Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: "timer 1:30" is read as 1:30pm instead of one and a half minutes. "remind me at quarter past 3" and "remind me by 5" keep the phrase in the title with no time. "in 10 minutes remind me to stretch" and "hey loon remind me …" are not matched. "egg timer 5 minutes" is not matched. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-11 — memory commands (fourth pass)
+
+Tried 39 phrasings such as "stop remembering things", "don't remember that", "turn off memory", "do you remember my name?", "remember that I'm vegetarian", "forget the pork thing", "I'm vegan, remember that" and "wipe your memory".
+
+As a user, the save and forget phrasings all worked. The gap was "stop remembering things", "don't remember that" and "turn off memory". They went to the language model, which cannot change any setting and could easily answer "okay, I'll stop remembering".
+
+Fixed: these phrasings now get a short code answer that says Loon only keeps what you tell it, and that Privacy mode turns recall and learning off. Test added in test/brain.test.js, it fails without the change.
+
+Left for later: "do you remember my name?" still goes to the model, which has no view of the memory list unless recall picks it up. "from now on call me Sam" and "call me Sam" are not parsed as name changes. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

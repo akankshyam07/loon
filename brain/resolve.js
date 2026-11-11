@@ -102,6 +102,14 @@ const CODE_ANSWERS = [
     answer: () => ({ mood: 'sleepy', text: "Night! I'll keep watch. *curls up*" }),
   },
   {
+    // The model cannot change settings, so it must not be left to promise "okay, I'll stop remembering".
+    match: /^(?:stop (?:remembering|saving|learning)(?: (?:things|stuff|anything|everything|about me))?|(?:do not|don'?t) (?:remember|save|learn)(?: (?:things|stuff|anything|everything|about me|that|this|it))?|(?:turn|switch) off (?:your )?(?:memory|learning)|(?:disable|pause) (?:your )?memory)$/,
+    answer: () => ({
+      mood: 'protective',
+      text: 'I only keep what you tell me with "Remember that…". For none at all, turn on **Privacy mode** and I won\'t recall or learn anything. You can also delete memories in Settings → Memory.',
+    }),
+  },
+  {
     match: /^(who|what) are you$/,
     answer: () => ({ mood: 'happy', text: "I'm Loon, a small black cat who lives on your screen. I run on your Mac, and nothing you ask leaves it unless you switch on Smarter answers in Settings." }),
   },
