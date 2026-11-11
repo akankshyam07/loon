@@ -1965,3 +1965,13 @@ As a user, almost everything read correctly. The one wrong number was "x2 500ml"
 Fixed: parseQuantity reads a leading "x2" multiplier. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: "$12 99" (superscript cents flattened to text) reads as 12, a price range uses the low end, and "1.000 g" reads as 1 g. All three are ambiguous and need a deliberate decision. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-11 — follow-up conversations, goodbyes (tenth pass)
+
+Tried 30 short closers inside an open thread such as "take care", "night", "that's all", "that is all for now", "never mind", "nvm", "thanks, that was helpful", "ok bye loon" and "talk to you later", plus near misses such as "never mind, explain udp", "that's all wrong" and "night mode in chrome".
+
+As a user, the worst problem was that ending a conversation politely still cost a full model call. "take care" or "that's all" started the local model, which is slow and can answer with a long unrelated reply. "thanks, that was helpful" missed the thanks reply for the same reason.
+
+Fixed: the goodbye reply also matches "night", "take care", "talk to you later", "that's all (for now)", "never mind", "nvm" and a leading "ok" or "alright". The thanks reply accepts "that was helpful" after the thanks. Closers followed by a request still go to the model. Test added in test/brain.test.js and checked to fail before the change.
+
+Left for later: "sorry" and "my bad" still go to the model. "good morning" after a long thread gets the greeting reply. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

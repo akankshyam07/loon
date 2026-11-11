@@ -128,6 +128,21 @@ test('ladder: praise in a thread gets an instant reply, praise with a request st
   }
 });
 
+test('ladder: goodbyes and "that is all" in a thread get an instant reply, with a request they go to the model', async () => {
+  let asked = 0;
+  const brain = { modelId: () => 'fake', chat: async (_p, { onText }) => { asked++; onText('Sure.'); } };
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));
+  const resolver = new Resolver({ brain, cacheFile: path.join(dir, 'c.json'), countsFile: path.join(dir, 'n.json') });
+  const history = [{ question: 'explain tcp', answer: 'It is reliable.', target: 'fast' }];
+  for (const q of ['take care', 'night', "that's all", 'that is all for now', 'never mind', 'nevermind', 'nvm', 'thanks, that was helpful', 'thank you that helped', 'ok bye loon', 'talk to you later']) {
+    assert.strictEqual((await resolver.ask(q, { onText: () => {}, firstInThread: false, history })).tier, 'code', q);
+  }
+  assert.strictEqual(asked, 0);
+  for (const q of ['never mind, explain udp', "that's all wrong", 'night mode in chrome', 'take care of the error']) {
+    assert.notStrictEqual((await resolver.ask(q, { onText: () => {}, firstInThread: false, history })).tier, 'code', q);
+  }
+});
+
 test('ladder: thanks followed by a real request still goes to the model', async () => {
   const brain = { modelId: () => 'fake', chat: async (_p, { onText }) => onText('Sure.') };
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));
