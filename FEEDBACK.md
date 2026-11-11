@@ -2025,3 +2025,13 @@ As a user, the worst miss was privacy. ING and a few other banks were not treate
 Fixed: extension/lib/page-kind.js lists ING, ABN AMRO, BBVA, Nubank and Itaú as sensitive, adds the three mail hosts, and reads CHF and Rs prices. Assertions added in test/browser.test.js and checked to fail before the change.
 
 Left for later: Codeberg is not a code host, Google Docs and Wikipedia short pages are "other", and menus with only a Spanish word list and no known food words stay "other". The bank list will always be incomplete, so a generic check for banking words in the page title may be worth a look. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-11 — developer help, JSON to DTO (tenth pass)
+
+Tried 15 inputs such as a mixed-type array, a map keyed by names, a 20-digit id, ISO dates, null-only fields, snake_case keys in TypeScript, Java keywords as keys, keys starting with a digit, trailing commas, single quotes, bare keys, comments, `$ref` and `@type` keys, and a BOM.
+
+As a user, the worst problem was a silent null. A key such as `class`, `default`, `new` or `enum` was renamed to `rootClass` by the generator, and because the key looks like a simple lowercase word the output had plain getters with no `@JsonProperty`. Spring Boot would leave the field empty without any error.
+
+Fixed: Java keywords now count as keys that need `@JsonProperty`, the same as `first-name` or `userId`. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: a mixed-type array still produces a union class with public fields. A 20-digit id still becomes `double`. A very large object with many keyword keys at once produced an empty code block, which I did not chase because it is an unlikely input. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

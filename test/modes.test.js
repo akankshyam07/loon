@@ -250,6 +250,12 @@ test('JSON → DTO accepts trailing commas but still rejects other broken JSON',
   await assert.rejects(jsonToDto('{"id": 7', 'java'));
 });
 
+test('JSON → DTO keeps the real key for Java keywords so Spring Boot can bind them', async () => {
+  const java = await jsonToDto('{"class": "A", "default": 1}', 'java');
+  assert.match(java, /@JsonProperty\("class"\)/);
+  assert.match(java, /@JsonProperty\("default"\)/);
+});
+
 test('JSON → DTO reads JS object literals: single quotes, bare keys, comments', async () => {
   const java = await jsonToDto("{id: 7, 'name': 'it\\'s', // who\n tags: ['a'],}", 'java');
   assert.match(java, /private long id;[\s\S]*String name;[\s\S]*List<String> tags;/);

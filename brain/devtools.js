@@ -89,6 +89,9 @@ function parseJson(text) {
 // decimal point or exponent (1e3) is kept by giving the sample a fraction. Strings are skipped so quoted text is left alone.
 const keepDecimals = (text) => String(text).replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|(?<![\w.])(-?\d+)(?:\.0+(?![\w.])|(?:\.\d+)?[eE][+-]?\d+(?![\w.]))/g, (m, int) => (int === undefined ? m : `${int}.5`));
 
+// quicktype renames a key that is a Java keyword ("class" becomes rootClass), so plain getters would never bind to it.
+const JAVA_KEYWORDS = new Set('abstract assert boolean break byte case catch char class const continue default do double else enum extends final finally float for goto if implements import instanceof int interface long native new package private protected public return short static strictfp super switch synchronized this throw throws transient try void volatile while true false null'.split(' '));
+
 async function jsonToDto(json, language = 'java', name = 'Root') {
   const { quicktype, InputData, jsonInputForTargetLanguage } = await import('quicktype-core');
   const { lang, options, label } = DTO_LANGUAGES[language];
@@ -100,7 +103,7 @@ async function jsonToDto(json, language = 'java', name = 'Root') {
   if (objects.every((o) => !Object.keys(o).length)) return 'That JSON is empty, so there are no fields to make types from.';
   // Plain getters only bind to JSON keys that are already simple lowercase words. Any other key (first-name, created_at,
   // userId) needs Jackson's @JsonProperty or Spring Boot silently leaves the field null.
-  const needsNames = lang === 'java' && keysOf(parsed).some((k) => !/^[a-z][a-z0-9]*$/.test(k));
+  const needsNames = lang === 'java' && keysOf(parsed).some((k) => !/^[a-z][a-z0-9]*$/.test(k) || JAVA_KEYWORDS.has(k));
   const input = jsonInputForTargetLanguage(lang);
   await input.addSource({ name, samples: objects.map((v) => JSON.stringify(v)) });
   const inputData = new InputData();
