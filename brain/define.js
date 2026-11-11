@@ -76,7 +76,7 @@ function dictionaryTerm(question) {
 }
 
 // "synonym for happy", "another word for big" → the word, or null.
-const SYNONYM_ASK = /^(?:(?:give me |find me |what(?:'?s| is| are) )?(?:a |some |the )?(?:synonyms?|another word|other words|different word|similar words?|words similar)\s+(?:for|of|to)|(?:what(?:'?s| is) )?(?:a |another )?word for)\s+(?:the (?:word|term) )?["'“‘]?([\p{L}-]+)["'”’]?$|^([\p{L}-]+) synonyms?$/iu;
+const SYNONYM_ASK = /^(?:(?:give me |find me |what(?:'?s| is| are) )?(?:a |some |the )?(?:synonyms?|another word|other words?|different word|similar words?|words similar|words? like)(?:\s+(?:for|of|to))?|(?:what(?:'?s| is) )?(?:a |another )?word for)\s+(?:the (?:word|term) )?["'“‘]?([\p{L}-]+)["'”’]?$|^([\p{L}-]+) synonyms?$/iu;
 
 function cleanAsk(question) {
   return String(question || '').trim().replace(/[’‘]/g, "'")

@@ -1985,3 +1985,13 @@ As a user, the worst problems were edits that change my wording. "writting" beca
 Fixed: fixGrammar skips Harper's Enhancement suggestions, and for a misspelling it prefers the word with the doubled letter collapsed. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: "npm i" in running text becomes "npm I". Lowercase "asap" is still expanded to "as soon as possible". "I seen him", "1 cats" and "you're help" are not flagged. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-11 — translation and definitions (twelfth pass)
+
+Tried 32 typed dictionary, synonym and antonym phrasings such as "other word for sad", "words like happy", "synonym happy", "opposite of 'cold'", "what does 'ubiquitous' mean?" and "does ubiquitous mean everywhere".
+
+As a user, "other word for sad" (singular) and "words like happy" skipped the offline synonym lookup and went to the language model, even though "other words for" worked.
+
+Fixed: synonymTerm accepts "other word", "words like" and a bare "synonym X" without for or of. Assertions added in test/brain.test.js.
+
+Left for later: "contrary of", "reverse of" and "antonyms of X and Y" still go to the model. "does X mean Y" is a yes or no question and stays with the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install, the same on main.

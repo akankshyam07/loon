@@ -272,6 +272,8 @@ test('synonymTerm reads "synonym for X" and "another word for X"; synonyms lists
   assert.strictEqual(synonymTerm('pls give me another word for big'), 'big');
   assert.strictEqual(synonymTerm('what is a word for ephemeral'), 'ephemeral');
   assert.strictEqual(synonymTerm('synonym for this sentence'), null);
+  assert.strictEqual(synonymTerm('other word for sad'), 'sad');
+  assert.strictEqual(synonymTerm('words like happy'), 'happy');
   const text = await synonyms('big');
   assert.match(text, /^\*\*big\*\*: .*large/);
   assert.doesNotMatch(text, /\(a\)|_/);
