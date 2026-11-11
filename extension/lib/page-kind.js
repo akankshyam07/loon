@@ -15,7 +15,7 @@
     'tiaa.org', 'ameriprise.com', 'merrilledge.com', 'edwardjones.com', 'login.yahoo.com', 'account.proton.me',
     'accounts.intuit.com', 'turbotax.intuit.com', 'dashboard.stripe.com', 'cash.app',
     'td.com', 'rbc.com', 'santander.co.uk', 'sbi.co.in', 'sparkasse.de', 'axisbank.com', 'web.whatsapp.com', 'web.telegram.org', 'app.signal.org', 'onlinesbi.sbi', 'zerodha.com', 'hmrc.gov.uk', 'tax.service.gov.uk',
-    'usaa.com', 'navyfederal.org', 'creditkarma.com', 'mint.intuit.com', 'zellepay.com', 'cigna.com', 'aetna.com', 'bcbs.com', 'healthequity.com',
+    'ing.com', 'ing.nl', 'ing.de', 'abnamro.nl', 'bbva.com', 'bbva.es', 'nubank.com.br', 'itau.com.br', 'usaa.com', 'navyfederal.org', 'creditkarma.com', 'mint.intuit.com', 'zellepay.com', 'cigna.com', 'aetna.com', 'bcbs.com', 'healthequity.com',
   ];
   // Country sites of the same banks (wellsfargo.com.au, hsbc.co.uk, chase.co.uk); a look-alike such as
   // bankofamerica.com.evil.com does not match because only a two or three letter suffix may follow.
@@ -24,8 +24,8 @@
   const CODE_DOMAINS = ['github.com', 'gitlab.com', 'bitbucket.org', 'stackoverflow.com', 'stackexchange.com', 'developer.mozilla.org'];
   const EMAIL_HOSTS = ['mail.google.com', 'outlook.live.com', 'outlook.office.com', 'outlook.office365.com', 'mail.yahoo.com',
     'mail.proton.me', 'mail.protonmail.com', 'app.hey.com', 'mail.aol.com', 'mail.zoho.com',
-    'outlook.com', 'mail.live.com', 'mail.yandex.com'];
-  const PRICE = /(?:[$€£¥₹]\s?\d[\d,]*(?:\.\d{2})?|\d[\d,.]*(?:[.,]\d{2})?\s?(?:USD|EUR|GBP|[€£])(?!\w))/g;
+    'outlook.com', 'mail.live.com', 'mail.yandex.com', 'outlook.cloud.microsoft', 'fastmail.com', 'app.tuta.com'];
+  const PRICE = /(?:[$€£¥₹]\s?\d[\d,]*(?:\.\d{2})?|\d[\d,.]*(?:[.,]\d{2})?\s?(?:USD|EUR|GBP|CHF|[€£])(?!\w)|(?:CHF|Rs\.?)\s?\d[\d,]*(?:\.\d{2})?)/g;
   const FOOD_WORDS = /\b(entr[ée]es?|appetizers?|starters?|sides|desserts?|grilled|fried|roasted|sauce|salad|burger|sandwich|pasta|pizza|tacos?|soup|vegan|vegetarian|gluten|aioli|chicken|beef|tofu|dressing)\b/gi;
 
   const hostMatches = (host, list) => list.some((d) => host === d || host.endsWith(`.${d}`));

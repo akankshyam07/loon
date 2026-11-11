@@ -123,6 +123,9 @@ test('page kinds: sensitive wins, shops and articles are recognized', async () =
   assert.notStrictEqual(page('<input type="checkbox" name="show_password"><input type="hidden" name="password">').kind, 'sensitive');
   assert.strictEqual(page('<input name="ssn4">').kind, 'sensitive');
   assert.strictEqual(page('<p>hi</p>', 'https://www.usaa.com/').kind, 'sensitive');
+  assert.strictEqual(page('<p>hi</p>', 'https://mijn.ing.nl/').kind, 'sensitive');
+  assert.strictEqual(page('<p>hi</p>', 'https://app.fastmail.com/mail/').kind, 'email');
+  assert.strictEqual(page('<p>CHF 19.90</p><p>CHF 29.90</p><p>Rs. 999</p><button>Add to cart</button>').kind, 'shopping');
   const prices = '<p>$3.99</p><p>$4.99</p><p>$5.99</p>';
   assert.strictEqual(page(`${prices}<button>In den Warenkorb</button>`).kind, 'shopping');
   assert.strictEqual(page(`${prices}<button>Ajouter au panier</button>`).kind, 'shopping');

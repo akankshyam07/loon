@@ -2015,3 +2015,13 @@ As a user, the worst problem was that "turn on do not disturb" went to the model
 Fixed: the focus template accepts turn on, switch on and enable before "do not disturb" and an optional "mode". The cheapest template accepts "one" and "option" at the end. The simplify template accepts "to me" before "like I'm five", and bare "simpler" and "shorter" now route to their tasks. Test added in test/voice.test.js and checked to fail before the change.
 
 Left for later: "stop listening", "go back to normal", "make it more casual", "explain this code", "what does this word mean", "give me a quick summary" and "thanks loon" still go to the model. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-11 — page kinds (fifth pass)
+
+Tried 32 pages such as Indian rupee and euro shops, CHF and "Rs." prices, lowercase and Spanish menus, Gmail and other mail hosts, bank look-alike domains, code hosts and plain articles.
+
+As a user, the worst miss was privacy. ING and a few other banks were not treated as private pages, so Loon would read them. Fastmail, Tuta and the new outlook.cloud.microsoft address were not seen as mail, and shops priced in CHF or "Rs." were not seen as shops.
+
+Fixed: extension/lib/page-kind.js lists ING, ABN AMRO, BBVA, Nubank and Itaú as sensitive, adds the three mail hosts, and reads CHF and Rs prices. Assertions added in test/browser.test.js and checked to fail before the change.
+
+Left for later: Codeberg is not a code host, Google Docs and Wikipedia short pages are "other", and menus with only a Spanish word list and no known food words stay "other". The bank list will always be incomplete, so a generic check for banking words in the page title may be worth a look. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
