@@ -75,6 +75,10 @@ test('selection kinds treat unspaced CJK text by length', () => {
   assert.strictEqual(classifySelection('¿Qué significa esto?'), 'sentence');
   assert.strictEqual(classifySelection('Traceback (most recent call last):'), 'stacktrace');
   assert.strictEqual(classifySelection('why?'), 'word');
+  assert.strictEqual(classifySelection("Cannot set properties of null (setting 'innerHTML')"), 'stacktrace');
+  assert.strictEqual(classifySelection("thread 'main' panicked at src/main.rs:2:5"), 'stacktrace');
+  assert.strictEqual(classifySelection('error[E0382]: borrow of moved value: `v`'), 'stacktrace');
+  assert.strictEqual(classifySelection('ERESOLVE unable to resolve dependency tree'), 'stacktrace');
   assert.strictEqual(classifySelection('console.log("hi")'), 'code');
   assert.strictEqual(classifySelection('x => x * 2'), 'code');
   assert.strictEqual(classifySelection('fn main() { println!("hi"); }'), 'code');

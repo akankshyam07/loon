@@ -12,11 +12,11 @@
     /^npm ERR!/m,
     /\bSegmentation fault\b|: command not found\b/,
     /^\s*Exception in thread\b/m, // Java crash line
-    /^\s*(fatal|error|FATAL|ERROR): \S/m, // git, rustc, gcc and database error lines
+    /^\s*(fatal|error|FATAL|ERROR)(\[E\d+\])?: \S/m, // git, rustc (with its E0382 style code), gcc and database error lines
   ];
 
   // Short error lines with no trace around them: Node system error codes, HTTP status lines, build and test failures, a lone stack frame, TypeScript and browser console messages
-  const ERROR_LINE = /^\s*error TS\d+:|\bCannot read propert(y|ies) of (undefined|null)\b|\bis not (defined|a function)\b|\bE(CONNREFUSED|CONNRESET|NOENT|ADDRINUSE|ACCES|PERM|TIMEDOUT|NOTFOUND|XIST)\b|\bexit(ed)? (with )?(code|status) [1-9]\d*\b|\bBUILD (FAILURE|FAILED)\b|^\s*FAILED \S+::|\bFailed to compile\b|\bCompilation error\b|\bundefined reference to\b|^\s*at [\w$.<>]+\(.*:\d+\)\s*$|^\s*HTTP [45]\d\d\s*$|^\s*(HTTP\/[\d.]+ |HTTP )?[45]\d\d (Bad Request|Unauthorized|Forbidden|Not Found|Too Many Requests|Internal Server Error|Bad Gateway|Service Unavailable|Gateway Timeout)\s*$/i;
+  const ERROR_LINE = /^\s*error TS\d+:|\bCannot (read|set) propert(y|ies) of (undefined|null)\b|\bis not (defined|a function)\b|\bpanicked at \S|\bE(RESOLVE|LIFECYCLE|CONNREFUSED|CONNRESET|NOENT|ADDRINUSE|ACCES|PERM|TIMEDOUT|NOTFOUND|XIST)\b|\bexit(ed)? (with )?(code|status) [1-9]\d*\b|\bBUILD (FAILURE|FAILED)\b|^\s*FAILED \S+::|\bFailed to compile\b|\bCompilation error\b|\bundefined reference to\b|^\s*at [\w$.<>]+\(.*:\d+\)\s*$|^\s*HTTP [45]\d\d\s*$|^\s*(HTTP\/[\d.]+ |HTTP )?[45]\d\d (Bad Request|Unauthorized|Forbidden|Not Found|Too Many Requests|Internal Server Error|Bad Gateway|Service Unavailable|Gateway Timeout)\s*$/i;
 
   // A bare exception class name such as "NullPointerException" or "java.lang.IllegalStateException"
   const ERROR_NAME = /^[A-Za-z_][\w.]*[a-z](Error|Exception)$/;

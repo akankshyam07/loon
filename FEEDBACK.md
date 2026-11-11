@@ -2065,3 +2065,13 @@ As a user, the worst problem was clock and calendar questions going to the langu
 Fixed: weekday questions and "tomorrow's date" or "the date yesterday" now get a code answer, "rn" counts like "right now", and "what's your name" gets the identity answer. Test extended in test/brain.test.js and checked to fail before the change.
 
 Left for later: "what week is it", "how many days until easter" or "thanksgiving", "is it the weekend", "your name?" without a verb and "what month" still go to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-11 — selection chips and classification (eleventh pass)
+
+Tried 54 selections such as paths, prices, emails, URLs, dates, emoji, bullet lists, SQL, shell commands and a spread of error lines from JavaScript, Python, Rust, npm and git.
+
+As a user, the worst problem was that real errors copied from the terminal were treated as plain sentences, so Loon offered Explain and Define instead of the error help. This hit "Cannot set properties of null", Rust's "thread 'main' panicked at ...", rustc's "error[E0382]: ..." and npm's "ERESOLVE unable to resolve dependency tree".
+
+Fixed: the classifier in extension/lib/classify.js now recognizes these four shapes (and the ELIFECYCLE code) as errors. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: "Module not found: Error: Can't resolve ..." and React key warnings still read as sentences. File paths, "x = 5" and a short bullet list are still words or sentences. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
