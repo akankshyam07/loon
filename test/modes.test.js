@@ -438,3 +438,8 @@ test('menu: a size list keeps one dish name, footnote stars are dropped, dashi a
     assert.strictEqual(food.score({ name, description: '' }).likelyVegetarian, false, name);
   }
 });
+
+test('grammar fixer picks "writing" for "writting" and does not reword "very good"', async () => {
+  assert.strictEqual((await fixGrammar('I am writting a report')).fixed, 'I am writing a report');
+  assert.strictEqual((await fixGrammar('This is a very good idea')).fixed, 'This is a very good idea');
+});

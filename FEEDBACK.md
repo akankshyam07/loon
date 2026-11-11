@@ -1975,3 +1975,13 @@ As a user, the worst problem was that ending a conversation politely still cost 
 Fixed: the goodbye reply also matches "night", "take care", "talk to you later", "that's all (for now)", "never mind", "nvm" and a leading "ok" or "alright". The thanks reply accepts "that was helpful" after the thanks. Closers followed by a request still go to the model. Test added in test/brain.test.js and checked to fail before the change.
 
 Left for later: "sorry" and "my bad" still go to the model. "good morning" after a long thread gets the greeting reply. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-11 — writing tools, fix grammar (eighth pass)
+
+Tried 28 texts such as "I am writting a report", "dont be late", "This is a very very good idea", "I should of called you", an email address, a phone-style line, "Thx for ur help", "npm i" and "Its John's book".
+
+As a user, the worst problems were edits that change my wording. "writting" became "writhing" because Harper lists it first. "This is a very very good idea" became "This is an excellent idea", which is a rewrite and not a fix.
+
+Fixed: fixGrammar skips Harper's Enhancement suggestions, and for a misspelling it prefers the word with the doubled letter collapsed. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: "npm i" in running text becomes "npm I". Lowercase "asap" is still expanded to "as soon as possible". "I seen him", "1 cats" and "you're help" are not flagged. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

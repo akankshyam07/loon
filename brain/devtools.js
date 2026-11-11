@@ -157,15 +157,23 @@ async function fixGrammar(text) {
   // Some of Harper's suggestions are wrong or undo each other, so a span is tried once and a few kinds are skipped:
   // an already capitalized word "fixed" to ALL CAPS (Sam → SAM) and a word cut to one letter (im → i, which loses the "am").
   const tried = new Set();
+  // Harper lists "writhing" before "writing" for "writting", so a spelling fix prefers the word with a doubled letter collapsed.
+  const best = (l) => {
+    const word = fixed.slice(l.span().start, l.span().end).toLowerCase();
+    const all = l.suggestions();
+    if (l.lint_kind() !== 'Spelling') return all[0];
+    return all.find((s) => s.get_replacement_text().toLowerCase() === word.replace(/(.)\1/, '$1')) || all[0];
+  };
   const usable = (l) => {
     const { start, end } = l.span();
     const word = fixed.slice(start, end);
-    const first = l.suggestions()[0];
+    const first = best(l);
     if (!first || CHAT_SHORTHAND.has(word.toLowerCase()) || tried.has(`${start}:${word}`)) return false;
     const to = first.get_replacement_text();
     // An unknown name has no near match ("Akankshya" → "Changsha"), and en dashes in phone numbers are style, not errors.
     // Expanding an initialism (ASAP → As soon as possible) is a style opinion, not a fix.
-    if (l.lint_kind() === 'Formatting' || (l.lint_kind() === 'Miscellaneous' && /^[A-Z]{2,}$/.test(word))) return false;
+    // "very good" → "excellent" is a rewrite of the user's wording, not a correction.
+    if (l.lint_kind() === 'Formatting' || l.lint_kind() === 'Enhancement' || (l.lint_kind() === 'Miscellaneous' && /^[A-Z]{2,}$/.test(word))) return false;
     // An all-caps abbreviation (EOD, PDF) is not a misspelling, and a dialect spelling is the user's choice.
     if (l.lint_kind() === 'Spelling' && (/^[A-Z]{2,}s?$/.test(word) || (word.toLowerCase() !== to.toLowerCase() && dialectKey(word) === dialectKey(to)))) return false;
     // Harper reads "4B" as "4 bytes", "Your the" as a repeat of "Your" and "It's Dr. Smith's" as a wrong "its".
@@ -182,7 +190,7 @@ async function fixGrammar(text) {
     const span = lint.span();
     const before = fixed.slice(span.start, span.end);
     tried.add(`${span.start}:${before}`);
-    const next = await harper.applySuggestion(fixed, lint, lint.suggestions()[0]);
+    const next = await harper.applySuggestion(fixed, lint, best(lint));
     if (next === fixed) break;
     changes.push(`${before} → ${next.slice(span.start, span.end + (next.length - fixed.length)) || '∅'}`);
     fixed = next;
