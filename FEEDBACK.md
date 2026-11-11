@@ -1955,3 +1955,13 @@ As a user, the picks were sensible. Two things annoyed me. The soup was listed a
 Fixed: a trailing "4 /" size is dropped from the dish name, footnote marks are trimmed, and those four dishes count as meat. Test added in test/modes.test.js. I changed one older expectation that had recorded the "Soup of the day 4" name as a known flaw.
 
 Left for later: Pad Thai and mushroom risotto are still called vegetarian, since an existing test relies on Pad Thai and stock use varies. Protein ranking still counts keywords only. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-11 — shopping and unit price (twelfth pass)
+
+Tried 28 size strings and 14 price strings such as "x2 500ml", "500 gr", "1 pint", "16 fl. oz.", "Pack of 6, 8 oz each", "1 lb 4 oz", "2-pack 16 oz", "1,5 kg", "$5.00 - $7.00" and "US$ 12.50".
+
+As a user, almost everything read correctly. The one wrong number was "x2 500ml", which gave 500 ml instead of 1 litre, so a two-pack looked twice as expensive per unit.
+
+Fixed: parseQuantity reads a leading "x2" multiplier. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: "$12 99" (superscript cents flattened to text) reads as 12, a price range uses the low end, and "1.000 g" reads as 1 g. All three are ambiguous and need a deliberate decision. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

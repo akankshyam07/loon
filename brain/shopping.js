@@ -22,7 +22,7 @@ function parseQuantity(text) {
   // "1,000 g" is a thousand, but "0,125 l" is a European decimal.
   const t = String(text).toLowerCase().replace(/×/g, 'x').replace(/\b(two|three|four|five|six|seven|eight|nine|ten|twelve)[\s-](?=pack\b)/g, (_, w) => NUMBER_WORDS[w] + '-').replace(/(?<![\d,.])([1-9]\d{0,2}(?:,\d{3})*),(?=\d{3}(?!\d))/g, (_, d) => d.replace(/,/g, '')).replace(/\b(?:a|an|one)\s+(?=(?:pound|ounce|gallon|quart|pint|lit(?:er|re)|kilo(?:gram)?|gram)s?\b)/g, '1 ').replace(/\bhalf[- ](?=gallon|liter|litre|quart|pint|pound|lb)/g, '0.5 ').replace(/\b([1-3])\/([2-4])\b(?=\s*(?:fl|gal|lb|oz|qt|pt|l\b|lit|kg|g\b|ml|pound|ounce|quart|pint))/g, (_, a, b) => Number(a) / Number(b));
   let count = 1;
-  const multi = t.match(/(\d+)\s*(?:(?:cans?|bottles?|bags?|boxes|pouches|jars|sticks)\s*)?x\s*\d/) || t.match(/\b(?:pack|set|case|box|bundle) of (\d+)/) || t.match(/(\d+)\s*[- ]?(?:pack|pk)\b/);
+  const multi = t.match(/(\d+)\s*(?:(?:cans?|bottles?|bags?|boxes|pouches|jars|sticks)\s*)?x\s*\d/) || t.match(/(?<![a-z\d])x\s*(\d+)\s+\d/) || t.match(/\b(?:pack|set|case|box|bundle) of (\d+)/) || t.match(/(\d+)\s*[- ]?(?:pack|pk)\b/);
   if (multi) count = Number(multi[1]);
   const trailing = !multi && t.match(/[a-z.]\s*x\s*(\d+)\b(?!\s*[.,]?\d*\s*[a-z])/);
   if (trailing) count = Number(trailing[1]);

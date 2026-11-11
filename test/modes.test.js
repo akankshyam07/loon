@@ -40,6 +40,7 @@ test('parseQuantity reads fractions, counted cans and "12-ct"; parsePrice splits
   assert.strictEqual(Math.round(q('12 cans x 12 fl oz').amount), 4259);
   assert.deepStrictEqual(q('12-ct'), { amount: 12, unit: 'count' });
   assert.strictEqual(q('500g x 2').amount, 1000);
+  assert.strictEqual(q('x2 500ml').amount, 1000);
   assert.strictEqual(shopping.parsePrice('5 for $10'), 2);
 });
 
