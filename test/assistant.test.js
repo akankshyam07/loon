@@ -392,3 +392,11 @@ test('commands: "forget everything about X" forgets X and only a bare "forget ev
 test('commands: "remember nothing" and "remember it" save no fact', () => {
   for (const t of ['remember nothing', 'remember it', 'remember everything', 'remember all of this']) assert.strictEqual(parseCommand(t), null, t);
 });
+
+test('commands: "thursday at 3" is the coming Thursday, not today at 3pm', () => {
+  const wed = new Date(2026, 10, 11, 10, 0, 0);
+  const r = parseCommand('remind me thursday at 3 to pay', wed);
+  assert.strictEqual(r.title, 'pay');
+  assert.strictEqual(r.when.getDate(), 12);
+  assert.strictEqual(r.when.getHours(), 15);
+});

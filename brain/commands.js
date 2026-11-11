@@ -24,7 +24,7 @@ function extractWhen(text, now = new Date(), { morning = false } = {}) {
   // An alarm for "6:45" is never 6:45pm, so alarms skip this, and neither is "midnight".
   if (!morning && !/midnight/i.test(found.text) && !found.start.isCertain('meridiem') && found.start.isCertain('hour') && date.getHours() < 7) {
     date.setHours(date.getHours() + 12);
-    if (!found.start.isCertain('day') && date.getTime() - DAY > now.getTime()) date.setTime(date.getTime() - DAY);
+    if (!found.start.isCertain('day') && !found.start.isCertain('weekday') && date.getTime() - DAY > now.getTime()) date.setTime(date.getTime() - DAY);
   }
   // "morning" is 6am in chrono; 9am is a kinder reminder time.
   if (/morning/i.test(found.text) && !found.start.isCertain('hour')) date.setHours(9, 0, 0, 0);

@@ -2035,3 +2035,13 @@ As a user, the worst problem was a silent null. A key such as `class`, `default`
 Fixed: Java keywords now count as keys that need `@JsonProperty`, the same as `first-name` or `userId`. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: a mixed-type array still produces a union class with public fields. A 20-digit id still becomes `double`. A very large object with many keyword keys at once produced an empty code block, which I did not chase because it is an unlikely input. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-11 — reminders, timers and focus (twelfth pass)
+
+Tried 80 inputs such as "remind me thursday at 3 to pay", "remind me in 90 seconds to flip", "timer 45s", "remind me at quarter past 3", "remind me later", "in 10 minutes remind me to stretch", "remind me to x by 5" and "timer 1:30".
+
+As a user, the worst problem was a wrong date with no warning. On a Wednesday, "remind me thursday at 3 to pay" made a reminder for today at 3pm, so the card looked fine and the reminder would fire a day early. The cause was the rule that moves a bare "at 3" to the afternoon, which pulled the date back a day whenever only the weekday was certain.
+
+Fixed: the pull-back now skips dates where the weekday is given. Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: "timer 1:30" is read as 1:30pm instead of one and a half minutes. "remind me at quarter past 3" and "remind me by 5" keep the phrase in the title with no time. "in 10 minutes remind me to stretch" and "hey loon remind me …" are not matched. "egg timer 5 minutes" is not matched. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
