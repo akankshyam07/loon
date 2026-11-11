@@ -157,3 +157,12 @@ test('spoken ways to leave private or focus mode and to ask for quiet turn the t
   for (const t of ['do not disturb', "don't disturb me", 'unfocus', 'un-focus']) assert.strictEqual(toggle(t), t.includes('focus') ? 'toggle:focus:false' : 'toggle:focus:true', t);
   assert.strictEqual(toggle('leave focus mode'), 'toggle:focus:false');
 });
+
+test('turn on do not disturb, "which one is the cheapest option", bare "shorter" and "explain it to me like I\'m five" are understood', () => {
+  const r = route('turn on do not disturb');
+  assert.deepStrictEqual([r.type, r.key, r.value], ['toggle', 'focus', true]);
+  assert.strictEqual(route('which one is the cheapest option').task, 'shop_value');
+  assert.strictEqual(route('shorter please').task, 'shorter');
+  assert.strictEqual(route('simpler').task, 'simplify');
+  assert.strictEqual(route("explain it to me like I'm five").task, 'simplify');
+});

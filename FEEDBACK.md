@@ -2005,3 +2005,13 @@ As a user, the one clear leak in a pasted terminal line was `mysql -u root -phun
 Fixed: brain/redact.js hides the value attached to `-p` on mysql, mysqldump, mysqladmin and mariadb command lines. `mysql -u root -p mydb` (where mydb is the database) is left alone. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: an unquoted password with spaces still leaks the later words. Recovery codes without digits, ssh public keys and dates of birth are not hidden. `password=abc&user=bob` hides `&user=bob` too, which is over-cautious but harmless. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-11 — voice intents (ninth pass)
+
+Tried 40 spoken phrasings such as "turn on do not disturb", "which one is the cheapest option", "shorter please", "explain it to me like I'm five", "stop listening", "go back to normal", "make it more casual" and "thanks loon".
+
+As a user, the worst problem was that "turn on do not disturb" went to the model, which could claim focus was on while nothing changed. "Which one is the cheapest option" and "explain it to me like I'm five" also missed their templates, and a bare "shorter" or "simpler" did nothing.
+
+Fixed: the focus template accepts turn on, switch on and enable before "do not disturb" and an optional "mode". The cheapest template accepts "one" and "option" at the end. The simplify template accepts "to me" before "like I'm five", and bare "simpler" and "shorter" now route to their tasks. Test added in test/voice.test.js and checked to fail before the change.
+
+Left for later: "stop listening", "go back to normal", "make it more casual", "explain this code", "what does this word mean", "give me a quick summary" and "thanks loon" still go to the model. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
