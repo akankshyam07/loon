@@ -255,3 +255,10 @@ test('redaction hides CLI secret flags and quoted private_key values', () => {
   assert.equal(redact('private_key: "abcdef"').text, 'private_key: "[redacted:secret]"');
   assert.equal(redact('run --secret --verbose').count, 0);
 });
+
+test('redaction hides a mysql password attached to -p but not a database name after -p', () => {
+  assert.equal(redact('mysql -u root -phunter22 mydb').text, 'mysql -u root -p[redacted:secret] mydb');
+  assert.equal(redact('mysqldump -pS3cret db > out.sql').text, 'mysqldump -p[redacted:secret] db > out.sql');
+  assert.equal(redact('mysql -u root -p mydb').count, 0);
+  assert.equal(redact('ls -pa').count, 0);
+});

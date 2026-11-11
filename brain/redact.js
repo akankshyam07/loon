@@ -52,6 +52,11 @@ const RULES = [
     re: /((?:^|\s)--(?:password|passwd|token|secret|api-?key|access-?token|auth-?token)\s+)(?!\[redacted|-)(?:(["'])[^"'\n]{4,}\2|[^\s"']{4,})/gi,
     replace: (m, head, quote) => `${head}${quote || ''}[redacted:secret]${quote || ''}`,
   },
+  {
+    kind: 'secret',
+    re: /(\b(?:mysql|mysqldump|mysqladmin|mariadb)\b[^\n]*?\s-p)(?!\[redacted)([^\s"']{3,})/g,
+    replace: (m, head) => `${head}[redacted:secret]`,
+  },
   { kind: 'token', re: /\bBasic\s+[A-Za-z0-9+\/]{12,}={0,2}/g },
   {
     kind: 'secret',

@@ -1995,3 +1995,13 @@ As a user, "other word for sad" (singular) and "words like happy" skipped the of
 Fixed: synonymTerm accepts "other word", "words like" and a bare "synonym X" without for or of. Assertions added in test/brain.test.js.
 
 Left for later: "contrary of", "reverse of" and "antonyms of X and Y" still go to the model. "does X mean Y" is a yes or no question and stays with the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install, the same on main.
+
+## 2026-11-11 — memory and privacy, redaction (eleventh pass)
+
+Tried 26 snippets such as an email plus password line, Basic auth headers, `.env` exports, `PGPASSWORD=...`, URLs with `?access_token=`, connection strings, `mysql -phunter22`, card with cvv, ssh public keys, recovery codes and a date of birth.
+
+As a user, the one clear leak in a pasted terminal line was `mysql -u root -phunter22 mydb`, where the password is glued to `-p`. It went to the model untouched.
+
+Fixed: brain/redact.js hides the value attached to `-p` on mysql, mysqldump, mysqladmin and mariadb command lines. `mysql -u root -p mydb` (where mydb is the database) is left alone. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: an unquoted password with spaces still leaks the later words. Recovery codes without digits, ssh public keys and dates of birth are not hidden. `password=abc&user=bob` hides `&user=bob` too, which is over-cautious but harmless. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
