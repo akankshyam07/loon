@@ -2165,3 +2165,13 @@ As a user, three things leaked. `docker login -u bob -p mysecretpw` and `sshpass
 Fixed: brain/redact.js hides the value after `-p` on docker login, podman login and sshpass, and hides any long value in an Authorization header. `docker run -p 8080:80` is left alone. Test added in test/browser.test.js.
 
 Left for later: wallet seed phrases, emails and phone numbers are not hidden. A spoken password with spaces ("hunter two") leaks the later words. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-12 — shopping and unit price (thirteenth pass)
+
+Tried 45 size strings such as "Pack of 2 - 16 oz each", "6 Count (Pack of 4)", "12 fl oz (Pack of 24)", "1 qt 14 fl oz", "Value pack 3 x 150 g", "24 cans", "60 softgels", "100 tea bags" and "Pack of 100 count", plus 20 price strings.
+
+As a user, almost everything parsed well. The worst case was "Pack of 100 count", which came out as 10,000 items, so the unit price looked a hundred times too cheap. Cans, bottles, tabs, softgels and gummies with no other size gave no quantity at all, so those items dropped out of the comparison.
+
+Fixed: brain/shopping.js reads "pack of N count" as N and counts cans, bottles, tabs, softgels and gummies. "6 Count (Pack of 4)" is still 24. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: "100 tea bags" and "1 stk" still give nothing. "2 × 6 × 330 ml" reads as 2 packs, and "$1 299.00" reads as 1. A price quoted per unit such as "$5.99/lb" is treated as the item price. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

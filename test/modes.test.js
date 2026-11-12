@@ -44,6 +44,14 @@ test('parseQuantity reads fractions, counted cans and "12-ct"; parsePrice splits
   assert.strictEqual(shopping.parsePrice('5 for $10'), 2);
 });
 
+test('parseQuantity does not square "Pack of 100 count" and counts cans, bottles and softgels', () => {
+  const q = (s) => shopping.parseQuantity(s);
+  assert.deepStrictEqual(q('Pack of 100 count'), { amount: 100, unit: 'count' });
+  assert.deepStrictEqual(q('6 Count (Pack of 4)'), { amount: 24, unit: 'count' });
+  assert.deepStrictEqual(q('24 cans'), { amount: 24, unit: 'count' });
+  assert.deepStrictEqual(q('60 softgels'), { amount: 60, unit: 'count' });
+});
+
 test('parseQuantity reads spelled-out packs, a bare dozen and "pt"', () => {
   const q = (s) => shopping.parseQuantity(s);
   assert.deepStrictEqual(q('six pack'), { amount: 6, unit: 'count' });

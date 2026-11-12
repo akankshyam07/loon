@@ -45,11 +45,13 @@ function parseQuantity(text) {
   }
   const dozen = t.match(/(?:(\d+(?:\.\d+)?)|\b(a|one)|\b(half))[\s-]?dozen\b/) || t.match(/\b(dozen)\b/);
   if (dozen) return { amount: (dozen[3] ? 0.5 : Number(dozen[1]) || 1) * 12, unit: 'count' };
-  const pieces = t.match(/(\d+)[\s-]?(?:ct|count|pcs|pieces|pods|tablets|capsules|rolls|bags|pairs|sheets|wipes)\b/);
+  const pieces = t.match(/(\d+)[\s-]?(?:ct|count|pcs|pieces|pods|tablets|tabs|capsules|softgels|gummies|rolls|bags|pairs|sheets|wipes|cans|bottles)\b/);
   // "12 ct (2 x 6)" spells out the same twelve, while "12 count (pack of 2)" is twenty-four.
+  // "Pack of 100 count" names one number twice.
   if (pieces) {
+    const sameNumber = multi && multi[1] === pieces[1] && / of /.test(multi[0]);
     const grid = multi && /x/.test(multi[0]) && t.match(/(\d+)\s*x\s*(\d+)/);
-    const repeats = multi && multi[0] !== pieces[0] && !(grid && Number(grid[1]) * Number(grid[2]) === Number(pieces[1]));
+    const repeats = multi && multi[0] !== pieces[0] && !sameNumber && !(grid && Number(grid[1]) * Number(grid[2]) === Number(pieces[1]));
     return { amount: Number(pieces[1]) * (repeats ? count : 1), unit: 'count' };
   }
   if (multi) return { amount: count, unit: 'count' };
