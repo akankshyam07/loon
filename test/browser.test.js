@@ -118,6 +118,10 @@ test('page kinds: sensitive wins, shops and articles are recognized', async () =
   assert.strictEqual(page('<form><input name="routing_number"><input name="account_number"></form>').kind, 'sensitive');
   assert.notStrictEqual(page('<form><input name="classname"></form>').kind, 'sensitive');
   assert.strictEqual(page('<form><input name="passcode"></form>').kind, 'sensitive');
+  for (const name of ['cc_number', 'ccnum', 'card_no', 'cc-exp', 'totp', 'mfa_code', 'seed_phrase', 'recovery_phrase', 'private_key', 'tax_id']) {
+    assert.strictEqual(page(`<form><input name="${name}"></form>`).kind, 'sensitive', name);
+  }
+  assert.notStrictEqual(page('<form><input name="private_note"><input name="seed_count"></form>').kind, 'sensitive');
   assert.strictEqual(page('<form><input type="text" name="pwd"></form>').kind, 'sensitive');
   assert.strictEqual(page('<form><input id="security-code"></form>').kind, 'sensitive');
   assert.strictEqual(page('<p>chat</p>', 'https://web.whatsapp.com/').kind, 'sensitive');

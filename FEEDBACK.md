@@ -2145,3 +2145,13 @@ As a user, the worst problem was that saying sorry to the cat cost a full model 
 Fixed: an apology ("sorry", "my bad", "oops sorry", "I'm sorry loon") now gets an instant reply from code, and the thanks reply also knows gracias, merci, danke, grazie, obrigado and arigato. An apology followed by a request ("sorry, what about udp") still goes to the model. Test added in test/brain.test.js.
 
 Left for later: "lol", "haha", "got it", "cool" and emoji-only replies still go to the model. "no thanks" and "yes" are left alone on purpose because they can answer a question from the cat. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-12 — page kinds (eleventh pass)
+
+Tried 30 pages such as pharmacy and code hosts, shops priced in kr, zł, R$ and pesos, and forms with fields named cc_number, ccnum, card_no, cc-exp, totp, mfa_code, seed_phrase, private_key and tax_id.
+
+As a user, the worst problem was privacy. A card form using common field names like cc_number or ccnum, an authenticator code box, a wallet seed phrase and a private key box all looked like ordinary pages, so Loon stayed active while I typed them.
+
+Fixed: extension/lib/page-kind.js treats those field names as card or identity fields. Names are matched exactly or by a specific phrase so ordinary fields like private_note stay normal. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: shops priced in kr, zł and R$ or with a word like MXN are not seen as shops. Codeberg is not a code host, Google Docs is "other", and a bank on an unknown domain is not caught by words in its title. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
