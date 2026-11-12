@@ -2175,3 +2175,13 @@ As a user, almost everything parsed well. The worst case was "Pack of 100 count"
 Fixed: brain/shopping.js reads "pack of N count" as N and counts cans, bottles, tabs, softgels and gummies. "6 Count (Pack of 4)" is still 24. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: "100 tea bags" and "1 stk" still give nothing. "2 × 6 × 330 ml" reads as 2 packs, and "$1 299.00" reads as 1. A price quoted per unit such as "$5.99/lb" is treated as the item price. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-12 — onboarding first run, interests and allergy lead-ins (eleventh pass)
+
+Tried 28 answers for the "Get to know you" boxes, such as "peanuts, tree nuts", "Peanuts (severe)", "I like cooking", "my interests are chess", "dairy-free", "none 🙂", "Ada, but my friends say A" and "my name is Bob and I like pizza".
+
+As a user, the worst problem was that natural sentences were saved word for word. "I like cooking" became "I'm interested in I like cooking" and "my interests are chess" became "I'm interested in my interests are chess".
+
+Fixed: the shared list reader drops "I like", "I love", "I enjoy", "I'm into", "my interests are" and "my allergies are" before splitting. Test added in test/personal.test.js and checked to fail before the change.
+
+Left for later: "dairy-free" is saved as "allergic to dairy-free", "none 🙂" is saved as an allergy, "nothing really, just dislike cilantro" is saved as an allergy, and a name with a trailing sentence ("Bob and I like pizza") is kept whole. Allergies are safety facts, so these need a deliberate wording decision.

@@ -327,3 +327,9 @@ test('onboarding: "N/A", "skip" and "none" are not saved as facts, and a nicknam
   }
   assert.deepStrictEqual(onboardingResult({ name: 'Ada Lovelace (Ada)' }).facts, ['Call me Ada Lovelace']);
 });
+
+test('onboarding: spoken lead-ins in the interests and allergy boxes are dropped', () => {
+  assert.deepStrictEqual(onboardingResult({ interests: 'I like cooking' }).facts, ["I'm interested in cooking"]);
+  assert.deepStrictEqual(onboardingResult({ interests: 'my interests are chess, hiking' }).facts, ["I'm interested in chess and hiking"]);
+  assert.deepStrictEqual(onboardingResult({ allergies: 'my allergies are peanuts' }).facts, ["I'm allergic to peanuts"]);
+});
