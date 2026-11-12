@@ -108,6 +108,13 @@ test('routines: ~20 phrasings parse in code, and their wording reads back to the
   assert.deepStrictEqual([moon.schedule, moon.understood, moon.action, moon.payload.message], [null, false, 'notify', 'Hi']);
 });
 
+test('routines: counts spelled as words work for intervals and one-off timers', () => {
+  assert.strictEqual(R.parseSchedule('every two hours', NOW).schedule.minutes, 120);
+  assert.strictEqual(R.parseSchedule('every thirty minutes', NOW).schedule.minutes, 30);
+  const once = R.parseSchedule('in two hours', NOW).schedule;
+  assert.strictEqual(once.at - NOW.getTime(), 2 * 60 * 60 * 1000);
+});
+
 test('routines: next run across DST changes, month ends, short months and intervals', () => {
   const daily9 = R.parseSchedule('every day at 9am', NOW).schedule;
   // spring forward (Mar 8, 2026): still 9:00 on the clock, only 23 hours later

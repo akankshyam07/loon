@@ -78,7 +78,9 @@ function take(state, re) {
   return m;
 }
 
-const countWord = (w) => (!w || /^(?:an?|one)$/i.test(w) ? 1 : /^other$/i.test(w) ? 2 : /^half an?$/i.test(w) ? 0.5 : Number(w));
+const NUMBER_WORDS = { two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, twelve: 12, fifteen: 15, twenty: 20, thirty: 30 };
+const COUNT = `\\d+|${Object.keys(NUMBER_WORDS).join('|')}`;
+const countWord = (w) => (!w || /^(?:an?|one)$/i.test(w) ? 1 : /^other$/i.test(w) ? 2 : /^half an?$/i.test(w) ? 0.5 : NUMBER_WORDS[w.toLowerCase()] || Number(w));
 const unitMinutes = (u) => (/^h/i.test(u) ? 60 : 1);
 
 // Reads the schedule out of text: { schedule, rest } (schedule null when nothing recurring was found).
@@ -90,7 +92,7 @@ function parseSchedule(input, now = new Date(), { allowOnce = false } = {}) {
   const done = (schedule) => ({ schedule, rest: tidyRest(state.text) });
 
   // "in 20 minutes …": a one-off timer.
-  const inMatch = !RECURRING.test(state.text) && take(state, /^\s*in\s+(\d+|an?|one|half an?)\s+(minutes?|mins?|hours?|hrs?)\b,?/i);
+  const inMatch = !RECURRING.test(state.text) && take(state, new RegExp(`^\\s*in\\s+(${COUNT}|an?|one|half an?)\\s+(minutes?|mins?|hours?|hrs?)\\b,?`, 'i'));
   if (inMatch) return done({ type: 'once', at: at + countWord(inMatch[1]) * unitMinutes(inMatch[2]) * MINUTE });
 
   let part = null;
@@ -98,7 +100,7 @@ function parseSchedule(input, now = new Date(), { allowOnce = false } = {}) {
   // "twice a day": spread across 9am to 9pm, which the confirm card spells out.
   const perDay = take(state, /\b(?:(once|twice)|(\d+|two|three|four|five|six)\s+times?)\s+(?:a|per|each)\s+day\b|\b(once|twice)\s+daily\b/i);
   const dayCount = perDay && ({ once: 1, twice: 2, two: 2, three: 3, four: 4, five: 5, six: 6 }[(perDay[1] || perDay[3] || perDay[2]).toLowerCase()] || Number(perDay[2]));
-  const interval = take(state, /\bevery\s+(\d+|other|an?|one|half an?)?\s*(minutes?|mins?|hours?|hrs?)\b(?:\s+on the hour)?/i) || take(state, /\b(hourly)\b/i);
+  const interval = take(state, new RegExp(`\\bevery\\s+(${COUNT}|other|an?|one|half an?)?\\s*(minutes?|mins?|hours?|hrs?)\\b(?:\\s+on the hour)?`, 'i')) || take(state, /\b(hourly)\b/i);
   const monthDay = take(state, /\b(?:on\s+)?the\s+(\d{1,2})(?:st|nd|rd|th)?\s+of\s+(?:every|each|the)\s+month\b/i)
     || take(state, /\b(?:every|each)\s+month\s+on\s+the\s+(\d{1,2})(?:st|nd|rd|th)?\b/i)
     || take(state, /\bmonthly\s+on\s+the\s+(\d{1,2})(?:st|nd|rd|th)?\b/i)

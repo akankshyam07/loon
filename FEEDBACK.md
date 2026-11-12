@@ -2085,3 +2085,13 @@ As a user, the worst problem was that "remind me what we discussed about docker"
 Fixed: these five forms now open history, with the topic as the search word when there is one. Test added in test/assistant.test.js.
 
 Left for later: "recall docker", "what was that thing I asked about docker", "last thing we talked about", typos ("wat did i ask") and a trailing emoji ending up as the search word ("what did I ask 🐱").
+
+## 2026-11-12 — routines (twelfth pass)
+
+Tried 25 phrasings such as "every morning remind me to take vitamins", "every sunday evening …", "every monday and thursday at 7pm …", "every 1st of the month …", "every other week …", "every two hours remind me to drink water", "every day at 9am and 9pm …" and "evry day at 9 …".
+
+As a user, most forms parsed well. The worst problem was "every two hours remind me to drink water". The schedule was not read at all, so the card fell back to asking instead of making a routine. The same happened with "every thirty minutes" and "in two hours".
+
+Fixed: counts spelled as words (two to ten, twelve, fifteen, twenty, thirty) now work for "every N hours or minutes" and "in N hours or minutes". Test added in test/routines.test.js and checked to fail before the change.
+
+Left for later: "every day at 9am and 9pm" gives no schedule. A typo such as "evry day" gives no routine. "daily at 6" is read as 6pm. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
