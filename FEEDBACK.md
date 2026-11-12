@@ -2135,3 +2135,13 @@ As a user, the vegetarian and lightest picks were sensible. The protein pick lis
 Fixed: the protein check now skips "-free" words such as chicken-free and dairy-free. Test added in test/modes.test.js.
 
 Left for later: plant-based dishes such as "vegan chicken wings" still say protein from chicken. Nasi goreng (often shrimp paste) and egg fried rice are still called likely vegetarian. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-12 — follow-up conversations, apologies and thanks (eleventh pass)
+
+Tried 45 short replies inside an open thread such as "sorry", "my bad", "oops sorry", "good morning", "ok thanks!", "thanks loon", "got it", "lol", "😂", "👍", "gracias", "merci", "danke" and "arigato".
+
+As a user, the worst problem was that saying sorry to the cat cost a full model call, and so did thanks in another language. "sorry" or "my bad" started the local model, and "gracias" or "danke" got a model reply instead of the purr.
+
+Fixed: an apology ("sorry", "my bad", "oops sorry", "I'm sorry loon") now gets an instant reply from code, and the thanks reply also knows gracias, merci, danke, grazie, obrigado and arigato. An apology followed by a request ("sorry, what about udp") still goes to the model. Test added in test/brain.test.js.
+
+Left for later: "lol", "haha", "got it", "cool" and emoji-only replies still go to the model. "no thanks" and "yes" are left alone on purpose because they can answer a question from the cat. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

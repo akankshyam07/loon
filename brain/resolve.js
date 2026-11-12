@@ -95,12 +95,16 @@ const CODE_ANSWERS = [
     answer: () => ({ mood: 'happy', text: 'Hi! Highlight something, or ask me anything.' }),
   },
   {
-    match: /^(?:(?:ok|okay|great|perfect|cool|awesome|nice|got it|gotcha|makes sense|that helped)[ ,]+)?(?:(?:many )?thanks|thank you|thank u|thankyou|thx|thnx|thanx|tysm|tyvm|ty|cheers|(?:much )?appreciated?(?: it)?)(?:[ ,]+(?:a lot|a ton|a bunch|so much|very much|again|kindly|mate|that helps|that helped|that was (?:really |very )?helpful|loon|for (?:that|this|the (?:help|answer|explanation)|your help|helping|explaining)))*$/,
+    match: /^(?:(?:ok|okay|great|perfect|cool|awesome|nice|got it|gotcha|makes sense|that helped)[ ,]+)?(?:(?:many )?thanks|thank you|thank u|thankyou|(?:muchas )?gracias|merci(?: beaucoup)?|danke(?: sch[oö]n)?|grazie|obrigad[oa]|arigato|thx|thnx|thanx|tysm|tyvm|ty|cheers|(?:much )?appreciated?(?: it)?)(?:[ ,]+(?:a lot|a ton|a bunch|so much|very much|again|kindly|mate|that helps|that helped|that was (?:really |very )?helpful|loon|for (?:that|this|the (?:help|answer|explanation)|your help|helping|explaining)))*$/,
     answer: () => ({ mood: 'happy', text: 'Anytime. *purrs*' }),
   },
   {
     match: /^(?:(?:wow|aw+|ok|okay)[ ,]+)?(?:(?:that(?:'s| was| is)|this is|you(?:'re| are)|u r|it(?:'s| was)) )?(?:(?:so|very|really|super|pretty) )?(?:great|awesome|amazing|perfect|brilliant|helpful|wonderful|clever|smart|excellent|fantastic|the best|nice|good)(?: (?:one|job|work|answer|help|cat|kitty|bot))?(?: (?:loon|kitty))?$|^(?:well done|you (?:rock|rule)|love (?:it|that|this|you))(?: loon)?$/,
     answer: () => ({ mood: 'happy', text: 'Aw, thanks. *purrs*' }),
+  },
+  {
+    match: /^(?:(?:oops|whoops|ah|oh|ok|okay)[ ,]+)?(?:sorry|my bad|my apologies|apologies|i(?:'m| am) sorry|sorry about that)(?: loon)?$/,
+    answer: () => ({ mood: 'happy', text: 'No worries. *tail flick* Ask away.' }),
   },
   {
     match: /^(?:(?:ok|okay|alright|right)[ ,]+)?(?:good ?night|night night|nighty night|night|gn|bye|bye bye|goodbye|see (?:you|ya)(?: later| soon| tomorrow)?|cya|ttyl|later|talk to you later|take care|that(?:'s| is) all(?: for now)?|never ?mind|nvm)(?: loon)?$/,

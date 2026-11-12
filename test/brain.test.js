@@ -154,6 +154,21 @@ test('ladder: goodbyes and "that is all" in a thread get an instant reply, with 
   }
 });
 
+test('ladder: apologies and thanks in other languages get an instant reply, an apology with a request goes to the model', async () => {
+  let asked = 0;
+  const brain = { modelId: () => 'fake', chat: async (_p, { onText }) => { asked++; onText('Sure.'); } };
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));
+  const resolver = new Resolver({ brain, cacheFile: path.join(dir, 'c.json'), countsFile: path.join(dir, 'n.json') });
+  const history = [{ question: 'explain tcp', answer: 'It is reliable.', target: 'fast' }];
+  for (const q of ['sorry', 'my bad', 'oops sorry', "I'm sorry loon", 'Gracias!', 'merci beaucoup', 'danke schön', 'arigato']) {
+    assert.strictEqual((await resolver.ask(q, { onText: () => {}, firstInThread: false, history })).tier, 'code', q);
+  }
+  assert.strictEqual(asked, 0);
+  for (const q of ['sorry, what about udp', 'sorry I meant ports', 'merci, now in french']) {
+    assert.notStrictEqual((await resolver.ask(q, { onText: () => {}, firstInThread: false, history })).tier, 'code', q);
+  }
+});
+
 test('ladder: thanks followed by a real request still goes to the model', async () => {
   const brain = { modelId: () => 'fake', chat: async (_p, { onText }) => onText('Sure.') };
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));
