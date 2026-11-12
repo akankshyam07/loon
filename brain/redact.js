@@ -57,6 +57,16 @@ const RULES = [
     re: /(\b(?:mysql|mysqldump|mysqladmin|mariadb)\b[^\n]*?\s-p)(?!\[redacted)([^\s"']{3,})/g,
     replace: (m, head) => `${head}[redacted:secret]`,
   },
+  {
+    kind: 'secret',
+    re: /(\b(?:(?:docker|podman) login|sshpass)\b[^\n]*?\s-p\s+)(?!\[redacted|-)(?:(["'])[^"'\n]{3,}\2|[^\s"']{3,})/g,
+    replace: (m, head, quote) => `${head}${quote || ''}[redacted:secret]${quote || ''}`,
+  },
+  {
+    kind: 'token',
+    re: /(\bauthorization\s*:\s*(?:(?:token|bearer|basic)\s+)?)(?!\[redacted)[^\s"']{12,}/gi,
+    replace: (m, head) => `${head}[redacted:token]`,
+  },
   { kind: 'token', re: /\bBasic\s+[A-Za-z0-9+\/]{12,}={0,2}/g },
   {
     kind: 'secret',

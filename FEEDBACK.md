@@ -2155,3 +2155,13 @@ As a user, the worst problem was privacy. A card form using common field names l
 Fixed: extension/lib/page-kind.js treats those field names as card or identity fields. Names are matched exactly or by a specific phrase so ordinary fields like private_note stay normal. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: shops priced in kr, zł and R$ or with a word like MXN are not seen as shops. Codeberg is not a code host, Google Docs is "other", and a bank on an unknown domain is not caught by words in its title. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-12 — memory and privacy, redaction (twelfth pass)
+
+Tried 33 snippets such as card numbers with dashes, SSNs, AWS secret keys, IBANs, connection strings, curl headers, spoken passwords, OTP codes, a seed phrase, private key blocks, reset URLs and `docker login -p`, `sshpass -p` commands.
+
+As a user, three things leaked. `docker login -u bob -p mysecretpw` and `sshpass -p mysecretpw ssh host` sent the password to the model, and so did a bare `Authorization: <value>` header with no Bearer or token word.
+
+Fixed: brain/redact.js hides the value after `-p` on docker login, podman login and sshpass, and hides any long value in an Authorization header. `docker run -p 8080:80` is left alone. Test added in test/browser.test.js.
+
+Left for later: wallet seed phrases, emails and phone numbers are not hidden. A spoken password with spaces ("hunter two") leaks the later words. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

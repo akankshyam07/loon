@@ -273,3 +273,11 @@ test('redaction hides a mysql password attached to -p but not a database name af
   assert.equal(redact('mysql -u root -p mydb').count, 0);
   assert.equal(redact('ls -pa').count, 0);
 });
+
+test('redaction hides docker login and sshpass passwords and bare Authorization headers', () => {
+  assert.equal(redact('docker login -u bob -p mysecretpw').text, 'docker login -u bob -p [redacted:secret]');
+  assert.equal(redact('sshpass -p mysecretpw ssh bob@host').text, 'sshpass -p [redacted:secret] ssh bob@host');
+  assert.equal(redact('docker run -p 8080:80 nginx').count, 0);
+  assert.equal(redact('Authorization: abcd1234efgh5678ijkl').text, 'Authorization: [redacted:token]');
+  assert.equal(redact('Authorization: Bearer abcdefghijklmnop1234').count, 1);
+});
