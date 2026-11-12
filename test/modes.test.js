@@ -449,3 +449,12 @@ test('grammar fixer picks "writing" for "writting" and does not reword "very goo
   assert.strictEqual((await fixGrammar('I am writting a report')).fixed, 'I am writing a report');
   assert.strictEqual((await fixGrammar('This is a very good idea')).fixed, 'This is a very good idea');
 });
+
+test('errors: fetch failures, aborted requests, missing tables and browser connection refused are answered from the table', () => {
+  assert.match(lookupKnown('(node:123) UnhandledPromiseRejectionWarning: TypeError: fetch failed'), /Network request failed/);
+  assert.match(lookupKnown('Uncaught (in promise) DOMException: The user aborted a request.'), /aborted/);
+  assert.match(lookupKnown('error: relation "users" does not exist'), /Table not found/);
+  assert.match(lookupKnown('curl: (7) Failed to connect to localhost port 8080: Connection refused'), /Connection refused/);
+  assert.match(lookupKnown('Failed to load resource: net::ERR_CONNECTION_REFUSED'), /Connection refused/);
+  assert.match(lookupKnown('Access to fetch at x from origin y has been blocked by CORS policy: Failed to fetch'), /CORS/);
+});

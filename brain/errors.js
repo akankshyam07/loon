@@ -107,7 +107,7 @@ const KNOWN = [
     fix: ['Find it: `lsof -i :PORT`.', 'Stop that process, or run yours on a different port.'],
   },
   {
-    match: /ECONNREFUSED/,
+    match: /ECONNREFUSED|ERR_CONNECTION_REFUSED|Failed to connect to .* Connection refused|Connection refused/,
     title: 'Connection refused',
     explain: 'Nothing is listening at that host and port (the server is down, or the address is wrong).',
     fix: ['Check the service is running.', 'Check host/port, and `localhost` vs a container name inside Docker.'],
@@ -483,6 +483,24 @@ const KNOWN = [
     title: 'Database login refused',
     explain: 'The database server was reached but rejected the username, password or the host you connected from.',
     fix: ['Check the username and password in your config or environment variables.', 'Make sure that user is allowed from this host, for example `\'root\'@\'localhost\'` is a different account from `\'root\'@\'%\'`.'],
+  },
+  {
+    match: /relation "[^"]+" does not exist|Table '[^']+' doesn't exist|no such table/i,
+    title: 'Table not found (SQL)',
+    explain: 'The query names a table the database cannot see. It was never created, lives in another schema, or you are connected to a different database.',
+    fix: ['Run your migrations, or check the table exists with `\\dt` (Postgres) or `SHOW TABLES` (MySQL).', 'Check you are connected to the right database, and that the schema is on the search path or named in the query.'],
+  },
+  {
+    match: /AbortError|DOMException: The user aborted a request|The operation was aborted/,
+    title: 'Request was aborted',
+    explain: 'The request was cancelled on purpose, by an `AbortController`, a timeout, or the page or component going away. It is not a server failure.',
+    fix: ['Catch it and ignore `error.name === "AbortError"` when the cancel was intended.', 'If it was not intended, look for a timeout or a cleanup function (like a React effect) that aborts too early.'],
+  },
+  {
+    match: /fetch failed|Failed to fetch/,
+    title: 'Network request failed',
+    explain: 'The request never got a response. The server was unreachable, DNS failed, the connection was blocked, or in a browser CORS or mixed content stopped it.',
+    fix: ['Look at the `cause` on the error (Node) or the browser Network tab for the real reason, like ECONNREFUSED or a certificate problem.', 'Check the URL, that the server is running, and in a browser the CORS headers.'],
   },
 ];
 

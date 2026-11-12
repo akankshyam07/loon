@@ -2105,3 +2105,13 @@ As a user, the vague ones were the worst. Loon showed a confirm card to launch a
 Fixed: targets that start with "a" or "an", "file ...", or are just "link", "app", "page", "website" or "site", and targets joining two apps with "and" or "&", now go to the chat instead of a confirm card. Test added in test/assistant.test.js.
 
 Left for later: opening a file by name ("open report.pdf") still tries to launch an app, and two apps in one request could be two confirm cards. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-12 — developer help, error table (twelfth pass)
+
+Tried 30 errors such as "fetch failed" rejections, an aborted request DOMException, Postgres "relation does not exist", curl and Chrome connection refused, Python ValueError and KeyError, npm ELIFECYCLE, EADDRINUSE and Spring bean errors.
+
+As a user, most were answered instantly. The gaps were the leftovers from the last pass plus browser and curl wording for a refused connection, which only matched the Node ECONNREFUSED code.
+
+Fixed: added table entries for failed fetches, aborted requests and missing SQL tables, and the connection refused entry now also matches the browser and curl wording. Test added in test/modes.test.js.
+
+Left for later: more database dialect messages and Docker build errors. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
