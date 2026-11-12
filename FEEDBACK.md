@@ -2115,3 +2115,13 @@ As a user, most were answered instantly. The gaps were the leftovers from the la
 Fixed: added table entries for failed fetches, aborted requests and missing SQL tables, and the connection refused entry now also matches the browser and curl wording. Test added in test/modes.test.js.
 
 Left for later: more database dialect messages and Docker build errors. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-12 — writing tools by voice (eighth pass)
+
+Tried 30 spoken edit phrasings such as "say it shorter", "make this a bit more polite", "write it more formally", "tone it down", "make it punchier", "clean this up", "expand this" and "make this shorter and more professional".
+
+As a user, small variations of asks Loon already handles fell through to the slow question path with no selection attached.
+
+Fixed: brain/intents.js now reads "say it shorter" as shorter, "make this a bit more polite" as professional, and "write it more formally" or "say it politely" as professional. Cases added in test/voice.test.js and checked to fail before the change.
+
+Left for later: casual, longer and bullet-point edits have no task, so "make it more casual" and "expand this" still go to the model. "clean this up" and "make it punchier" are not matched. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
