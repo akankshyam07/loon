@@ -2075,3 +2075,13 @@ As a user, the worst problem was that real errors copied from the terminal were 
 Fixed: the classifier in extension/lib/classify.js now recognizes these four shapes (and the ELIFECYCLE code) as errors. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: "Module not found: Error: Can't resolve ..." and React key warnings still read as sentences. File paths, "x = 5" and a short bullet list are still words or sentences. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-12 — history (eleventh pass)
+
+Tried 32 phrasings such as "what were we talking about", "did we talk about react", "anything about rust in my history", "show me what i asked about css", "remind me what we discussed about docker", "last thing we talked about" and "recall docker".
+
+As a user, the worst problem was that "remind me what we discussed about docker" created a reminder titled "what we discussed about docker". The others ("did we talk about react", "what were we talking about", "anything about X in my history", "show me what I asked about X") went to the language model, which cannot see Loon's history.
+
+Fixed: these five forms now open history, with the topic as the search word when there is one. Test added in test/assistant.test.js.
+
+Left for later: "recall docker", "what was that thing I asked about docker", "last thing we talked about", typos ("wat did i ask") and a trailing emoji ending up as the search word ("what did I ask 🐱").

@@ -82,6 +82,11 @@ function parseCommand(input, now = new Date()) {
     return date ? { action: 'reminder', title: 'Wake up', when: date } : null;
   }
   if ((m = text.match(/^(?:(?:set|create|add|make)(?: me)? (?:an? )?)?reminder(?: for| to| about|:)?\s+(.+)$/i))) return parseCommand(`remind me ${m[1]}`, now);
+  // "show me what I asked about css" and "remind me what we discussed about docker" want the history too.
+  if ((m = text.match(/^(?:show|tell|remind) me (?:of )?what (?:i|we) (?:asked|searched(?: for)?|looked up|read|talked|chatted|discussed)(?: about| on| for)? (.+?)\??$/i))) return { action: 'recall', query: recallQuery(m[1]) };
+  if ((m = text.match(/^(?:did we|have we) (?:ever )?(?:talk(?:ed)?|chat(?:ted)?|discuss(?:ed)?) (?:about |on )?(.+?)(?: before)?\??$/i))) return { action: 'recall', query: recallQuery(m[1]) };
+  if ((m = text.match(/^(?:anything|something|stuff) (?:about|on) (.+?) in (?:my |the )?history\??$/i))) return { action: 'recall', query: recallQuery(m[1]) };
+  if (/^what (?:were|are) we (?:talking|chatting|discussing)(?: about)?(?: (?:today|yesterday|earlier|lately|recently|last (?:week|month)))?\??$/i.test(text)) return { action: 'recall', query: '' };
   // "remind me what I asked" wants the history, not a reminder titled "what I asked".
   if (/^remind me (?:of )?what i (?:asked|searched(?: for)?|looked up)(?: you)?\??$/i.test(text)) return { action: 'recall', query: '' };
   if ((m = text.match(/^remind ?me (?:to |about )?(.+)$/i))) {
