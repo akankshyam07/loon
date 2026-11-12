@@ -2095,3 +2095,13 @@ As a user, most forms parsed well. The worst problem was "every two hours remind
 Fixed: counts spelled as words (two to ten, twelve, fifteen, twenty, thirty) now work for "every N hours or minutes" and "in N hours or minutes". Test added in test/routines.test.js and checked to fail before the change.
 
 Left for later: "every day at 9am and 9pm" gives no schedule. A typo such as "evry day" gives no routine. "daily at 6" is read as 6pm. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-12 — open and launch commands (fourth pass)
+
+Tried 36 phrasings such as "open a new tab", "open an incognito window", "open the file report.pdf", "open Slack and Teams", "open chrome and slack", "open the link", "open the app", "open System Settings", "open www.apple.com" and "open /Applications/Safari.app".
+
+As a user, the vague ones were the worst. Loon showed a confirm card to launch an app called "a new tab", "file report.pdf", "Slack and Teams" or "link", and macOS then failed.
+
+Fixed: targets that start with "a" or "an", "file ...", or are just "link", "app", "page", "website" or "site", and targets joining two apps with "and" or "&", now go to the chat instead of a confirm card. Test added in test/assistant.test.js.
+
+Left for later: opening a file by name ("open report.pdf") still tries to launch an app, and two apps in one request could be two confirm cards. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

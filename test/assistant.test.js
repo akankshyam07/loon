@@ -25,6 +25,8 @@ test('commands: reminders, events, open, find, notes, memory; questions fall thr
   assert.strictEqual(parseCommand('remind me to', NOW), null);
   assert.strictEqual(parseCommand('Could you please remind me to call mom at 5, thanks!', NOW).title, 'call mom');
   assert.deepStrictEqual(parseCommand('can you open Spotify', NOW), { action: 'open', target: 'Spotify', kind: 'app' });
+  // Not app names, so no confirm card for an app that does not exist.
+  for (const q of ['open a new tab', 'open an incognito window', 'open the file report.pdf', 'open Slack and Teams', 'open the link']) assert.strictEqual(parseCommand(q, NOW), null, q);
   // "create a reminder" is a reminder, not a calendar event.
   for (const q of ['create a reminder to email bob on friday', 'add a reminder to email bob on friday']) {
     const r = parseCommand(q, NOW);

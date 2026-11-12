@@ -112,6 +112,8 @@ function parseCommand(input, now = new Date()) {
     if (!target || /(?:,| and| then| &) (?:then )?(?:search|go|message|text|play|type|write|send|find|look|click|show|make|create|start|open|launch|take|ask|check)\b/i.test(target)) return null;
     if (/^(?:https?:\/\/)?(?:localhost|\d{1,3}(?:\.\d{1,3}){3})(?::\d+)?(?:\/\S*)?$/i.test(target) && (/localhost|:\d/i.test(target) || /^https?:/i.test(target))) return { action: 'open', target: /^https?:/i.test(target) ? target : `http://${target}`, kind: 'url' };
     if ( /^(?:it|that|this|them)(?: \w+)?$/i.test(target)) return null;
+    // Not app names: "a new tab", "the file report.pdf", "the link", and two apps in one request. The chat explains what Loon can open.
+    if (/^(?:an? |file |link$|app$|page$|website$|site$)| (?:and|&) /i.test(target)) return null;
     const folder = target.match(/^(?:~\/|(?:my )?(?:the )?)(downloads|documents|desktop|pictures|movies|music|applications)(?: folder)?$/i);
     if (folder) return { action: 'open', target: `~/${folder[1][0].toUpperCase()}${folder[1].slice(1).toLowerCase()}`.replace('~/Applications', '/Applications'), kind: 'folder' };
     const isUrl = /^(https?:\/\/)?[\w-]+(\.[\w-]+)+(\/\S*)?$/i.test(target) && (/^https?:|\/|^www\./i.test(target) || !/\.(?:js|ts|txt|md|py|json|java|pdf|png|jpe?g|csv|zip|docx?|xlsx?|html?)$|^v?\d+(?:\.\d+)+$/i.test(target) || /^\d+(?:\.\d+){3}$/.test(target));
