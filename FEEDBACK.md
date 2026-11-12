@@ -2185,3 +2185,13 @@ As a user, the worst problem was that natural sentences were saved word for word
 Fixed: the shared list reader drops "I like", "I love", "I enjoy", "I'm into", "my interests are" and "my allergies are" before splitting. Test added in test/personal.test.js and checked to fail before the change.
 
 Left for later: "dairy-free" is saved as "allergic to dairy-free", "none 🙂" is saved as an allergy, "nothing really, just dislike cilantro" is saved as an allergy, and a name with a trailing sentence ("Bob and I like pizza") is kept whole. Allergies are safety facts, so these need a deliberate wording decision.
+
+## 2026-11-12 — settings UI, reply style feedback (ninth pass)
+
+Tried 43 style requests such as "shorter please", "tl;dr", "more detail", "less formal", "no more emoji", "stop being so chatty", "reply in spanish", "drop the jokes", "no puns", "serious mode", "you talk too much" and "more professional tone".
+
+As a user, most wordings worked. Five natural ones did nothing and went to the model as questions, so the setting never changed. They were "you talk too much", "drop the jokes", "no puns", "serious mode" and "more professional tone".
+
+Fixed: parseFeedback in brain/personal.js now reads those wordings, plus "drop the puns", "less cat puns" and "you're talking too much". Test added in test/personal.test.js and checked to fail before the change.
+
+Left for later: "explain more", "go deeper", "be funnier", "be warmer", "be direct", "stop the cat talk" and a Spanish request like "en español por favor" have no matching setting or are not read. The 5 failing tests in `npm test` are the usual WordNet and demo ones from the sandbox install.

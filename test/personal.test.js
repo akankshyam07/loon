@@ -313,6 +313,12 @@ test('style requests about answers, rambling, removing emoji and switching langu
   assert.strictEqual(parseFeedback('make this shorter'), null);
 });
 
+test('style requests: talk too much, drop the jokes, no puns, serious mode, professional tone', () => {
+  assert.deepStrictEqual(parseFeedback('you talk too much').patch, { length: 'short' });
+  for (const t of ['drop the jokes', 'no puns', 'less cat puns', 'serious mode']) assert.deepStrictEqual(parseFeedback(t).patch, { tone: 'plain' }, t);
+  assert.deepStrictEqual(parseFeedback('more professional tone').patch, { tone: 'formal' });
+});
+
 test('onboardingResult splits slash and ampersand allergies, words intolerances honestly and drops a trailing full stop in the name', () => {
   assert.deepStrictEqual(onboardingResult({ allergies: 'peanuts & shellfish' }).facts, ["I'm allergic to peanuts and shellfish"]);
   assert.deepStrictEqual(onboardingResult({ allergies: 'dairy/gluten' }).facts, ["I'm allergic to dairy and gluten"]);

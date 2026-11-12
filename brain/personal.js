@@ -49,14 +49,14 @@ const sensesFor = (length) => ({ short: 1, detailed: 6 }[length] || 4);
 
 // ---------- feedback: "shorter please", "less emoji", "be more formal" ----------
 const FEEDBACK = [
-  [/^(?:be |make (?:it|them|answers|replies|your (?:answers|replies)) |keep (?:it|them|answers|replies) |give (?:me )?)?(?:shorter|more concise|concise|briefer|(?:more )?brief|less wordy|less verbose|short(?: answers| replies)?|(?:that was |that's |thats |it's |its |answers are |you're |youre |way )?too (?:long|wordy|verbose)|tl;?dr|less text|less words|(?:stop|less) rambling|talk less|fewer words|less detail(?:ed)?|(?:stop being |you(?:'re| are) )?(?:so |too )?(?:wordy|chatty)|(?:answers|replies) (?:are |is )?too long)(?: answers| replies)?$/,
+  [/^(?:be |make (?:it|them|answers|replies|your (?:answers|replies)) |keep (?:it|them|answers|replies) |give (?:me )?)?(?:shorter|more concise|concise|briefer|(?:more )?brief|less wordy|less verbose|short(?: answers| replies)?|(?:that was |that's |thats |it's |its |answers are |you're |youre |way )?too (?:long|wordy|verbose)|tl;?dr|(?:you )?talk(?:ing)? too(?: much)?|less text|less words|(?:stop|less) rambling|talk less|fewer words|less detail(?:ed)?|(?:stop being |you(?:'re| are) )?(?:so |too )?(?:wordy|chatty)|(?:answers|replies) (?:are |is )?too long)(?: answers| replies)?$/,
     (p) => ({ length: p.length === 'detailed' ? 'normal' : 'short' })],
   [/^(?:be |make (?:it|them) |give (?:me )?|i want |i need |answer in |reply in )?(?:more detail(?:ed|s)?|longer(?: answers| replies)?|more thorough|(?:that was |that's |thats |it's |its |answers are |answers |replies are |replies |way )?too short|go into more detail|detailed(?: answers| replies)?|more in[- ]depth)(?: answers| replies)?$/,
     (p) => ({ length: p.length === 'short' ? 'normal' : 'detailed' })],
   [/^(?:(?:use |with )?(?:less|fewer|no(?: more)?)|stop using|stop with the|stop the|without|don'?t use|drop the|(?:remove|get rid of)(?: the| all)?|too many) emojis?$/, () => ({ emoji: false })],
   [/^(?:use|more|add|with) emojis?$/, () => ({ emoji: true })],
-  [/^(?:be |sound )?(?:more )?(?:formal|professional)$|^too (?:casual|informal|silly)$/, () => ({ tone: 'formal' })],
-  [/^(?:be (?:more )?serious|more serious|(?:be )?less playful|less silly|less cute|no jokes|fewer jokes|less jokes|no more jokes|stop (?:the )?jokes|stop joking(?: around)?|tone down (?:the )?(?:jokes|humou?r|sass|snark|sarcasm)|(?:less|no) (?:sass|snark|sarcasm|humou?r|attitude)|stop being (?:so |too )?(?:sassy|snarky|sarcastic)|plainer|plain)$|^too (?:playful|silly|cute)$/, () => ({ tone: 'plain' })],
+  [/^(?:be |sound )?(?:more )?(?:formal|professional)(?: tone)?$|^too (?:casual|informal|silly)$/, () => ({ tone: 'formal' })],
+  [/^(?:be (?:more )?serious|more serious|(?:be )?less playful|less silly|less cute|no jokes|fewer jokes|less jokes|no more jokes|stop (?:the )?jokes|stop joking(?: around)?|drop (?:the )?(?:jokes|puns)|(?:no|fewer|less|stop the) (?:cat )?puns|serious mode|tone down (?:the )?(?:jokes|humou?r|sass|snark|sarcasm)|(?:less|no) (?:sass|snark|sarcasm|humou?r|attitude)|stop being (?:so |too )?(?:sassy|snarky|sarcastic)|plainer|plain)$|^too (?:playful|silly|cute)$/, () => ({ tone: 'plain' })],
   [/^(?:be )?(?:(?:more )?(?:playful|fun|funny|casual|cute)|less formal|less serious)$|^too (?:formal|serious|stiff)$|^stop being (?:so |too )?(?:formal|serious|stiff)$/, () => ({ tone: 'playful' })],
 ];
 const NOTES = {
