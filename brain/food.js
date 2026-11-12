@@ -43,8 +43,8 @@ function extractMenu(text) {
 
 function score(item) {
   const text = `${item.name} ${item.description}`.toLowerCase();
-  // "chicken-fried steak" is a beef dish with a chicken-style crust, not chicken
-  const proteinText = text.replace(/\b(chicken|country)[- ]fried\b/g, 'fried');
+  // "chicken-fried steak" is a beef dish with a chicken-style crust, not chicken, and "chicken-free" has none
+  const proteinText = text.replace(/\b(chicken|country)[- ]fried\b/g, 'fried').replace(/\b[a-z]+-free\b/g, '');
   let heaviness = 0;
   const reasons = [];
   for (const [word, weight] of Object.entries({ ...HEAVY, ...LIGHT })) {

@@ -2125,3 +2125,13 @@ As a user, small variations of asks Loon already handles fell through to the slo
 Fixed: brain/intents.js now reads "say it shorter" as shorter, "make this a bit more polite" as professional, and "write it more formally" or "say it politely" as professional. Cases added in test/voice.test.js and checked to fail before the change.
 
 Left for later: casual, longer and bullet-point edits have no task, so "make it more casual" and "expand this" still go to the model. "clean this up" and "make it punchier" are not matched. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-12 — food and menu (thirteenth pass)
+
+Tried a 30 line menu with pizza, eggplant parmigiana, bacon-wrapped dates, tuna melt, bolognese, crab cakes, ceviche, shakshuka, ratatouille, "Chicken-free Nuggets", gnocchi in butter and lentil soup, then ran the lightest, protein and vegetarian picks.
+
+As a user, the vegetarian and lightest picks were sensible. The protein pick listed "Chicken-free Nuggets" as "protein from chicken", which is plainly wrong. The vegetarian check already ignored "-free" words but the protein check did not.
+
+Fixed: the protein check now skips "-free" words such as chicken-free and dairy-free. Test added in test/modes.test.js.
+
+Left for later: plant-based dishes such as "vegan chicken wings" still say protein from chicken. Nasi goreng (often shrimp paste) and egg fried rice are still called likely vegetarian. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
