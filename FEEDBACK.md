@@ -2195,3 +2195,13 @@ As a user, most wordings worked. Five natural ones did nothing and went to the m
 Fixed: parseFeedback in brain/personal.js now reads those wordings, plus "drop the puns", "less cat puns" and "you're talking too much". Test added in test/personal.test.js and checked to fail before the change.
 
 Left for later: "explain more", "go deeper", "be funnier", "be warmer", "be direct", "stop the cat talk" and a Spanish request like "en español por favor" have no matching setting or are not read. The 5 failing tests in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-13 — translation and definitions (thirteenth pass)
+
+Tried 42 typed lookups such as "whats ephemeral", "define ephemeral 😅", "wat does serendipity mean lol", "what does café mean", "can u define nostalgia pls", "another word for big please", "opposite of 'up'" and "what does 'bite the bullet' mean".
+
+As a user, nearly all wordings worked. The one clear miss was texting spelling. "can u define nostalgia pls" skipped the instant dictionary and went to the model, and the same happened for synonym and opposite asks.
+
+Fixed: the shared politeness lead-in in brain/define.js now accepts "can u", "could u" and "would u" for definitions, synonyms and antonyms. Test added in test/brain.test.js and checked to fail before the change.
+
+Left for later: "what does 'bite the bullet' mean" (idioms of three words) and "whats ephemeral" with no verb go to the model on purpose, since WordNet has no idioms and the second could be about anything. "other ways to say hello" and "a better word for said" are not read as synonym asks. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

@@ -67,7 +67,7 @@ const NOT_A_TERM = /^(?:this|that|it|these|those|here|there|the|my|your|his|her|
 
 function dictionaryTerm(question) {
   const m = String(question || '').trim().replace(/[’‘]/g, "'")
-    .replace(/^(?:(?:hey|ok|okay) )?(?:loon[,\s]+)?(?:(?:please|pls|plz|can you|could you|would you)\s+)*(?:(?:tell|give) me (?=the |wh?[au]t ))?/i, '')
+    .replace(/^(?:(?:hey|ok|okay) )?(?:loon[,\s]+)?(?:(?:please|pls|plz|can (?:you|u)|could (?:you|u)|would (?:you|u))\s+)*(?:(?:tell|give) me (?=the |wh?[au]t ))?/i, '')
     .replace(/[\s?!.\p{Extended_Pictographic}]*$/u, '')
     .replace(/(?:,? (?:please|pls|for me|in english|exactly|lol|again|thanks|thx|btw|tho|loon))+$/i, '')
     .replace(/[\s?!.]*$/, '').replace(/ (?:even|actually|really|exactly)(?= means?$)/i, '').match(DICTIONARY_ASK);
@@ -80,7 +80,7 @@ const SYNONYM_ASK = /^(?:(?:give me |find me |what(?:'?s| is| are) )?(?:a |some 
 
 function cleanAsk(question) {
   return String(question || '').trim().replace(/[’‘]/g, "'")
-    .replace(/^(?:(?:hey|ok|okay) )?(?:loon[,\s]+)?(?:(?:please|pls|plz|can you|could you|would you)\s+)*/i, '')
+    .replace(/^(?:(?:hey|ok|okay) )?(?:loon[,\s]+)?(?:(?:please|pls|plz|can (?:you|u)|could (?:you|u)|would (?:you|u))\s+)*/i, '')
     .replace(/[\s?!.\p{Extended_Pictographic}]*$/u, '').replace(/(?:,? (?:please|pls|thanks|thx))+$/i, '');
 }
 

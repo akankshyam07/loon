@@ -333,3 +333,11 @@ test('dictionaryTerm takes "explain the word X" and a ", loon" tail but leaves "
   assert.strictEqual(dictionaryTerm('what is the meaning of the word life'), 'life');
   assert.strictEqual(dictionaryTerm('explain this error'), null);
 });
+
+test('dictionary, synonym and antonym asks accept "can u" texting spelling', () => {
+  const { dictionaryTerm, synonymTerm, antonymTerm } = require('../brain/define');
+  assert.strictEqual(dictionaryTerm('can u define nostalgia pls'), 'nostalgia');
+  assert.strictEqual(dictionaryTerm('could u tell me what ennui means'), 'ennui');
+  assert.strictEqual(synonymTerm('can u give me a synonym for happy'), 'happy');
+  assert.strictEqual(antonymTerm('would u give me the opposite of hot'), 'hot');
+});
