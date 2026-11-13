@@ -159,6 +159,8 @@ test('commands: "forget what you know", "wipe everything you remember" and "forg
 test('commands: dont forget, keep in mind and trailing remember that all save a fact', () => {
   assert.deepStrictEqual(parseCommand("don't forget I'm vegan"), { action: 'remember', text: "I'm vegan" });
   assert.deepStrictEqual(parseCommand('keep in mind that I am allergic to nuts'), { action: 'remember', text: 'I am allergic to nuts' });
+  assert.deepStrictEqual(parseCommand("keep that in mind: I'm lactose intolerant"), { action: 'remember', text: "I'm lactose intolerant" });
+  assert.deepStrictEqual(parseCommand('do you remember my name?'), { action: 'recall', about: 'name' });
   assert.deepStrictEqual(parseCommand("I'm vegetarian, remember that"), { action: 'remember', text: "I'm vegetarian" });
   assert.deepStrictEqual(parseCommand('remember this: I like short answers'), { action: 'remember', text: 'I like short answers' });
   assert.strictEqual(parseCommand("don't forget to call mom at 5").action, 'reminder');

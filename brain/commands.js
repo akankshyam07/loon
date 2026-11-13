@@ -133,7 +133,7 @@ function parseCommand(input, now = new Date()) {
   }
   if (/^(?:show |list )?my projects\??$/i.test(text)) return { action: 'briefing', project: null };
   if (/^what do (?:you|u) (?:know|remember) about me\??$/i.test(text) || /^what do (?:you|u) remember\??$/i.test(text) || /^(?:what(?:'?s| is) (?:in|saved in|stored in) (?:your|my) memor(?:y|ies)|(?:show|list|open) (?:me )?(?:my |your )?(?:memory|memories|saved facts)|what (?:have|did) you (?:saved?|stored?|remembered?)(?: about me)?)\??$/i.test(text)) return { action: 'recall', facts: true };
-  if ((m = text.match(/^what do you (?:know|remember) about (?:my |the )?(.+?)\??$/i))) return { action: 'recall', about: tidy(m[1]) };
+  if ((m = text.match(/^(?:what do you (?:know|remember) about (?:my |the )?|do you (?:remember|know) (?:my |the ))(.+?)\??$/i))) return { action: 'recall', about: tidy(m[1]) };
   if (/^what (?:did|have) i (?:ask(?:ed)?|look(?:ed)? up|search(?:ed)?(?: for)?|do(?:ne)?) (?:today|recently|lately)\??$/i.test(text)) return { action: 'recall', query: '' };
   if ((m = text.match(/^(?:what (?:did|have) i (?:ask(?:ed)?|look(?:ed)? up|search(?:ed)?(?: for)?|read|learn(?:ed)?|find out)|when did i (?:ask|look up|read)|find my (?:question|search)) (?:about |on |for )?(.+?)\??$/i))) {
     return { action: 'recall', query: recallQuery(m[1]) };
@@ -150,7 +150,7 @@ function parseCommand(input, now = new Date()) {
   if (/^(?:delete|remove|erase|forget|clear|wipe) (?:absolutely )?(?:everything|all|what) (?:that )?you (?:know|remember|have saved|saved)(?: (?:about|on) me)?$/i.test(text)) return { action: 'forget', text: 'everything', all: true };
   if ((m = text.match(/^(?:delete|remove|erase|clear) (?:the |my |your )?(?:memory|memories|saved facts?) (?:about|of|on) (.+)$/i)) && tidy(m[1])) return { action: 'forget', text: tidy(m[1]), all: false };
   if (/^(?:delete|clear|wipe|erase|reset) (?:all )?(?:of )?(?:my |your |the )?(?:memory|memories)$/i.test(text)) return { action: 'forget', text: 'everything', all: true };
-  if ((m = text.match(/^(?:remember|(?:do not|don'?t|never) forget|keep in mind|(?:save|add|put|store) (?:this |it )?(?:to|in|into) (?:my |your )?memory)(?: this)?[:,]?\s+(?:that )?(.+)$/i)) && tidy(m[1]) && !/^(?:nothing|it|everything|all of (?:it|this))$/i.test(tidy(m[1]))) return { action: 'remember', text: tidy(m[1]) };
+  if ((m = text.match(/^(?:remember|(?:do not|don'?t|never) forget|keep (?:that |this |it )?in mind|(?:save|add|put|store) (?:this |it )?(?:to|in|into) (?:my |your )?memory)(?: this)?[:,]?\s+(?:that )?(.+)$/i)) && tidy(m[1]) && !/^(?:nothing|it|everything|all of (?:it|this))$/i.test(tidy(m[1]))) return { action: 'remember', text: tidy(m[1]) };
   if ((m = text.match(/^(.+?),?\s+(?:please )?remember (?:that|this|it)$/i)) && !/^(?:do not|don'?t|never|stop)$/i.test(tidy(m[1]))) return { action: 'remember', text: tidy(m[1]) };
   // "forget it" and "forget about it" are idioms, not a request to delete a memory.
   if ((m = text.match(/^forget[:,]?\s+(?:that )?(.+)$/i)) && !/^(?:about )?(?:it|that|this|me not)$/i.test(tidy(m[1]))) {

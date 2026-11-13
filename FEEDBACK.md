@@ -2275,3 +2275,13 @@ As a user, the worst problem was that "pls" and "plz" were not treated like "ple
 Fixed: normalize in brain/intents.js now drops "pls" and "plz" like "please", and "warmer", "friendlier", "more formal", "more professional" and "more polite" map to the existing tasks. Test extended in test/voice.test.js and checked to fail before the change.
 
 Left for later: there is no task for "make it casual", "make it longer", "turn into bullets" or "tone it down", so they still go to the model. The 5 failures in `npm test` are the usual WordNet and demo ones.
+
+## 2026-11-13 — memory commands (fifth pass)
+
+Tried 31 phrasings such as "keep that in mind: I'm lactose intolerant", "do you remember my name", "could you please remember my name is Sam", "forget my name", "forget everything about pork", "wipe your memory" and "remember I like cats" with an emoji.
+
+As a user, the worst problem was that "keep that in mind" and "keep this in mind" saved nothing and went to the model, which cannot store anything. "Do you remember my name" also went to the model instead of looking at the saved facts.
+
+Fixed: parseCommand in brain/commands.js accepts "keep that/this/it in mind" as a remember command and reads "do you remember/know my X" as a recall about X. Test extended in test/assistant.test.js and checked to fail before the change.
+
+Left for later: "from now on call me Sam", "stop remembering things", "you can forget the peanut thing", "save this to memory" and "do you remember what I told you" still go to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
