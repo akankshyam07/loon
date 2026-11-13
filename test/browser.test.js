@@ -79,6 +79,11 @@ test('selection kinds treat unspaced CJK text by length', () => {
   assert.strictEqual(classifySelection("thread 'main' panicked at src/main.rs:2:5"), 'stacktrace');
   assert.strictEqual(classifySelection('error[E0382]: borrow of moved value: `v`'), 'stacktrace');
   assert.strictEqual(classifySelection('ERESOLVE unable to resolve dependency tree'), 'stacktrace');
+  assert.strictEqual(classifySelection("Module not found: Error: Can't resolve './foo' in '/app/src'"), 'stacktrace');
+  assert.strictEqual(classifySelection('Warning: Each child in a list should have a unique "key" prop.'), 'stacktrace');
+  assert.strictEqual(classifySelection("Access to fetch at 'http://a.com' from origin 'http://b.com' has been blocked by CORS policy"), 'stacktrace');
+  assert.strictEqual(classifySelection("Cannot find module 'express'"), 'stacktrace');
+  assert.strictEqual(classifySelection('Failed to load resource: the server responded with a status of 404 (Not Found)'), 'stacktrace');
   assert.strictEqual(classifySelection('console.log("hi")'), 'code');
   assert.strictEqual(classifySelection('x => x * 2'), 'code');
   assert.strictEqual(classifySelection('fn main() { println!("hi"); }'), 'code');

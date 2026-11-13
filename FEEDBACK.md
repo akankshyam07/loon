@@ -2215,3 +2215,13 @@ As a user, the worst problem was putting the time first. "in 10 minutes remind m
 Fixed: parseCommand now handles a leading time phrase before "remind me", stripPoliteness drops a bare "hey loon" prefix, and a m:ss timer length is read as minutes and seconds. Test added in test/assistant.test.js.
 
 Left for later: "remind me every day to stretch" and "stretch every morning" still make a one-time reminder with "every" in the title, which is dishonest and should be refused or sent to Routines. "set a timer for 2 mins 30 secs" drops the seconds. "egg timer 5 minutes" and "remind me at quarter past 3" are not matched. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-13 — selection chips and classification (twelfth pass)
+
+Tried 37 selected error and prose lines, covering webpack, React, CORS, browser console, Maven, pip and Node messages plus plain words, paths and commands.
+
+As a user, the worst problem was that common web developer errors still read as plain sentences, so Loon offered Explain and Define instead of the error help. This hit "Module not found: Error: Can't resolve ...", the React "unique key prop" warning, CORS policy blocks, "Cannot find module 'x'", "Failed to load resource" and Maven "[ERROR] Failed to execute goal".
+
+Fixed: the classifier in extension/lib/classify.js now treats these shapes (plus hydration failures, unhandled rejections and pip's "Could not find a version") as errors. Test added in test/browser.test.js.
+
+Left for later: file paths, "x = 5", "CORS error" and a bare "Traceback" are still words. "zsh: permission denied: ./run.sh" reads as a sentence. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
