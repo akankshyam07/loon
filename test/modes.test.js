@@ -407,6 +407,12 @@ test('menu: a "-free" dish does not list that ingredient as its protein', () => 
   assert.deepStrictEqual(food.score(items[1]).proteins, ['tofu']);
 });
 
+test('menu: plant-based meat names do not list the meat as protein', () => {
+  const [wings, ribs] = food.extractMenu('Vegan Chicken Wings $12\nPlant-based Ribs $11');
+  assert.deepStrictEqual(food.score(wings).proteins, []);
+  assert.deepStrictEqual(food.score(ribs).proteins, []);
+});
+
 test('grammar fixer leaves code identifiers, stretched words and vowel-less abbreviations alone', async () => {
   for (const text of ['using useState hook to fetch data', 'that was sooo funny', 'see you tmrw at the office']) {
     assert.strictEqual((await fixGrammar(text)).changes.filter((c) => /use|soo|tmrw/.test(c)).length, 0, text);

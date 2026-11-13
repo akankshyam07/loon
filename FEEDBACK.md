@@ -2305,3 +2305,13 @@ As a user, the worst problem was "find what I asked about python", which started
 Fixed: parseCommand in brain/commands.js sends these to history with the topic, and recallQuery drops emoji. Test extended in test/assistant.test.js and checked to fail before the change.
 
 Left for later: "recall docker", "what was that thing I asked about docker", "last thing we talked about", typos like "wat did i ask", and "clear my history" (no command, it should point at Settings) are not handled.
+
+## 2026-11-13 — food and menu (fourteenth pass)
+
+Tried a menu with vegan chicken wings, a Beyond burger, plant-based beef tacos, plant-based ribs, grilled chicken salad and an Impossible sausage pasta, then ran the protein pick.
+
+As a user, "Vegan Chicken Wings" was listed as "protein from chicken", which is wrong for a plant-based dish. The vegetarian check already knew these names but the protein check did not.
+
+Fixed: the protein check now removes the same meat-free phrases (vegan chicken, plant-based ribs and so on) before matching. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: "Plant-based Beef Tacos" still says protein from beef because tacos is not in the list of meat-free dish words. Egg fried rice and nasi goreng are still called likely vegetarian. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
