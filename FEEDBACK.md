@@ -2255,3 +2255,13 @@ As a user, the worst problem was that the polite way of asking the time ("can yo
 Fixed: instantKey drops "can you tell me", "do you know", "i need to know" and a leading "tell me" before a question, and reads "xmas" as christmas. The time answer accepts "the time" and "what time it is". New code answers for "date and time" and for "what day was yesterday" or "what day is it tomorrow". Test extended in test/brain.test.js and checked to fail before the change.
 
 Left for later: "what week is it", "is it the weekend", "is it friday", "how many days until thanksgiving" or "easter", "how many days left in the year" and "which day is it" still go to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-13 — reminders, timers and focus (fourteenth pass)
+
+Tried 12 timer wordings such as "set a timer for 2 mins 30 secs", "timer 2 min 30 sec", "timer 90 seconds", "timer 1h30m", "2 minute timer" and "timer for an hour and a half".
+
+As a user, the worst problem was the short form "secs". "set a timer for 2 mins 30 secs" silently became a two minute timer, and "timer 90 secs" was not understood at all.
+
+Fixed: extractWhen in brain/commands.js now reads "sec" and "secs" as seconds, since chrono-node only knows the long word. Test extended in test/assistant.test.js and checked to fail before the change.
+
+Left for later: "egg timer 5 minutes" is still not matched. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

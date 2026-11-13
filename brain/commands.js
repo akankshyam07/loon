@@ -6,6 +6,7 @@ const chrono = require('chrono-node');
 function extractWhen(text, now = new Date(), { morning = false } = {}) {
   text = dayOfMonth(text, now)
     .replace(/\b(?:end of (?:the )?(?:work ?)?day|eod|close of business|cob)\b/gi, 'at 5pm')
+    .replace(/\b(\d+)\s*secs?\b/gi, '$1 seconds')
     .replace(/\b(\d+) and a half (hour|minute|day|week)/gi, '$1.5 $2')
     .replace(/\ban? (hour|minute|day|week) and a half\b/gi, '1.5 $1s');
   // "the 5pm meeting at 4:30" holds two times; the one after a preposition is the reminder time.

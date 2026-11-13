@@ -416,4 +416,6 @@ test('commands: time-first reminders, "hey loon" prefix and m:ss timers', () => 
   assert.strictEqual(b.when.getHours(), 9);
   assert.strictEqual(parseCommand('hey loon remind me to drink water in 20 min', now).title, 'drink water');
   assert.strictEqual(parseCommand('timer 1:30', now).when.getTime(), now.getTime() + 90 * 1000);
+  assert.strictEqual(parseCommand('set a timer for 2 mins 30 secs', now).when.getTime(), now.getTime() + 150 * 1000);
+  assert.strictEqual(parseCommand('timer 90 secs', now).when.getTime(), now.getTime() + 90 * 1000);
 });
