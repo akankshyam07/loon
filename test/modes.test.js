@@ -472,3 +472,11 @@ test('errors: fetch failures, aborted requests, missing tables and browser conne
   assert.match(lookupKnown('Failed to load resource: net::ERR_CONNECTION_REFUSED'), /Connection refused/);
   assert.match(lookupKnown('Access to fetch at x from origin y has been blocked by CORS policy: Failed to fetch'), /CORS/);
 });
+
+test('parseQuantity multiplies a chain of packs, counts tea bags, and parsePrice reads "$1 299.00"', () => {
+  const q = (s) => shopping.parseQuantity(s);
+  assert.deepStrictEqual(q('2 × 6 × 330 ml'), { amount: 3960, unit: 'ml' });
+  assert.deepStrictEqual(q('100 tea bags'), { amount: 100, unit: 'count' });
+  assert.strictEqual(shopping.parsePrice('$1 299.00'), 1299);
+  assert.strictEqual(shopping.parsePrice('Pack 2 100.00'), 2);
+});

@@ -2285,3 +2285,13 @@ As a user, the worst problem was that "keep that in mind" and "keep this in mind
 Fixed: parseCommand in brain/commands.js accepts "keep that/this/it in mind" as a remember command and reads "do you remember/know my X" as a recall about X. Test extended in test/assistant.test.js and checked to fail before the change.
 
 Left for later: "from now on call me Sam", "stop remembering things", "you can forget the peanut thing", "save this to memory" and "do you remember what I told you" still go to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-13 — shopping and unit price (fourteenth pass)
+
+Tried 19 price strings and 16 size strings such as "$5.99/lb", "Was $20.00 Now $15.00", "$1 299.00", "99¢", "1 pint", "2 × 6 × 330 ml", "100 tea bags", "1/2 gallon" and "half dozen".
+
+As a user, the worst problem was "2 × 6 × 330 ml", which came out as 660 ml instead of twelve cans (3960 ml), so the unit price looked six times too high. "$1 299.00" was read as $1, and "100 tea bags" gave no quantity.
+
+Fixed: brain/shopping.js multiplies the first two numbers in a "a x b x size" chain, counts tea bags, and joins a space grouped thousands part when a currency symbol and a decimal point follow. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: a price range ("$5.00 - $7.00") still uses the low end, and "$5.99/lb" is taken as the item price. "$1,299.00 $999.00" with no "was" or "now" word takes the first number. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

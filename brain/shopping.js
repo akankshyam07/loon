@@ -24,6 +24,9 @@ function parseQuantity(text) {
   let count = 1;
   const multi = t.match(/(\d+)\s*(?:(?:cans?|bottles?|bags?|boxes|pouches|jars|sticks)\s*)?x\s*\d/) || t.match(/(?<![a-z\d])x\s*(\d+)\s+\d/) || t.match(/\b(?:pack|set|case|box|bundle) of (\d+)/) || t.match(/(\d+)\s*[- ]?(?:pack|pk)\b/);
   if (multi) count = Number(multi[1]);
+  // "2 x 6 x 330 ml" is twelve cans.
+  const chain = multi && t.match(/(\d+)\s*x\s*(\d+)\s*x\s*\d/);
+  if (chain) count = Number(chain[1]) * Number(chain[2]);
   const trailing = !multi && t.match(/[a-z.]\s*x\s*(\d+)\b(?!\s*[.,]?\d*\s*[a-z])/);
   if (trailing) count = Number(trailing[1]);
   const measures = [...t.matchAll(MEASURE)].map((m) => {
@@ -45,7 +48,7 @@ function parseQuantity(text) {
   }
   const dozen = t.match(/(?:(\d+(?:\.\d+)?)|\b(a|one)|\b(half))[\s-]?dozen\b/) || t.match(/\b(dozen)\b/);
   if (dozen) return { amount: (dozen[3] ? 0.5 : Number(dozen[1]) || 1) * 12, unit: 'count' };
-  const pieces = t.match(/(\d+)[\s-]?(?:ct|count|pcs|pieces|pods|tablets|tabs|capsules|softgels|gummies|rolls|bags|pairs|sheets|wipes|cans|bottles)\b/);
+  const pieces = t.match(/(\d+)[\s-]?(?:ct|count|pcs|pieces|pods|tablets|tabs|capsules|softgels|gummies|rolls|(?:tea\s)?bags|pairs|sheets|wipes|cans|bottles)\b/);
   // "12 ct (2 x 6)" spells out the same twelve, while "12 count (pack of 2)" is twenty-four.
   // "Pack of 100 count" names one number twice.
   if (pieces) {
@@ -70,6 +73,8 @@ function parsePrice(value) {
   // Indian grouping ("₹1,29,999") puts commas every two digits before the last three.
   // A saving ("Save $5", "$5 off", "15% off") is not the price.
   const text = String(value).replace(/\b(?:you\s+)?save\s*\D{0,3}\d[\d.,]*%?|\d[\d.,]*%?\s*off\b/gi, '').replace(/^.*\bnow\b/i, '').replace(/(\d),(?=\d{2},\d)/g, '$1').replace(/(\d)[.\s](?=\d{3},\d{1,2}\b)/g, '$1')
+    // "$1 299.00" groups with a space and still has a decimal point.
+    .replace(/([$£€¥₹]\s?\d{1,3})[ \u00a0\u202f](?=\d{3}\.\d{2}\b)/g, '$1')
     // "1 000 Kč" and "12 500 Ft" group thousands with a space and no decimals.
     .replace(/(?<![\d.,])(\d{1,3}(?:[ \u00a0\u202f]\d{3})+)(?![\d.,])/g, (g) => g.replace(/\D/g, ''));
   const m = text.replace(/,(?=\d{3}\b)/g, '').match(/(\d+(?:[.,]\d{1,2})?|[.,]\d{2})/);
