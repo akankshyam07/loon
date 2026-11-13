@@ -2265,3 +2265,13 @@ As a user, the worst problem was the short form "secs". "set a timer for 2 mins 
 Fixed: extractWhen in brain/commands.js now reads "sec" and "secs" as seconds, since chrono-node only knows the long word. Test extended in test/assistant.test.js and checked to fail before the change.
 
 Left for later: "egg timer 5 minutes" is still not matched. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-13 — writing tools, spoken and typed edits (ninth pass)
+
+Tried 36 edit phrasings such as "pls shorten this", "plz proofread", "warmer", "more formal", "make it casual", "make this longer", "turn this into bullet points" and "tone it down".
+
+As a user, the worst problem was that "pls" and "plz" were not treated like "please", so "pls shorten this" went to the model as a question. Bare tone words like "warmer", "friendlier" and "more formal" did the same.
+
+Fixed: normalize in brain/intents.js now drops "pls" and "plz" like "please", and "warmer", "friendlier", "more formal", "more professional" and "more polite" map to the existing tasks. Test extended in test/voice.test.js and checked to fail before the change.
+
+Left for later: there is no task for "make it casual", "make it longer", "turn into bullets" or "tone it down", so they still go to the model. The 5 failures in `npm test` are the usual WordNet and demo ones.

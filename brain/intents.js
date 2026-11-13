@@ -13,8 +13,8 @@ const TEMPLATES = [
   { re: /^(simplify( this| that| it)?|simpler|make (this|that|it) (simpler|easier))$|^explain (this|that|it) (to me )?simply$|^eli5( (this|that|it))?$|^explain( this| that| it)?( to me)? like i'?m (5|five)$|^dumb (this|that|it) down$/, route: { type: 'task', task: 'simplify', needs: 'selection' } },
   { re: /^(shorter|say (this|that|it) (shorter|more briefly)|make (this|that|it) ((a (bit|little)|way|much) )?(shorter|short|briefer|brief|more concise|concise|less wordy|less verbose)|(shorten|tighten|trim)( up)? (this|that|it)( up)?|cut (this|that|it) (down|short))( for me)?$/, route: { type: 'task', task: 'shorter', needs: 'selection' } },
   { re: /^(rewrite|reword|rephrase|paraphrase|improve|polish) (this|that|it)$|^make (this|that|it) (sound )?(better|clearer|clear)$|^say (this|that|it) (differently|another way)$/, route: { type: 'task', task: 'rewrite', needs: 'selection' } },
-  { re: /^make (this|that|it) (sound )?((a (bit|little) |slightly |much )?more )?(professional|formal|polite)$|^(write|say) (this|that|it) (more )?(professionally|formally|politely)$|^(rewrite|reword|rephrase) (this|that|it) (more |to be more |to sound more |in a )?(professionally|formally|politely|professional|formal|polite)( tone)?$/, route: { type: 'task', task: 'professional', needs: 'selection' } },
-  { re: /^(make (this|that|it) (sound )?(more )?|(rewrite|reword|rephrase) (this|that|it) (to be |to sound |in a )?)(warmer|friendlier|nicer|friendly|warm|nice)( tone)?$|^say (this|that|it) (warmer|friendlier|nicer)$/, route: { type: 'task', task: 'warmer', needs: 'selection' } },
+  { re: /^make (this|that|it) (sound )?((a (bit|little) |slightly |much )?more )?(professional|formal|polite)$|^more (professional|formal|polite)$|^(write|say) (this|that|it) (more )?(professionally|formally|politely)$|^(rewrite|reword|rephrase) (this|that|it) (more |to be more |to sound more |in a )?(professionally|formally|politely|professional|formal|polite)( tone)?$/, route: { type: 'task', task: 'professional', needs: 'selection' } },
+  { re: /^(make (this|that|it) (sound )?(more )?|(rewrite|reword|rephrase) (this|that|it) (to be |to sound |in a )?)(warmer|friendlier|nicer|friendly|warm|nice)( tone)?$|^say (this|that|it) (warmer|friendlier|nicer)$|^(warmer|friendlier|nicer|more friendly)$/, route: { type: 'task', task: 'warmer', needs: 'selection' } },
   { re: /^(fix|correct|proofread|check) (the |my )?(grammar|grammer|spelling|typos)( and (grammar|grammer|spelling|typos))?( (in|of) (this|that|it))?$|^(fix|correct|proofread) (this|that|it)( for me)?$|^proofread$|^check (this|that|it) for (typos|spelling|grammar)( mistakes| errors)?$/, route: { type: 'task', task: 'fix_grammar', needs: 'selection' } },
   { re: /^(summari[sz]e|sum up|sum) (this|that|it|the selection)( up)?( for me)?$|^summari[sz]e$|^tl;?dr( (this|that|it))?$/, route: { type: 'task', task: 'summarize', needs: 'selection' } },
   { re: /^(give me |show me )?(some )?examples( of (this|that|it))?$|^(give|show) (me )?an example$/, route: { type: 'task', task: 'examples', needs: 'selection' } },
@@ -38,9 +38,9 @@ function normalize(transcript) {
     .toLowerCase()
     .replace(/^(hey |ok |okay )?loon[,\s]+/, '') // wake phrase at the start of an utterance
     .replace(/^((um+|uh+|er+|hmm+|so|well),?\s+)+/, '')
-    .replace(/^((please|can you|could you|would you|will you)\s+)+/, '')
+    .replace(/^((please|pls|plz|can you|could you|would you|will you)\s+)+/, '')
     .replace(/[,.!?]+/g, ' ')
-    .replace(/\s+(please|loon)$/, '')
+    .replace(/\s+(please|pls|plz|loon)$/, '')
     .replace(/\s{2,}/g, ' ')
     .trim();
 }
