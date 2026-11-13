@@ -2235,3 +2235,13 @@ As a user, nothing broke. The recurring wordings look wrong when sent to the one
 Fixed: nothing, no code change.
 
 Left for later: a 20-digit id is still generated as `double`, which loses precision. `BigInteger` would be exact but is a rare input. The one-time parser still returns a garbled title for "every" wordings if it is ever called without Routines in front of it.
+
+## 2026-11-13 — voice intents (tenth pass)
+
+Tried 55 spoken phrasings such as "could you please summarize this", "can you please explain this", "no, don't", "tl;dr this page", "what should I get", "good night", "mute", "speak up", "is this overpriced" and "what does this error mean".
+
+As a user, the worst problem was a double politeness lead-in. "Could you please summarize this" skipped the template because only one of "could you" or "please" was removed, so it went to the model with no selection attached. Saying "no, don't" to a confirm card was also not read as a no.
+
+Fixed: the spoken lead-in strip now removes any run of "please", "can you", "could you", "would you" and "will you". The no list accepts "no don't", "no stop", "no cancel" and "don't do it". "tl;dr this page" now summarizes the page. Test added in test/voice.test.js and checked to fail before the change.
+
+Left for later: "repeat that", "say that again", "mute", "louder" and "good night" go to the model, since Loon has no replay or volume command. "is this overpriced", "which is lighter" and "highest protein" are plain questions. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

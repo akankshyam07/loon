@@ -5,7 +5,7 @@ const { parseCommand, normalizeSpoken } = require('./commands');
 
 const STOP = /^(stop( talking| speaking)?|cancel|never ?mind|shh+|quiet|be quiet|hush|shut up|that's enough|that is enough|enough|ok(ay)? (stop|enough)|stop it)$/i;
 const YES = /^(yes|yeah|yep|yup|sure|ok(ay)?|do it|go ahead|confirm|please do|correct|right)( (do it|go ahead|please|sure))*$/i;
-const NO = /^(no|nope|nah|don't|do not|cancel|stop|never ?mind|wrong|no thanks|no thank you|not now)$/i;
+const NO = /^(no|nope|nah|don't|do not|cancel|stop|never ?mind|wrong|no thanks|no thank you|not now|no (don't|do not|stop|cancel|never ?mind)|(don't|do not) do it)$/i;
 
 // Fixed phrases → task/toggle. Alternatives written as regex; matched on the normalized utterance.
 const TEMPLATES = [
@@ -19,7 +19,7 @@ const TEMPLATES = [
   { re: /^(summari[sz]e|sum up|sum) (this|that|it|the selection)( up)?( for me)?$|^summari[sz]e$|^tl;?dr( (this|that|it))?$/, route: { type: 'task', task: 'summarize', needs: 'selection' } },
   { re: /^(give me |show me )?(some )?examples( of (this|that|it))?$|^(give|show) (me )?an example$/, route: { type: 'task', task: 'examples', needs: 'selection' } },
   { re: /^translate (this|that|it|the selection|selection)( for me)?( (to|into) english)?$|^(what does (this|that|it) say|what'?s (this|that)|what is (this|that)) in english$|^(this|that|it) in english( please)?$/, route: { type: 'task', task: 'translate', needs: 'selection' } },
-  { re: /^(summari[sz]e|sum up|explain) (this|the) (page|article|web ?page|web ?site|site)( to me| for me)?$|^summari[sz]e (page|article)$|^what'?s this (page|article)$|^what'?s on (this|the) page$|^what is this page( about)?$|^tell me what this page is about$/, route: { type: 'task', task: 'page_summary' } },
+  { re: /^(summari[sz]e|sum up|explain) (this|the) (page|article|web ?page|web ?site|site)( to me| for me)?$|^summari[sz]e (page|article)$|^tl;?dr (this|the) (page|article)$|^what'?s this (page|article)$|^what'?s on (this|the) page$|^what is this page( about)?$|^tell me what this page is about$/, route: { type: 'task', task: 'page_summary' } },
   { re: /^what (do|should) i do (here|on this page)$/, route: { type: 'task', task: 'page_todo' } },
   { re: /^(which (one ?(is|'s)|is) (the )?(cheapest|best value)( one| option)?|which (one )?is (the )?cheaper|what('?s| is) (the )?(cheapest|best (deal|value))( one| option)?)( here)?$/, route: { type: 'task', task: 'shop_value' } },
   { re: /^what should i (order|eat)( here)?$|^what'?s the lightest( option)?$/, route: { type: 'task', task: 'food_lightest' } },
@@ -38,7 +38,7 @@ function normalize(transcript) {
     .toLowerCase()
     .replace(/^(hey |ok |okay )?loon[,\s]+/, '') // wake phrase at the start of an utterance
     .replace(/^((um+|uh+|er+|hmm+|so|well),?\s+)+/, '')
-    .replace(/^(please|can you|could you|would you)\s+/, '')
+    .replace(/^((please|can you|could you|would you|will you)\s+)+/, '')
     .replace(/[,.!?]+/g, ' ')
     .replace(/\s+(please|loon)$/, '')
     .replace(/\s{2,}/g, ' ')

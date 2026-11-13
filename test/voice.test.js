@@ -166,3 +166,11 @@ test('turn on do not disturb, "which one is the cheapest option", bare "shorter"
   assert.strictEqual(route('simpler').task, 'simplify');
   assert.strictEqual(route("explain it to me like I'm five").task, 'simplify');
 });
+
+test('stacked politeness and "no, don\'t" still route to the right intent', () => {
+  assert.strictEqual(route('Could you please summarize this').task, 'summarize');
+  assert.strictEqual(route('can you please explain this').task, 'explain');
+  assert.strictEqual(route("No, don't", { awaitingConfirmation: true }).type, 'no');
+  assert.strictEqual(route('no stop', { awaitingConfirmation: true }).type, 'no');
+  assert.strictEqual(route('tl;dr this page').task, 'page_summary');
+});
