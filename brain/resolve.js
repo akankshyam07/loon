@@ -28,7 +28,7 @@ const MOODS = ['happy', 'curious', 'judgy', 'sleepy', 'suspicious', 'focused', '
 // T1: answers that need no model. Time/date change, so these never go in the cache.
 const CODE_ANSWERS = [
   {
-    match: /^(what('?s| is) the |tell me the )?(current )?time( is it)?( now)?$|^what time is it$/,
+    match: /^(what('?s| is) the |tell me the |the )?(current )?time( is it)?( now)?$|^what time (?:is it|it is)$/,
     // A bare "time" inside a conversation is a follow-up ("time complexity?"), not a clock question.
     openingOnly: /^(?:the |current )*time$/,
     answer: () => ({ mood: 'happy', text: `It's ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.` }),
@@ -39,6 +39,13 @@ const CODE_ANSWERS = [
     answer: () => ({ mood: 'happy', text: `It's ${new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}.` }),
   },
   {
+    match: /^(?:what(?:'s| is) )?(?:the )?(?:current )?date and time$/,
+    answer: () => {
+      const now = new Date();
+      return { mood: 'happy', text: `It's ${now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} on ${now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}.` };
+    },
+  },
+  {
     match: /^what (year|month) is it( now)?$|^what('?s| is) the (year|month)$/,
     answer: (key) => {
       const year = /year/.test(key);
@@ -46,7 +53,7 @@ const CODE_ANSWERS = [
     },
   },
   {
-    match: /^what day is (tomorrow|yesterday)$|^what(?:'s| is) (?:the date (tomorrow|yesterday)|(tomorrow|yesterday)'?s date)$/,
+    match: /^what day (?:is|was)(?: it)? (tomorrow|yesterday)$|^what(?:'s| is| was) (?:the date (tomorrow|yesterday)|(tomorrow|yesterday)'?s date)$/,
     answer: (key) => {
       const when = key.match(/tomorrow|yesterday/)[0];
       const d = new Date();
@@ -133,6 +140,8 @@ function instantKey(text) {
   return normalize(text)
     .replace(/[’‘]/g, "'")
     .replace(/^(?:(?:hey |hi |ok |okay )?loon|please|pls)[,:]?\s+/, '')
+    .replace(/^(?:(?:can|could|would) you (?:please )?(?:tell|show) me|do you know|i (?:need|want) to know|tell me)\s+(?=what|the )/, '')
+    .replace(/\bxmas\b/, 'christmas')
     .replace(/\s+(?:right now|rn|please|pls)(?=[\s?!.]*$)/, '')
     .replace(/[\s?!.\p{Extended_Pictographic}\uFE0F]+$/u, '');
 }
