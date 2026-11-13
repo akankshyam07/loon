@@ -2225,3 +2225,13 @@ As a user, the worst problem was that common web developer errors still read as 
 Fixed: the classifier in extension/lib/classify.js now treats these shapes (plus hydration failures, unhandled rejections and pip's "Could not find a version") as errors. Test added in test/browser.test.js.
 
 Left for later: file paths, "x = 5", "CORS error" and a bare "Traceback" are still words. "zsh: permission denied: ./run.sh" reads as a sentence. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-13 — developer help, JSON to DTO and recurring reminders (fourteenth pass)
+
+Tried 14 inputs, among them 19 and 20 digit ids, arrays of mixed numbers, empty arrays, null-only fields and ISO dates and times for the DTO generator. I also re-checked the recurring reminder wordings left open in the last reminders pass ("remind me every day to stretch", "remind me daily to take pills", "remind me every monday at 9 to submit report", "remind me to drink water every hour").
+
+As a user, nothing broke. The recurring wordings look wrong when sent to the one-time reminder parser alone, but the app tries Routines first (main/companion.js), so each one becomes a proper routine card with the right schedule. The DTO output was correct for every input, including `getID` style getters, which Jackson maps back to `id`.
+
+Fixed: nothing, no code change.
+
+Left for later: a 20-digit id is still generated as `double`, which loses precision. `BigInteger` would be exact but is a rare input. The one-time parser still returns a garbled title for "every" wordings if it is ever called without Routines in front of it.
