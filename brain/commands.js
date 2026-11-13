@@ -85,7 +85,7 @@ function parseCommand(input, now = new Date()) {
   }
   if ((m = text.match(/^(?:(?:set|create|add|make)(?: me)? (?:an? )?)?reminder(?: for| to| about|:)?\s+(.+)$/i))) return parseCommand(`remind me ${m[1]}`, now);
   // "show me what I asked about css" and "remind me what we discussed about docker" want the history too.
-  if ((m = text.match(/^(?:show|tell|remind) me (?:of )?what (?:i|we) (?:asked|searched(?: for)?|looked up|read|talked|chatted|discussed)(?: about| on| for)? (.+?)\??$/i))) return { action: 'recall', query: recallQuery(m[1]) };
+  if ((m = text.match(/^(?:show|tell|remind|find)(?: me)?(?: of)? what (?:i|we) (?:asked|searched(?: for)?|looked up|read|talked|chatted|discussed|said)(?: about| on| for)? (.+?)\??$/i)) || (m = text.match(/^what did (?:we|i) (?:say|talk|chat|discuss)(?: about| on) (.+?)\??$/i))) return { action: 'recall', query: recallQuery(m[1]) };
   if ((m = text.match(/^(?:did we|have we) (?:ever )?(?:talk(?:ed)?|chat(?:ted)?|discuss(?:ed)?) (?:about |on )?(.+?)(?: before)?\??$/i))) return { action: 'recall', query: recallQuery(m[1]) };
   if ((m = text.match(/^(?:anything|something|stuff) (?:about|on) (.+?) in (?:my |the )?history\??$/i))) return { action: 'recall', query: recallQuery(m[1]) };
   if (/^what (?:were|are) we (?:talking|chatting|discussing)(?: about)?(?: (?:today|yesterday|earlier|lately|recently|last (?:week|month)))?\??$/i.test(text)) return { action: 'recall', query: '' };
@@ -173,7 +173,7 @@ function parseCommand(input, now = new Date()) {
 // History search has no date filter, so "yesterday" or "last week" as a search word only finds nothing. Drop the
 // time words and the "you (about)" of "what did I ask you about X".
 function recallQuery(raw) {
-  return tidy(raw.replace(/\b(?:today|yesterday|recently|lately|earlier|before|(?:last|this) (?:week|month|night|morning|time)|last)\b/gi, ' ').replace(/\s+/g, ' ')
+  return tidy(raw.replace(/\p{Extended_Pictographic}/gu, ' ').replace(/\b(?:today|yesterday|recently|lately|earlier|before|(?:last|this) (?:week|month|night|morning|time)|last)\b/gi, ' ').replace(/\s+/g, ' ')
     .replace(/^\s*(?:(?:you|u|loon)(?: (?:about|on|for))?|about|on|for)\b/i, ' ').replace(/\s+/g, ' '));
 }
 

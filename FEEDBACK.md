@@ -2295,3 +2295,13 @@ As a user, the worst problem was "2 × 6 × 330 ml", which came out as 660 ml in
 Fixed: brain/shopping.js multiplies the first two numbers in a "a x b x size" chain, counts tea bags, and joins a space grouped thousands part when a currency symbol and a decimal point follow. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: a price range ("$5.00 - $7.00") still uses the low end, and "$5.99/lb" is taken as the item price. "$1,299.00 $999.00" with no "was" or "now" word takes the first number. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-13 — history (twelfth pass)
+
+Tried 25 phrasings such as "recall docker", "what did we say about react", "find what I asked about python", "what did I ask 🐱", "last thing we talked about", "wat did i ask" and "clear my history".
+
+As a user, the worst problem was "find what I asked about python", which started a file search for the words "what I asked about python". "What did we say/discuss/talk about react" went to the language model, which cannot see history. An emoji after the topic became the search word.
+
+Fixed: parseCommand in brain/commands.js sends these to history with the topic, and recallQuery drops emoji. Test extended in test/assistant.test.js and checked to fail before the change.
+
+Left for later: "recall docker", "what was that thing I asked about docker", "last thing we talked about", typos like "wat did i ask", and "clear my history" (no command, it should point at Settings) are not handled.
