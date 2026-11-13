@@ -62,6 +62,7 @@ function normalizeSpoken(text) {
 // Politeness doesn't change the command: "please remind me…", "can you open Spotify", "…, thanks".
 function stripPoliteness(input) {
   return String(input).trim()
+    .replace(/^(?:(?:hey|ok|okay) )?loon[,\s]+(?=\S)/i, '')
     .replace(/^(?:(?:hey|ok|okay) )?(?:loon[,\s]+)?(?:(?:please|pls|plz|can you|could you|would you|will you)\s+)+/i, '')
     .replace(/[,\s]+(?:please|pls|plz|thanks|thank you)[.!?]*$/i, '')
     .trim();
@@ -73,7 +74,7 @@ function parseCommand(input, now = new Date()) {
   // Loon has no alarm clock of its own. Timers, alarms and "wake me" become Reminders, which the confirm card names.
   if ((m = text.match(/^(?:set |start )?(?:an? )?(?:timer|countdown)(?: for| of)? (?:in )?(.+)$/i)) || (m = text.match(/^(?:set |start )?(?:an? )?(.+?)[\s-]timer(?: for (.+))?$/i))) {
     // "timer 1h30" and "timer 5" (minutes) are how people type it.
-    const length = m[1].replace(/^in /i, '').replace(/^(\d+)h(?:ours?|rs?)?\s*(\d+)(?:m(?:ins?)?)?$/i, '$1 hours $2 minutes').replace(/^(\d+)$/, '$1 minutes');
+    const length = m[1].replace(/^in /i, '').replace(/^(\d+):(\d{2})$/, '$1 minutes $2 seconds').replace(/^(\d+)h(?:ours?|rs?)?\s*(\d+)(?:m(?:ins?)?)?$/i, '$1 hours $2 minutes').replace(/^(\d+)$/, '$1 minutes');
     const { date } = extractWhen(`in ${length}`, now);
     return date ? { action: 'reminder', title: m[2] ? `Timer is up for ${tidy(m[2])}` : 'Timer is up', when: date } : null;
   }
@@ -89,6 +90,8 @@ function parseCommand(input, now = new Date()) {
   if (/^what (?:were|are) we (?:talking|chatting|discussing)(?: about)?(?: (?:today|yesterday|earlier|lately|recently|last (?:week|month)))?\??$/i.test(text)) return { action: 'recall', query: '' };
   // "remind me what I asked" wants the history, not a reminder titled "what I asked".
   if (/^remind me (?:of )?what i (?:asked|searched(?: for)?|looked up)(?: you)?\??$/i.test(text)) return { action: 'recall', query: '' };
+  // "in 10 minutes remind me to stretch" puts the time first. Only a head that is purely a time counts.
+  if ((m = text.match(/^(.+?),?\s+remind ?me (?:to |about )?(.+)$/i)) && !extractWhen(m[1], now).rest && extractWhen(m[1], now).date) return parseCommand(`remind me to ${m[2]} ${m[1]}`, now);
   if ((m = text.match(/^remind ?me (?:to |about )?(.+)$/i))) {
     const { date, rest } = extractWhen(m[1], now);
     // "remind me tomorrow to buy milk" and "next friday about the dentist" leave the "to"/"about" in front of the task.

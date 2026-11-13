@@ -404,3 +404,16 @@ test('commands: "thursday at 3" is the coming Thursday, not today at 3pm', () =>
   assert.strictEqual(r.when.getDate(), 12);
   assert.strictEqual(r.when.getHours(), 15);
 });
+
+test('commands: time-first reminders, "hey loon" prefix and m:ss timers', () => {
+  const now = new Date(2026, 10, 11, 10, 0, 0);
+  const a = parseCommand('in 10 minutes remind me to stretch', now);
+  assert.strictEqual(a.title, 'stretch');
+  assert.strictEqual(a.when.getTime(), now.getTime() + 10 * 60 * 1000);
+  const b = parseCommand('tomorrow at 9, remind me to email bob', now);
+  assert.strictEqual(b.title, 'email bob');
+  assert.strictEqual(b.when.getDate(), 12);
+  assert.strictEqual(b.when.getHours(), 9);
+  assert.strictEqual(parseCommand('hey loon remind me to drink water in 20 min', now).title, 'drink water');
+  assert.strictEqual(parseCommand('timer 1:30', now).when.getTime(), now.getTime() + 90 * 1000);
+});

@@ -2205,3 +2205,13 @@ As a user, nearly all wordings worked. The one clear miss was texting spelling. 
 Fixed: the shared politeness lead-in in brain/define.js now accepts "can u", "could u" and "would u" for definitions, synonyms and antonyms. Test added in test/brain.test.js and checked to fail before the change.
 
 Left for later: "what does 'bite the bullet' mean" (idioms of three words) and "whats ephemeral" with no verb go to the model on purpose, since WordNet has no idioms and the second could be about anything. "other ways to say hello" and "a better word for said" are not read as synonym asks. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-13 — reminders, timers and focus (thirteenth pass)
+
+Tried 29 inputs such as "in 10 minutes remind me to stretch", "tomorrow at 9 remind me to email bob", "hey loon remind me to drink water in 20 min", "timer 1:30", "egg timer 5 minutes", "remind me every day to stretch" and "set a timer for 2 mins 30 secs".
+
+As a user, the worst problem was putting the time first. "in 10 minutes remind me to stretch" is how people talk and it went to the model, which cannot create a reminder. "hey loon remind me …" missed for the same reason. "timer 1:30" set a reminder for 1:30pm instead of ninety seconds.
+
+Fixed: parseCommand now handles a leading time phrase before "remind me", stripPoliteness drops a bare "hey loon" prefix, and a m:ss timer length is read as minutes and seconds. Test added in test/assistant.test.js.
+
+Left for later: "remind me every day to stretch" and "stretch every morning" still make a one-time reminder with "every" in the title, which is dishonest and should be refused or sent to Routines. "set a timer for 2 mins 30 secs" drops the seconds. "egg timer 5 minutes" and "remind me at quarter past 3" are not matched. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
