@@ -4,37 +4,80 @@
 // Exact conversion constants to base units (g, ml).
 const UNITS = {
   mg: ['g', 0.001], g: ['g', 1], kg: ['g', 1000], oz: ['g', 28.349523125], lb: ['g', 453.59237], lbs: ['g', 453.59237],
-  ml: ['ml', 1], cl: ['ml', 10], l: ['ml', 1000], floz: ['ml', 29.5735295625],
+  ml: ['ml', 1], cl: ['ml', 10], l: ['ml', 1000], floz: ['ml', 29.5735295625], gal: ['ml', 3785.411784], qt: ['ml', 946.352946], pt: ['ml', 473.176473], gr: ['g', 1], gm: ['g', 1],
 };
-const MEASURE = /(\d+(?:[.,]\d+)?)\s*(fl\.?\s?oz|mg|kg|g|lbs?|oz|ml|cl|l)\b/gi;
+const WORDS = {
+  milligram: 'mg', gram: 'g', kilogram: 'kg', kilo: 'kg', ounce: 'oz', pound: 'lb', milliliter: 'ml', millilitre: 'ml', liter: 'l', litre: 'l',
+  fluidounce: 'floz', gallon: 'gal', quart: 'qt', pint: 'pt',
+};
+const NUMBER_WORDS = { two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, twelve: 12 };
+const MEASURE = /(\d+(?:[.,]\d+)?)[\s-]?(fl\.?\s?oz|fluid ounces?|(?:milli|kilo)?grams?|kilos?|milli?lit(?:er|re)s?|lit(?:er|re)s?|ounces?|pounds?|gallons?|quarts?|pints?|mg|kg|gr|gm|g|lbs?|oz|ml|cl|l|gal|qt|pt)\b/gi;
+// Two measures add up only when they sit side by side ("2 lb 4 oz"), not in "16 oz (1 lb)".
+const ADJACENT = /^\s*(?:and|,)?\s*$/;
 
 // "12 x 330ml" → 3960 ml · "2 lb 4 oz" → 1020.6 g · "pack of 6" → 6 count. Returns null when nothing parses.
 function parseQuantity(text) {
   if (!text) return null;
-  const t = String(text).toLowerCase().replace(/×/g, 'x');
+  // "1/2 gallon" is half a gallon, not two.
+  // "1,000 g" is a thousand, but "0,125 l" is a European decimal.
+  const t = String(text).toLowerCase().replace(/×/g, 'x').replace(/\b(two|three|four|five|six|seven|eight|nine|ten|twelve)[\s-](?=pack\b)/g, (_, w) => NUMBER_WORDS[w] + '-').replace(/(?<![\d,.])([1-9]\d{0,2}(?:,\d{3})*),(?=\d{3}(?!\d))/g, (_, d) => d.replace(/,/g, '')).replace(/\b(?:a|an|one)\s+(?=(?:pound|ounce|gallon|quart|pint|lit(?:er|re)|kilo(?:gram)?|gram)s?\b)/g, '1 ').replace(/\bhalf[- ](?=gallon|liter|litre|quart|pint|pound|lb)/g, '0.5 ').replace(/\b([1-3])\/([2-4])\b(?=\s*(?:fl|gal|lb|oz|qt|pt|l\b|lit|kg|g\b|ml|pound|ounce|quart|pint))/g, (_, a, b) => Number(a) / Number(b));
   let count = 1;
-  const multi = t.match(/(\d+)\s*x\s*\d/) || t.match(/\bpack of (\d+)/) || t.match(/(\d+)\s*[- ]?(?:pack|pk)\b/);
+  const multi = t.match(/(\d+)\s*(?:(?:cans?|bottles?|bags?|boxes|pouches|jars|sticks)\s*)?x\s*\d/) || t.match(/(?<![a-z\d])x\s*(\d+)\s+\d/) || t.match(/\b(?:pack|set|case|box|bundle) of (\d+)/) || t.match(/(\d+)\s*[- ]?(?:pack|pk)\b/);
   if (multi) count = Number(multi[1]);
-  const measures = [...t.matchAll(MEASURE)].map(([, value, unit]) => {
-    const key = unit.replace(/[.\s]/g, '');
-    const [base, factor] = UNITS[key] || UNITS[key.replace(/s$/, '')] || [];
-    return base ? { base, amount: Number(value.replace(',', '.')) * factor } : null;
+  // "2 x 6 x 330 ml" is twelve cans.
+  const chain = multi && t.match(/(\d+)\s*x\s*(\d+)\s*x\s*\d/);
+  if (chain) count = Number(chain[1]) * Number(chain[2]);
+  const trailing = !multi && t.match(/[a-z.]\s*x\s*(\d+)\b(?!\s*[.,]?\d*\s*[a-z])/);
+  if (trailing) count = Number(trailing[1]);
+  const measures = [...t.matchAll(MEASURE)].map((m) => {
+    const key = m[2].replace(/[.\s]/g, '');
+    const [base, factor] = UNITS[key] || UNITS[WORDS[key.replace(/s$/, '')]] || UNITS[key.replace(/s$/, '')] || [];
+    return base ? { base, amount: Number(m[1].replace(',', '.')) * factor, start: m.index, end: m.index + m[0].length } : null;
   }).filter(Boolean);
   if (measures.length) {
-    const base = measures[0].base;
-    // Consecutive same-kind measures add up ("2 lb 4 oz"); a multipack multiplies the first one.
-    const size = multi && /x/.test(multi[0]) ? measures[0].amount : measures.filter((m) => m.base === base).reduce((sum, m) => sum + m.amount, 0);
-    return { amount: size * count, unit: base };
+    // In "1 kg (2 x 500 g)" the size is the measure after the x.
+    const sized = multi && /x/.test(multi[0]) ? measures.filter((m) => m.start > multi.index) : measures;
+    const first = (sized.length ? sized : measures)[0];
+    const run = [first];
+    for (const m of measures) {
+      const last = run[run.length - 1];
+      if (m.start >= last.end && m.base === first.base && ADJACENT.test(t.slice(last.end, m.start))) run.push(m);
+    }
+    const size = multi && /x/.test(multi[0]) ? first.amount : run.reduce((sum, m) => sum + m.amount, 0);
+    return { amount: size * count, unit: first.base };
   }
-  const pieces = t.match(/(\d+)\s*(?:ct|count|pcs|pieces|pods|tablets|capsules|rolls|bags)\b/);
-  if (pieces) return { amount: Number(pieces[1]) * (multi && multi[0] !== pieces[0] ? count : 1), unit: 'count' };
+  const dozen = t.match(/(?:(\d+(?:\.\d+)?)|\b(a|one)|\b(half))[\s-]?dozen\b/) || t.match(/\b(dozen)\b/);
+  if (dozen) return { amount: (dozen[3] ? 0.5 : Number(dozen[1]) || 1) * 12, unit: 'count' };
+  const pieces = t.match(/(\d+)[\s-]?(?:ct|count|pcs|pieces|pods|tablets|tabs|capsules|softgels|gummies|rolls|(?:tea\s)?bags|pairs|sheets|wipes|cans|bottles)\b/);
+  // "12 ct (2 x 6)" spells out the same twelve, while "12 count (pack of 2)" is twenty-four.
+  // "Pack of 100 count" names one number twice.
+  if (pieces) {
+    const sameNumber = multi && multi[1] === pieces[1] && / of /.test(multi[0]);
+    const grid = multi && /x/.test(multi[0]) && t.match(/(\d+)\s*x\s*(\d+)/);
+    const repeats = multi && multi[0] !== pieces[0] && !sameNumber && !(grid && Number(grid[1]) * Number(grid[2]) === Number(pieces[1]));
+    return { amount: Number(pieces[1]) * (repeats ? count : 1), unit: 'count' };
+  }
   if (multi) return { amount: count, unit: 'count' };
   return null;
 }
 
 function parsePrice(value) {
   if (value == null) return null;
-  const m = String(value).replace(/,(?=\d{3}\b)/g, '').match(/(\d+(?:[.,]\d{1,2})?)/);
+  // "1.299,99 €" and "1 299,00 €" write the decimal comma after the thousands separator.
+  // "Was $20 Now $15" is the sale price.
+  // "99¢" is cents, so it is 0.99 and not 99.
+  const cents = String(value).match(/^\D*(\d+(?:\.\d+)?)\s*(?:¢|cents?\b)/i);
+  if (cents) return Number(cents[1]) / 100;
+  const forN = String(value).match(/\b(\d+)\s*for\s*\D*?(\d+(?:\.\d{1,2})?)/i);
+  if (forN) return Number(forN[2]) / Number(forN[1]);
+  // Indian grouping ("₹1,29,999") puts commas every two digits before the last three.
+  // A saving ("Save $5", "$5 off", "15% off") is not the price.
+  const text = String(value).replace(/\b(?:you\s+)?save\s*\D{0,3}\d[\d.,]*%?|\d[\d.,]*%?\s*off\b/gi, '').replace(/^.*\bnow\b/i, '').replace(/(\d),(?=\d{2},\d)/g, '$1').replace(/(\d)[.\s](?=\d{3},\d{1,2}\b)/g, '$1')
+    // "$1 299.00" groups with a space and still has a decimal point.
+    .replace(/([$£€¥₹]\s?\d{1,3})[ \u00a0\u202f](?=\d{3}\.\d{2}\b)/g, '$1')
+    // "1 000 Kč" and "12 500 Ft" group thousands with a space and no decimals.
+    .replace(/(?<![\d.,])(\d{1,3}(?:[ \u00a0\u202f]\d{3})+)(?![\d.,])/g, (g) => g.replace(/\D/g, ''));
+  const m = text.replace(/,(?=\d{3}\b)/g, '').match(/(\d+(?:[.,]\d{1,2})?|[.,]\d{2})/);
   return m ? Number(m[1].replace(',', '.')) : null;
 }
 

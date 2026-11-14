@@ -6,7 +6,9 @@ const fs = require('fs');
 const path = require('path');
 const { ResponseCache } = require('./cache');
 const { TASKS, MAX_CONTEXT_CHARS, buildPrompt, historyBlock, followUpContext, memoryGroup } = require('./tasks');
-const { define } = require('./define');
+const { define, dictionaryTerm, synonymTerm, synonyms, antonymTerm, antonyms } = require('./define');
+const { calc } = require('./calc');
+const { worldTime } = require('./worldtime');
 const { scopeOf } = require('./memory');
 const { domainForTask } = require('./graph');
 const { cleanPersonal, instructionsBlock, maxTokensFor, sensesFor } = require('./personal');
@@ -26,15 +28,61 @@ const MOODS = ['happy', 'curious', 'judgy', 'sleepy', 'suspicious', 'focused', '
 // T1: answers that need no model. Time/date change, so these never go in the cache.
 const CODE_ANSWERS = [
   {
-    match: /^(what('?s| is) the )?(current )?time( is it)?( now)?\??$|^what time is it\??$/,
+    match: /^(what('?s| is) the |tell me the |the )?(current )?time( is it)?( now)?$|^what time (?:is it|it is)$/,
+    // A bare "time" inside a conversation is a follow-up ("time complexity?"), not a clock question.
+    openingOnly: /^(?:the |current )*time$/,
     answer: () => ({ mood: 'happy', text: `It's ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.` }),
   },
   {
-    match: /^(what('?s| is) (the |today'?s )?date|what day is (it|today))( today)?\??$/,
+    match: /^(what('?s| is) (the |today'?s )?(current )?date|(today'?s |current |the )?date|what day is (it|today)|what'?s (the )?day|what is today|what'?s today)( today)?$/,
+    openingOnly: /^(?:the |current |today'?s )*date$/,
     answer: () => ({ mood: 'happy', text: `It's ${new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}.` }),
   },
   {
-    match: /^(what can you do|help|what do you do|how do (i|you) use (you|this))\??$/,
+    match: /^(?:what(?:'s| is) )?(?:the )?(?:current )?date and time$/,
+    answer: () => {
+      const now = new Date();
+      return { mood: 'happy', text: `It's ${now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} on ${now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}.` };
+    },
+  },
+  {
+    match: /^what (year|month) is it( now)?$|^what('?s| is) the (year|month)$/,
+    answer: (key) => {
+      const year = /year/.test(key);
+      return { mood: 'happy', text: `It's ${new Date().toLocaleDateString([], year ? { year: 'numeric' } : { month: 'long' })}.` };
+    },
+  },
+  {
+    match: /^what day (?:is|was)(?: it)? (tomorrow|yesterday)$|^what(?:'s| is| was) (?:the date (tomorrow|yesterday)|(tomorrow|yesterday)'?s date)$/,
+    answer: (key) => {
+      const when = key.match(/tomorrow|yesterday/)[0];
+      const d = new Date();
+      d.setDate(d.getDate() + (when === 'tomorrow' ? 1 : -1));
+      return { mood: 'happy', text: `${when.replace(/^./, (c) => c.toUpperCase())} is ${d.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}.` };
+    },
+  },
+  {
+    match: /^what(?:'s| is) the (?:weekday|day of the week)$|^what day of the week is (?:it|today)$/,
+    answer: () => ({ mood: 'happy', text: `It's ${new Date().toLocaleDateString([], { weekday: 'long' })}.` }),
+  },
+  {
+    match: /^(?:how (?:many days|long)|days) (?:is it |are there )?(?:until|till|to|before) (christmas|new year'?s?(?: day)?|halloween|valentine'?s(?: day)?)$/,
+    answer: (key) => {
+      const [month, day] = /christmas/.test(key) ? [11, 25] : /halloween/.test(key) ? [9, 31] : /valentine/.test(key) ? [1, 14] : [0, 1];
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      let target = new Date(now.getFullYear(), month, day);
+      if (target < today) target = new Date(now.getFullYear() + 1, month, day);
+      const days = Math.round((target - today) / 864e5);
+      const name = key.match(/(christmas|new year|halloween|valentine)/)[1].replace(/^./, (c) => c.toUpperCase());
+      const label = name === 'New year' ? "New Year's Day" : name === 'Valentine' ? "Valentine's Day" : name;
+      return { mood: 'happy', text: days === 0 ? `${label} is today.` : `${days} day${days === 1 ? '' : 's'} until ${label}.` };
+    },
+  },
+  {
+    match: /^(what can (you|u) do( for me)?|help( me)?|what do you do|how do (i|you) use (you|this))$/,
+    // A bare "help" inside a conversation asks for help with that conversation, not for this list.
+    openingOnly: /^help( me)?$/,
     answer: () => ({
       mood: 'happy',
       text: [
@@ -50,13 +98,56 @@ const CODE_ANSWERS = [
     }),
   },
   {
-    match: /^(who|what) are you\??$/,
+    match: /^(hi|hii+|hey|heya|hiya|howdy|hey there|hello|yo|sup|what'?s up|whats up|wassup|good (morning|afternoon|evening))( again)?( loon)?$/,
+    answer: () => ({ mood: 'happy', text: 'Hi! Highlight something, or ask me anything.' }),
+  },
+  {
+    match: /^(?:(?:ok|okay|great|perfect|cool|awesome|nice|got it|gotcha|makes sense|that helped)[ ,]+)?(?:(?:many )?thanks|thank you|thank u|thankyou|(?:muchas )?gracias|merci(?: beaucoup)?|danke(?: sch[oö]n)?|grazie|obrigad[oa]|arigato|thx|thnx|thanx|tysm|tyvm|ty|cheers|(?:much )?appreciated?(?: it)?)(?:[ ,]+(?:a lot|a ton|a bunch|so much|very much|again|kindly|mate|that helps|that helped|that was (?:really |very )?helpful|loon|for (?:that|this|the (?:help|answer|explanation)|your help|helping|explaining)))*$/,
+    answer: () => ({ mood: 'happy', text: 'Anytime. *purrs*' }),
+  },
+  {
+    match: /^(?:(?:wow|aw+|ok|okay)[ ,]+)?(?:(?:that(?:'s| was| is)|this is|you(?:'re| are)|u r|it(?:'s| was)) )?(?:(?:so|very|really|super|pretty) )?(?:great|awesome|amazing|perfect|brilliant|helpful|wonderful|clever|smart|excellent|fantastic|the best|nice|good)(?: (?:one|job|work|answer|help|cat|kitty|bot))?(?: (?:loon|kitty))?$|^(?:well done|you (?:rock|rule)|love (?:it|that|this|you))(?: loon)?$/,
+    answer: () => ({ mood: 'happy', text: 'Aw, thanks. *purrs*' }),
+  },
+  {
+    match: /^(?:(?:ha){2,}h?|(?:he){2,}h?|lol+|lmao|lmfao|rofl|(?:that(?:'s| is) )?(?:funny|hilarious)|(?:ok |okay )?(?:got it|gotcha|makes sense|i see|understood|understand|noted))(?: (?:lol|loon))?$/,
+    answer: () => ({ mood: 'happy', text: '*tail flick* Ask away whenever.' }),
+  },
+  {
+    match: /^(?:(?:oops|whoops|ah|oh|ok|okay)[ ,]+)?(?:sorry|my bad|my apologies|apologies|i(?:'m| am) sorry|sorry about that)(?: loon)?$/,
+    answer: () => ({ mood: 'happy', text: 'No worries. *tail flick* Ask away.' }),
+  },
+  {
+    match: /^(?:(?:ok|okay|alright|right)[ ,]+)?(?:good ?night|night night|nighty night|night|gn|bye|bye bye|goodbye|see (?:you|ya)(?: later| soon| tomorrow)?|cya|ttyl|later|talk to you later|take care|that(?:'s| is) all(?: for now)?|never ?mind|nvm)(?: loon)?$/,
+    answer: () => ({ mood: 'sleepy', text: "Night! I'll keep watch. *curls up*" }),
+  },
+  {
+    // The model cannot change settings, so it must not be left to promise "okay, I'll stop remembering".
+    match: /^(?:stop (?:remembering|saving|learning)(?: (?:things|stuff|anything|everything|about me))?|(?:do not|don'?t) (?:remember|save|learn)(?: (?:things|stuff|anything|everything|about me|that|this|it))?|(?:turn|switch) off (?:your )?(?:memory|learning)|(?:disable|pause) (?:your )?memory)$/,
+    answer: () => ({
+      mood: 'protective',
+      text: 'I only keep what you tell me with "Remember that…". For none at all, turn on **Privacy mode** and I won\'t recall or learn anything. You can also delete memories in Settings → Memory.',
+    }),
+  },
+  {
+    match: /^(?:(?:who|what) are you|what(?:'s| is) your name|who are you again)$/,
     answer: () => ({ mood: 'happy', text: "I'm Loon, a small black cat who lives on your screen. I run on your Mac, and nothing you ask leaves it unless you switch on Smarter answers in Settings." }),
   },
 ];
 
 function normalize(text) {
   return text.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+// Typed questions arrive with smart quotes, "?!", "hey loon," and "right now"; strip those so the instant answers match.
+function instantKey(text) {
+  return normalize(text)
+    .replace(/[’‘]/g, "'")
+    .replace(/^(?:(?:hey |hi |ok |okay )?loon|please|pls)[,:]?\s+/, '')
+    .replace(/^(?:(?:can|could|would) you (?:please )?(?:tell|show) me|do you know|i (?:need|want) to know|tell me)\s+(?=what|the )/, '')
+    .replace(/\bxmas\b/, 'christmas')
+    .replace(/\s+(?:right now|rn|please|pls)(?=[\s?!.]*$)/, '')
+    .replace(/[\s?!.\p{Extended_Pictographic}\uFE0F]+$/u, '');
 }
 
 function isoWeek(date = new Date()) {
@@ -223,12 +314,46 @@ class Resolver {
     let prefix = '';
 
     if (taskId === 'ask' && !packet.text) {
-      const template = CODE_ANSWERS.find((c) => c.match.test(normalize(packet.question)));
+      const key = instantKey(packet.question);
+      const template = CODE_ANSWERS.find((c) => c.match.test(key) && !(!firstInThread && c.openingOnly?.test(key)));
       if (template) {
-        const { text, mood } = template.answer();
+        const { text, mood } = template.answer(key);
         onText(text);
         this.count('code');
         return { text, mood, tier: 'code' };
+      }
+      const abroad = worldTime(key);
+      if (abroad) {
+        onText(abroad);
+        this.count('code');
+        return { text: abroad, mood: 'happy', tier: 'code' };
+      }
+      const sum = calc(packet.question);
+      if (sum) {
+        onText(sum);
+        this.count('code');
+        return { text: sum, mood: 'focused', tier: 'code' };
+      }
+      const synonymFor = firstInThread && synonymTerm(packet.question);
+      const synonymList = synonymFor && await synonyms(synonymFor);
+      if (synonymList) {
+        onText(synonymList);
+        this.count('code');
+        return { text: synonymList, mood: 'curious', tier: 'code', detail: 'WordNet dictionary' };
+      }
+      const antonymFor = firstInThread && antonymTerm(packet.question);
+      const antonymList = antonymFor && await antonyms(antonymFor);
+      if (antonymList) {
+        onText(antonymList);
+        this.count('code');
+        return { text: antonymList, mood: 'curious', tier: 'code', detail: 'WordNet dictionary' };
+      }
+      const term = firstInThread && dictionaryTerm(packet.question);
+      const entry = term && await define(term, { maxSenses: sensesFor(personal.length) });
+      if (entry) {
+        onText(entry);
+        this.count('code');
+        return { text: entry, mood: 'curious', tier: 'code', detail: 'WordNet dictionary' };
       }
     }
 

@@ -3,26 +3,33 @@
 // anything left is an ordinary question for the resolver ladder.
 const { parseCommand, normalizeSpoken } = require('./commands');
 
-const STOP = /^(stop|cancel|never ?mind|shh+|quiet|be quiet|hush|that's enough|enough)$/i;
-const YES = /^(yes|yeah|yep|yup|sure|ok(ay)?|do it|go ahead|confirm|please do|correct|right)$/i;
-const NO = /^(no|nope|nah|don't|do not|cancel|stop|never ?mind|wrong)$/i;
+const STOP = /^(stop( talking| speaking)?|cancel|never ?mind|shh+|quiet|be quiet|hush|shut up|that's enough|that is enough|enough|ok(ay)? (stop|enough)|stop it)$/i;
+const YES = /^(yes|yeah|yep|yup|sure|ok(ay)?|do it|go ahead|confirm|please do|correct|right)( (do it|go ahead|please|sure))*$/i;
+const NO = /^(no|nope|nah|don't|do not|cancel|stop|never ?mind|wrong|no thanks|no thank you|not now|no (don't|do not|stop|cancel|never ?mind)|(don't|do not) do it)$/i;
 
 // Fixed phrases → task/toggle. Alternatives written as regex; matched on the normalized utterance.
 const TEMPLATES = [
-  { re: /^(explain|what does) (this|that|the selection)( mean)?$|^what does this mean$/, route: { type: 'task', task: 'explain', needs: 'selection' } },
-  { re: /^(simplify( this| that)?|make (this|that) simpler)$/, route: { type: 'task', task: 'simplify', needs: 'selection' } },
-  { re: /^translate (this|that)( to english)?$/, route: { type: 'task', task: 'translate', needs: 'selection' } },
-  { re: /^(summari[sz]e|sum up) (this|the) page$|^what'?s on (this|the) page$|^what is this page( about)?$/, route: { type: 'task', task: 'page_summary' } },
+  { re: /^(explain|what does) (this|that|it|the selection)( to me)?( mean)?$|^what does this mean$/, route: { type: 'task', task: 'explain', needs: 'selection' } },
+  { re: /^(simplify( this| that| it)?|simpler|make (this|that|it) (simpler|easier))$|^explain (this|that|it) (to me )?simply$|^eli5( (this|that|it))?$|^explain( this| that| it)?( to me)? like i'?m (5|five)$|^dumb (this|that|it) down$/, route: { type: 'task', task: 'simplify', needs: 'selection' } },
+  { re: /^(shorter|say (this|that|it) (shorter|more briefly)|make (this|that|it) ((a (bit|little)|way|much) )?(shorter|short|briefer|brief|more concise|concise|less wordy|less verbose)|(shorten|tighten|trim)( up)? (this|that|it)( up)?|cut (this|that|it) (down|short))( for me)?$/, route: { type: 'task', task: 'shorter', needs: 'selection' } },
+  { re: /^(rewrite|reword|rephrase|paraphrase|improve|polish) (this|that|it)$|^make (this|that|it) (sound )?(better|clearer|clear)$|^say (this|that|it) (differently|another way)$/, route: { type: 'task', task: 'rewrite', needs: 'selection' } },
+  { re: /^make (this|that|it) (sound )?((a (bit|little) |slightly |much )?more )?(professional|formal|polite)$|^more (professional|formal|polite)$|^(write|say) (this|that|it) (more )?(professionally|formally|politely)$|^(rewrite|reword|rephrase) (this|that|it) (more |to be more |to sound more |in a )?(professionally|formally|politely|professional|formal|polite)( tone)?$/, route: { type: 'task', task: 'professional', needs: 'selection' } },
+  { re: /^(make (this|that|it) (sound )?(more )?|(rewrite|reword|rephrase) (this|that|it) (to be |to sound |in a )?)(warmer|friendlier|nicer|friendly|warm|nice)( tone)?$|^say (this|that|it) (warmer|friendlier|nicer)$|^(warmer|friendlier|nicer|more friendly)$/, route: { type: 'task', task: 'warmer', needs: 'selection' } },
+  { re: /^(fix|correct|proofread|check) (the |my )?(grammar|grammer|spelling|typos)( and (grammar|grammer|spelling|typos))?( (in|of) (this|that|it))?$|^(fix|correct|proofread) (this|that|it)( for me)?$|^proofread$|^check (this|that|it) for (typos|spelling|grammar)( mistakes| errors)?$/, route: { type: 'task', task: 'fix_grammar', needs: 'selection' } },
+  { re: /^(summari[sz]e|sum up|sum) (this|that|it|the selection)( up)?( for me)?$|^summari[sz]e$|^tl;?dr( (this|that|it))?$/, route: { type: 'task', task: 'summarize', needs: 'selection' } },
+  { re: /^(give me |show me )?(some )?examples( of (this|that|it))?$|^(give|show) (me )?an example$/, route: { type: 'task', task: 'examples', needs: 'selection' } },
+  { re: /^translate (this|that|it|the selection|selection)( for me)?( (to|into) english)?$|^(what does (this|that|it) say|what'?s (this|that)|what is (this|that)) in english$|^(this|that|it) in english( please)?$/, route: { type: 'task', task: 'translate', needs: 'selection' } },
+  { re: /^(summari[sz]e|sum up|explain) (this|the) (page|article|web ?page|web ?site|site)( to me| for me)?$|^summari[sz]e (page|article)$|^tl;?dr (this|the) (page|article)$|^what'?s this (page|article)$|^what'?s on (this|the) page$|^what is this page( about)?$|^tell me what this page is about$/, route: { type: 'task', task: 'page_summary' } },
   { re: /^what (do|should) i do (here|on this page)$/, route: { type: 'task', task: 'page_todo' } },
-  { re: /^(which (one )?is (the )?(cheapest|best value)|what'?s the best (deal|value))( here)?$/, route: { type: 'task', task: 'shop_value' } },
+  { re: /^(which (one ?(is|'s)|is) (the )?(cheapest|best value)( one| option)?|which (one )?is (the )?cheaper|what('?s| is) (the )?(cheapest|best (deal|value))( one| option)?)( here)?$/, route: { type: 'task', task: 'shop_value' } },
   { re: /^what should i (order|eat)( here)?$|^what'?s the lightest( option)?$/, route: { type: 'task', task: 'food_lightest' } },
   { re: /^(quiz me|test me)( on this( page)?)?$/, route: { type: 'task', task: 'quiz' } },
   { re: /^(what have i found|summari[sz]e my notes)$/, route: { type: 'task', task: 'research_found' } },
-  { re: /^(turn on |start )?focus mode( on)?$|^go to sleep$/, route: { type: 'toggle', key: 'focus', value: true } },
-  { re: /^(turn off |stop )focus mode$|^focus mode off$|^wake up$/, route: { type: 'toggle', key: 'focus', value: false } },
-  { re: /^(turn on )?privacy mode( on)?$/, route: { type: 'toggle', key: 'privacy', value: true } },
-  { re: /^(turn off )?privacy mode off$|^turn off privacy mode$/, route: { type: 'toggle', key: 'privacy', value: false } },
-  { re: /^define (.+)$/, route: { type: 'task', task: 'define', slot: 'text' } },
+  { re: /^(?:(?:turn on |start )focus(?: mode)?(?: on)?|focus mode(?: on)?)$|^go to sleep$|^((turn|switch) on |enable )?(do not|don'?t) disturb( me| mode)?$/, route: { type: 'toggle', key: 'focus', value: true } },
+  { re: /^(turn off |stop |exit |disable |end |leave )focus( mode)?$|^un-?focus$|^(turn )?focus (mode )?off$|^wake up$/, route: { type: 'toggle', key: 'focus', value: false } },
+  { re: /^((turn|switch) on |enable )?priv(acy|ate) mode( on)?$|^(turn|switch) priv(acy|ate) mode on$|^go private$/, route: { type: 'toggle', key: 'privacy', value: true } },
+  { re: /^(turn )?priv(acy|ate) mode off$|^(turn off|switch off|disable|exit|leave|end|stop) priv(acy|ate) mode$/, route: { type: 'toggle', key: 'privacy', value: false } },
+  { re: /^define:? (?:the word )?(.+)$/, route: { type: 'task', task: 'define', slot: 'text' } },
 ];
 
 // Numbers stay as words here ("which one is cheapest"); only commands get digits, for chrono's sake.
@@ -30,9 +37,10 @@ function normalize(transcript) {
   return transcript
     .toLowerCase()
     .replace(/^(hey |ok |okay )?loon[,\s]+/, '') // wake phrase at the start of an utterance
-    .replace(/^(please|can you|could you|would you)\s+/, '')
+    .replace(/^((um+|uh+|er+|hmm+|so|well),?\s+)+/, '')
+    .replace(/^((please|pls|plz|can you|could you|would you|will you)\s+)+/, '')
     .replace(/[,.!?]+/g, ' ')
-    .replace(/\s+please$/, '')
+    .replace(/\s+(please|pls|plz|loon)$/, '')
     .replace(/\s{2,}/g, ' ')
     .trim();
 }
@@ -48,8 +56,10 @@ function route(transcript, { awaitingConfirmation = false, speaking = false } = 
     if (NO.test(text)) return { type: 'no' };
   }
   if (STOP.test(text)) return { type: 'stop' };
+  // "simplify this paragraph" means the same as "simplify this"; the selection is what gets edited.
+  const key = text.replace(/\b(this|that) (paragraph|sentence|text|passage|message|email|section|selection)\b/g, '$1').replace(/\ba (lot|ton) (shorter|simpler)\b/, '$2').replace(/ in (a )?simple terms$/, ' simply');
   for (const { re, route: r } of TEMPLATES) {
-    const m = text.match(re);
+    const m = key.match(re);
     if (m) return r.slot ? { ...r, text: m[1] } : { ...r };
   }
   const command = parseCommand(normalizeSpoken(transcript.replace(/^(hey |ok |okay )?loon[,\s]+/i, '')));
@@ -66,18 +76,26 @@ function wakePhrase(transcript) {
   return { rest: transcript.slice(m[0].length).trim() };
 }
 
+// A full stop after these (or after a single letter, as in U.S. and e.g.) does not end a sentence.
+const ABBREVIATION = /(?:^|[\s.])(?:Mr|Mrs|Ms|Dr|Prof|St|vs|etc|approx|[A-Za-z])\.$/;
+
 // Splits streamed model text into sentences for sentence-by-sentence speech (GLaDOS / HA voice chapter 11).
 function createSentenceSplitter(onSentence) {
   let buffer = '';
   return {
     push(chunk) {
       buffer += chunk;
+      const re = /[.!?]+\s+/g;
       let m;
-      while ((m = buffer.match(/^([\s\S]*?[.!?])(\s+|$)(?=\S|$)/)) && m[0].length < buffer.length) {
-        const sentence = m[1].trim();
-        buffer = buffer.slice(m[0].length);
-        if (sentence) onSentence(sentence);
+      let start = 0;
+      while ((m = re.exec(buffer))) {
+        const end = m.index + m[0].length;
+        const sentence = buffer.slice(start, m.index + m[0].trimEnd().length);
+        if (ABBREVIATION.test(sentence) || end >= buffer.length) continue;
+        start = end;
+        if (sentence.trim()) onSentence(sentence.trim());
       }
+      buffer = buffer.slice(start);
     },
     flush() {
       if (buffer.trim()) onSentence(buffer.trim());
@@ -93,11 +111,15 @@ function speakable(markdown, maxSentences = 2) {
     .split('\n')
     .filter((l) => !/^\s*(\||>|[-*•]\s|\d+\.\s|#)/.test(l))
     .join(' ')
+    .replace(/\]\(https?:\/\/[^)\s]*\)/g, '')
     .replace(/[*_`[\]]/g, '')
-    .replace(/\(https?:\/\/\S+\)/g, '')
     .replace(/\s+/g, ' ')
     .trim();
-  const sentences = prose.match(/[^.!?]+[.!?]+/g) || (prose ? [prose] : []);
+  const sentences = [];
+  for (const part of prose.split(/(?<=[.!?])\s+/)) {
+    if (sentences.length && ABBREVIATION.test(sentences[sentences.length - 1])) sentences[sentences.length - 1] += ` ${part}`;
+    else if (part) sentences.push(part);
+  }
   return { text: sentences.slice(0, maxSentences).map((x) => x.trim()).join(' '), truncated: sentences.length > maxSentences || prose.length < markdown.trim().length * 0.6 };
 }
 

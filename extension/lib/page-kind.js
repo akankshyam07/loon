@@ -7,11 +7,25 @@
     'paypal.com', 'venmo.com', 'wise.com', 'revolut.com', 'coinbase.com', 'kraken.com', 'binance.com',
     '1password.com', 'lastpass.com', 'bitwarden.com', 'dashlane.com', 'keepersecurity.com',
     'accounts.google.com', 'login.microsoftonline.com', 'login.live.com', 'appleid.apple.com', 'id.apple.com',
-    'mychart.com', 'healthcare.gov', 'irs.gov', 'ssa.gov',
+    'mychart.com', 'healthcare.gov', 'irs.gov', 'ssa.gov', 'login.gov', 'hsbc.com', 'tdbank.com', 'ally.com',
+    'sofi.com', 'okta.com', 'anthem.com', 'kp.org', 'myuhc.com',
+    'citibank.com', 'chime.com', 'monzo.com', 'barclays.co.uk', 'lloydsbank.com', 'natwest.com',
+    'medicare.gov', 'commbank.com.au', 'rabobank.nl', 'hdfcbank.com', 'icicibank.com', 'login.gov.uk',
+    'myaccount.google.com', 'signin.aws.amazon.com',
+    'tiaa.org', 'ameriprise.com', 'merrilledge.com', 'edwardjones.com', 'login.yahoo.com', 'account.proton.me',
+    'accounts.intuit.com', 'turbotax.intuit.com', 'dashboard.stripe.com', 'cash.app',
+    'td.com', 'rbc.com', 'santander.co.uk', 'sbi.co.in', 'sparkasse.de', 'axisbank.com', 'web.whatsapp.com', 'web.telegram.org', 'app.signal.org', 'onlinesbi.sbi', 'zerodha.com', 'hmrc.gov.uk', 'tax.service.gov.uk',
+    'ing.com', 'ing.nl', 'ing.de', 'abnamro.nl', 'bbva.com', 'bbva.es', 'nubank.com.br', 'itau.com.br', 'usaa.com', 'navyfederal.org', 'creditkarma.com', 'mint.intuit.com', 'zellepay.com', 'cigna.com', 'aetna.com', 'bcbs.com', 'healthequity.com',
   ];
+  // Country sites of the same banks (wellsfargo.com.au, hsbc.co.uk, chase.co.uk); a look-alike such as
+  // bankofamerica.com.evil.com does not match because only a two or three letter suffix may follow.
+  const SENSITIVE_BRANDS = /(^|\.)(wellsfargo|chase|barclays|hsbc|paypal|citibank|bankofamerica|capitalone|americanexpress|revolut|coinbase)\.(com?\.)?[a-z]{2,3}$/;
+  const SENSITIVE_LABELS = /(^|\.)(mychart|myhealth|patientportal)[\w-]*\./;
   const CODE_DOMAINS = ['github.com', 'gitlab.com', 'bitbucket.org', 'stackoverflow.com', 'stackexchange.com', 'developer.mozilla.org'];
-  const EMAIL_HOSTS = ['mail.google.com', 'outlook.live.com', 'outlook.office.com', 'outlook.office365.com', 'mail.yahoo.com'];
-  const PRICE = /(?:[$€£¥₹]\s?\d[\d,]*(?:\.\d{2})?|\d[\d,]*(?:\.\d{2})?\s?(?:USD|EUR|GBP))/g;
+  const EMAIL_HOSTS = ['mail.google.com', 'outlook.live.com', 'outlook.office.com', 'outlook.office365.com', 'mail.yahoo.com',
+    'mail.proton.me', 'mail.protonmail.com', 'app.hey.com', 'mail.aol.com', 'mail.zoho.com',
+    'outlook.com', 'mail.live.com', 'mail.yandex.com', 'outlook.cloud.microsoft', 'fastmail.com', 'app.tuta.com'];
+  const PRICE = /(?:[$€£¥₹]\s?\d[\d,]*(?:\.\d{2})?|\d[\d,.]*(?:[.,]\d{2})?\s?(?:USD|EUR|GBP|CHF|SEK|NOK|DKK|PLN|CZK|BRL|JPY|kr|zł|Kč|円|[€£$])(?!\w)|(?:CHF|BRL|PLN|CZK|SEK|NOK|DKK|Rs\.?)\s?\d[\d,]*(?:\.\d{2})?)/g;
   const FOOD_WORDS = /\b(entr[ée]es?|appetizers?|starters?|sides|desserts?|grilled|fried|roasted|sauce|salad|burger|sandwich|pasta|pizza|tacos?|soup|vegan|vegetarian|gluten|aioli|chicken|beef|tofu|dressing)\b/gi;
 
   const hostMatches = (host, list) => list.some((d) => host === d || host.endsWith(`.${d}`));
@@ -59,10 +73,15 @@
 
   function detectPage(doc, location) {
     const host = location.hostname.replace(/^www\./, '');
-    const passwordField = doc.querySelector('input[type="password"]');
-    const cardField = doc.querySelector('input[autocomplete^="cc-"], input[name*="card" i][inputmode="numeric"]');
-    if (hostMatches(host, SENSITIVE_DOMAINS) || passwordField || cardField) {
-      return { kind: 'sensitive', sensitive: true, reason: passwordField ? 'password field' : cardField ? 'card field' : 'sensitive site' };
+    const passwordField = doc.querySelector('input[type="password" i], input[autocomplete="current-password"], input[autocomplete="one-time-code"]');
+    const cardField = doc.querySelector('input[autocomplete^="cc-"], input[name*="card" i][inputmode="numeric"], input[name*="cardnumber" i], input[name*="cc_number" i], input[name*="cc-number" i], input[name*="ccnumber" i], input[name="ccnum" i], input[name="card_no" i], input[name="card-no" i], input[name="cc-exp" i], input[name="cc_exp" i], input[name*="card-number" i], input[name*="card_number" i], input[name*="cvv" i], input[name*="cvc" i], input[name*="security_code" i], input[name*="security-code" i], input[name*="securitycode" i], input[id*="security-code" i]');
+    // Exact names for short ones: a substring "ssn" would also match "classname".
+    // A show-password toggle turns type="password" into type="text", so the field name has to count too.
+    // A field marked autocomplete="new-password" belongs to a sign-up form, which is not a private page.
+    const nameField = doc.querySelector('input:not([type="hidden" i], [type="checkbox" i], [type="radio" i], [type="button" i], [type="submit" i], [autocomplete="new-password" i]):is([name*="password" i], [id*="password" i], [name="passwd" i], [id="passwd" i])');
+    const idField = doc.querySelector('input:is([name^="ssn" i], [id^="ssn" i], [name="iban" i], [id="iban" i], [name="pin" i], [id="pin" i], [name="pwd" i], [id="pwd" i], [name*="passcode" i], [id*="passcode" i], [name*="social_security" i], [name*="social-security" i], [name*="socialsecurity" i], [name*="routing_number" i], [name*="routing-number" i], [name*="routingnumber" i], [name*="account_number" i], [name*="account-number" i], [name*="accountnumber" i], [name="routing" i], [id="routing" i], [name="otp" i], [id="otp" i], [name*="verification_code" i], [name*="verification-code" i], [name*="verificationcode" i], [name*="api_secret" i], [name*="api-secret" i], [name*="client_secret" i], [name*="client-secret" i], [name="totp" i], [name*="mfa_code" i], [name*="mfa-code" i], [name*="seed_phrase" i], [name*="seed-phrase" i], [name*="recovery_phrase" i], [name*="recovery-phrase" i], [name*="private_key" i], [name*="private-key" i], [name="tax_id" i], [name="tax-id" i])');
+    if (hostMatches(host, SENSITIVE_DOMAINS) || SENSITIVE_BRANDS.test(host) || SENSITIVE_LABELS.test(host) || passwordField || nameField || cardField || idField) {
+      return { kind: 'sensitive', sensitive: true, reason: passwordField || nameField ? 'password field' : cardField ? 'card field' : idField ? 'identity or bank field' : 'sensitive site' };
     }
 
     const text = mainText(doc);
@@ -70,16 +89,16 @@
     const types = jsonLdTypes(doc);
     const prices = body.match(PRICE) || [];
     // No leading \b: sites often render "$9.99Add to cart" with no space between price and button.
-    const buyText = /(add to (cart|bag|basket)|buy now|checkout)\b/i.test(body);
+    const buyText = /(add to (cart|bag|basket)|buy now|checkout|in den warenkorb|ajouter au panier|a[ñn]adir al carrito|aggiungi al carrello)\b/i.test(body);
     const foodWords = new Set((body.match(FOOD_WORDS) || []).map((w) => w.toLowerCase()));
     const { grade, avgSentence, words } = readability(text);
     const dense = words > 300 && (grade > 12 || avgSentence > 25);
 
     let kind = 'other';
     if (host === 'leetcode.com' && /^\/problems\//.test(location.pathname)) kind = 'leetcode';
-    else if (hostMatches(host, EMAIL_HOSTS)) kind = 'email';
+    else if (hostMatches(host, EMAIL_HOSTS) || (host === 'icloud.com' && location.pathname.startsWith('/mail'))) kind = 'email';
     else if (types.has('Menu') || types.has('Restaurant') || (prices.length >= 5 && foodWords.size >= 3)) kind = 'menu';
-    else if (types.has('Product') || types.has('Offer') || types.has('ItemList') || (prices.length >= 3 && buyText)) kind = 'shopping';
+    else if (types.has('Product') || types.has('ProductGroup') || types.has('Offer') || types.has('ItemList') || (prices.length >= 3 && buyText)) kind = 'shopping';
     else if (hostMatches(host, CODE_DOMAINS) || doc.querySelectorAll('pre code, pre').length >= 2) kind = 'code';
     else if (doc.querySelector('article') || words > 600) kind = 'article';
     else if (doc.querySelectorAll('form input:not([type="hidden"])').length >= 4) kind = 'form';
