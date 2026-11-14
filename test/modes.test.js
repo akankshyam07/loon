@@ -69,6 +69,13 @@ test('parseQuantity reads hyphenated sizes, pints and "gr"; parsePrice takes the
   assert.strictEqual(shopping.parsePrice('Was $20.00 Now $15.00'), 15);
 });
 
+test('parsePrice takes the sale price over the regular price', () => {
+  assert.strictEqual(shopping.parsePrice('Regular price $20.00 Sale price $15.00'), 15);
+  assert.strictEqual(shopping.parsePrice('Original price: $50 Current price: $35'), 35);
+  assert.strictEqual(shopping.parsePrice('MSRP $60 Our price $45'), 45);
+  assert.strictEqual(shopping.parsePrice('Was $20 (sale ends soon)'), 20);
+});
+
 test('parsePrice ignores a saving printed next to the price', () => {
   assert.strictEqual(shopping.parsePrice('Save $5 $20'), 20);
   assert.strictEqual(shopping.parsePrice('$20.00 You save 25%'), 20);

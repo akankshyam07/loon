@@ -2415,3 +2415,13 @@ As a user, "Poached Eggs Benedict with hollandaise" showed up as a light and hig
 Fixed: added hollandaise, tempura, gratin and korma to the heavy words in brain/food.js. Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: Eggs Benedict still counts as vegetarian, which is right, but "Chicken Tikka Masala" has no cream signal. Protein ranking only counts distinct protein words, so a large steak and a small egg side tie. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-14 — shopping and unit price (fifteenth pass)
+
+Tried 21 price strings and 30 size strings such as "Regular price $20.00 Sale price $15.00", "List Price: $29.99 Price: $19.99", "MSRP $60 Our price $45", "$5.00 - $7.00", "€12,50", "₹1,499", "pack of 6", "32 oz (2 lb)" and "half gallon". Sizes all came out right.
+
+As a user, the worst problem was Shopify style labels. "Regular price $20.00 Sale price $15.00" gave $20, so the unit price and the cheapest pick were wrong for any item on sale.
+
+Fixed: parsePrice in brain/shopping.js now treats "sale price", "sale", "current price" and "our price" like "now" and takes the number after the last one. It only does so when a number follows, so "Was $20 (sale ends soon)" still gives 20. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: a price range ("$5.00 - $7.00") uses the low end, "$1,299.00 $999.00" with no label takes the first number, and "List Price: $29.99 Price: $19.99" takes the list price. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
