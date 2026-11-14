@@ -25,7 +25,7 @@
   const EMAIL_HOSTS = ['mail.google.com', 'outlook.live.com', 'outlook.office.com', 'outlook.office365.com', 'mail.yahoo.com',
     'mail.proton.me', 'mail.protonmail.com', 'app.hey.com', 'mail.aol.com', 'mail.zoho.com',
     'outlook.com', 'mail.live.com', 'mail.yandex.com', 'outlook.cloud.microsoft', 'fastmail.com', 'app.tuta.com'];
-  const PRICE = /(?:[$€£¥₹]\s?\d[\d,]*(?:\.\d{2})?|\d[\d,.]*(?:[.,]\d{2})?\s?(?:USD|EUR|GBP|CHF|[€£])(?!\w)|(?:CHF|Rs\.?)\s?\d[\d,]*(?:\.\d{2})?)/g;
+  const PRICE = /(?:[$€£¥₹]\s?\d[\d,]*(?:\.\d{2})?|\d[\d,.]*(?:[.,]\d{2})?\s?(?:USD|EUR|GBP|CHF|SEK|NOK|DKK|PLN|CZK|BRL|JPY|kr|zł|Kč|円|[€£$])(?!\w)|(?:CHF|BRL|PLN|CZK|SEK|NOK|DKK|Rs\.?)\s?\d[\d,]*(?:\.\d{2})?)/g;
   const FOOD_WORDS = /\b(entr[ée]es?|appetizers?|starters?|sides|desserts?|grilled|fried|roasted|sauce|salad|burger|sandwich|pasta|pizza|tacos?|soup|vegan|vegetarian|gluten|aioli|chicken|beef|tofu|dressing)\b/gi;
 
   const hostMatches = (host, list) => list.some((d) => host === d || host.endsWith(`.${d}`));

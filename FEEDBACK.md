@@ -2365,3 +2365,13 @@ As a user, the worst problem was a wrong answer. "ENOSPC: System limit for numbe
 Fixed: added table entries for the file watcher limit and for npm package not found, and the command not found entry now matches the PowerShell wording. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: pip "Could not find a version", Rust E0502, TypeScript TS2339, Invalid hook call and Maximum update depth in React, exit code 137, CrashLoopBackOff, ImagePullBackOff and Spring HttpRequestMethodNotSupportedException have no entry. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-14 — page kinds, shops priced in kr, zł and yen (twelfth pass)
+
+Tried 14 shop pages with three prices and an add to cart button, priced as 199 kr, 99,99 zł, 199 Kč, 1,980円, 99 PLN, BRL 49,90, 19.99 $ and also $199 MXN, A$, C$, ₹ and € 19,99.
+
+As a user, a Scandinavian, Polish, Czech, Japanese or Brazilian shop in local format was seen as an ordinary page. The shopping chips and the price offer never showed up.
+
+Fixed: the price pattern in extension/lib/page-kind.js now accepts kr, zł, Kč, 円, a trailing $ and the SEK, NOK, DKK, PLN, CZK, BRL and JPY codes before or after the number. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: Codeberg is not a code host, Google Docs is "other", and a bank on an unknown domain is not caught by words in its title. Prices in shopping.js (PRICE_TEXT) still only know $, €, £, ¥ and ₹ symbols, so comparing on those shops may still fail. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
