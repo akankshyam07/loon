@@ -2385,3 +2385,13 @@ As a user, the worst problem was that laughing at an answer or saying "got it" c
 Fixed: laughs and plain acknowledgements now get an instant reply from code. The same words followed by a request still go to the model. Test added in test/brain.test.js and checked to fail before the change.
 
 Left for later: emoji-only replies are cleaned to an empty key and still go to the model. "cool", "ok", "yes" and "no" are left alone on purpose because they can answer a question from the cat. The failures in `npm test` are the same ones as on main in this sandbox (missing built data and dependencies).
+
+## 2026-11-14 — settings UI, reply style feedback (tenth pass)
+
+Tried 48 style and language requests such as "switch back to english", "way shorter", "a lot shorter", "spanish please", "explain more", "be funnier", "ELI5", "shorter and no emoji" and "reply in japanese only".
+
+As a user, the most annoying miss was "switch back to english" after asking for Spanish. It went to the model as a question and the setting stayed on Spanish. "way shorter" and "a lot shorter" also did nothing.
+
+Fixed: parseFeedback in brain/personal.js now reads "switch back to", "change back to" and "go back to" a language, and ignores "a lot", "way" and "far" as intensity words. Test added in test/personal.test.js and checked to fail before the change.
+
+Left for later: bare "spanish please" and "in spanish" are ambiguous with a translate request, so they stay with the model. Combined requests like "shorter and no emoji" only change nothing. "ELI5" and "simpler" have no matching setting. The 5 failing tests in `npm test` are the usual sandbox ones.

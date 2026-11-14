@@ -186,6 +186,9 @@ test('feedback messages change the reply style in code, before the model', async
   assert.deepStrictEqual(parseFeedback('That was too long!').patch, { length: 'short' });
   assert.deepStrictEqual(parseFeedback('more detail').patch, { length: 'detailed' });
   assert.deepStrictEqual(parseFeedback('make it longer').patch, { length: 'detailed' });
+  assert.deepStrictEqual(parseFeedback('way shorter please').patch, { length: 'short' });
+  assert.deepStrictEqual(parseFeedback('a lot more detail').patch, { length: 'detailed' });
+  assert.deepStrictEqual(parseFeedback('switch back to English').patch, { language: '' });
   assert.deepStrictEqual(parseFeedback('answer in more detail').patch, { length: 'detailed' });
   assert.deepStrictEqual(parseFeedback('be casual').patch, { tone: 'playful' });
   assert.deepStrictEqual(parseFeedback('less detail').patch, { length: 'short' });

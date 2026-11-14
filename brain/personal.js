@@ -71,7 +71,7 @@ function parseFeedback(text, current = PERSONAL_DEFAULTS) {
   const raw = String(text || '').toLowerCase();
   if (!raw.trim() || raw.length > 80) return null;
   const t = raw.replace(/[!.?]+\s*$/, '')
-    .replace(/\b(?:please|pls|plz|loon|hey|ok(?:ay)?|can you|could you|would you|try to|a bit|a little|much|kinda|slightly|from now on|going forward|next time|in (?:the )?future|always)\b/g, ' ')
+    .replace(/\b(?:please|pls|plz|loon|hey|ok(?:ay)?|can you|could you|would you|try to|a bit|a little|a lot|way|far|much|kinda|slightly|from now on|going forward|next time|in (?:the )?future|always)\b/g, ' ')
     .replace(/[,]|\p{Extended_Pictographic}/gu, ' ').replace(/\s+/g, ' ').trim();
   const p = cleanPersonal(current);
   for (const [re, patchFor] of FEEDBACK) {
@@ -80,7 +80,7 @@ function parseFeedback(text, current = PERSONAL_DEFAULTS) {
     const [key, value] = Object.entries(patch)[0];
     return { patch, note: `Got it, ${NOTES[key][String(value)]}. Change it in Settings.` };
   }
-  const lang = t.match(/^(?:(?:reply|answer|respond|talk|speak|write)(?: to me| me)?(?: only)? in|only (?:reply|answer|respond|speak|write) in|(?:go )?back to|(?:switch|change) to|speak) ([a-z]+)(?: only)?$/);
+  const lang = t.match(/^(?:(?:reply|answer|respond|talk|speak|write)(?: to me| me)?(?: only)? in|only (?:reply|answer|respond|speak|write) in|(?:(?:switch|change|go) )?back to|(?:switch|change) to|speak) ([a-z]+)(?: only)?$/);
   if (lang && LANGUAGES.includes(lang[1])) {
     const language = lang[1] === 'english' ? '' : lang[1][0].toUpperCase() + lang[1].slice(1);
     return { patch: { language }, note: `Got it, ${language ? `I'll reply in ${language}` : 'back to English'} from now on. Change it in Settings.` };
