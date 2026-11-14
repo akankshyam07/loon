@@ -71,6 +71,8 @@ const RULES = [
   {
     kind: 'secret',
     re: /\b(password|passcode|passphrase|mot de passe|mdp|contraseña|clave|passwort|kennwort|pw|pin|cvv|cvc)(\s+(?:is|est|es|ist)\s*[:=]?\s*|\s*[:=]\s*)(?:(["'])(?!\[redacted)([^"'\n]{3,})\3|(?!\[redacted)([^\s"',;]{3,}))/gi,
+    // "password is incorrect" is an error message, not a password
+    valid: (m) => !/\s(?:is|est|es|ist)\s+(?:incorrect|invalid|required|wrong|missing|empty|expired|too|not|weak|strong|correct|valid|blank|mandatory|optional|changed|updated|reset|saved|set|case|hidden)$/i.test(m),
     replace: (m, name, sep, quote) => `${name}${sep}${quote || ''}[redacted:secret]${quote || ''}`,
   },
   {

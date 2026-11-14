@@ -2345,3 +2345,13 @@ As a user, nearly everything parsed well. The worst problem was "every week day 
 Fixed: the weekday rule now accepts "week day" with a space. Test added in test/routines.test.js and checked to fail before the change.
 
 Left for later: "every day at 9am and 9pm" and "every last friday of the month" correctly ask instead of guessing, but could be supported. "daily at 6" is still read as 6pm.
+
+## 2026-11-14 — memory and privacy, redaction (thirteenth pass)
+
+Tried 34 snippets such as spoken passwords, .env lines, curl headers and users, connection strings, cvv and SSN variants, Wi-Fi passwords, placeholders like `${SECRET_KEY}` and error messages that mention passwords.
+
+As a user, the annoying case was over-redaction. "Error: password is required" and "the password is incorrect" became "password is [redacted:secret]", so the model lost the actual error I wanted explained.
+
+Fixed: the spoken "password is X" rule skips common error words (incorrect, required, invalid, missing, expired and similar). Real values like "my password is swordfish" are still hidden. Test added in test/browser.test.js.
+
+Left for later: an unquoted multi-word password ("password: correct horse battery staple") still leaks the later words. Phone numbers and emails are not hidden.

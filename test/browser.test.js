@@ -286,3 +286,9 @@ test('redaction hides docker login and sshpass passwords and bare Authorization 
   assert.equal(redact('Authorization: abcd1234efgh5678ijkl').text, 'Authorization: [redacted:token]');
   assert.equal(redact('Authorization: Bearer abcdefghijklmnop1234').count, 1);
 });
+
+test('redaction leaves error messages like "password is incorrect" alone but still hides spoken passwords', () => {
+  assert.equal(redact('Error: password is required').count, 0);
+  assert.equal(redact('the password is incorrect').text, 'the password is incorrect');
+  assert.equal(redact('my password is swordfish').text, 'my password is [redacted:secret]');
+});
