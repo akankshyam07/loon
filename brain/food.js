@@ -7,7 +7,7 @@ const PRICE = /([$€£])\s?(\d+(?:[.,]\d{1,2})?)(?:\s?[-–—]\s?\d+(?:[.,]\d{
 const NOT_A_DISH = /\b(off|(?<!-)free|delivery|tax|tip|service charge|discount|coupon|minimum|surcharge)\b|^\s*(add|extra|\+)/i;
 // A bare whole number after these words is a table, page or serving count, not a price
 const NOT_A_PRICE_NUMBER = /\b(table|section|page|step|serves?|size|no|number|pcs|pieces|day|days|menu|part|course|item|call|tel|phone|open|level|floor)\s+\d+\s*$/i;
-const HEAVY = { fried: 3, 'deep-fried': 4, crispy: 2, battered: 3, breaded: 2, creamy: 2, cream: 2, cheese: 1.5, cheesy: 2, alfredo: 3, aioli: 2, mayo: 2, butter: 1.5, bacon: 2, sausage: 2, loaded: 2, smothered: 2, gravy: 2, carbonara: 3, ranch: 1.5, fries: 2, 'double': 1.5, pastry: 2, 'pork belly': 3 };
+const HEAVY = { fried: 3, 'deep-fried': 4, crispy: 2, battered: 3, breaded: 2, creamy: 2, cream: 2, cheese: 1.5, cheesy: 2, alfredo: 3, aioli: 2, mayo: 2, butter: 1.5, bacon: 2, sausage: 2, loaded: 2, smothered: 2, gravy: 2, carbonara: 3, ranch: 1.5, hollandaise: 2, tempura: 3, gratin: 2, korma: 2, fries: 2, 'double': 1.5, pastry: 2, 'pork belly': 3 };
 const LIGHT = { grilled: -2, steamed: -3, baked: -1, roasted: -1, poached: -2, salad: -2, broth: -2, 'raw': -1, sashimi: -2, vinaigrette: -1, greens: -1, vegetable: -1, veggie: -1, lean: -2 };
 const PROTEIN = /\b(chicken|turkey|salmon|tuna|shrimp|prawns?|beef|steak|pork|tofu|tempeh|egg whites?|eggs?|lentils?|chickpeas?|beans|edamame|greek yogurt|cod|fish|seitan|falafel|lamb|duck|paneer|dal|chana)\b/gi;
 // Classic recipes hide meat or fish in these dishes (anchovy in Caesar, bacon in Cobb, guanciale in carbonara, beef stock in French onion)

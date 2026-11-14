@@ -2405,3 +2405,13 @@ As a user, the natural "other ways to say X" and "a better word for X" forms ski
 Fixed: synonymTerm accepts "better/other/different/another word(s) or way(s) for or to say", "words that mean" and "a word meaning". antonymTerm accepts "opposite word for" and "contrary of". Assertions added in test/brain.test.js. They fail before the change.
 
 Left for later: "reverse of X" is ambiguous (it is also a code ask) so it still goes to the model. "hot opposite", "opposite hot" and lists like "antonyms for good and bad" are not parsed. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-14 — food and menu (fifteenth pass)
+
+Tried a 22 item menu with starters and mains in the usual price formats, and asked for lightest, highest protein and vegetarian picks.
+
+As a user, "Poached Eggs Benedict with hollandaise" showed up as a light and high protein pick because "poached" counts as light and hollandaise (a butter sauce) was unknown. Tempura, gratin and korma had the same blind spot.
+
+Fixed: added hollandaise, tempura, gratin and korma to the heavy words in brain/food.js. Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: Eggs Benedict still counts as vegetarian, which is right, but "Chicken Tikka Masala" has no cream signal. Protein ranking only counts distinct protein words, so a large steak and a small egg side tie. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

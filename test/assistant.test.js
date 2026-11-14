@@ -425,3 +425,11 @@ test('commands: time-first reminders, "hey loon" prefix and m:ss timers', () => 
   assert.strictEqual(parseCommand('set a timer for 2 mins 30 secs', now).when.getTime(), now.getTime() + 150 * 1000);
   assert.strictEqual(parseCommand('timer 90 secs', now).when.getTime(), now.getTime() + 90 * 1000);
 });
+
+test('food: rich sauces and tempura are not light picks', () => {
+  const { score } = require('../brain/food');
+  const items = extractMenu('Poached Eggs Benedict with hollandaise $15\nShrimp Tempura $13\nSteamed Fish with greens $18');
+  assert.ok(score(items[0]).heaviness >= 0);
+  assert.ok(score(items[1]).heaviness >= 3);
+  assert.ok(recommend(items, 'lightest').text.startsWith('**Lightest picks**\n- **Steamed Fish'));
+});
