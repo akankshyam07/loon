@@ -120,7 +120,9 @@ function parseCommand(input, now = new Date()) {
     if (/^(?:an? |file |link$|app$|page$|website$|site$)| (?:and|&) /i.test(target)) return null;
     const folder = target.match(/^(?:~\/|(?:my )?(?:the )?)(downloads|documents|desktop|pictures|movies|music|applications)(?: folder)?$/i);
     if (folder) return { action: 'open', target: `~/${folder[1][0].toUpperCase()}${folder[1].slice(1).toLowerCase()}`.replace('~/Applications', '/Applications'), kind: 'folder' };
-    const isUrl = /^(https?:\/\/)?[\w-]+(\.[\w-]+)+(\/\S*)?$/i.test(target) && (/^https?:|\/|^www\./i.test(target) || !/\.(?:js|ts|txt|md|py|json|java|pdf|png|jpe?g|csv|zip|docx?|xlsx?|html?)$|^v?\d+(?:\.\d+)+$/i.test(target) || /^\d+(?:\.\d+){3}$/.test(target));
+    // Paths and file names aren't apps either, and Loon doesn't open files it can't name safely.
+    if (/^[/~]|^[\w. -]+\.(?:js|ts|txt|md|py|json|java|pdf|png|jpe?g|csv|zip|docx?|xlsx?|html?|dmg|sh|app)$/i.test(target)) return null;
+    const isUrl = /^(https?:\/\/)?[\w-]+(\.[\w-]+)+([/?#]\S*)?$/i.test(target) && (/^https?:|[/?#]|^www\./i.test(target) || !/\.(?:js|ts|txt|md|py|json|java|pdf|png|jpe?g|csv|zip|docx?|xlsx?|html?)$|^v?\d+(?:\.\d+)+$/i.test(target) || /^\d+(?:\.\d+){3}$/.test(target));
     return { action: 'open', target: isUrl && !/^https?:/i.test(target) ? `https://${target}` : target, kind: isUrl ? 'url' : 'app' };
   }
   if ((m = text.match(/^(?:(?:search|look (?:through|in)|find in|pull up)(?: my)? history(?: for)?|(?:(?:show|pull up)(?: me)? )?(?:my )?history (?:for|on|about)) (.+?)\??$/i)) || (m = text.match(/^(?:find|search for|look for) (.+?) in (?:my )?history\??$/i))) return { action: 'recall', query: recallQuery(m[1]) };

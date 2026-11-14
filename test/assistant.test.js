@@ -27,6 +27,9 @@ test('commands: reminders, events, open, find, notes, memory; questions fall thr
   assert.deepStrictEqual(parseCommand('can you open Spotify', NOW), { action: 'open', target: 'Spotify', kind: 'app' });
   // Not app names, so no confirm card for an app that does not exist.
   for (const q of ['open a new tab', 'open an incognito window', 'open the file report.pdf', 'open Slack and Teams', 'open the link']) assert.strictEqual(parseCommand(q, NOW), null, q);
+  // File names and paths are not apps, and a link with a query string is still a link.
+  for (const q of ['open report.pdf', 'open /tmp', 'open ~/Desktop/a.txt']) assert.strictEqual(parseCommand(q, NOW), null, q);
+  assert.deepStrictEqual(parseCommand('open https://x.com?a=b', NOW), { action: 'open', target: 'https://x.com?a=b', kind: 'url' });
   // "create a reminder" is a reminder, not a calendar event.
   for (const q of ['create a reminder to email bob on friday', 'add a reminder to email bob on friday']) {
     const r = parseCommand(q, NOW);
@@ -39,7 +42,7 @@ test('commands: reminders, events, open, find, notes, memory; questions fall thr
   // App names lose "the" and "app", file names are not websites, and "open it" has nothing to open.
   assert.deepStrictEqual(parseCommand('open the Calculator app', NOW), { action: 'open', target: 'Calculator', kind: 'app' });
   assert.deepStrictEqual(parseCommand('launch chrome', NOW), { action: 'open', target: 'chrome', kind: 'app' });
-  assert.deepStrictEqual(parseCommand('open notes.txt', NOW), { action: 'open', target: 'notes.txt', kind: 'app' });
+  assert.strictEqual(parseCommand('open notes.txt', NOW), null);
   assert.deepStrictEqual(parseCommand('open reddit.com/r/cats', NOW), { action: 'open', target: 'https://reddit.com/r/cats', kind: 'url' });
   assert.strictEqual(parseCommand('open that link', NOW), null);
   // Two-step requests go to the chat, local servers are web links, quotes around an app name are dropped.

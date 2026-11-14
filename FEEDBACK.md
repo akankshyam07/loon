@@ -2315,3 +2315,13 @@ As a user, "Vegan Chicken Wings" was listed as "protein from chicken", which is 
 Fixed: the protein check now removes the same meat-free phrases (vegan chicken, plant-based ribs and so on) before matching. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: "Plant-based Beef Tacos" still says protein from beef because tacos is not in the list of meat-free dish words. Egg fried rice and nasi goreng are still called likely vegetarian. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-14 — open and launch commands (fifth pass)
+
+Tried 44 phrasings such as "open report.pdf", "open notes.txt", "open /tmp", "open ~", "open ~/Desktop/a.txt", "open https://x.com?a=b", "open Spotify!", "open vs code", "open the trash" and "open terminal and run ls".
+
+As a user, file names and paths got a confirm card to launch an app called "report.pdf" or "/tmp", and macOS then failed. A link with a query string and no slash, like "https://x.com?a=b", was also treated as an app.
+
+Fixed: names ending in a common file extension and anything starting with "/" or "~" now go to the chat, and "?" or "#" count as part of a link. Test added in test/assistant.test.js. One older assertion expected "open notes.txt" to launch an app, and I changed it to expect the chat since that card could only fail.
+
+Left for later: "open the trash", "open home folder" and "open 192.168.1.1" (opened as https) are still off. Opening a file by name could be a separate confirmed action. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
