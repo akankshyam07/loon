@@ -226,6 +226,14 @@ test('errors: fingerprint ignores paths/values; known errors answer from the tab
   assert.match(lookupKnown("The term 'git' is not recognized as the name of a cmdlet, function, script file"), /Command not found/);
   assert.match(lookupKnown("Error: EMFILE: too many open files, open 'a.txt'"), /Too many open files/);
   assert.match(lookupKnown('zsh: Segmentation fault  ./a.out'), /Segmentation fault/);
+  assert.match(lookupKnown('ERROR: No matching distribution found for foo'), /pip can/);
+  assert.match(lookupKnown('Error: Invalid hook call. Hooks can only be called inside of the body'), /Invalid hook call/);
+  assert.match(lookupKnown('Error: Too many re-renders. React limits the number of renders'), /Render loop/);
+  assert.match(lookupKnown("error TS2339: Property 'foo' does not exist on type 'Bar'."), /does not exist on type/);
+  assert.match(lookupKnown('error[E0502]: cannot borrow `v` as mutable because it is also borrowed as immutable'), /Borrow conflict/);
+  assert.match(lookupKnown('web-1  0/1  CrashLoopBackOff  5  3m'), /CrashLoopBackOff/);
+  assert.match(lookupKnown('Back-off pulling image "foo:latest"\nImagePullBackOff'), /Image pull failed/);
+  assert.match(lookupKnown('Container exited with code 137'), /exit 137/);
   assert.match(lookupKnown('Error: unable to verify the first certificate'), /Certificate not trusted/);
   assert.match(lookupKnown("error: failed to push some refs to 'origin'"), /push rejected/);
   assert.match(lookupKnown('Main.java:5: error: cannot find symbol'), /Cannot find symbol/);

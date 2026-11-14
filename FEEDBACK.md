@@ -2425,3 +2425,13 @@ As a user, the worst problem was Shopify style labels. "Regular price $20.00 Sal
 Fixed: parsePrice in brain/shopping.js now treats "sale price", "sale", "current price" and "our price" like "now" and takes the number after the last one. It only does so when a number follows, so "Was $20 (sale ends soon)" still gives 20. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: a price range ("$5.00 - $7.00") uses the low end, "$1,299.00 $999.00" with no label takes the first number, and "List Price: $29.99 Price: $19.99" takes the list price. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-14 — developer help, error table (fourteenth pass)
+
+Tried 36 pasted errors from pip, Rust, TypeScript, React, Kubernetes, Docker, git, Go, Python and Node, picking the gaps named in the last pass.
+
+As a user, eight common errors got no instant answer and went to the slow local model, such as pip "No matching distribution found", React "Invalid hook call" and "Too many re-renders", TypeScript TS2339, Rust E0502, CrashLoopBackOff, ImagePullBackOff and exit code 137.
+
+Fixed: added table entries for those, in brain/errors.js. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: a git "Permission denied (publickey)" entry. An existing test says that error must not match, so I did not touch it, and it still goes to the model. Rust "linker cc not found" and Docker "failed to solve" also have no entry. The 38 failures in `npm test` are the same as on main in this sandbox (missing dependencies and built data).

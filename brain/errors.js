@@ -514,6 +514,54 @@ const KNOWN = [
     explain: 'The request never got a response. The server was unreachable, DNS failed, the connection was blocked, or in a browser CORS or mixed content stopped it.',
     fix: ['Look at the `cause` on the error (Node) or the browser Network tab for the real reason, like ECONNREFUSED or a certificate problem.', 'Check the URL, that the server is running, and in a browser the CORS headers.'],
   },
+  {
+    match: /No matching distribution found|Could not find a version that satisfies the requirement/i,
+    title: 'pip can’t find that package version (Python)',
+    explain: 'pip found nothing it can install for that name and version. Usual causes are a typo, a Python version the package does not support, or an index that is not reachable.',
+    fix: ['Check the spelling on pypi.org.', 'Check `python --version` against the package’s supported versions, and try `python -m pip install --upgrade pip`.', 'If you use a private index or a proxy, check `--index-url` and your network.'],
+  },
+  {
+    match: /Invalid hook call/i,
+    title: 'Invalid hook call (React)',
+    explain: 'A hook such as `useState` ran somewhere React does not allow. That is outside a function component, inside a loop or condition, or in a second copy of React.',
+    fix: ['Call hooks only at the top level of a component or a custom `use…` function.', 'Run `npm ls react react-dom` and make sure there is only one copy and the versions match.', 'Check a library you linked locally is not bringing its own React.'],
+  },
+  {
+    match: /Too many re-renders|Maximum update depth exceeded/i,
+    title: 'Render loop (React)',
+    explain: 'State is being set during every render or effect, which triggers another render, forever. React stops it after a limit.',
+    fix: ['Look for `onClick={fn()}` that should be `onClick={() => fn()}`, and for `setX(...)` written directly in the component body.', 'In a `useEffect`, check the dependency array. An object or function created each render makes it run every time.'],
+  },
+  {
+    match: /error TS2339|Property '[^']+' does not exist on type/i,
+    title: 'Property does not exist on type (TypeScript)',
+    explain: 'TypeScript does not think that object has that property. The type is missing it, it is wider than you expect, or the name is misspelled.',
+    fix: ['Check the spelling and the type’s definition.', 'Narrow the value first with `if (\'foo\' in x)` or a type guard if it can be several types.', 'Add the field to the interface, or fix the type that is coming from a library.'],
+  },
+  {
+    match: /error\[E0502\]|error\[E0499\]/,
+    title: 'Borrow conflict (Rust)',
+    explain: 'You hold a reference to a value and try to change it (or borrow it mutably) while that reference is still in use. Rust allows many readers or one writer, never both.',
+    fix: ['Finish using the first reference before the mutable use, or end its scope earlier.', 'Clone the data you need (`.clone()`) or copy out the value before mutating.', 'Restructure so reading and writing happen in separate steps.'],
+  },
+  {
+    match: /CrashLoopBackOff/,
+    title: 'CrashLoopBackOff (Kubernetes)',
+    explain: 'The container starts, crashes, and Kubernetes keeps restarting it with longer waits in between.',
+    fix: ['Read why it died with `kubectl logs <pod> --previous`.', '`kubectl describe pod <pod>` shows the exit code and events. Exit code 137 often means it ran out of memory.', 'Check the command, environment variables, config and probes the container needs at startup.'],
+  },
+  {
+    match: /ImagePullBackOff|ErrImagePull/,
+    title: 'Image pull failed (Kubernetes)',
+    explain: 'The cluster could not download the container image, so the pod never started.',
+    fix: ['Check the image name and tag for typos with `kubectl describe pod <pod>`.', 'For a private registry, create an image pull secret and reference it in the pod spec.', 'Check the node can reach the registry.'],
+  },
+  {
+    match: /exit(?:ed)? (?:with )?code 137|exit code: 137|\bOOMKilled\b/i,
+    title: 'Process killed, probably out of memory (exit 137)',
+    explain: 'Exit code 137 means the process was killed with SIGKILL. In containers that is almost always the memory limit.',
+    fix: ['Raise the memory limit for the container or pod, or give Docker Desktop more memory.', 'Find the leak or the large load, like reading a big file whole.', 'Confirm with `docker inspect <id>` (`OOMKilled`) or `kubectl describe pod <pod>`.'],
+  },
 ];
 
 function lookupKnown(text) {
