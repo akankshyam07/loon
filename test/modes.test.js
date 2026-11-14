@@ -214,6 +214,9 @@ test('errors: fingerprint ignores paths/values; known errors answer from the tab
   assert.match(lookupKnown('npm ERR! code ELIFECYCLE'), /npm script failed/);
   assert.match(lookupKnown('npm ERR! code ERESOLVE\nnpm ERR! ERESOLVE could not resolve'), /dependency conflict/);
   assert.match(lookupKnown('ENOSPC: no space left on device, write'), /Disk full/);
+  assert.match(lookupKnown('Error: ENOSPC: System limit for number of file watchers reached, watch src'), /file watchers/);
+  assert.match(lookupKnown('npm ERR! code E404\nnpm ERR! 404 Not Found - GET https://registry.npmjs.org/foo'), /npm package not found/);
+  assert.match(lookupKnown("The term 'git' is not recognized as the name of a cmdlet, function, script file"), /Command not found/);
   assert.match(lookupKnown("Error: EMFILE: too many open files, open 'a.txt'"), /Too many open files/);
   assert.match(lookupKnown('zsh: Segmentation fault  ./a.out'), /Segmentation fault/);
   assert.match(lookupKnown('Error: unable to verify the first certificate'), /Certificate not trusted/);

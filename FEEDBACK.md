@@ -2355,3 +2355,13 @@ As a user, the annoying case was over-redaction. "Error: password is required" a
 Fixed: the spoken "password is X" rule skips common error words (incorrect, required, invalid, missing, expired and similar). Real values like "my password is swordfish" are still hidden. Test added in test/browser.test.js.
 
 Left for later: an unquoted multi-word password ("password: correct horse battery staple") still leaks the later words. Phone numbers and emails are not hidden.
+
+## 2026-11-14 — developer help, error table (thirteenth pass)
+
+Tried 50 pasted errors from Node, React, Python, Java, Rust, Go, git, npm, SQL, Docker, Kubernetes and PowerShell.
+
+As a user, the worst problem was a wrong answer. "ENOSPC: System limit for number of file watchers reached" was explained as a full disk, which sent people to clean files when the fix is an inotify limit. An npm "code E404" for a missing package was explained as a web page 404. PowerShell's "is not recognized as the name of a cmdlet" was not recognized as a missing command.
+
+Fixed: added table entries for the file watcher limit and for npm package not found, and the command not found entry now matches the PowerShell wording. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: pip "Could not find a version", Rust E0502, TypeScript TS2339, Invalid hook call and Maximum update depth in React, exit code 137, CrashLoopBackOff, ImagePullBackOff and Spring HttpRequestMethodNotSupportedException have no entry. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

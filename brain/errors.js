@@ -173,10 +173,22 @@ const KNOWN = [
     fix: ['Check `document.querySelector(...)` really returned an element.', 'Run the script after the page has loaded (`defer` or `DOMContentLoaded`).'],
   },
   {
-    match: /: command not found|command not found:/,
+    match: /: command not found|command not found:|is not recognized as the name of a cmdlet/,
     title: 'Command not found',
     explain: 'The shell can’t find a program with that name: it isn’t installed, or isn’t on your PATH.',
     fix: ['Check the spelling.', 'Install it (`brew install <name>` on macOS).', 'Tools like nvm or conda need their init lines in `~/.zshrc`, then open a new terminal.'],
+  },
+  {
+    match: /npm (?:ERR!|error) (?:code E404|404)/,
+    title: 'npm package not found',
+    explain: 'The npm registry has no package with that name or version, or you have no access to it. This is not a web page 404.',
+    fix: ['Check the package name and version for typos (`npm view <name> versions`).', 'For a private or scoped package, log in with `npm login` and check the registry in `.npmrc`.'],
+  },
+  {
+    match: /ENOSPC.*(?:file watchers|inotify)|inotify.*(?:limit|watch)/i,
+    title: 'Too many file watchers (Linux)',
+    explain: 'Your dev server or editor tried to watch more files than the system allows. The disk is not full.',
+    fix: ['Raise the limit: `echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p`.', 'Or ignore `node_modules` and build folders in the watcher config.'],
   },
   {
     match: /ERESOLVE/,
