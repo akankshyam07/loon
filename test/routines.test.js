@@ -516,3 +516,9 @@ test('"every 1st" means the date, and "half past 8" is read as a clock time', ()
   assert.strictEqual(R.parseSchedule('every day at quarter to 9 tea', NOW).schedule.time, '08:45');
   assert.strictEqual(R.parseRoutine('every day at half past 8 tea', { now: NOW }).label, 'Tea');
 });
+
+test('"every week day" means weekdays, not weekly plus a stray word', () => {
+  const s = R.parseRoutine('every week day at 9 remind me to check mail', { now: NOW });
+  assert.deepStrictEqual(s.schedule.days, [1, 2, 3, 4, 5]);
+  assert.strictEqual(s.label, 'Check mail');
+});

@@ -114,7 +114,7 @@ function parseSchedule(input, now = new Date(), { allowOnce = false } = {}) {
   // A named day wins, so "every friday say have a good weekend" keeps its message.
   const list = take(state, DAY_LIST) || take(state, DAY_PLURAL);
   if (list) days = [...new Set(list[1].split(/\s*(?:,|and|&)\s*|\s+/).map(dayIndex).filter((d) => d >= 0))].sort();
-  else if (take(state, /\b(?:every\s+|on\s+)?(?:weekdays?|work\s?days?)\b/i)) days = WEEKDAYS;
+  else if (take(state, /\b(?:every\s+|on\s+)?(?:week\s?days?|work\s?days?)\b/i)) days = WEEKDAYS;
   else if (take(state, /\b(?:every\s+|on\s+)?weekends?\b/i)) days = WEEKEND;
   if (except) {
     const skip = except[1].split(/\s*(?:,|and|&|or)\s*|\s+/).map(dayIndex);

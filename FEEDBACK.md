@@ -2335,3 +2335,13 @@ As a user, the worst problem was that "dairy-free" and "gluten free" were saved 
 Fixed: the allergy box now turns "X-free" into "I avoid X", and emoji are dropped from list answers before the "none" check. Test added in test/personal.test.js and checked to fail before the change.
 
 Left for later: "nothing really, just dislike cilantro" and "only mild to cats" are still saved as allergies, and a name with a trailing sentence ("Bob and I like pizza") is kept whole. The 5 failing tests in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-14 — routines (thirteenth pass)
+
+Tried 26 phrasings such as "daily at 6 remind me to stretch", "every night at 10 …", "remind me every friday at 5pm to …", "every tues at 3 …", "every 15 min …", "hourly …", "twice a day …", "every last friday of the month …" and "every week day at 9 …".
+
+As a user, nearly everything parsed well. The worst problem was "every week day at 9 remind me to check mail". It became a Saturday routine with the label "Day remind me to check mail", which is wrong and looks confident.
+
+Fixed: the weekday rule now accepts "week day" with a space. Test added in test/routines.test.js and checked to fail before the change.
+
+Left for later: "every day at 9am and 9pm" and "every last friday of the month" correctly ask instead of guessing, but could be supported. "daily at 6" is still read as 6pm.
