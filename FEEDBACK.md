@@ -2325,3 +2325,13 @@ As a user, file names and paths got a confirm card to launch an app called "repo
 Fixed: names ending in a common file extension and anything starting with "/" or "~" now go to the chat, and "?" or "#" count as part of a link. Test added in test/assistant.test.js. One older assertion expected "open notes.txt" to launch an app, and I changed it to expect the chat since that card could only fail.
 
 Left for later: "open the trash", "open home folder" and "open 192.168.1.1" (opened as https) are still off. Opening a file by name could be a separate confirmed action. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-14 — onboarding first run, diet wording and emoji (twelfth pass)
+
+Tried 25 answers for the "Get to know you" boxes, such as "dairy-free", "gluten free", "none 🙂", "no allergies!", "Peanuts (severe)", "only mild to cats", "call me Ada", "Dr. Strange" and "chess 🎲, hiking".
+
+As a user, the worst problem was that "dairy-free" and "gluten free" were saved as "I'm allergic to dairy-free", and "none 🙂" was saved as an allergy to "none 🙂". Loon would then give wrong food advice from a wrong fact.
+
+Fixed: the allergy box now turns "X-free" into "I avoid X", and emoji are dropped from list answers before the "none" check. Test added in test/personal.test.js and checked to fail before the change.
+
+Left for later: "nothing really, just dislike cilantro" and "only mild to cats" are still saved as allergies, and a name with a trailing sentence ("Bob and I like pizza") is kept whole. The 5 failing tests in `npm test` are the usual WordNet and demo ones from the sandbox install.

@@ -339,3 +339,10 @@ test('onboarding: spoken lead-ins in the interests and allergy boxes are dropped
   assert.deepStrictEqual(onboardingResult({ interests: 'my interests are chess, hiking' }).facts, ["I'm interested in chess and hiking"]);
   assert.deepStrictEqual(onboardingResult({ allergies: 'my allergies are peanuts' }).facts, ["I'm allergic to peanuts"]);
 });
+
+test('onboarding reads "dairy-free" as a diet and ignores an emoji after "none"', () => {
+  assert.deepStrictEqual(onboardingResult({ allergies: 'dairy-free' }).facts, ['I avoid dairy']);
+  assert.deepStrictEqual(onboardingResult({ allergies: 'peanuts, gluten free' }).facts, ['I\'m allergic to peanuts', 'I avoid gluten']);
+  assert.deepStrictEqual(onboardingResult({ allergies: 'none 🙂' }).facts, []);
+  assert.deepStrictEqual(onboardingResult({ interests: 'chess 🎲, hiking' }).facts, ["I'm interested in chess and hiking"]);
+});

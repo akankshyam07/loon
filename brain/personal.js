@@ -214,7 +214,7 @@ const DIETS = { vegetarian: "I'm vegetarian", vegan: "I'm vegan", pescatarian: "
 const tidy = (text, max = 80) => String(text || '').replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
 // "None" and "n/a" are answers, not allergies; "I'm allergic to peanuts" is typed often, so the lead-in is dropped.
 const NO_ANSWER = /^(?:i (?:have|got|don'?t have)(?: any)? )?(?:(?:none|no|nope|nil|nothing|n\/?a|na|-+|idk|skip|pass|prefer not to say)(?: (?:known |food )?(?:allergies|really|at all|thanks?|that i know of))*|not (?:that i know of|really|sure)|i'?m not allergic to anything|i don'?t have any(?: allergies)?)$/i;
-const list = (text, split = /\s*(?:,|;|\band\b| & )\s*/i) => (NO_ANSWER.test(tidy(text, 200).replace(/[.!]+$/, '')) ? '' : tidy(text, 200)).replace(/^(?:(?:i(?:'m| am)\s+)?(?:allergic to|interested in|into)|i (?:like|love|enjoy)|my (?:allergies|interests) (?:is|are|include))\s+/i, '').split(split)
+const list = (text, split = /\s*(?:,|;|\band\b| & )\s*/i) => (NO_ANSWER.test(tidy(text, 200).replace(/[.!]+$/, '')) ? '' : tidy(text, 200)).replace(/\p{Extended_Pictographic}\uFE0F?/gu, '').trim().replace(/^(?:(?:i(?:'m| am)\s+)?(?:allergic to|interested in|into)|i (?:like|love|enjoy)|my (?:allergies|interests) (?:is|are|include))\s+/i, '').split(split)
   .map((x) => x.replace(/[.!]+$/, '').trim()).filter((x) => x && !NO_ANSWER.test(x))
   .filter((x, i, all) => all.findIndex((y) => y.toLowerCase() === x.toLowerCase()) === i).slice(0, 6);
 const joinList = (items) => (items.length > 1 ? `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}` : items[0] || '');
@@ -234,10 +234,14 @@ function onboardingResult(answers = {}) {
   // "peanuts/shellfish" is two allergies; "lactose intolerant" is not an allergy and gets its own wording.
   const intolerant = /\s+intoleran(?:t|ce)$/i;
   const food = list(answers.allergies, /\s*(?:,|;|\/|\band\b| & )\s*/i);
-  const allergies = food.filter((x) => !intolerant.test(x));
+  // "dairy-free" is a diet, not an allergy to "dairy-free".
+  const free = /[- ]free$/i;
+  const allergies = food.filter((x) => !intolerant.test(x) && !free.test(x));
+  const avoided = food.filter((x) => free.test(x)).map((x) => x.replace(free, ''));
   if (allergies.length) facts.push(`I'm allergic to ${joinList(allergies)}`);
   const intolerances = food.filter((x) => intolerant.test(x)).map((x) => x.replace(intolerant, ''));
   if (intolerances.length) facts.push(`I'm intolerant to ${joinList(intolerances)}`);
+  if (avoided.length) facts.push(`I avoid ${joinList(avoided)}`);
   const interests = list(answers.interests);
   if (interests.length) facts.push(`I'm interested in ${joinList(interests)}`);
   const personal = {};
