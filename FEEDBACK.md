@@ -2375,3 +2375,13 @@ As a user, a Scandinavian, Polish, Czech, Japanese or Brazilian shop in local fo
 Fixed: the price pattern in extension/lib/page-kind.js now accepts kr, zł, Kč, 円, a trailing $ and the SEK, NOK, DKK, PLN, CZK, BRL and JPY codes before or after the number. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: Codeberg is not a code host, Google Docs is "other", and a bank on an unknown domain is not caught by words in its title. Prices in shopping.js (PRICE_TEXT) still only know $, €, £, ¥ and ₹ symbols, so comparing on those shops may still fail. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-14 — follow-up conversations, laughs and acknowledgements (twelfth pass)
+
+Tried 40 short replies inside an open thread such as "lol", "LOLLL", "haha", "lmao", "got it", "ok got it", "makes sense", "i see", "understood", "noted", plus near misses such as "got it, now udp" and "lol what about ports".
+
+As a user, the worst problem was that laughing at an answer or saying "got it" cost a full local model call. The model replies slowly and sometimes with a new explanation nobody asked for.
+
+Fixed: laughs and plain acknowledgements now get an instant reply from code. The same words followed by a request still go to the model. Test added in test/brain.test.js and checked to fail before the change.
+
+Left for later: emoji-only replies are cleaned to an empty key and still go to the model. "cool", "ok", "yes" and "no" are left alone on purpose because they can answer a question from the cat. The failures in `npm test` are the same ones as on main in this sandbox (missing built data and dependencies).

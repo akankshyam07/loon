@@ -341,3 +341,18 @@ test('dictionary, synonym and antonym asks accept "can u" texting spelling', () 
   assert.strictEqual(synonymTerm('can u give me a synonym for happy'), 'happy');
   assert.strictEqual(antonymTerm('would u give me the opposite of hot'), 'hot');
 });
+
+test('ladder: laughs and "got it" mid-thread get an instant reply, with a request they still reach the model', async () => {
+  let asked = 0;
+  const brain = { modelId: () => 'fake', chat: async (_p, { onText }) => { asked++; onText('Sure.'); } };
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));
+  const resolver = new Resolver({ brain, cacheFile: path.join(dir, 'c.json'), countsFile: path.join(dir, 'n.json') });
+  const history = [{ question: 'explain tcp', answer: 'It is reliable.', target: 'fast' }];
+  for (const q of ['lol', 'LOLLL', 'haha', 'hahaha!', 'lmao', 'got it', 'ok got it', 'makes sense', 'i see', 'understood', 'noted']) {
+    assert.strictEqual((await resolver.ask(q, { onText: () => {}, firstInThread: false, history })).tier, 'code', q);
+  }
+  assert.strictEqual(asked, 0);
+  for (const q of ['got it, now udp', 'i see but why', 'lol what about ports']) {
+    assert.notStrictEqual((await resolver.ask(q, { onText: () => {}, firstInThread: false, history })).tier, 'code', q);
+  }
+});

@@ -110,6 +110,10 @@ const CODE_ANSWERS = [
     answer: () => ({ mood: 'happy', text: 'Aw, thanks. *purrs*' }),
   },
   {
+    match: /^(?:(?:ha){2,}h?|(?:he){2,}h?|lol+|lmao|lmfao|rofl|(?:that(?:'s| is) )?(?:funny|hilarious)|(?:ok |okay )?(?:got it|gotcha|makes sense|i see|understood|understand|noted))(?: (?:lol|loon))?$/,
+    answer: () => ({ mood: 'happy', text: '*tail flick* Ask away whenever.' }),
+  },
+  {
     match: /^(?:(?:oops|whoops|ah|oh|ok|okay)[ ,]+)?(?:sorry|my bad|my apologies|apologies|i(?:'m| am) sorry|sorry about that)(?: loon)?$/,
     answer: () => ({ mood: 'happy', text: 'No worries. *tail flick* Ask away.' }),
   },
