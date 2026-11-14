@@ -76,7 +76,7 @@ function dictionaryTerm(question) {
 }
 
 // "synonym for happy", "another word for big" → the word, or null.
-const SYNONYM_ASK = /^(?:(?:give me |find me |what(?:'?s| is| are) )?(?:a |some |the )?(?:synonyms?|another word|other words?|different word|similar words?|words similar|words? like)(?:\s+(?:for|of|to))?|(?:what(?:'?s| is) )?(?:a |another )?word for)\s+(?:the (?:word|term) )?["'“‘]?([\p{L}-]+)["'”’]?$|^([\p{L}-]+) synonyms?$/iu;
+const SYNONYM_ASK = /^(?:(?:give me |find me |what(?:'?s| is| are) )?(?:a |some |the )?(?:synonyms?|(?:another|other|different|better) (?:words?|ways?) (?:for|to say|of saying)|another word|other words?|different word|similar words?|words similar|words? like|words? (?:that mean|meaning))(?:\s+(?:for|of|to))?|(?:what(?:'?s| is) )?(?:a |another |a better )?word for)\s+(?:the (?:word|term) )?["'“‘]?([\p{L}-]+)["'”’]?$|^([\p{L}-]+) synonyms?$/iu;
 
 function cleanAsk(question) {
   return String(question || '').trim().replace(/[’‘]/g, "'")
@@ -90,7 +90,7 @@ function synonymTerm(question) {
 }
 
 // "opposite of happy", "antonym for big" → the word, or null.
-const ANTONYM_ASK = /^(?:(?:give me |find me |what(?:'?s| is| are) )?(?:the |an |some )?(?:opposites?|antonyms?)\s+(?:of|for|to)|what(?:'?s| is) the opposite of)\s+(?:the (?:word|term) )?["'“‘]?([\p{L}-]+)["'”’]?$|^([\p{L}-]+) antonyms?$/iu;
+const ANTONYM_ASK = /^(?:(?:give me |find me |what(?:'?s| is| are) )?(?:the |an |some )?(?:opposites?(?: words?)?|antonyms?|contrary)\s+(?:of|for|to)|what(?:'?s| is) the opposite of)\s+(?:the (?:word|term) )?["'“‘]?([\p{L}-]+)["'”’]?$|^([\p{L}-]+) antonyms?$/iu;
 
 function antonymTerm(question) {
   const m = cleanAsk(question).match(ANTONYM_ASK);

@@ -300,6 +300,11 @@ test('synonymTerm reads "synonym for X" and "another word for X"; synonyms lists
   assert.strictEqual(synonymTerm('synonym for this sentence'), null);
   assert.strictEqual(synonymTerm('other word for sad'), 'sad');
   assert.strictEqual(synonymTerm('words like happy'), 'happy');
+  assert.strictEqual(synonymTerm('a better word for said'), 'said');
+  assert.strictEqual(synonymTerm('other ways to say happy'), 'happy');
+  assert.strictEqual(synonymTerm('words that mean happy'), 'happy');
+  assert.strictEqual(require('../brain/define').antonymTerm('opposite word for hot'), 'hot');
+  assert.strictEqual(require('../brain/define').antonymTerm('contrary of hot'), 'hot');
   const text = await synonyms('big');
   assert.match(text, /^\*\*big\*\*: .*large/);
   assert.doesNotMatch(text, /\(a\)|_/);

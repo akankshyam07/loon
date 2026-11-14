@@ -2395,3 +2395,13 @@ As a user, the most annoying miss was "switch back to english" after asking for 
 Fixed: parseFeedback in brain/personal.js now reads "switch back to", "change back to" and "go back to" a language, and ignores "a lot", "way" and "far" as intensity words. Test added in test/personal.test.js and checked to fail before the change.
 
 Left for later: bare "spanish please" and "in spanish" are ambiguous with a translate request, so they stay with the model. Combined requests like "shorter and no emoji" only change nothing. "ELI5" and "simpler" have no matching setting. The 5 failing tests in `npm test` are the usual sandbox ones.
+
+## 2026-11-14 — translation and definitions (fourteenth pass)
+
+Tried 24 typed synonym and antonym asks such as "a better word for said", "other ways to say happy", "words that mean happy", "a word meaning happy", "opposite word for hot", "contrary of hot" and "antonyms for good and bad".
+
+As a user, the natural "other ways to say X" and "a better word for X" forms skipped the offline lookup and went to the language model, even though "another word for X" worked.
+
+Fixed: synonymTerm accepts "better/other/different/another word(s) or way(s) for or to say", "words that mean" and "a word meaning". antonymTerm accepts "opposite word for" and "contrary of". Assertions added in test/brain.test.js. They fail before the change.
+
+Left for later: "reverse of X" is ambiguous (it is also a code ask) so it still goes to the model. "hot opposite", "opposite hot" and lists like "antonyms for good and bad" are not parsed. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
