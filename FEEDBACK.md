@@ -2485,3 +2485,13 @@ As a user, the worst problem was that "call me Sam" and "from now on call me Sam
 Fixed: parseCommand now saves "call me X" (one or two plain words, so "call me back" and "call me when you land" are left alone) and accepts "you can / feel free to forget …". Test added in test/assistant.test.js.
 
 Left for later: "stop remembering things", "save this to memory" with nothing after it, "do you remember what I told you", "what's my name" and typos like "rembmer" still go to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-15 — developer help, JSON to DTO (eleventh pass)
+
+Tried 12 inputs for the DTO generator, among them keys like `first-name`, `2fa` and `user id`, mixed ISO dates, a top-level array with differing keys, JSON lines, nested arrays, an empty key, upper case keys like `URL` and a UUID value.
+
+As a user, nothing broke on the paths a person can reach. Java output uses `@JsonProperty` where a plain getter would not bind, TypeScript quotes odd keys, and an array of objects merges into one type with the missing field made nullable.
+
+Fixed: nothing, no code change.
+
+Left for later: the Kotlin entry in `DTO_LANGUAGES` fails with "Unknown value just-types for option framework" because `just-types` is a separate Kotlin option. No chip or command uses Kotlin, so a user cannot hit it, but it will break the day one is added. Two objects pasted back to back (`{"a":1}{"b":2}`) are reported as invalid JSON. There is also no typed way to ask for a DTO, only the chips on a selection. Typing "make a typescript interface from this json" goes to the model.
