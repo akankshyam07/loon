@@ -2465,3 +2465,13 @@ As a user, "make it casual" and its variants were not recognized as an edit. The
 Fixed: added a Casual task (brain/tasks.js, brain/router.js) and the spoken phrases for it (brain/intents.js). It is replaceable like Warmer. Cases added in test/voice.test.js and checked to fail before the change.
 
 Left for later: "make it longer", "expand this", "turn this into bullet points", "make it punchier" and "make this sound more confident" still go to the model as questions. "make this shorter and friendlier" combines two edits and is not split. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-15 — history (thirteenth pass)
+
+Tried 23 history phrasings such as "recall docker", "last thing we talked about", "clear my history", "forget my history", "erase my history" and "what did you tell me about docker".
+
+As a user, the worst problem was clearing history by voice or text. "forget my history" searched memories for the words "my history", and "clear my history" and "erase my history" went to the language model, which could claim it had cleared them.
+
+Fixed: parseCommand in brain/commands.js now reads these as a history wipe, and main/actions.js answers that it is done in Settings → History, the same way a blanket memory wipe is handled. Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: "recall docker", "what was that thing I asked about docker", "last thing we talked about", "recent questions about css", the typo "wat did i ask" and "what did you tell me about docker" are still not handled. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

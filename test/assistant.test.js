@@ -143,6 +143,14 @@ test('commands: remember to is a reminder, empty remembers save nothing, clearin
   for (const t of ['clear your memory', 'delete my memories', 'wipe all memory']) assert.strictEqual(parseCommand(t).all, true, t);
 });
 
+test('commands: "clear my history" points at Settings and never searches memories', () => {
+  for (const t of ['clear my history', 'forget my history', 'delete all history', 'erase my chat history', 'wipe the search history']) {
+    const c = parseCommand(t);
+    assert.ok(c && c.action === 'forget' && c.history && c.all, t);
+  }
+  assert.strictEqual(parseCommand('show history').action, 'recall');
+});
+
 test('commands: bare "remember that" saves nothing, "never forget" saves a fact, "delete memory about X" forgets X', () => {
   assert.strictEqual(parseCommand('remember that'), null);
   assert.strictEqual(parseCommand('remember this'), null);

@@ -149,6 +149,8 @@ function parseCommand(input, now = new Date()) {
   // "remember to buy milk" is a to-do, so it becomes a reminder. A bare "remember to" or "remember me" saves nothing.
   if ((m = text.match(/^(?:remember|(?:do not|don'?t|never) forget) to\s+(.+)$/i))) return parseCommand(`remind me to ${m[1]}`, now);
   if (/^(?:remember|(?:do not|don'?t|never) forget)(?: to| me| that| this)?[:,]?$/i.test(text)) return null;
+  // History is wiped in Settings only, like memory. Without this "forget my history" searched memories and the others reached the model, which might claim it cleared them.
+  if (/^(?:delete|remove|erase|forget|clear|wipe|reset) (?:all )?(?:of )?(?:my |the |your )?(?:chat |conversation |search )?history$/i.test(text)) return { action: 'forget', text: 'history', all: true, history: true };
   if (/^(?:delete|remove|erase|forget|clear|wipe) (?:absolutely )?(?:everything|all|what) (?:that )?you (?:know|remember|have saved|saved)(?: (?:about|on) me)?$/i.test(text)) return { action: 'forget', text: 'everything', all: true };
   if ((m = text.match(/^(?:delete|remove|erase|clear) (?:the |my |your )?(?:memory|memories|saved facts?) (?:about|of|on) (.+)$/i)) && tidy(m[1])) return { action: 'forget', text: tidy(m[1]), all: false };
   if (/^(?:delete|clear|wipe|erase|reset) (?:all )?(?:of )?(?:my |your |the )?(?:memory|memories)$/i.test(text)) return { action: 'forget', text: 'everything', all: true };
