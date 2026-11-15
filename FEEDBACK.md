@@ -2545,3 +2545,13 @@ As a user, the worst problem was that "I'm lactose intolerant" was saved as "I'm
 Fixed: the shared list reader drops "I'm", "allergies:", "interests:" and "hobbies:" lead-ins and treats "thanks" as no answer. The allergy box drops a trailing "allergy". The name box understands "I go by", and drops "pls" and "here". Test added in test/personal.test.js and checked to fail before the change.
 
 Left for later: "no nuts" is saved as an allergy to "no nuts", "celiac" and "lactose" alone are saved as allergies, "mild: dairy" keeps the severity word, and "but only mildly" becomes a second allergy. They need a decision on how far to interpret. The 5 other failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-15 — page kinds, banks and vaults outside the US (thirteenth pass)
+
+Tried 36 sites and forms, such as chase.com, a look-alike bankofamerica.com.evil.com, Canadian, Australian and European banks, robo-advisers, password vaults on .eu domains and a few login forms.
+
+As a user, the worst problem was that logged-in pages of bmo.com, scotiabank.com, cibc.com, westpac.com.au, anz.com, nab.com.au, n26.com, wealthfront.com, synchrony.com and bitwarden.eu counted as ordinary pages. Once the login form is gone there is no password field, so Loon would offer to read an account balance page.
+
+Fixed: these hosts, plus a few other lenders and a health booking site, are now in the sensitive list. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: a fixed list will always lag behind real banks. A page text check for "account balance" or "routing number" could catch the rest, but it needs a decision on false positives. login.salesforce.com and console.aws.amazon.com are still treated as ordinary pages. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
