@@ -44,6 +44,8 @@ test('spoken edits and explanations of a selection are templates', () => {
     'make it less wordy': 'shorter', 'make it brief': 'shorter', 'improve this': 'rewrite', 'polish it': 'rewrite', 'make this better': 'rewrite', 'fix grammer': 'fix_grammar', 'make it sound better': 'rewrite', 'make it clearer': 'rewrite', 'say it nicer': 'warmer', 'fix grammar and spelling': 'fix_grammar', 'say it shorter': 'shorter', 'make this a bit more polite': 'professional', 'write it more formally': 'professional',
     'pls shorten this': 'shorter', 'plz proofread': 'fix_grammar', 'shorten it pls': 'shorter', 'warmer': 'warmer', 'friendlier': 'warmer', 'more formal': 'professional', 'more professional': 'professional',
     'make this a lot shorter': 'shorter', 'rewrite this in a professional tone': 'professional', 'explain this in simple terms': 'simplify',
+    'make this more casual': 'casual', 'make it casual': 'casual', 'make it sound less formal': 'casual', 'write this more casually': 'casual',
+    'more casual': 'casual', 'rewrite this in a casual tone': 'casual',
     'Translate it': 'translate', 'Loon, translate this for me': 'translate', 'translate that into English': 'translate', 'translate the selection': 'translate', 'What does this say in English?': 'translate', "what's this in english": 'translate', 'this in english please': 'translate',
   };
   for (const [said, task] of Object.entries(expected)) {

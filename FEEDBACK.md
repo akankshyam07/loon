@@ -2455,3 +2455,13 @@ As a user, the worst problem was that common terminal and browser failures read 
 Fixed: the error line check in extension/lib/classify.js now covers these shapes. Plain prose such as "The quick brown fox" and "Your branch is ahead of 'origin/main'" stays prose. Cases added in test/browser.test.js and checked to fail before the change.
 
 Left for later: a bare "Traceback", "CORS error", "Connection refused", "Out of memory", "Killed: 9", "No such file or directory" and "ssh: connect to host ... timed out" are still not treated as errors, because short phrases like these are also ordinary words. The 38 failures in `npm test` here come from the sandbox install having no node_modules and are the same on main.
+
+## 2026-11-15 — writing tools by voice (tenth pass)
+
+Tried 40 spoken edit phrases on a selection, such as "make this more casual", "make it less formal", "write this more casually", "make it longer", "turn this into bullet points" and "make this sound more confident".
+
+As a user, "make it casual" and its variants were not recognized as an edit. They went to the model as a plain question, so the answer had no Replace or Copy actions, even though Professional and Warmer work that way.
+
+Fixed: added a Casual task (brain/tasks.js, brain/router.js) and the spoken phrases for it (brain/intents.js). It is replaceable like Warmer. Cases added in test/voice.test.js and checked to fail before the change.
+
+Left for later: "make it longer", "expand this", "turn this into bullet points", "make it punchier" and "make this sound more confident" still go to the model as questions. "make this shorter and friendlier" combines two edits and is not split. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
