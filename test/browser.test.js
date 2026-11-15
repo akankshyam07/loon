@@ -84,6 +84,13 @@ test('selection kinds treat unspaced CJK text by length', () => {
   assert.strictEqual(classifySelection("Access to fetch at 'http://a.com' from origin 'http://b.com' has been blocked by CORS policy"), 'stacktrace');
   assert.strictEqual(classifySelection("Cannot find module 'express'"), 'stacktrace');
   assert.strictEqual(classifySelection('Failed to load resource: the server responded with a status of 404 (Not Found)'), 'stacktrace');
+  for (const line of ['zsh: permission denied: ./run.sh', 'dyld: Library not loaded: libfoo.dylib', 'Permission denied (publickey).',
+    "Access denied for user 'root'@'localhost'", 'net::ERR_CONNECTION_REFUSED', 'CrashLoopBackOff', 'OOMKilled',
+    '! [rejected] main -> main (non-fast-forward)', 'CONFLICT (content): Merge conflict in a.txt',
+    'SSL: CERTIFICATE_VERIFY_FAILED', 'x509: certificate signed by unknown authority', 'Failed to fetch']) {
+    assert.strictEqual(classifySelection(line), 'stacktrace', line);
+  }
+  assert.strictEqual(classifySelection('The quick brown fox'), 'sentence');
   assert.strictEqual(classifySelection('console.log("hi")'), 'code');
   assert.strictEqual(classifySelection('x => x * 2'), 'code');
   assert.strictEqual(classifySelection('fn main() { println!("hi"); }'), 'code');

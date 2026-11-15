@@ -2445,3 +2445,13 @@ As a user, "15 is what percent of 60" and "what percent is 15 of 60" got no inst
 Fixed: calc in brain/calc.js answers the three "what percent" phrasings ("15 is what percent of 60", "what percent is 15 of 60", "15 out of 60 as a percent") and accepts "the square root of". Cases added in test/brain.test.js and checked to fail before the change.
 
 Left for later: "cube root of 27", "pi * 2", "3(4+5)", "1e3 + 1", currency conversion ("100 usd in eur") and "2 dozen" are not handled. Temperature answers keep the typed unit letters ("37.7778 c"), which reads oddly. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-15 — selection chips and classification (thirteenth pass)
+
+Tried 45 selected terminal, database, Kubernetes, git and browser error lines next to plain prose.
+
+As a user, the worst problem was that common terminal and browser failures read as words or sentences, so Loon offered Define instead of error help. This hit "zsh: permission denied: ./run.sh", "net::ERR_CONNECTION_REFUSED", "Permission denied (publickey).", "Access denied for user", git "[rejected]" and "CONFLICT" lines, certificate errors, "CrashLoopBackOff", "OOMKilled" and "Failed to fetch".
+
+Fixed: the error line check in extension/lib/classify.js now covers these shapes. Plain prose such as "The quick brown fox" and "Your branch is ahead of 'origin/main'" stays prose. Cases added in test/browser.test.js and checked to fail before the change.
+
+Left for later: a bare "Traceback", "CORS error", "Connection refused", "Out of memory", "Killed: 9", "No such file or directory" and "ssh: connect to host ... timed out" are still not treated as errors, because short phrases like these are also ordinary words. The 38 failures in `npm test` here come from the sandbox install having no node_modules and are the same on main.
