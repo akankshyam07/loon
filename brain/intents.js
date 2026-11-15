@@ -4,8 +4,8 @@
 const { parseCommand, normalizeSpoken } = require('./commands');
 
 const STOP = /^(stop( talking| speaking)?|cancel|never ?mind|shh+|quiet|be quiet|hush|shut up|that's enough|that is enough|enough|ok(ay)? (stop|enough)|stop it)$/i;
-const YES = /^(yes|yeah|yep|yup|sure|ok(ay)?|do it|go ahead|confirm|please do|correct|right)( (do it|go ahead|please|sure))*$/i;
-const NO = /^(no|nope|nah|don't|do not|cancel|stop|never ?mind|wrong|no thanks|no thank you|not now|no (don't|do not|stop|cancel|never ?mind)|(don't|do not) do it)$/i;
+const YES = /^((yes|yeah|yep|yup|sure|thing|ok(ay)?|absolutely|definitely|of course|do it|go ahead|go for it|send it|confirm|please do|please|correct|right)( |$))+$/i;
+const NO = /^(oh )?((no|nope|nah)( (no|nope|nah|don't|do not|stop|cancel|never ?mind|thanks|thank you|not now))*|don't|do not|(don't|do not) do it|wrong|not now|cancel|stop|never ?mind)$/i;
 
 // Fixed phrases → task/toggle. Alternatives written as regex; matched on the normalized utterance.
 const TEMPLATES = [
@@ -34,12 +34,14 @@ const TEMPLATES = [
 ];
 
 // Numbers stay as words here ("which one is cheapest"); only commands get digits, for chrono's sake.
+// Fillers and the wake phrase can come in any order ("um, hey loon, so like explain this").
+const LEAD_IN = /^(?:(?:(?:hey |ok |okay )?loon|um+|uh+|er+|hmm+|so|well|like|just|actually)[,\s]+)+/i;
+
 function normalize(transcript) {
   return transcript
     .toLowerCase()
-    .replace(/^(hey |ok |okay )?loon[,\s]+/, '') // wake phrase at the start of an utterance
-    .replace(/^((um+|uh+|er+|hmm+|so|well),?\s+)+/, '')
-    .replace(/^((please|pls|plz|can you|could you|would you|will you)\s+)+/, '')
+    .replace(LEAD_IN, '')
+    .replace(/^((please|pls|plz|can you|could you|would you|will you|like|just)[,\s]+)+/, '')
     .replace(/[,.!?]+/g, ' ')
     .replace(/\s+(please|pls|plz|loon)$/, '')
     .replace(/\s{2,}/g, ' ')
@@ -63,9 +65,10 @@ function route(transcript, { awaitingConfirmation = false, speaking = false } = 
     const m = key.match(re);
     if (m) return r.slot ? { ...r, text: m[1] } : { ...r };
   }
-  const command = parseCommand(normalizeSpoken(transcript.replace(/^(hey |ok |okay )?loon[,\s]+/i, '')));
+  const spoken = transcript.replace(LEAD_IN, '');
+  const command = parseCommand(normalizeSpoken(spoken));
   if (command) return { type: 'command', command };
-  return { type: 'question', text: transcript.replace(/^(hey |ok |okay )?loon[,\s]+/i, '').trim() };
+  return { type: 'question', text: spoken.trim() };
 }
 
 // Wake phrase check for the opt-in "Hey Loon" mode (the isair/jarvis approach: keyword in a short transcript).

@@ -177,3 +177,18 @@ test('stacked politeness and "no, don\'t" still route to the right intent', () =
   assert.strictEqual(route('no stop', { awaitingConfirmation: true }).type, 'no');
   assert.strictEqual(route('tl;dr this page').task, 'page_summary');
 });
+
+test('fillers and the wake phrase can come in any order before a spoken command', () => {
+  assert.strictEqual(route('um hey loon explain this').task, 'explain');
+  assert.strictEqual(route('uh, hey loon, summarize this').task, 'summarize');
+  assert.strictEqual(route('can you like explain this').task, 'explain');
+  assert.strictEqual(route('so like make it shorter').task, 'shorter');
+  assert.strictEqual(route('um loon, remind me to stretch in twenty minutes').type, 'command');
+});
+
+test('natural yes and no answers to a confirm card are understood', () => {
+  const ask = { awaitingConfirmation: true };
+  for (const t of ['yeah go for it', 'yes yes', 'sure thing', 'absolutely', 'of course', 'yes, send it']) assert.strictEqual(route(t, ask).type, 'yes', t);
+  for (const t of ['no no no', 'oh no', 'actually no', "nope don't", 'no thank you loon']) assert.strictEqual(route(t, ask).type, 'no', t);
+  assert.strictEqual(route('what is the capital of France', ask).type, 'question');
+});

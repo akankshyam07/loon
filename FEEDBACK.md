@@ -2495,3 +2495,13 @@ As a user, nothing broke on the paths a person can reach. Java output uses `@Jso
 Fixed: nothing, no code change.
 
 Left for later: the Kotlin entry in `DTO_LANGUAGES` fails with "Unknown value just-types for option framework" because `just-types` is a separate Kotlin option. No chip or command uses Kotlin, so a user cannot hit it, but it will break the day one is added. Two objects pasted back to back (`{"a":1}{"b":2}`) are reported as invalid JSON. There is also no typed way to ask for a DTO, only the chips on a selection. Typing "make a typescript interface from this json" goes to the model.
+
+## 2026-11-15 — voice intents (eleventh pass)
+
+Tried 90 spoken phrasings such as "um hey loon explain this", "can you like explain this", "so like make it shorter", "just summarize this", and at a confirm card "yeah go for it", "yes yes", "absolutely", "of course", "no no no", "oh no", "actually no" and "nope don't".
+
+As a user, the worst problem was that natural answers to a confirm card were not understood. "No no no" and "nope don't" were read as new questions, so the card stayed open and the model was called. "Absolutely" and "yeah go for it" did the same for yes. A filler before the wake phrase ("um hey loon ...") or a "like" or "just" in the lead-in sent a plain command to the model with no selection attached.
+
+Fixed: the spoken lead-in strip now removes fillers, "like", "just", "actually" and the wake phrase in any order, for templates, commands and questions alike. The yes and no lists accept repeated words and common extras. Tests added in test/voice.test.js and checked to fail before the change.
+
+Left for later: "read this to me", "make it funnier", "make it longer", "expand this", "save this", "copy that", "translate this into french" and "fact check this" have no voice template and go to the model. "I said no" at a card is still a question. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
