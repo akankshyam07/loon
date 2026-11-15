@@ -137,7 +137,14 @@ function calc(question) {
   m = body.match(/^(half|a third|a quarter|one third|one quarter) of (\d+(?:\.\d+)?)$/);
   if (m) return `${cash(m[2] / { half: 2, 'a third': 3, 'one third': 3, 'a quarter': 4, 'one quarter': 4 }[m[1]])}.`;
 
-  m = body.match(/^(?:sqrt\s*\(?|sqrt of\s+|square root of\s+)(\d+(?:\.\d+)?)\)?$/);
+  // "15 is what percent of 60", "what percent is 15 of 60", "15 out of 60 as a percent"
+  m = body.match(/^(?:(\d+(?:\.\d+)?) (?:is|out of) what (?:percent|%)(?: of)? (\d+(?:\.\d+)?)|(?:what )?(?:percent|%) is (\d+(?:\.\d+)?) (?:of|out of) (\d+(?:\.\d+)?)|(\d+(?:\.\d+)?) (?:out of|of) (\d+(?:\.\d+)?) as a (?:percent|percentage|%))$/);
+  if (m) {
+    const [part, whole] = [+(m[1] || m[3] || m[5]), +(m[2] || m[4] || m[6])];
+    return whole ? `${fmt(part)} is ${fmt(part / whole * 100)}% of ${fmt(whole)}.` : 'That divides by zero, which has no answer.';
+  }
+
+  m = body.match(/^(?:sqrt\s*\(?|sqrt of\s+|(?:the\s+)?square root of\s+)(\d+(?:\.\d+)?)\)?$/);
   if (m) return `√${m[1]} = ${fmt(Math.sqrt(m[1]))}`;
 
   // "average of 4, 8, 15" and "mean of 2 and 4"

@@ -2435,3 +2435,13 @@ As a user, eight common errors got no instant answer and went to the slow local 
 Fixed: added table entries for those, in brain/errors.js. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: a git "Permission denied (publickey)" entry. An existing test says that error must not match, so I did not touch it, and it still goes to the model. Rust "linker cc not found" and Docker "failed to solve" also have no entry. The 38 failures in `npm test` are the same as on main in this sandbox (missing dependencies and built data).
+
+## 2026-11-15 — typed questions and instant answers, math and units (twelfth pass)
+
+Tried 50 typed math and unit questions such as "what's 15% of 80", "how many cups in a gallon", "100 f to c", "what's 1/3 + 1/4", "3(4+5)", "cube root of 27", "15 is what percent of 60" and "what is the square root of 2". Most came out right.
+
+As a user, "15 is what percent of 60" and "what percent is 15 of 60" got no instant answer and went to the language model, which is bad at arithmetic. "what's the square root of 2" missed because of the word "the".
+
+Fixed: calc in brain/calc.js answers the three "what percent" phrasings ("15 is what percent of 60", "what percent is 15 of 60", "15 out of 60 as a percent") and accepts "the square root of". Cases added in test/brain.test.js and checked to fail before the change.
+
+Left for later: "cube root of 27", "pi * 2", "3(4+5)", "1e3 + 1", currency conversion ("100 usd in eur") and "2 dozen" are not handled. Temperature answers keep the typed unit letters ("37.7778 c"), which reads oddly. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
