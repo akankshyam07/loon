@@ -7,6 +7,8 @@ function extractWhen(text, now = new Date(), { morning = false } = {}) {
   text = dayOfMonth(text, now)
     .replace(/\b(?:end of (?:the )?(?:work ?)?day|eod|close of business|cob)\b/gi, 'at 5pm')
     .replace(/\b(\d+)\s*secs?\b/gi, '$1 seconds')
+    .replace(/\b(quarter|half) (past|after) (\d{1,2})\b/gi, (all, part, _w, h) => `${h}:${part.toLowerCase() === 'half' ? '30' : '15'}`)
+    .replace(/\bquarter to (\d{1,2})\b/gi, (all, h) => `${(Number(h) + 10) % 12 + 1}:45`)
     .replace(/\b(\d+) and a half (hour|minute|day|week)/gi, '$1.5 $2')
     .replace(/\ban? (hour|minute|day|week) and a half\b/gi, '1.5 $1s');
   // "the 5pm meeting at 4:30" holds two times; the one after a preposition is the reminder time.
@@ -73,6 +75,11 @@ function parseCommand(input, now = new Date()) {
   const text = stripPoliteness(input);
   let m;
   // Loon has no alarm clock of its own. Timers, alarms and "wake me" become Reminders, which the confirm card names.
+  // "egg timer 5 minutes" names the timer before its length.
+  if ((m = text.match(/^(?:set |start )?(?:an? )?(?!(?:an?|the|my) )([a-z]+) timer (?:for |of )?(\d.*)$/i))) {
+    const { date } = extractWhen(`in ${m[2].replace(/^\d+$/, '$& minutes')}`, now);
+    return date ? { action: 'reminder', title: `Timer is up for ${m[1]}`, when: date } : null;
+  }
   if ((m = text.match(/^(?:set |start )?(?:an? )?(?:timer|countdown)(?: for| of)? (?:in )?(.+)$/i)) || (m = text.match(/^(?:set |start )?(?:an? )?(.+?)[\s-]timer(?: for (.+))?$/i))) {
     // "timer 1h30" and "timer 5" (minutes) are how people type it.
     const length = m[1].replace(/^in /i, '').replace(/^(\d+):(\d{2})$/, '$1 minutes $2 seconds').replace(/^(\d+)h(?:ours?|rs?)?\s*(\d+)(?:m(?:ins?)?)?$/i, '$1 hours $2 minutes').replace(/^(\d+)$/, '$1 minutes');

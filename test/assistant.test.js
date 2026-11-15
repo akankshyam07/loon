@@ -449,3 +449,14 @@ test('commands: "call me Sam" saves the name, "call me back" does not, and "you 
   assert.strictEqual(parseCommand('call me when you land'), null);
   assert.deepStrictEqual(parseCommand('you can forget the peanut thing'), { action: 'forget', text: 'the peanut thing', all: false });
 });
+
+test('commands: "quarter past 3" and "half past 4" are times, and "egg timer 5 minutes" is a labeled timer', () => {
+  const at = (s) => parseCommand(s, NOW).when;
+  assert.deepStrictEqual([at('remind me at quarter past 3 to call mom').getHours(), at('remind me at quarter past 3 to call mom').getMinutes()], [15, 15]);
+  assert.strictEqual(parseCommand('remind me at half past 4 to stretch', NOW).title, 'stretch');
+  assert.deepStrictEqual([at('remind me at quarter to 4 to leave').getHours(), at('remind me at quarter to 4 to leave').getMinutes()], [15, 45]);
+  const egg = parseCommand('egg timer 5 minutes', NOW);
+  assert.strictEqual(egg.title, 'Timer is up for egg');
+  assert.strictEqual(egg.when.getTime() - NOW.getTime(), 5 * 60000);
+  assert.strictEqual(parseCommand('set a pasta timer for 10 min', NOW).when.getTime() - NOW.getTime(), 10 * 60000);
+});

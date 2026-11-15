@@ -2505,3 +2505,13 @@ As a user, the worst problem was that natural answers to a confirm card were not
 Fixed: the spoken lead-in strip now removes fillers, "like", "just", "actually" and the wake phrase in any order, for templates, commands and questions alike. The yes and no lists accept repeated words and common extras. Tests added in test/voice.test.js and checked to fail before the change.
 
 Left for later: "read this to me", "make it funnier", "make it longer", "expand this", "save this", "copy that", "translate this into french" and "fact check this" have no voice template and go to the model. "I said no" at a card is still a question. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-15 — reminders, timers and focus (fifteenth pass)
+
+Tried 30 inputs such as "remind me at quarter past 3 to call mom", "remind me at half past 4", "egg timer 5 minutes", "start a 25 minute pomodoro", "wake me at 7", "timer 45 sec", "remind me tmrw to buy milk" and "cancel my timer".
+
+As a user, the worst problem was "at quarter past 3". It made a reminder with no time at all and the words "at quarter past 3" left in the title. "egg timer 5 minutes" was not understood.
+
+Fixed: extractWhen in brain/commands.js now reads "quarter past", "half past" and "quarter to" as clock times, and parseCommand reads a named timer with the length after it ("egg timer 5 minutes", "pasta timer for 10 min"). Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: "start a 25 minute pomodoro" is not matched, and "cancel my timer" and "what are my reminders" go to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
