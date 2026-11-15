@@ -349,3 +349,13 @@ test('onboarding reads "dairy-free" as a diet and ignores an emoji after "none"'
   assert.deepStrictEqual(onboardingResult({ allergies: 'none 🙂' }).facts, []);
   assert.deepStrictEqual(onboardingResult({ interests: 'chess 🎲, hiking' }).facts, ["I'm interested in chess and hiking"]);
 });
+
+test('onboarding handles "I\'m lactose intolerant", "X allergy", "allergies: X", "I go by Ada" and "nothing, thanks"', () => {
+  assert.deepStrictEqual(onboardingResult({ allergies: "I'm lactose intolerant" }).facts, ["I'm intolerant to lactose"]);
+  assert.deepStrictEqual(onboardingResult({ allergies: 'shellfish allergy' }).facts, ["I'm allergic to shellfish"]);
+  assert.deepStrictEqual(onboardingResult({ allergies: 'allergies: peanuts' }).facts, ["I'm allergic to peanuts"]);
+  assert.deepStrictEqual(onboardingResult({ allergies: 'nothing, thanks' }).facts, []);
+  assert.deepStrictEqual(onboardingResult({ interests: 'hobbies: chess' }).facts, ["I'm interested in chess"]);
+  assert.deepStrictEqual(onboardingResult({ name: 'I go by Ada' }).facts, ['Call me Ada']);
+  assert.deepStrictEqual(onboardingResult({ name: 'Ada here' }).facts, ['Call me Ada']);
+});

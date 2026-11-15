@@ -2535,3 +2535,13 @@ As a user, creating routines worked well. The worst problem was stopping them. "
 Fixed: "stop" with a routine or reminder word, or "stop reminding me to X", now pauses the matching routine. "cancel" works like delete and asks for confirmation. "stop the music" is left alone. Test added in test/routines.test.js and checked to fail before the change.
 
 Left for later: "every day at 9 and 5 …" makes a card with the message "5 remind me to stretch", which the user must fix. "every first monday" and "every quarter" ask instead of guessing. "run my stretch routine now" is not a typed command. `npm test` shows the same 5 WordNet and demo failures as main in this sandbox.
+
+## 2026-11-15 — onboarding first run, typed sentences in the boxes (thirteenth pass)
+
+Tried 56 answers for the "Get to know you" boxes, such as "I'm lactose intolerant", "shellfish allergy", "allergies: peanuts", "nothing, thanks", "hobbies: chess", "I go by Ada", "call me Ada pls" and "Ada here".
+
+As a user, the worst problem was that "I'm lactose intolerant" was saved as "I'm intolerant to I'm lactose", and "shellfish allergy" as "I'm allergic to shellfish allergy". "allergies: peanuts" kept the label. "nothing, thanks" became an allergy to "thanks". "I go by Ada" and "Ada here" were saved as the name. These wrong facts are pinned and sent with every question.
+
+Fixed: the shared list reader drops "I'm", "allergies:", "interests:" and "hobbies:" lead-ins and treats "thanks" as no answer. The allergy box drops a trailing "allergy". The name box understands "I go by", and drops "pls" and "here". Test added in test/personal.test.js and checked to fail before the change.
+
+Left for later: "no nuts" is saved as an allergy to "no nuts", "celiac" and "lactose" alone are saved as allergies, "mild: dairy" keeps the severity word, and "but only mildly" becomes a second allergy. They need a decision on how far to interpret. The 5 other failures in `npm test` are the WordNet and demo ones from the sandbox install.
