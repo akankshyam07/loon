@@ -77,6 +77,17 @@ const RULES = [
   },
   {
     kind: 'secret',
+    re: /\b(passwords?|passcodes?)(\s+for\s+(?:the\s+|my\s+)?[\w.-]+(?:\s+[\w.-]+)?)?(\s+[-–—]\s+|\s+is\s+)(?!\[redacted)(?=[^\s"',;]*\d)([^\s"',;]{4,})/gi,
+    // needs a digit in the value so "password - a quick guide" stays readable
+    replace: (m, name, forWhat, sep) => `${name}${forWhat || ''}${sep}[redacted:secret]`,
+  },
+  {
+    kind: 'secret',
+    re: /\b((?:secret )?(?:recovery|seed|backup) phrase|mnemonic|seed words)(\s*(?:is\s*)?[:=-]?\s*)(?!\[redacted)(?:[a-z]{3,8}\s+){11,23}[a-z]{3,8}\b/gi,
+    replace: (m, name, sep) => `${name}${sep}[redacted:secret]`,
+  },
+  {
+    kind: 'secret',
     re: /(?:\bpass|密码|密碼)(\s*[:=：]\s*)(?!\[redacted)([^\s"',;]{3,})/gi,
     replace: (m) => m.replace(/(?<=[:=：]\s*)[^\s"',;]{3,}$/, '[redacted:secret]'),
   },

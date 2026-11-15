@@ -2515,3 +2515,13 @@ As a user, the worst problem was "at quarter past 3". It made a reminder with no
 Fixed: extractWhen in brain/commands.js now reads "quarter past", "half past" and "quarter to" as clock times, and parseCommand reads a named timer with the length after it ("egg timer 5 minutes", "pasta timer for 10 min"). Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: "start a 25 minute pomodoro" is not matched, and "cancel my timer" and "what are my reminders" go to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-15 — memory and privacy, redaction (fourteenth pass)
+
+Tried 28 snippets such as spoken passwords, "wifi password - blueberry99", "password for the wifi is hunter22", card and SSN variants, verification codes, IBANs, connection strings and a 12 word recovery phrase.
+
+As a user, the worst leak was a crypto recovery phrase, which went to the model untouched. Passwords written with a dash, or as "password for the wifi is X", were also left readable.
+
+Fixed: a new rule hides 12 to 24 word seed or recovery phrases after a lead-in such as "recovery phrase" or "mnemonic". Another rule hides "password - X" and "password for the wifi is X" when the value has a digit, so "password - a quick guide" stays readable. Test added in test/browser.test.js.
+
+Left for later: an unquoted multi-word password still leaks the later words, and a seed phrase pasted with no lead-in is not detected. Emails and phone numbers are not hidden. The 5 failures in `npm test` here are the WordNet and demo ones from the sandbox install.

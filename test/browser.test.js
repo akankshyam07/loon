@@ -304,3 +304,12 @@ test('redaction leaves error messages like "password is incorrect" alone but sti
   assert.equal(redact('the password is incorrect').text, 'the password is incorrect');
   assert.equal(redact('my password is swordfish').text, 'my password is [redacted:secret]');
 });
+
+test('redaction hides seed phrases and passwords written with a dash or "for the wifi is"', () => {
+  const seed = 'abandon ability able about above absent absorb abstract absurd abuse access accident';
+  assert.equal(redact(`recovery phrase: ${seed}`).text, 'recovery phrase: [redacted:secret]');
+  assert.equal(redact('The password for the wifi is hunter22 ok').text, 'The password for the wifi is [redacted:secret] ok');
+  assert.equal(redact('wifi password - blueberry99').text, 'wifi password - [redacted:secret]');
+  assert.equal(redact('password - a quick guide').count, 0);
+  assert.equal(redact('the recovery phrase is shown once').count, 0);
+});
