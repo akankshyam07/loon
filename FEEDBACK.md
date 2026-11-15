@@ -2475,3 +2475,13 @@ As a user, the worst problem was clearing history by voice or text. "forget my h
 Fixed: parseCommand in brain/commands.js now reads these as a history wipe, and main/actions.js answers that it is done in Settings → History, the same way a blanket memory wipe is handled. Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: "recall docker", "what was that thing I asked about docker", "last thing we talked about", "recent questions about css", the typo "wat did i ask" and "what did you tell me about docker" are still not handled. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-15 — memory commands (sixth pass)
+
+Tried 32 phrasings such as "from now on call me Sam", "call me Sam", "you can forget the peanut thing", "stop remembering things", "save this to memory", "rembmer I like tea", "remember me" and "forget what I said about pork".
+
+As a user, the worst problem was that "call me Sam" and "from now on call me Sam" went to the language model, which cannot store a name and may say it will. "You can forget the peanut thing" also went to the model.
+
+Fixed: parseCommand now saves "call me X" (one or two plain words, so "call me back" and "call me when you land" are left alone) and accepts "you can / feel free to forget …". Test added in test/assistant.test.js.
+
+Left for later: "stop remembering things", "save this to memory" with nothing after it, "do you remember what I told you", "what's my name" and typos like "rembmer" still go to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

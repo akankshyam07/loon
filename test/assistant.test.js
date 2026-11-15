@@ -441,3 +441,11 @@ test('food: rich sauces and tempura are not light picks', () => {
   assert.ok(score(items[1]).heaviness >= 3);
   assert.ok(recommend(items, 'lightest').text.startsWith('**Lightest picks**\n- **Steamed Fish'));
 });
+
+test('commands: "call me Sam" saves the name, "call me back" does not, and "you can forget" deletes', () => {
+  assert.deepStrictEqual(parseCommand('from now on call me Sam'), { action: 'remember', text: 'Call me Sam' });
+  assert.deepStrictEqual(parseCommand('you can call me Mary Ann'), { action: 'remember', text: 'Call me Mary Ann' });
+  assert.strictEqual(parseCommand('call me back'), null);
+  assert.strictEqual(parseCommand('call me when you land'), null);
+  assert.deepStrictEqual(parseCommand('you can forget the peanut thing'), { action: 'forget', text: 'the peanut thing', all: false });
+});

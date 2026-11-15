@@ -156,8 +156,10 @@ function parseCommand(input, now = new Date()) {
   if (/^(?:delete|clear|wipe|erase|reset) (?:all )?(?:of )?(?:my |your |the )?(?:memory|memories)$/i.test(text)) return { action: 'forget', text: 'everything', all: true };
   if ((m = text.match(/^(?:remember|(?:do not|don'?t|never) forget|keep (?:that |this |it )?in mind|(?:save|add|put|store) (?:this |it )?(?:to|in|into) (?:my |your )?memory)(?: this)?[:,]?\s+(?:that )?(.+)$/i)) && tidy(m[1]) && !/^(?:nothing|it|everything|all of (?:it|this))$/i.test(tidy(m[1]))) return { action: 'remember', text: tidy(m[1]) };
   if ((m = text.match(/^(.+?),?\s+(?:please )?remember (?:that|this|it)$/i)) && !/^(?:do not|don'?t|never|stop)$/i.test(tidy(m[1]))) return { action: 'remember', text: tidy(m[1]) };
+  // "call me back" and "call me when you can" are not names. Only one or two plain words count.
+  if ((m = text.match(/^(?:(?:from now on|going forward|in future),?\s+)?(?:you can |you should |just )?call me (\p{L}[\p{L}'-]*(?: \p{L}[\p{L}'-]*)?)$/iu)) && !/^(?:back|later|maybe|tomorrow|tonight|today|now|soon|anytime|sometime|whenever|if|when|at|on|crazy|names)\b/i.test(m[1])) return { action: 'remember', text: `Call me ${tidy(m[1])}` };
   // "forget it" and "forget about it" are idioms, not a request to delete a memory.
-  if ((m = text.match(/^forget[:,]?\s+(?:that )?(.+)$/i)) && !/^(?:about )?(?:it|that|this|me not)$/i.test(tidy(m[1]))) {
+  if ((m = text.match(/^(?:(?:you can|you may|feel free to) )?forget[:,]?\s+(?:that )?(.+)$/i)) && !/^(?:about )?(?:it|that|this|me not)$/i.test(tidy(m[1]))) {
     const all = /^(?:about )?(?:everything|all|all of it|it all)$/i.test(tidy(m[1]));
     // "forget everything about pork" is one topic, not a wipe.
     const topic = tidy(m[1]).replace(/^(?:(?:everything|all) )?about (?=\S)/i, '');
