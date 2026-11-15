@@ -2525,3 +2525,13 @@ As a user, the worst leak was a crypto recovery phrase, which went to the model 
 Fixed: a new rule hides 12 to 24 word seed or recovery phrases after a lead-in such as "recovery phrase" or "mnemonic". Another rule hides "password - X" and "password for the wifi is X" when the value has a digit, so "password - a quick guide" stays readable. Test added in test/browser.test.js.
 
 Left for later: an unquoted multi-word password still leaks the later words, and a seed phrase pasted with no lead-in is not detected. Emails and phone numbers are not hidden. The 5 failures in `npm test` here are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-15 — routines (fourteenth pass)
+
+Tried 50 phrasings such as "every mon wed fri at 7am …", "every other day …", "every hour from 9 to 5 …", "every 90 minutes …", "every night at midnight …", "everyday at 7 …", "every fortnight …", "pause all routines", "stop the vitamins routine" and "stop reminding me to stretch".
+
+As a user, creating routines worked well. The worst problem was stopping them. "stop the vitamins routine", "stop reminding me to stretch" and "cancel the stretch reminder" were not recognised, so they went to the language model, which could say it stopped something when it did not.
+
+Fixed: "stop" with a routine or reminder word, or "stop reminding me to X", now pauses the matching routine. "cancel" works like delete and asks for confirmation. "stop the music" is left alone. Test added in test/routines.test.js and checked to fail before the change.
+
+Left for later: "every day at 9 and 5 …" makes a card with the message "5 remind me to stretch", which the user must fix. "every first monday" and "every quarter" ask instead of guessing. "run my stretch routine now" is not a typed command. `npm test` shows the same 5 WordNet and demo failures as main in this sandbox.

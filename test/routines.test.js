@@ -402,6 +402,10 @@ test('routines: "show my routines", "pause the water reminder", "delete the Frid
   assert.match(seen.opened.at(-1).message, /don't have a routine like/);
   assert.strictEqual(await routines.handleText(6, 'turn off privacy mode', bubble, { execute }), false); // not about routines
   assert.deepStrictEqual(R.parseRoutineCommand('list my routines'), { action: 'routines' });
+  assert.deepStrictEqual(R.parseRoutineCommand('stop the vitamins routine'), { action: 'routinePause', on: false, query: 'the vitamins routine' });
+  assert.deepStrictEqual(R.parseRoutineCommand('stop reminding me to stretch'), { action: 'routinePause', on: false, query: 'stretch' });
+  assert.deepStrictEqual(R.parseRoutineCommand('cancel the stretch reminder'), { action: 'routineDelete', query: 'the stretch reminder' });
+  assert.strictEqual(R.parseRoutineCommand('stop the music'), null);
 });
 
 test('routines: tables are added to an existing memory.db without touching what is there', () => {

@@ -415,7 +415,9 @@ function parseRoutineCommand(input) {
   if ((m = text.match(/^(pause|resume|unpause|disable|enable|turn off|turn on|switch off|switch on|mute|unmute) (.+)$/i))) {
     return { action: 'routinePause', on: /^(?:resume|unpause|enable|turn on|switch on|unmute)$/i.test(m[1]), query: m[2] };
   }
-  if ((m = text.match(/^(?:delete|remove) (.+)$/i))) return { action: 'routineDelete', query: m[1] };
+  if ((m = text.match(/^(?:delete|remove|cancel) (.+)$/i))) return { action: 'routineDelete', query: m[1] };
+  // "stop" is the reversible one: it pauses. Without a routine or reminder word it is left alone ("stop the music").
+  if ((m = text.match(/^stop (?:reminding me (?:to |about |of )?(.+)|(.+))$/i)) && (m[1] || mentionsRoutine(m[2]))) return { action: 'routinePause', on: false, query: m[1] || m[2] };
   return null;
 }
 
