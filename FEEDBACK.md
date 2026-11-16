@@ -2625,3 +2625,13 @@ As a user, the worst problem was Amazon style labels. "List Price: $29.99 Price:
 Fixed: parsePrice in brain/shopping.js now drops a "list price", "typical price", "original price", "MSRP" or "RRP" amount when another number follows it. A lone "List Price: $29.99" still gives 29.99. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: a price range ("$5.00 - $7.00") uses the low end, and "$1,299.00 $999.00" with no label takes the first number. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-16 — developer help, error table (fifteenth pass)
+
+Tried 30 pasted errors such as "zsh: command not found: pnpm", "Permission denied (publickey).", "EADDRINUSE", "ERESOLVE", "Cannot read properties of undefined", a Rust move error, a Go nil panic, a Postgres refusal, a CORS error and a hydration mismatch.
+
+As a user, the table covered most of them. Two common ones went to the local model. "Permission denied (publickey)" on a git push had no answer, and the Windows wording "'pnpm' is not recognized as an internal or external command" was not read as a missing command.
+
+Fixed: brain/errors.js now has an SSH key entry with steps (ssh-add, add the public key to the host, test with ssh -T, check the remote URL) and the command not found entry accepts the cmd.exe wording. Tests added in test/modes.test.js and checked to fail before the change. An older assertion that publickey gave no answer now checks that it does not get the file permission answer.
+
+Left for later: Oracle "ORA-00942" and AWS "Unable to locate credentials" still go to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

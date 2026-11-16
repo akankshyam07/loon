@@ -173,10 +173,16 @@ const KNOWN = [
     fix: ['Check `document.querySelector(...)` really returned an element.', 'Run the script after the page has loaded (`defer` or `DOMContentLoaded`).'],
   },
   {
-    match: /: command not found|command not found:|is not recognized as the name of a cmdlet/,
+    match: /: command not found|command not found:|is not recognized as the name of a cmdlet|is not recognized as an internal or external command/,
     title: 'Command not found',
     explain: 'The shell can’t find a program with that name: it isn’t installed, or isn’t on your PATH.',
     fix: ['Check the spelling.', 'Install it (`brew install <name>` on macOS).', 'Tools like nvm or conda need their init lines in `~/.zshrc`, then open a new terminal.'],
+  },
+  {
+    match: /Permission denied \(publickey/i,
+    title: 'SSH key rejected',
+    explain: 'The server did not accept any SSH key your machine offered, so git or ssh could not log in.',
+    fix: ['Check a key exists and is loaded: `ssh-add -l` (add one with `ssh-add ~/.ssh/id_ed25519`).', 'Make sure the public key is added to GitHub, GitLab or the server.', 'Run `ssh -T git@github.com` (or your host) to test, and add `-v` to see which keys it tries.', 'If the remote URL is https, `git remote -v` shows it; switch it with `git remote set-url` if you meant to use SSH.'],
   },
   {
     match: /npm (?:ERR!|error) (?:code E404|404)/,

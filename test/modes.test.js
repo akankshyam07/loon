@@ -206,7 +206,7 @@ test('errors: fingerprint ignores paths/values; known errors answer from the tab
   assert.strictEqual(lookupKnown('Process failed at line 500'), null);
   assert.match(lookupKnown('Request failed with status code 404'), /404 Not Found/);
   assert.match(lookupKnown("AttributeError: 'NoneType' object has no attribute 'foo'"), /NoneType/);
-  assert.strictEqual(lookupKnown('git@github.com: Permission denied (publickey).'), null, 'an SSH key problem is not a file permission problem');
+  assert.doesNotMatch(lookupKnown('git@github.com: Permission denied (publickey).'), /\*\*Permission denied\*\*/, 'an SSH key problem is not a file permission problem');
   assert.match(lookupKnown("ValueError: invalid literal for int() with base 10: 'abc'"), /isn’t a number/);
   assert.match(lookupKnown('ZeroDivisionError: division by zero'), /Division by zero/);
   assert.match(lookupKnown("TypeError: Cannot read property 'length' of undefined"), /Reading a property/);
@@ -232,6 +232,8 @@ test('errors: fingerprint ignores paths/values; known errors answer from the tab
   assert.match(lookupKnown('npm ERR! code E404\nnpm ERR! 404 Not Found - GET https://registry.npmjs.org/foo'), /npm package not found/);
   assert.match(lookupKnown("The term 'git' is not recognized as the name of a cmdlet, function, script file"), /Command not found/);
   assert.match(lookupKnown("Error: EMFILE: too many open files, open 'a.txt'"), /Too many open files/);
+  assert.match(lookupKnown("'pnpm' is not recognized as an internal or external command,\noperable program or batch file."), /Command not found/);
+  assert.match(lookupKnown('git@github.com: Permission denied (publickey).\nfatal: Could not read from remote repository.'), /SSH key rejected/);
   assert.match(lookupKnown('zsh: Segmentation fault  ./a.out'), /Segmentation fault/);
   assert.match(lookupKnown('ERROR: No matching distribution found for foo'), /pip can/);
   assert.match(lookupKnown('Error: Invalid hook call. Hooks can only be called inside of the body'), /Invalid hook call/);
