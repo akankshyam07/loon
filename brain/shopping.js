@@ -65,6 +65,7 @@ function parsePrice(value) {
   if (value == null) return null;
   // "1.299,99 €" and "1 299,00 €" write the decimal comma after the thousands separator.
   // "Was $20 Now $15" and "Regular price $20 Sale price $15" are the sale price.
+  // "List Price: $29.99 Price: $19.99" is a reference price followed by the real one.
   // "99¢" is cents, so it is 0.99 and not 99.
   const cents = String(value).match(/^\D*(\d+(?:\.\d+)?)\s*(?:¢|cents?\b)/i);
   if (cents) return Number(cents[1]) / 100;
@@ -72,7 +73,7 @@ function parsePrice(value) {
   if (forN) return Number(forN[2]) / Number(forN[1]);
   // Indian grouping ("₹1,29,999") puts commas every two digits before the last three.
   // A saving ("Save $5", "$5 off", "15% off") is not the price.
-  const text = String(value).replace(/\b(?:you\s+)?save\s*\D{0,3}\d[\d.,]*%?|\d[\d.,]*%?\s*off\b/gi, '').replace(/^.*\b(?:now|sale(?:\s+price)?|current\s+price|our\s+price)\b(?=\D{0,12}\d)/i, '').replace(/(\d),(?=\d{2},\d)/g, '$1').replace(/(\d)[.\s](?=\d{3},\d{1,2}\b)/g, '$1')
+  const text = String(value).replace(/\b(?:you\s+)?save\s*\D{0,3}\d[\d.,]*%?|\d[\d.,]*%?\s*off\b/gi, '').replace(/\b(?:(?:list|typical|original)\s+price|msrp|rrp)\W{0,3}[$£€¥₹]?\s?\d[\d.,]*/gi, (g, i, str) => (/\d/.test(str.slice(i + g.length)) ? '' : g)).replace(/^.*\b(?:now|sale(?:\s+price)?|current\s+price|our\s+price)\b(?=\D{0,12}\d)/i, '').replace(/(\d),(?=\d{2},\d)/g, '$1').replace(/(\d)[.\s](?=\d{3},\d{1,2}\b)/g, '$1')
     // "$1 299.00" groups with a space and still has a decimal point.
     .replace(/([$£€¥₹]\s?\d{1,3})[ \u00a0\u202f](?=\d{3}\.\d{2}\b)/g, '$1')
     // "1 000 Kč" and "12 500 Ft" group thousands with a space and no decimals.

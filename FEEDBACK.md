@@ -2615,3 +2615,13 @@ As a user, the vegetarian list put "Steamed Dumplings" first, and "Buffalo Wings
 Fixed: brain/food.js now treats wings, dumplings, gyoza, potstickers, wontons, siu mai and lasagna as meat dishes unless the name says vegetable, veggie, vegan, cauliflower, spinach or mushroom. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: Chicken Tikka Masala has no heavy signal, Poutine (beef gravy) still counts as vegetarian, and bao and empanadas are not covered. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-16 — shopping and unit price (sixteenth pass)
+
+Tried 19 price strings such as "List Price: $29.99 Price: $19.99", "Typical price $30 Price $25", "RRP £50 Price £35", "Reg. $10 Sale $8", "Save $5 $20" and "Price $19.99 /ea".
+
+As a user, the worst problem was Amazon style labels. "List Price: $29.99 Price: $19.99" gave the list price, so the unit price and the cheapest pick were wrong for any discounted item.
+
+Fixed: parsePrice in brain/shopping.js now drops a "list price", "typical price", "original price", "MSRP" or "RRP" amount when another number follows it. A lone "List Price: $29.99" still gives 29.99. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: a price range ("$5.00 - $7.00") uses the low end, and "$1,299.00 $999.00" with no label takes the first number. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

@@ -76,6 +76,13 @@ test('parsePrice takes the sale price over the regular price', () => {
   assert.strictEqual(shopping.parsePrice('Was $20 (sale ends soon)'), 20);
 });
 
+test('parsePrice skips a list price printed before the real price', () => {
+  assert.strictEqual(shopping.parsePrice('List Price: $29.99 Price: $19.99'), 19.99);
+  assert.strictEqual(shopping.parsePrice('Typical price $30 Price $25'), 25);
+  assert.strictEqual(shopping.parsePrice('RRP £50 Price £35'), 35);
+  assert.strictEqual(shopping.parsePrice('List Price: $29.99'), 29.99);
+});
+
 test('parsePrice ignores a saving printed next to the price', () => {
   assert.strictEqual(shopping.parsePrice('Save $5 $20'), 20);
   assert.strictEqual(shopping.parsePrice('$20.00 You save 25%'), 20);
