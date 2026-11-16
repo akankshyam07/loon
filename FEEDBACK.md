@@ -2565,3 +2565,13 @@ As a user, most dictionary, synonym and antonym asks worked. Two misses stood ou
 Fixed: dictionaryTerm accepts "give/show me a definition of" and a bare "meaning X". The voice translate template accepts a missing "this" and a bare "translate". Tests added in test/brain.test.js and test/voice.test.js. The dictionary one fails before the change.
 
 Left for later: "translate this into french" and "how do you say hello in spanish" go to the model, since the offline translator only targets English and Spanish by default. "what do you mean by X" and "ephemeral means what" are not read as dictionary asks. "define run as a verb" goes to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-16 — follow-up conversations, emoji reactions and stretched thanks (thirteenth pass)
+
+Tried 42 short replies inside an open thread such as "👍", "🙏", "😂😂", "ok", "k", "tyyy", "thankss", "lol thanks", "ok thanks bye", "ah I see now", "np", "best cat ever" and "good kitty".
+
+As a user, the worst problem was that a thumbs up, a prayer hands or a laughing emoji alone cost a full local model call, and the model answers a plain 👍 with a fresh explanation. Stretched thanks such as "tyyy" and "thankss" did the same.
+
+Fixed: an emoji-only warm reaction now gets an instant reply from code, and the thanks rule accepts stretched "thanks" and "ty". The instant key keeps a message that is only emoji instead of cleaning it to nothing. "❓" and "🤔" still go to the model because they ask for more. Test added in test/brain.test.js and checked to fail before the change.
+
+Left for later: "ok", "k", "cool", "no problem", "np", "you too", "lol thanks", "ok thanks bye" and "haha nice" still go to the model. Plain "ok" and "cool" can answer a question from the cat, so they need a look at the last answer first. The 5 failures in `npm test` here are the WordNet and demo ones from the sandbox install.

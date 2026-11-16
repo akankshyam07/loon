@@ -102,7 +102,7 @@ const CODE_ANSWERS = [
     answer: () => ({ mood: 'happy', text: 'Hi! Highlight something, or ask me anything.' }),
   },
   {
-    match: /^(?:(?:ok|okay|great|perfect|cool|awesome|nice|got it|gotcha|makes sense|that helped)[ ,]+)?(?:(?:many )?thanks|thank you|thank u|thankyou|(?:muchas )?gracias|merci(?: beaucoup)?|danke(?: sch[oö]n)?|grazie|obrigad[oa]|arigato|thx|thnx|thanx|tysm|tyvm|ty|cheers|(?:much )?appreciated?(?: it)?)(?:[ ,]+(?:a lot|a ton|a bunch|so much|very much|again|kindly|mate|that helps|that helped|that was (?:really |very )?helpful|loon|for (?:that|this|the (?:help|answer|explanation)|your help|helping|explaining)))*$/,
+    match: /^(?:(?:ok|okay|great|perfect|cool|awesome|nice|got it|gotcha|makes sense|that helped)[ ,]+)?(?:(?:many )?thanks+|thank you|thank u|thankyou|(?:muchas )?gracias|merci(?: beaucoup)?|danke(?: sch[oö]n)?|grazie|obrigad[oa]|arigato|thx|thnx|thanx|tysm|tyvm|ty+|cheers|(?:much )?appreciated?(?: it)?)(?:[ ,]+(?:a lot|a ton|a bunch|so much|very much|again|kindly|mate|that helps|that helped|that was (?:really |very )?helpful|loon|for (?:that|this|the (?:help|answer|explanation)|your help|helping|explaining)))*$/,
     answer: () => ({ mood: 'happy', text: 'Anytime. *purrs*' }),
   },
   {
@@ -112,6 +112,11 @@ const CODE_ANSWERS = [
   {
     match: /^(?:(?:ha){2,}h?|(?:he){2,}h?|lol+|lmao|lmfao|rofl|(?:that(?:'s| is) )?(?:funny|hilarious)|(?:ok |okay )?(?:got it|gotcha|makes sense|i see|understood|understand|noted))(?: (?:lol|loon))?$/,
     answer: () => ({ mood: 'happy', text: '*tail flick* Ask away whenever.' }),
+  },
+  {
+    // Only warm reactions; "❓" or "🤔" after an answer asks for more and goes to the model.
+    match: /^(?:[👍👌🙏😂🤣😊😄😀😁🥰😍❤💖💯✅🔥🙌👏😸😻]\uFE0F?[\s]*)+$/u,
+    answer: () => ({ mood: 'happy', text: '*purrs*' }),
   },
   {
     match: /^(?:(?:oops|whoops|ah|oh|ok|okay)[ ,]+)?(?:sorry|my bad|my apologies|apologies|i(?:'m| am) sorry|sorry about that)(?: loon)?$/,
@@ -147,7 +152,8 @@ function instantKey(text) {
     .replace(/^(?:(?:can|could|would) you (?:please )?(?:tell|show) me|do you know|i (?:need|want) to know|tell me)\s+(?=what|the )/, '')
     .replace(/\bxmas\b/, 'christmas')
     .replace(/\s+(?:right now|rn|please|pls)(?=[\s?!.]*$)/, '')
-    .replace(/[\s?!.\p{Extended_Pictographic}\uFE0F]+$/u, '');
+    // A reply that is only an emoji keeps it, so "👍" can be told from an empty message.
+    .replace(/(?<=[^\s?!.\p{Extended_Pictographic}\uFE0F])[\s?!.\p{Extended_Pictographic}\uFE0F]+$/u, '');
 }
 
 function isoWeek(date = new Date()) {
