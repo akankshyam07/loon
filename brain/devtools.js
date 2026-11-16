@@ -58,8 +58,29 @@ function looseToJson(text) {
   return out;
 }
 
+// Splits text like `{...}{...}` or two pretty-printed objects separated by a blank line into its top-level values.
+function topLevelValues(text) {
+  const parts = [];
+  let depth = 0;
+  let from = 0;
+  let quote = '';
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (quote) {
+      if (c === '\\') i++;
+      else if (c === quote) quote = '';
+    } else if (c === '"' || c === "'") quote = c;
+    else if (c === '{' || c === '[') depth++;
+    else if ((c === '}' || c === ']') && depth > 0 && --depth === 0) {
+      parts.push(text.slice(from, i + 1));
+      from = i + 1;
+    }
+  }
+  return parts.filter((p) => p.trim());
+}
+
 // Tries the text as JSON, then as a JS/Python literal, then with prose cut off before the first and after the last
-// bracket ("Here is the response: {...} hope that helps"), then as JSON lines (one object per line, becomes an array).
+// bracket ("Here is the response: {...} hope that helps"), then as JSON lines (one object per line, becomes an array), then as several values pasted one after another.
 function parseJson(text) {
   const json = String(text).replace(/^\s*```\w*\s*\n?|\n?\s*```\s*$/g, '');
   const attempt = (s) => {
@@ -82,6 +103,9 @@ function parseJson(text) {
   const lines = json.split('\n').map((l) => l.trim()).filter(Boolean);
   const rows = lines.length > 1 ? lines.map(attempt) : [];
   if (rows.length && rows.every((r) => r && r.value && typeof r.value === 'object')) return rows.map((r) => r.value);
+  const pieces = topLevelValues(json);
+  const many = pieces.length > 1 ? pieces.map(attempt) : [];
+  if (many.length && many.every((r) => r && r.value && typeof r.value === 'object')) return many.map((r) => r.value);
   JSON.parse(json);
 }
 

@@ -2655,3 +2655,13 @@ As a user, the most annoying misses were "too detailed", "too much detail" and "
 Fixed: parseFeedback in brain/personal.js now reads those three as shorter, and accepts "in answers" or "in replies" after the emoji phrases. Test added in test/personal.test.js and checked to fail before the change.
 
 Left for later: "normal length", "reset style", "just the answer", "stop the sass" and "be blunt" have no matching setting or rule. "emojis please" is ambiguous. The 5 failing tests in `npm test` are the usual sandbox ones.
+
+## 2026-11-16 — developer help, JSON to DTO (twelfth pass)
+
+Tried 29 pasted inputs such as single quotes, unquoted keys, trailing commas, comments, Python `True` and `None`, curly quotes, a BOM, a code fence, an HTTP response with headers, a `curl -d` line, `NaN`, JSON lines and cut off JSON.
+
+As a user, almost everything already worked. The one real miss was two objects pasted back to back (`{"a":1}{"b":2}`), or two pretty-printed objects with a blank line between them, which came back as invalid JSON. That happens when copying two log entries or two API responses.
+
+Fixed: parseJson now splits several top-level values and treats them as an array, like it already does for JSON lines. Braces inside strings are respected, and a stray extra `}` still fails. Tests added in test/modes.test.js and checked to fail before the change.
+
+Left for later: the Kotlin entry in `DTO_LANGUAGES` still uses an invalid option. No chip uses it. There is still no typed way to ask for a DTO. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

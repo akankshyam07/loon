@@ -301,6 +301,9 @@ test('JSON → DTO reads JS object literals: single quotes, bare keys, comments'
 test('JSON → DTO reads Python literals, JSON lines and JSON with prose around it', () => {
   assert.deepStrictEqual(parseJson("{'ok': True, 'x': None, 'n': False}"), { ok: true, x: null, n: false });
   assert.deepStrictEqual(parseJson('{"a": 1}\n{"a": 2}'), [{ a: 1 }, { a: 2 }]);
+  assert.deepStrictEqual(parseJson('{"a":1}{"b":"}{"}'), [{ a: 1 }, { b: '}{' }]);
+  assert.deepStrictEqual(parseJson('{\n  "a": 1\n}\n\n{\n  "a": 2\n}'), [{ a: 1 }, { a: 2 }]);
+  assert.throws(() => parseJson('{"a":1}}'));
   assert.deepStrictEqual(parseJson('Here is the response: {"id": 7} hope that helps'), { id: 7 });
   assert.throws(() => parseJson('hello world\nnothing here'));
 });
