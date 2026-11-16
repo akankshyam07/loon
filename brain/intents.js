@@ -71,6 +71,13 @@ function route(transcript, { awaitingConfirmation = false, speaking = false } = 
   return { type: 'question', text: spoken.trim() };
 }
 
+// The task a typed ask means when it is a fixed edit of the selection ("fix my grammar", "make it shorter"), else null.
+// The edit then runs as the chip would, with its code and cache tiers, instead of as a free question to the model.
+function selectionTask(text) {
+  const r = route(text);
+  return r.type === 'task' && r.needs === 'selection' ? r.task : null;
+}
+
 // Wake phrase check for the opt-in "Hey Loon" mode (the isair/jarvis approach: keyword in a short transcript).
 // STT sometimes hears "Loon" as a homophone, so a few are accepted; anything else is discarded unheard.
 const WAKE = /^\s*(?:(?:hey|hi|ok|okay)[,\s]+)?(?:loon|lune|loom|lewn|luna)\b[,.!?\s]*/i;
@@ -127,4 +134,4 @@ function speakable(markdown, maxSentences = 2) {
   return { text: sentences.slice(0, maxSentences).map((x) => x.trim()).join(' '), truncated: sentences.length > maxSentences || prose.length < markdown.trim().length * 0.6 };
 }
 
-module.exports = { route, normalize, createSentenceSplitter, speakable, wakePhrase, TEMPLATES };
+module.exports = { route, selectionTask, normalize, createSentenceSplitter, speakable, wakePhrase, TEMPLATES };

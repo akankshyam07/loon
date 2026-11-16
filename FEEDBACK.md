@@ -2585,3 +2585,13 @@ As a user, "open mailto:a@b.com" and "open file:///tmp/a" got a confirm card to 
 Fixed: bare IP addresses now open as http, and URL schemes other than http and https, plus "trash" and "home folder", go to the chat. Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: "open chrome 🙂" keeps the emoji in the app name. Opening the trash or home folder could become real folder targets. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-16 — writing tools, typed edits of a selection (eleventh pass)
+
+Tried 45 typed asks such as "make it shorter", "fix my grammar", "proofread this", "make it more polite", "rewrite this professionally", "make it 50% shorter", "expand this", "turn this into bullet points" and "improve my writing".
+
+As a user, the templates for these edits only ran for voice. Typing "fix my grammar" or "make it shorter" next to a selection went to the model as a free question, so the grammar code tier and the cache were skipped and the answer could differ from the chip.
+
+Fixed: a typed ask that is a fixed edit or explain of the selection, at the start of a thread, now runs as the matching chip. The shared check is `selectionTask` in brain/intents.js, used by main/companion.js. Test added in test/voice.test.js. Inside a thread the ask still goes to the model as a follow-up.
+
+Left for later: "make it 50% shorter", "shorten" alone, "make it longer", "expand this", "make it more direct", "make it funnier", "rewrite in a friendlier tone" and "turn this into bullet points" still go to the model. Longer and bullets have no chip yet. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install. The companion change itself could not be run here because it needs Electron.

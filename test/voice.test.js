@@ -4,7 +4,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { execFileSync } = require('child_process');
-const { route, createSentenceSplitter, speakable, wakePhrase } = require('../brain/intents');
+const { route, selectionTask, createSentenceSplitter, speakable, wakePhrase } = require('../brain/intents');
 const { normalizeSpoken } = require('../brain/commands');
 const { VoiceEngine } = require('../main/voice');
 
@@ -57,6 +57,15 @@ test('spoken edits and explanations of a selection are templates', () => {
   for (const said of ['summarise this article', 'summarize the website']) assert.strictEqual(route(said).task, 'page_summary', said);
   for (const said of ["what's cheapest", 'what is the cheapest one']) assert.strictEqual(route(said).task, 'shop_value', said);
   assert.deepStrictEqual(route('turn private mode off'), { type: 'toggle', key: 'privacy', value: false });
+});
+
+test('typed edits of a selection map to the chip task, other questions do not', () => {
+  assert.strictEqual(selectionTask('Fix my grammar'), 'fix_grammar');
+  assert.strictEqual(selectionTask('make it shorter pls'), 'shorter');
+  assert.strictEqual(selectionTask('rewrite this professionally'), 'professional');
+  assert.strictEqual(selectionTask('is this grammar correct?'), null);
+  assert.strictEqual(selectionTask('summarize this page'), null); // a page task, not an edit of the selection
+  assert.strictEqual(selectionTask('define: ephemeral'), null);
 });
 
 test('open questions still go to the model; yes/no only count while confirming', () => {

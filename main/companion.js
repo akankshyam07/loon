@@ -9,6 +9,7 @@ const { scopeOf } = require('../brain/memory');
 const { parseCommand, describe, normalizeSpoken } = require('../brain/commands');
 const { isAgentGoal } = require('../brain/agent');
 const { teachIntent } = require('../brain/teach');
+const { selectionTask } = require('../brain/intents');
 const crypto = require('crypto');
 const { cleanPersonal, parseFeedback, suggestMemory, secondPerson, normalizeFact, styleNudge, factFromAnswer, chatMarkdown, chatFacts, onboardingResult } = require('../brain/personal');
 const { MODES, detectMode, orderChips, badgeFor } = require('../brain/modes');
@@ -613,6 +614,11 @@ function createCompanion({ bridge, resolver, brain, ui, hooks, actions, notes, s
         if (task === 'page_summary') {
           bridge.request({ type: 'highlight', tabId: packet.tabId, quotes: keySentences(packet.text, 4) }).catch(() => {});
         }
+      }
+      // Typing "fix my grammar" next to a selection is the same as pressing that chip.
+      if (!task && question && !session.turns.length && packet?.source === 'selection') {
+        const typedTask = selectionTask(question);
+        if (typedTask) { task = typedTask; question = undefined; }
       }
       const effectiveTask = task || (packet?.text ? 'ask' : 'ask');
       // Follow-up rule: any typed (or spoken) message, or "Go deeper", after an answer in this bubble carries the thread.
