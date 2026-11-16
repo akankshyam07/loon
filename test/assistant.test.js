@@ -295,6 +295,12 @@ test('memory store: profile, BM25 recall with site boost, budget, history search
   assert.deepStrictEqual(parseCommand("add to memory I'm left handed"), { action: 'remember', text: "I'm left handed" });
 });
 
+test('history lookups in other wordings search history instead of reaching the model or saving a memory', () => {
+  for (const t of ['recall docker', 'recall: docker', 'what was that thing I asked about docker', 'recent questions about docker', 'what did you tell me about docker', 'what did you say about docker', 'remember what we discussed about docker']) {
+    assert.deepStrictEqual(parseCommand(t), { action: 'recall', query: 'docker' }, t);
+  }
+});
+
 test('history questions drop time words and "you" instead of searching for them', () => {
   assert.deepStrictEqual(parseCommand('what did I ask yesterday'), { action: 'recall', query: '' });
   assert.deepStrictEqual(parseCommand('what did I search for last week'), { action: 'recall', query: '' });

@@ -2595,3 +2595,13 @@ As a user, the templates for these edits only ran for voice. Typing "fix my gram
 Fixed: a typed ask that is a fixed edit or explain of the selection, at the start of a thread, now runs as the matching chip. The shared check is `selectionTask` in brain/intents.js, used by main/companion.js. Test added in test/voice.test.js. Inside a thread the ask still goes to the model as a follow-up.
 
 Left for later: "make it 50% shorter", "shorten" alone, "make it longer", "expand this", "make it more direct", "make it funnier", "rewrite in a friendlier tone" and "turn this into bullet points" still go to the model. Longer and bullets have no chip yet. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install. The companion change itself could not be run here because it needs Electron.
+
+## 2026-11-16 — history (fourteenth pass)
+
+Tried 32 history phrasings such as "recall docker", "what did you tell me about docker", "what was that thing I asked about docker", "recent questions about css", "remember what we discussed about react" and "wat did i ask".
+
+As a user, the worst problem was that "what did you tell me about docker" and "what did you say about docker" went to the language model, which cannot see past chats and may invent an answer. "remember what we discussed about react" saved a junk memory instead of searching history.
+
+Fixed: parseCommand in brain/commands.js now reads these wordings, plus "recall docker", "that thing I asked about docker" and "recent questions about css", as a history search. Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: bare "recall", "last thing we talked about", "what was that thing about css" and typos such as "wat did i ask" still reach the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
