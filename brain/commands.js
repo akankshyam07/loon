@@ -121,8 +121,10 @@ function parseCommand(input, now = new Date()) {
     const target = tidy(m[1]).replace(/^(["'“‘])(.+)["'”’]$/, '$2').replace(/^(?:the|my) /i, '').replace(/ app$/i, '');
     // Two-step requests ("open youtube and search cats") are not an app name, so the chat gets them.
     if (!target || /(?:,| and| then| &) (?:then )?(?:search|go|message|text|play|type|write|send|find|look|click|show|make|create|start|open|launch|take|ask|check)\b/i.test(target)) return null;
-    if (/^(?:https?:\/\/)?(?:localhost|\d{1,3}(?:\.\d{1,3}){3})(?::\d+)?(?:\/\S*)?$/i.test(target) && (/localhost|:\d/i.test(target) || /^https?:/i.test(target))) return { action: 'open', target: /^https?:/i.test(target) ? target : `http://${target}`, kind: 'url' };
-    if ( /^(?:it|that|this|them)(?: \w+)?$/i.test(target)) return null;
+    if (/^(?:https?:\/\/)?(?:localhost|\d{1,3}(?:\.\d{1,3}){3})(?::\d+)?(?:\/\S*)?$/i.test(target)) return { action: 'open', target: /^https?:/i.test(target) ? target : `http://${target}`, kind: 'url' };
+    if (/^(?:it|that|this|them)(?: \w+)?$/i.test(target)) return null;
+    // mailto:, file: and friends are not apps or websites, and "the trash" or "home folder" have no app to launch.
+    if (/^(?!https?:)[a-z][a-z0-9+.-]*:\/?\/?/i.test(target) && !/^[\w.-]+:\d+/.test(target) || /^(?:trash|bin|home(?: folder| directory)?)$/i.test(target)) return null;
     // Not app names: "a new tab", "the file report.pdf", "the link", and two apps in one request. The chat explains what Loon can open.
     if (/^(?:an? |file |link$|app$|page$|website$|site$)| (?:and|&) /i.test(target)) return null;
     const folder = target.match(/^(?:~\/|(?:my )?(?:the )?)(downloads|documents|desktop|pictures|movies|music|applications)(?: folder)?$/i);

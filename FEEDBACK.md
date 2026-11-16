@@ -2575,3 +2575,13 @@ As a user, the worst problem was that a thumbs up, a prayer hands or a laughing 
 Fixed: an emoji-only warm reaction now gets an instant reply from code, and the thanks rule accepts stretched "thanks" and "ty". The instant key keeps a message that is only emoji instead of cleaning it to nothing. "❓" and "🤔" still go to the model because they ask for more. Test added in test/brain.test.js and checked to fail before the change.
 
 Left for later: "ok", "k", "cool", "no problem", "np", "you too", "lol thanks", "ok thanks bye" and "haha nice" still go to the model. Plain "ok" and "cool" can answer a question from the cat, so they need a look at the last answer first. The 5 failures in `npm test` here are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-16 — open and launch commands (sixth pass)
+
+Tried 44 phrasings such as "open the trash", "open home folder", "open 192.168.1.1", "open mailto:a@b.com", "open file:///tmp/a", "open my downloads", "open system settings", "OPEN SLACK" and "open 10.0.0.1:3000".
+
+As a user, "open mailto:a@b.com" and "open file:///tmp/a" got a confirm card to launch an app with that name, and "open the trash" and "open home folder" did the same. All of these could only fail after I pressed confirm. "open 192.168.1.1" opened https, which most router pages do not serve.
+
+Fixed: bare IP addresses now open as http, and URL schemes other than http and https, plus "trash" and "home folder", go to the chat. Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: "open chrome 🙂" keeps the emoji in the app name. Opening the trash or home folder could become real folder targets. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

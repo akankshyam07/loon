@@ -45,6 +45,9 @@ test('commands: reminders, events, open, find, notes, memory; questions fall thr
   assert.strictEqual(parseCommand('open notes.txt', NOW), null);
   assert.deepStrictEqual(parseCommand('open reddit.com/r/cats', NOW), { action: 'open', target: 'https://reddit.com/r/cats', kind: 'url' });
   assert.strictEqual(parseCommand('open that link', NOW), null);
+  // Router pages are plain http, and schemes or places with no app go to the chat instead of a card that fails.
+  assert.deepStrictEqual(parseCommand('open 192.168.1.1', NOW), { action: 'open', target: 'http://192.168.1.1', kind: 'url' });
+  for (const q of ['open mailto:a@b.com', 'open file:///tmp/a', 'open the trash', 'open home folder']) assert.strictEqual(parseCommand(q, NOW), null, q);
   // Two-step requests go to the chat, local servers are web links, quotes around an app name are dropped.
   assert.strictEqual(parseCommand('open youtube and search cats', NOW), null);
   assert.strictEqual(parseCommand('launch safari and go to apple.com', NOW), null);
