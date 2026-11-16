@@ -2605,3 +2605,13 @@ As a user, the worst problem was that "what did you tell me about docker" and "w
 Fixed: parseCommand in brain/commands.js now reads these wordings, plus "recall docker", "that thing I asked about docker" and "recent questions about css", as a history search. Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: bare "recall", "last thing we talked about", "what was that thing about css" and typos such as "wat did i ask" still reach the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-16 — food and menu (sixteenth pass)
+
+Tried a 30 item menu with Indian, Japanese, Italian and pub dishes and asked for lightest, highest protein and vegetarian picks.
+
+As a user, the vegetarian list put "Steamed Dumplings" first, and "Buffalo Wings" and "Lasagna" were also marked vegetarian. Those usually hold meat, so Loon was telling a vegetarian something wrong.
+
+Fixed: brain/food.js now treats wings, dumplings, gyoza, potstickers, wontons, siu mai and lasagna as meat dishes unless the name says vegetable, veggie, vegan, cauliflower, spinach or mushroom. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: Chicken Tikka Masala has no heavy signal, Poutine (beef gravy) still counts as vegetarian, and bao and empanadas are not covered. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

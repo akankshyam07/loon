@@ -372,6 +372,13 @@ test('menu: veggie burgers count as vegetarian, two prices on one line name one 
   assert.match(food.recommend(items, 'protein').text, /£13\.50/);
 });
 
+test('menu: dumplings, wings and lasagna are not called vegetarian unless the name says so', () => {
+  const items = food.extractMenu('Steamed Dumplings $8\nBuffalo Wings $12\nLasagna $15\nVegetable Dumplings $8\nCauliflower Wings $11\nKale Salad $10');
+  const picks = food.recommend(items, 'vegetarian').text;
+  for (const name of ['Vegetable Dumplings', 'Cauliflower Wings', 'Kale Salad']) assert.match(picks, new RegExp(name));
+  for (const name of ['Steamed Dumplings', 'Buffalo Wings', 'Lasagna']) assert.doesNotMatch(picks, new RegExp(`\\*\\*${name}`));
+});
+
 test('parsePrice and parseQuantity read lakh grouping, bare cents, dozens and half sizes', () => {
   assert.strictEqual(shopping.parsePrice('₹1,29,999'), 129999);
   assert.strictEqual(shopping.parsePrice('$.99'), 0.99);
