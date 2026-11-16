@@ -4,7 +4,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { createMoodParser, stripFlattery, Resolver } = require('../brain/resolve');
-const { worldTime } = require('../brain/worldtime');
+const { worldTime, dateMath } = require('../brain/worldtime');
 const { ResponseCache } = require('../brain/cache');
 
 function parse(chunks) {
@@ -64,11 +64,22 @@ test('cache evicts least recently used and expires old entries', () => {
   assert.strictEqual(cache.get('a'), null);
 });
 
+test('dateMath answers days until a weekday and dates N days away', () => {
+  const monday = new Date(2026, 10, 16, 12);
+  assert.strictEqual(dateMath('how many days until friday', monday), '4 days until Friday.');
+  assert.strictEqual(dateMath('days till monday', monday), '7 days until Monday.');
+  assert.strictEqual(dateMath('how many days until next tuesday', monday), '1 day until Tuesday.');
+  assert.strictEqual(dateMath('what day is it in 10 days', monday), '10 days from now is Thursday, November 26.');
+  assert.strictEqual(dateMath('what date will it be in 2 weeks', monday), '2 weeks from now is Monday, November 30.');
+  assert.strictEqual(dateMath('what day is it in a week', monday), '1 week from now is Monday, November 23.');
+  assert.strictEqual(dateMath('how many days until the weekend', monday), null);
+});
+
 test('ladder: instant answers survive smart quotes, "?!", "right now" and a wake word', async () => {
   const brain = { modelId: () => 'fake', chat: async () => { throw new Error('model should not run'); } };
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));
   const resolver = new Resolver({ brain, cacheFile: path.join(dir, 'c.json'), countsFile: path.join(dir, 'n.json') });
-  for (const q of ['what’s the time?', 'What time is it?!', 'what time is it right now?', 'Hey Loon, what time is it', 'tell me the time', 'what’s the time rn', 'what is the weekday', 'what day of the week is it', 'what’s the date tomorrow', 'what is tomorrow’s date', 'can you tell me the time', 'do you know what time it is', 'could you please tell me what time it is', 'current date and time', 'what day was yesterday', 'what day is it tomorrow', 'days till xmas', 'what’s your name', 'today’s date', 'what can u do', 'help me!', 'hi', 'Hello!', 'hey loon', 'thanks!', 'thank you', 'Good morning', 'thx', 'ok thanks', 'Thanks, that helps!', 'great thank you so much', 'thanks loon', 'thanks a ton', 'tysm', 'got it thanks', 'many thanks', 'thanks again', 'hi again', 'thnx', 'thankyou', 'tyvm', 'hiya', 'howdy', 'wassup', 'good night', 'Goodnight!', 'bye', 'see ya', 'gn loon', 'thanks for that', 'thanks for the help', 'thank you for helping', 'thanks a bunch', 'much appreciated', 'appreciate it', 'appreciated', 'that helped, thanks']) {
+  for (const q of ['what’s the time?', 'What time is it?!', 'what time is it right now?', 'Hey Loon, what time is it', 'tell me the time', 'what’s the time rn', 'what is the weekday', 'what day of the week is it', 'what’s the date tomorrow', 'what is tomorrow’s date', 'can you tell me the time', 'do you know what time it is', 'could you please tell me what time it is', 'current date and time', 'what day was yesterday', 'what day is it tomorrow', 'days till xmas', 'what’s your name', 'today’s date', 'what can u do', 'help me!', 'how many days until friday', 'what day is it in 10 days', 'hi', 'Hello!', 'hey loon', 'thanks!', 'thank you', 'Good morning', 'thx', 'ok thanks', 'Thanks, that helps!', 'great thank you so much', 'thanks loon', 'thanks a ton', 'tysm', 'got it thanks', 'many thanks', 'thanks again', 'hi again', 'thnx', 'thankyou', 'tyvm', 'hiya', 'howdy', 'wassup', 'good night', 'Goodnight!', 'bye', 'see ya', 'gn loon', 'thanks for that', 'thanks for the help', 'thank you for helping', 'thanks a bunch', 'much appreciated', 'appreciate it', 'appreciated', 'that helped, thanks']) {
     assert.strictEqual((await resolver.ask(q, { onText: () => {}, firstInThread: true })).tier, 'code', q);
   }
 });

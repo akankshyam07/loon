@@ -26,4 +26,29 @@ function worldTime(key, now = new Date()) {
   return `It's ${time}${sameDay ? '' : ` on ${day}`} in ${name}.`;
 }
 
-module.exports = { worldTime };
+const DAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+const FAR = /^(?:what (?:day|date) (?:is it|will it be)|what(?:'s| is) the date) (?:in|after) (\d{1,4}|a|one) (day|week)s?(?: from now| from today)?$|^what (?:day|date) (?:is it|will it be) (\d{1,4}|a|one) (day|week)s? from (?:now|today)$/;
+const UNTIL = /^(?:how (?:many days|long)|days) (?:is it |are there )?(?:until|till|to|before) (?:next )?(sunday|monday|tuesday|wednesday|thursday|friday|saturday)$/;
+
+// "How many days until Friday" and "what day is it in 10 days" depend on today's date, which the model does not have.
+function dateMath(key, now = new Date()) {
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const far = FAR.exec(key);
+  if (far) {
+    const n = far[1] || far[3];
+    const unit = far[2] || far[4];
+    const count = /^\d/.test(n) ? Number(n) : 1;
+    const target = new Date(today);
+    target.setDate(today.getDate() + count * (unit === 'week' ? 7 : 1));
+    return `${count} ${unit}${count === 1 ? '' : 's'} from now is ${target.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}.`;
+  }
+  const until = UNTIL.exec(key);
+  if (until) {
+    const name = until[1];
+    const days = (DAYS.indexOf(name) - today.getDay() + 7) % 7 || 7;
+    return `${days} day${days === 1 ? '' : 's'} until ${name.replace(/^./, (c) => c.toUpperCase())}.`;
+  }
+  return null;
+}
+
+module.exports = { worldTime, dateMath };

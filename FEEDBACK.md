@@ -2635,3 +2635,13 @@ As a user, the table covered most of them. Two common ones went to the local mod
 Fixed: brain/errors.js now has an SSH key entry with steps (ssh-add, add the public key to the host, test with ssh -T, check the remote URL) and the command not found entry accepts the cmd.exe wording. Tests added in test/modes.test.js and checked to fail before the change. An older assertion that publickey gave no answer now checks that it does not get the file permission answer.
 
 Left for later: Oracle "ORA-00942" and AWS "Unable to locate credentials" still go to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-16 — typed questions and instant answers, date questions (thirteenth pass)
+
+Tried 38 typed questions such as "how many days until friday", "what day is it in 10 days", "what week is it", "is it a leap year", "how long until 5pm", "flip a coin", "what's my timezone", "days until july 4th" and "what time is it in pst". Time in a named city and the day, date and month answers were fine.
+
+As a user, the worst problem was that questions about days from today went to the language model, which has no clock and would guess a date. "How many days until Friday" and "what day is it in 10 days" are plain date maths.
+
+Fixed: new dateMath in brain/worldtime.js answers "how many days until <weekday>" and "what day or date is it in N days or weeks", and the resolver tries it before the model. Tests added in test/brain.test.js and checked to fail before the change.
+
+Left for later: "what week is it", "how long until 5pm", "days until july 4th" and "thanksgiving", "what's my timezone", "what time is it in pst", "flip a coin" and "roll a dice" still go to the model. Coin and dice need randomness, so they should be decided deliberately. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
