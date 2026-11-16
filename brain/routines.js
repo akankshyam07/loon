@@ -130,6 +130,8 @@ function parseSchedule(input, now = new Date(), { allowOnce = false } = {}) {
   const time = timeMatch ? parseTime(timeMatch[1], part) : PART_TIMES[part] || '09:00';
   // A routine has one time of day: "at 9am and 5pm" must not quietly keep only the first.
   if (timeMatch && /(?:,|\band|&)\s*(?:at\s+)?(?:\d{1,2}(?::\d{2})?\s*(?:am|pm)|noon|midnight)\b/i.test(state.text)) return { schedule: null, rest: tidyRest(state.text) };
+  // "at 9 and 5": the second bare hour would otherwise end up at the front of the message.
+  if (timeMatch && /\b(?:at|@)\s*\d{1,2}(?::\d{2})?\s*(?:,|\band|&)\s*(?:at\s+)?\d{1,2}(?::\d{2})?\b(?!\s*(?:min|hour|hr|x\b|times|reps))/i.test(input)) return { schedule: null, rest: tidyRest(state.text) };
 
   const recurring = window || interval || perDay || monthDay || everyN || everyWeeks || days || weekly || daily;
   if (!recurring) {

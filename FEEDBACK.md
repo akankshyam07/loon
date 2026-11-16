@@ -2665,3 +2665,13 @@ As a user, almost everything already worked. The one real miss was two objects p
 Fixed: parseJson now splits several top-level values and treats them as an array, like it already does for JSON lines. Braces inside strings are respected, and a stray extra `}` still fails. Tests added in test/modes.test.js and checked to fail before the change.
 
 Left for later: the Kotlin entry in `DTO_LANGUAGES` still uses an invalid option. No chip uses it. There is still no typed way to ask for a DTO. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-16 — routines (fifteenth pass)
+
+Tried 24 phrasings such as "every morning at 8 …", "every sunday evening …", "twice a day …", "every day @ 7:30 …", "every wednesday and saturday at 10 …", "every other tuesday …", "every quarter …" and "at 9 every day …".
+
+As a user, nearly all of them worked. The one wrong result was "every day at 9 and 5 remind me to stretch". It made a daily 9:00 routine with the message "5 remind me to stretch" and no warning. "9am and 5pm" was already caught, only the bare hours were not.
+
+Fixed: a second bare hour after "at 9 and" or "at 9," now makes the card ask for the schedule, the same as the am/pm case. "at 9 take 2 pills" and "at 9 and 15 minutes" style wording is left alone. Test added in test/routines.test.js and checked to fail before the change.
+
+Left for later: "every other tuesday", "every first monday", "every last friday" and "every quarter" still ask instead of guessing. `npm test` shows the same 5 WordNet and demo failures as main in this sandbox.

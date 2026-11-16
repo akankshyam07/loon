@@ -72,6 +72,12 @@ test('routines: ~20 phrasings parse in code, and their wording reads back to the
   assert.strictEqual(twice.schedule, null);
   assert.strictEqual(twice.understood, false);
   assert.deepStrictEqual(twice.payload, { message: 'stretch' });
+  for (const bare of ['every day at 9 and 5 remind me to stretch', 'every day at 9, 5 remind me to stretch']) {
+    const r = R.parseRoutine(bare, { now: NOW });
+    assert.strictEqual(r.schedule, null, bare);
+    assert.deepStrictEqual(r.payload, { message: 'stretch' }, bare);
+  }
+  assert.strictEqual(R.parseRoutine('every day at 9 take 2 pills', { now: NOW }).schedule.time, '09:00');
   // "N times a day" is a routine spread over 9am to 9pm, not a one-off titled "stretch twice"
   const perDay = R.parseRoutine('remind me to stretch twice a day', { now: NOW });
   assert.deepStrictEqual(perDay.schedule, { type: 'interval', minutes: 720, window: { start: '09:00', end: '21:00' }, days: R.ALL_DAYS });
