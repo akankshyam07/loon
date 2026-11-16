@@ -359,3 +359,9 @@ test('onboarding handles "I\'m lactose intolerant", "X allergy", "allergies: X",
   assert.deepStrictEqual(onboardingResult({ name: 'I go by Ada' }).facts, ['Call me Ada']);
   assert.deepStrictEqual(onboardingResult({ name: 'Ada here' }).facts, ['Call me Ada']);
 });
+
+test('feedback: "too detailed" and "no emojis in answers" change the matching setting', () => {
+  for (const t of ['too detailed', 'too much detail', 'too many words']) assert.deepStrictEqual(parseFeedback(t).patch, { length: 'short' }, t);
+  assert.deepStrictEqual(parseFeedback('no emojis in answers').patch, { emoji: false });
+  assert.strictEqual(parseFeedback('too much detail in the code'), null);
+});

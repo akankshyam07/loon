@@ -2645,3 +2645,13 @@ As a user, the worst problem was that questions about days from today went to th
 Fixed: new dateMath in brain/worldtime.js answers "how many days until <weekday>" and "what day or date is it in N days or weeks", and the resolver tries it before the model. Tests added in test/brain.test.js and checked to fail before the change.
 
 Left for later: "what week is it", "how long until 5pm", "days until july 4th" and "thanksgiving", "what's my timezone", "what time is it in pst", "flip a coin" and "roll a dice" still go to the model. Coin and dice need randomness, so they should be decided deliberately. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-16 — settings UI, reply style feedback (eleventh pass)
+
+Tried 56 style requests such as "too long lol", "emojis please", "stop the sass", "be blunt", "just the answer", "too detailed", "no emojis in answers", "normal length" and "reset style".
+
+As a user, the most annoying misses were "too detailed", "too much detail" and "too many words". They are clear complaints about length but went to the model, which then answered at the same length. "no emojis in answers" also did nothing.
+
+Fixed: parseFeedback in brain/personal.js now reads those three as shorter, and accepts "in answers" or "in replies" after the emoji phrases. Test added in test/personal.test.js and checked to fail before the change.
+
+Left for later: "normal length", "reset style", "just the answer", "stop the sass" and "be blunt" have no matching setting or rule. "emojis please" is ambiguous. The 5 failing tests in `npm test` are the usual sandbox ones.
