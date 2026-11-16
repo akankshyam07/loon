@@ -2555,3 +2555,13 @@ As a user, the worst problem was that logged-in pages of bmo.com, scotiabank.com
 Fixed: these hosts, plus a few other lenders and a health booking site, are now in the sensitive list. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: a fixed list will always lag behind real banks. A page text check for "account balance" or "routing number" could catch the rest, but it needs a decision on false positives. login.salesforce.com and console.aws.amazon.com are still treated as ordinary pages. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-16 — translation and definitions (fifteenth pass)
+
+Tried 55 typed and spoken asks such as "give me a definition of ephemeral", "meaning ephemeral", "what is the definition of X", "synonyms for big and small", "translate to english", "translate this into spanish", "how do you say hello in spanish" and "hola in english".
+
+As a user, most dictionary, synonym and antonym asks worked. Two misses stood out. "give me a definition of X" and "meaning X" skipped the offline dictionary. "translate to english" and a bare "translate" with text selected were treated as a question by voice, so the model was called.
+
+Fixed: dictionaryTerm accepts "give/show me a definition of" and a bare "meaning X". The voice translate template accepts a missing "this" and a bare "translate". Tests added in test/brain.test.js and test/voice.test.js. The dictionary one fails before the change.
+
+Left for later: "translate this into french" and "how do you say hello in spanish" go to the model, since the offline translator only targets English and Spanish by default. "what do you mean by X" and "ephemeral means what" are not read as dictionary asks. "define run as a verb" goes to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

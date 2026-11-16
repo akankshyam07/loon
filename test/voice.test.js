@@ -46,7 +46,7 @@ test('spoken edits and explanations of a selection are templates', () => {
     'make this a lot shorter': 'shorter', 'rewrite this in a professional tone': 'professional', 'explain this in simple terms': 'simplify',
     'make this more casual': 'casual', 'make it casual': 'casual', 'make it sound less formal': 'casual', 'write this more casually': 'casual',
     'more casual': 'casual', 'rewrite this in a casual tone': 'casual',
-    'Translate it': 'translate', 'Loon, translate this for me': 'translate', 'translate that into English': 'translate', 'translate the selection': 'translate', 'What does this say in English?': 'translate', "what's this in english": 'translate', 'this in english please': 'translate',
+    'Translate it': 'translate', 'translate to english': 'translate', 'translate': 'translate', 'Loon, translate this for me': 'translate', 'translate that into English': 'translate', 'translate the selection': 'translate', 'What does this say in English?': 'translate', "what's this in english": 'translate', 'this in english please': 'translate',
   };
   for (const [said, task] of Object.entries(expected)) {
     assert.deepStrictEqual(route(said), { type: 'task', task, needs: 'selection' }, said);

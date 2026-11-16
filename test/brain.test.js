@@ -250,6 +250,14 @@ test('dictionaryTerm accepts a colon, a polite tail and "X meaning"', () => {
   assert.strictEqual(dictionaryTerm('this meaning'), null);
 });
 
+test('dictionaryTerm accepts "give me a definition of" and a bare "meaning X"', () => {
+  const { dictionaryTerm } = require('../brain/define');
+  assert.strictEqual(dictionaryTerm('give me a definition of ephemeral'), 'ephemeral');
+  assert.strictEqual(dictionaryTerm('show me the meaning of ephemeral'), 'ephemeral');
+  assert.strictEqual(dictionaryTerm('meaning ephemeral'), 'ephemeral');
+  assert.strictEqual(dictionaryTerm('meaning this'), null);
+});
+
 test('dictionaryTerm ignores polite openers, "in english" tails and emoji', () => {
   const { dictionaryTerm } = require('../brain/define');
   assert.strictEqual(dictionaryTerm('pls define ephemeral'), 'ephemeral');
