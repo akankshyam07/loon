@@ -2765,3 +2765,13 @@ As a user, almost all of them were read correctly. The one real miss was a bare 
 Fixed: extractWhen now reads "in 10" before "to", "and", "so", "that" or the end as minutes. "in 2 and a half hours" and "in 3 days" are unchanged. Test added in test/assistant.test.js and it fails before the change.
 
 Left for later: "remind me in a bit" and "remind me later" still give a reminder with no time and the phrase in the title. "set a 10 minute alarm" and "cancel my timer" are not matched. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-17 — voice intents, spoken forms of the developer, fact-check, page and review chips (twelfth pass)
+
+Tried 37 spoken phrasings such as "fact check this", "is this true", "explain this code", "what does this error mean", "why am I getting this error", "what's wrong with this code", "how do I fix this error", "turn this page into notes", "make a checklist from this page", "summarize the reviews" and "what do people say in the reviews".
+
+As a user, every one of these went to the model as a free question with no selection attached, even though each has a chip. The model then answered about nothing, and error questions skipped the code error table. "find the bug" was read as a file search.
+
+Fixed: added voice templates for Fact-check, Explain code, Explain error, Find bug, Likely fix, Notes, Checklist and Reviews so they run the same task as the chip. Test added in test/voice.test.js and checked to fail before the change.
+
+Left for later: a bare "find the bug" still means a file search. "read this to me", "make it funnier", "make it longer", "save this", "copy that" and "translate this into french" still have no voice template. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
