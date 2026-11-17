@@ -62,7 +62,7 @@ async function define(phrase, { maxSenses = 4 } = {}) {
 
 // A typed dictionary question ("define ephemeral", "what does ephemeral mean?", "meaning of the word ephemeral") → the
 // term, or null. Pronouns and "the error" style phrases are left to the model, since they point at something on screen.
-const DICTIONARY_ASK = /^(?:(?:define|def|look up|explain(?= the (?:word|term) )):?|(?:(?:the|a) )?(?:definition|meaning) (?:of|for)|(?:definition|meaning):?|wh?[au]t(?:'?s| is| does)(?: the)? (?:meaning|definition) (?:of|for)|wh?[au]t does)\s+(?:the (?:word|term) )?["'“‘]?([\p{L}-]+(?: [\p{L}-]+)??)["'”’]?(?: means?)?$|^wh?[au]t(?:'?s| is)? ([\p{L}-]+) means?$|^([\p{L}-]+) (?:meaning|definition|means)$/iu;
+const DICTIONARY_ASK = /^(?:(?:define|def|look up|explain(?= the (?:word|term) )):?|(?:(?:the|a) )?(?:definition|meaning) (?:of|for)|(?:definition|meaning):?|wh?[au]t(?:'?s| is| does)(?: the)? (?:meaning|definition) (?:of|for)|wh?[au]t does|wh?[au]t do you mean by)\s+(?:the (?:word|term) )?["'“‘]?([\p{L}-]+(?: [\p{L}-]+)??)["'”’]?(?: means?)?$|^wh?[au]t(?:'?s| is)? ([\p{L}-]+) means?$|^([\p{L}-]+) (?:meaning|definition|means(?: wh?[au]t)?)$/iu;
 const NOT_A_TERM = /^(?:this|that|it|these|those|here|there|the|my|your|his|her|our|their|a|an|going on|wrong|new|up|happening|next|today|time)\b/i;
 
 function dictionaryTerm(question) {
@@ -90,7 +90,7 @@ function synonymTerm(question) {
 }
 
 // "opposite of happy", "antonym for big" → the word, or null.
-const ANTONYM_ASK = /^(?:(?:give me |find me |what(?:'?s| is| are) )?(?:the |an |some )?(?:opposites?(?: words?)?|antonyms?|contrary)\s+(?:of|for|to)|what(?:'?s| is) the opposite of)\s+(?:the (?:word|term) )?["'“‘]?([\p{L}-]+)["'”’]?$|^([\p{L}-]+) antonyms?$/iu;
+const ANTONYM_ASK = /^(?:(?:give me |find me |what(?:'?s| is| are) )?(?:the |an |some )?(?:opposites?(?: words?)?|antonyms?|contrary)\s+(?:of|for|to)|what(?:'?s| is) the opposite of)\s+(?:the (?:word|term) )?["'“‘]?([\p{L}-]+)["'”’]?$|^([\p{L}-]+) (?:antonyms?|opposite)$/iu;
 
 function antonymTerm(question) {
   const m = cleanAsk(question).match(ANTONYM_ASK);

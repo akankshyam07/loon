@@ -395,3 +395,11 @@ test('ladder: emoji-only reactions and stretched thanks mid-thread are answered 
     assert.notStrictEqual((await resolver.ask(q, { onText: () => {}, firstInThread: false, history })).tier, 'code', q);
   }
 });
+
+test('dictionaryTerm and antonymTerm accept "what do you mean by X", "X means what" and "X opposite"', () => {
+  const { dictionaryTerm, antonymTerm } = require('../brain/define');
+  assert.strictEqual(dictionaryTerm('what do you mean by ephemeral'), 'ephemeral');
+  assert.strictEqual(dictionaryTerm('ephemeral means what?'), 'ephemeral');
+  assert.strictEqual(dictionaryTerm('what do you mean by that'), null);
+  assert.strictEqual(antonymTerm('hot opposite'), 'hot');
+});

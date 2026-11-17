@@ -2725,3 +2725,13 @@ What went wrong is in `Translator.supports()`. It asks the translator process fo
 Fixed: a good language list is still kept, but a failed lookup is dropped so the next request asks again. The failed request itself still answers "no", so nothing hangs. Tests added in test/translate.test.js, and the two retry tests fail on the old code.
 
 Left for later: this explains why the step recovers on a re-run, but I could not run the packaged app here, so CI on this commit is the real check. The duo click steps in test/selftest-features.js and the "?" nudge step in test/selftest-browser.js still fail now and then on the Mac runners and need a short settle wait or one retry. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-17 — translation and definitions (sixteenth pass)
+
+Tried 30 typed dictionary, synonym and antonym asks such as "what do you mean by ephemeral", "ephemeral means what", "hot opposite", "define ephemeral as a verb", "what does 'ubiquitous' mean?", "meaning of 'carpe diem'" and "wat does ephemeral mean".
+
+As a user, most asks hit the offline dictionary. Three natural forms still went to the language model, "what do you mean by X", "X means what" and "X opposite".
+
+Fixed: dictionaryTerm accepts "what do you mean by X" and "X means what". antonymTerm accepts "X opposite". "what do you mean by that" still goes to the model. Test added in test/brain.test.js and it fails before the change.
+
+Left for later: "whats serendipity", "what is X" and "explain X" stay with the model on purpose, since they are often not word questions. "define X as a verb" and "antonyms for good and bad" are not parsed. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install, and they are the same without this change.
