@@ -2675,3 +2675,13 @@ As a user, nearly all of them worked. The one wrong result was "every day at 9 a
 Fixed: a second bare hour after "at 9 and" or "at 9," now makes the card ask for the schedule, the same as the am/pm case. "at 9 take 2 pills" and "at 9 and 15 minutes" style wording is left alone. Test added in test/routines.test.js and checked to fail before the change.
 
 Left for later: "every other tuesday", "every first monday", "every last friday" and "every quarter" still ask instead of guessing. `npm test` shows the same 5 WordNet and demo failures as main in this sandbox.
+
+## 2026-11-17 — selection chips and classification (fourteenth pass)
+
+Tried 46 selections such as single words, questions, prices, emails, URLs, paths, accented and CJK sentences, bullet lists, short error phrases and long prose.
+
+As a user, nearly all of them worked. The two wrong results were "cat: notes.txt: No such file or directory" and "ssh: connect to host 10.0.0.5 port 22: Connection timed out". Both read as plain sentences, so Loon offered Explain and Define instead of the error help.
+
+Fixed: the error line check in extension/lib/classify.js now recognizes "No such file or directory" and ssh connect failures. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: a bare "Traceback", "Connection refused", "Out of memory" and "Killed: 9" are still words. A short dash bullet list reads as one sentence. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

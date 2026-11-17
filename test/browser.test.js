@@ -87,7 +87,8 @@ test('selection kinds treat unspaced CJK text by length', () => {
   for (const line of ['zsh: permission denied: ./run.sh', 'dyld: Library not loaded: libfoo.dylib', 'Permission denied (publickey).',
     "Access denied for user 'root'@'localhost'", 'net::ERR_CONNECTION_REFUSED', 'CrashLoopBackOff', 'OOMKilled',
     '! [rejected] main -> main (non-fast-forward)', 'CONFLICT (content): Merge conflict in a.txt',
-    'SSL: CERTIFICATE_VERIFY_FAILED', 'x509: certificate signed by unknown authority', 'Failed to fetch']) {
+    'SSL: CERTIFICATE_VERIFY_FAILED', 'x509: certificate signed by unknown authority', 'Failed to fetch',
+    'cat: notes.txt: No such file or directory', 'ssh: connect to host 10.0.0.5 port 22: Connection timed out']) {
     assert.strictEqual(classifySelection(line), 'stacktrace', line);
   }
   assert.strictEqual(classifySelection('The quick brown fox'), 'sentence');
