@@ -2775,3 +2775,13 @@ As a user, every one of these went to the model as a free question with no selec
 Fixed: added voice templates for Fact-check, Explain code, Explain error, Find bug, Likely fix, Notes, Checklist and Reviews so they run the same task as the chip. Test added in test/voice.test.js and checked to fail before the change.
 
 Left for later: a bare "find the bug" still means a file search. "read this to me", "make it funnier", "make it longer", "save this", "copy that" and "translate this into french" still have no voice template. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-17 — writing tools by voice and typed edits (eleventh pass)
+
+Tried 78 edit phrases on a selection, such as "be more concise", "keep it short", "improve my writing", "rephrase", "clean this up", "make it sound more natural", "sound more professional", "sound friendlier", "fix my english" and "make it shorter 😊".
+
+As a user, many ordinary phrasings went to the model as free questions, so the answer had no Replace or Copy actions. The worst were "be more concise", "shorten" on its own, "sound more professional" and a trailing emoji after a command that otherwise worked.
+
+Fixed: the spoken and typed templates in brain/intents.js now cover those phrasings, and emoji are ignored when matching. Cases added in test/voice.test.js and checked to fail before the change.
+
+Left for later: "make it longer", "expand this", "turn this into bullet points" and "make it punchier" still go to the model as questions. Combined edits such as "shorter and simpler" or "professional but friendly" and "tidy this up" are not split. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
