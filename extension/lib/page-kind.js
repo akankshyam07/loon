@@ -18,6 +18,7 @@
     'ing.com', 'ing.nl', 'ing.de', 'abnamro.nl', 'bbva.com', 'bbva.es', 'nubank.com.br', 'itau.com.br', 'usaa.com', 'navyfederal.org', 'creditkarma.com', 'mint.intuit.com', 'zellepay.com', 'cigna.com', 'aetna.com', 'bcbs.com', 'healthequity.com',
     'bmo.com', 'scotiabank.com', 'cibc.com', 'westpac.com.au', 'anz.com', 'nab.com.au', 'bankwest.com.au', 'n26.com', 'starlingbank.com',
     'wealthfront.com', 'betterment.com', 'synchrony.com', 'tdameritrade.com', 'klarna.com', 'affirm.com', 'bitwarden.eu', '1password.eu', 'zocdoc.com',
+    'checkout.stripe.com', 'pay.google.com', 'pay.amazon.com', 'account.microsoft.com', 'console.aws.amazon.com', 'login.salesforce.com', 'studentaid.gov',
   ];
   // Country sites of the same banks (wellsfargo.com.au, hsbc.co.uk, chase.co.uk); a look-alike such as
   // bankofamerica.com.evil.com does not match because only a two or three letter suffix may follow.

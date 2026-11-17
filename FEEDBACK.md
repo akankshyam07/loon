@@ -2695,3 +2695,13 @@ As a user, the worst problem was in forget. "Forget what I just said" and "forge
 Fixed: Memory.forget now ignores those conversational words and needs about 60 percent of the remaining words to match, so two word requests need both. Vague references now answer "I didn't have anything like that saved". Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: "remember me?", "remember what I said" and "remember the milk" save junk facts such as "me". "Forget it" and "forget that" go to the model, which may promise to forget. "What's my name", "who am I" and typos like "remmeber" also go to the model. The confirm card for forget should list the facts it would remove. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-17 — page kinds, payment and cloud console hosts (fourteenth pass)
+
+Tried 25 sites such as Salesforce and AWS console logins, Amazon cart and pay, Stripe hosted checkout, Google Pay, Microsoft account, student aid, Gmail, iCloud mail, a hospital portal and an Etsy listing.
+
+As a user, the worst problem was that checkout.stripe.com, pay.google.com, pay.amazon.com, account.microsoft.com, console.aws.amazon.com, login.salesforce.com and studentaid.gov counted as ordinary pages. Loon would offer to read a payment or account page.
+
+Fixed: these hosts are now in the sensitive list. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: Shopify style checkouts (`/checkouts/...` with a `credit_card` field name) and card fields inside iframes are still not seen. Kaiser and other health portals on custom hosts are still ordinary pages. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

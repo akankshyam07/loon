@@ -131,6 +131,9 @@ test('page kinds: sensitive wins, shops and articles are recognized', async () =
   assert.strictEqual(page('<form><input name="routing_number"><input name="account_number"></form>').kind, 'sensitive');
   assert.notStrictEqual(page('<form><input name="classname"></form>').kind, 'sensitive');
   assert.strictEqual(page('<form><input name="passcode"></form>').kind, 'sensitive');
+  for (const host of ['checkout.stripe.com', 'pay.google.com', 'pay.amazon.com', 'account.microsoft.com', 'console.aws.amazon.com', 'login.salesforce.com', 'studentaid.gov']) {
+    assert.strictEqual(page('<p>Pay</p>', `https://${host}/`).kind, 'sensitive', host);
+  }
   for (const host of ['www.bmo.com', 'www.westpac.com.au', 'app.n26.com', 'www.cibc.com', 'app.wealthfront.com', 'vault.bitwarden.eu']) {
     assert.strictEqual(page('<p>Your balance</p>', `https://${host}/`).kind, 'sensitive', host);
   }
