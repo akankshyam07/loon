@@ -66,8 +66,15 @@ class Translator {
   }
 
   async supports(from, to) {
-    this.pairs ??= this.call({ type: 'pairs' }).then((r) => new Set(r.pairs)).catch(() => new Set());
-    const pairs = await this.pairs;
+    if (!this.pairs) {
+      const lookup = this.call({ type: 'pairs' }).then((r) => new Set(r.pairs));
+      this.pairs = lookup;
+      // Keep a good answer for the life of the process, never a failed one. The worker can fail its first call while it
+      // starts up, and a remembered failure would switch translation off until Loon restarts.
+      lookup.catch(() => { if (this.pairs === lookup) this.pairs = null; });
+    }
+    let pairs;
+    try { pairs = await this.pairs; } catch { return false; }
     // Bergamot pivots through English when there is no direct model.
     return pairs.has(`${from}-${to}`) || (pairs.has(`${from}-en`) && pairs.has(`en-${to}`));
   }

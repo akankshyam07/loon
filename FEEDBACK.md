@@ -2715,3 +2715,13 @@ As a user, the worst leak was a bare token with no "key=" label in front of it. 
 Fixed: new api-key rules for those prefixes. Test added in test/browser.test.js. The failures in `npm test` here are the same ones as on main in this sandbox (WordNet, quicktype, Harper and other missing data).
 
 Left for later: `pwd=abc` and `client_secret: abc` with a value under 4 characters, "user bob pass hunter22", Discord bot tokens, and an unquoted multi-word password still leak the later words.
+
+## 2026-11-17 — CI repair, offline translator switched itself off after one failed start
+
+Tried the `packaged` job on 1c41dee. "Translate runs on the offline translator" failed about a second after the previous step, while the packaged smoke check for the same translator passed. The same step failed the same way on 7d790d5 and da41b2f and passed on re-run each time.
+
+What went wrong is in `Translator.supports()`. It asks the translator process for its language list once and keeps the answer for the life of the app. If that first call failed, for example because the process was still starting, the empty answer was kept too, so every later translation said it was unsupported until Loon restarted. A real user would see "I can't translate that" for good after one unlucky start.
+
+Fixed: a good language list is still kept, but a failed lookup is dropped so the next request asks again. The failed request itself still answers "no", so nothing hangs. Tests added in test/translate.test.js, and the two retry tests fail on the old code.
+
+Left for later: this explains why the step recovers on a re-run, but I could not run the packaged app here, so CI on this commit is the real check. The duo click steps in test/selftest-features.js and the "?" nudge step in test/selftest-browser.js still fail now and then on the Mac runners and need a short settle wait or one retry. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
