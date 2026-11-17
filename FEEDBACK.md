@@ -2785,3 +2785,13 @@ As a user, many ordinary phrasings went to the model as free questions, so the a
 Fixed: the spoken and typed templates in brain/intents.js now cover those phrasings, and emoji are ignored when matching. Cases added in test/voice.test.js and checked to fail before the change.
 
 Left for later: "make it longer", "expand this", "turn this into bullet points" and "make it punchier" still go to the model as questions. Combined edits such as "shorter and simpler" or "professional but friendly" and "tidy this up" are not split. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-17 — typed questions, tip phrasings (fifteenth pass)
+
+Tried 42 calculator questions such as "15% of 80", "$45 minus 20%", "split 87.50 between 3", "10 km in miles", "tip 18% on 64.20", "tip of 15% on 40" and "what's the tip on a $50 bill at 20%".
+
+As a user, the worst problem was tips. Natural orders like "tip 18% on 64.20" and "tip of 15% on 40" fell through to the model, which is bad at arithmetic. "What's the tip on a $50 bill at 20%" did the same.
+
+Fixed: the tip rule in brain/calc.js now accepts the percent after "tip", "tip of", "a" before the amount and "bill", "check" or "meal" after it. Test added in test/brain.test.js and checked to fail before the change.
+
+Left for later: "10 % 3", "1.5k + 2k", "double 35", "cube root of 27", "pi * 2", "log 100" and "what should I tip on 64.20" (no percent given) still go to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

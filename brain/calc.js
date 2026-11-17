@@ -106,10 +106,10 @@ function calc(question) {
   m = body.match(/^(\d+(?:\.\d+)?)\s*(\+|-|plus|minus)\s*(\d+(?:\.\d+)?)\s*%$/);
   if (m) return `${cash(m[1] * (1 + (/^(?:\+|plus)$/.test(m[2]) ? 1 : -1) * m[3] / 100))}.`;
 
-  // "tip on 45 at 18%", "18% tip on 45" and "45 with 18% tip"
-  m = body.match(/^(?:(?:a|the)\s+)?(?:(\d+(?:\.\d+)?)\s*%\s*)?tip\s+(?:on|for)\s+(\d+(?:\.\d+)?)(?:\s+at\s+(\d+(?:\.\d+)?)\s*%)?$/);
-  if (m && (m[1] || m[3])) {
-    const [bill, tip] = [parseFloat(m[2]), m[2] * (m[1] || m[3]) / 100];
+  // "tip on 45 at 18%", "18% tip on 45", "tip 18% on 45", "tip of 18% on 45" and "45 with 18% tip"
+  m = body.match(/^(?:(?:a|the)\s+)?(?:(\d+(?:\.\d+)?)\s*%\s*)?tip\s+(?:(?:of\s+)?(\d+(?:\.\d+)?)\s*%\s+)?(?:on|for)\s+(?:a\s+)?(\d+(?:\.\d+)?)(?:\s+(?:bill|check|meal))?(?:\s+at\s+(\d+(?:\.\d+)?)\s*%)?$/);
+  if (m && (m[1] || m[2] || m[4])) {
+    const [bill, tip] = [parseFloat(m[3]), m[3] * (m[1] || m[2] || m[4]) / 100];
     const sym = money ? money[0] : '';
     const two = (n) => sym + n.toFixed(2).replace(/\B(?=(\d{3})+\.)/g, ',');
     return `Tip ${two(tip)}, total ${two(bill + tip)}.`;
