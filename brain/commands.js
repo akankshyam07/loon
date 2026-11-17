@@ -7,6 +7,8 @@ function extractWhen(text, now = new Date(), { morning = false } = {}) {
   text = dayOfMonth(text, now)
     .replace(/\b(?:end of (?:the )?(?:work ?)?day|eod|close of business|cob)\b/gi, 'at 5pm')
     .replace(/\b(\d+)\s*secs?\b/gi, '$1 seconds')
+    // "in 10 to check oven" is how people type minutes.
+    .replace(/\bin (\d+)(?=\s+(?:to|and(?! a half)|so|that)\b|\s*$)/gi, 'in $1 minutes')
     .replace(/\b(quarter|half) (past|after) (\d{1,2})\b/gi, (all, part, _w, h) => `${h}:${part.toLowerCase() === 'half' ? '30' : '15'}`)
     .replace(/\bquarter to (\d{1,2})\b/gi, (all, h) => `${(Number(h) + 10) % 12 + 1}:45`)
     .replace(/\b(\d+) and a half (hour|minute|day|week)/gi, '$1.5 $2')

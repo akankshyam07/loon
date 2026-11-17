@@ -2755,3 +2755,13 @@ As a user, the worst problem was wrong allergy facts. "I can't eat gluten" was s
 Fixed: the allergy box now reads "no X", "without X", "I can't eat X" and "I don't eat X" as avoided foods, drops "I have" and "I got" lead-ins, and treats "nada" as no answer. The interests box drops "I like to". Test added in test/personal.test.js.
 
 Left for later: "celiac", "severe peanut allergy" (saved as "severe peanut") and "Nope :)" are still saved as allergy names. Names keep their case as typed ("ada lovelace"). The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-17 — reminders, timers and focus (sixteenth pass)
+
+Tried 40 phrasings such as "remind me in 10 to check oven", "remind me in 30 to move car", "timer 3 min", "set a timer for 1.5 hours", "remind me at midnight to sleep", "wake me up at 7 tomorrow", "book lunch with ana thursday noon" and "remind me in 1 hr 30 min to eat".
+
+As a user, almost all of them were read correctly. The one real miss was a bare number after "in". "remind me in 10 to check oven" made a reminder titled "in 10 to check oven" with no time, so it would never fire. This was listed as left for later in two earlier passes.
+
+Fixed: extractWhen now reads "in 10" before "to", "and", "so", "that" or the end as minutes. "in 2 and a half hours" and "in 3 days" are unchanged. Test added in test/assistant.test.js and it fails before the change.
+
+Left for later: "remind me in a bit" and "remind me later" still give a reminder with no time and the phrase in the title. "set a 10 minute alarm" and "cancel my timer" are not matched. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

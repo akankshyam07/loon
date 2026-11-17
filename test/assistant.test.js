@@ -365,6 +365,13 @@ test('commands: "timer 1h30" and a bare number are timers, "on the 1st" is a dat
   assert.ok(rent.when > NOW);
 });
 
+test('commands: "in 10 to check oven" means ten minutes', () => {
+  const oven = parseCommand('remind me in 10 to check oven', NOW);
+  assert.strictEqual(oven.title, 'check oven');
+  assert.strictEqual(oven.when.getTime() - NOW.getTime(), 10 * 60000);
+  assert.strictEqual(parseCommand('remind me in 3 days to follow up', NOW).title, 'follow up');
+});
+
 test('alarms are mornings, timers can carry a label, and "about" does not stay in a reminder title', () => {
   assert.strictEqual(parseCommand('wake me up at 6:45 tomorrow', NOW).when.getHours(), 6);
   assert.strictEqual(parseCommand('wake me at 6', NOW).when.getHours(), 6);
