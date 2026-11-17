@@ -75,6 +75,17 @@ test('dateMath answers days until a weekday and dates N days away', () => {
   assert.strictEqual(dateMath('how many days until the weekend', monday), null);
 });
 
+test('dateMath answers days until a calendar date or a fixed holiday', () => {
+  const day = new Date(2026, 10, 16, 12);
+  assert.strictEqual(dateMath('days until july 4th', day), '230 days until Sunday, July 4.');
+  assert.strictEqual(dateMath('how many days until 25 december', day), '39 days until Friday, December 25.');
+  assert.strictEqual(dateMath('how many days until christmas', day), '39 days until Friday, December 25.');
+  assert.strictEqual(dateMath('how many days until nov 16', day), "That's today, Monday, November 16.");
+  assert.strictEqual(dateMath('how many days until feb 30', day), null);
+  assert.strictEqual(dateMath('how many days until thanksgiving', day), null);
+  assert.strictEqual(dateMath('how many days until the weekend', day), null);
+});
+
 test('ladder: instant answers survive smart quotes, "?!", "right now" and a wake word', async () => {
   const brain = { modelId: () => 'fake', chat: async () => { throw new Error('model should not run'); } };
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));

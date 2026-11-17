@@ -2735,3 +2735,13 @@ As a user, most asks hit the offline dictionary. Three natural forms still went 
 Fixed: dictionaryTerm accepts "what do you mean by X" and "X means what". antonymTerm accepts "X opposite". "what do you mean by that" still goes to the model. Test added in test/brain.test.js and it fails before the change.
 
 Left for later: "whats serendipity", "what is X" and "explain X" stay with the model on purpose, since they are often not word questions. "define X as a verb" and "antonyms for good and bad" are not parsed. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install, and they are the same without this change.
+
+## 2026-11-17 — typed questions and instant answers, days until a date (fourteenth pass)
+
+Tried 26 typed questions such as "days until july 4th", "how many days until christmas", "how long until the 3rd of march", "days till jan 1", "how many days until feb 30", "days until thanksgiving" and "days until may".
+
+As a user, "how many days until Christmas" and "days until July 4th" went to the language model, which has no clock and would guess. Only weekdays were answered by code.
+
+Fixed: dateMath now answers days until a month and day ("july 4th", "25 december", "3rd of march") and a few fixed holidays (Christmas, Christmas Eve, Halloween, New Year, Valentine's Day). A date already passed this year counts to next year, today says so, and impossible dates like feb 30 fall through to the model. Test added in test/brain.test.js and it fails before the change.
+
+Left for later: "what week is it", "how long until 5pm", moving holidays like Thanksgiving and Easter, "what time is it in pst" and "what's my timezone" still go to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

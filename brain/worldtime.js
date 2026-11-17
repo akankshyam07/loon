@@ -30,6 +30,19 @@ const DAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 
 const FAR = /^(?:what (?:day|date) (?:is it|will it be)|what(?:'s| is) the date) (?:in|after) (\d{1,4}|a|one) (day|week)s?(?: from now| from today)?$|^what (?:day|date) (?:is it|will it be) (\d{1,4}|a|one) (day|week)s? from (?:now|today)$/;
 const UNTIL = /^(?:how (?:many days|long)|days) (?:is it |are there )?(?:until|till|to|before) (?:next )?(sunday|monday|tuesday|wednesday|thursday|friday|saturday)$/;
 
+const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+const HOLIDAYS = { christmas: [11, 25], 'christmas eve': [11, 24], halloween: [9, 31], "new year's day": [0, 1], 'new years day': [0, 1], 'new year': [0, 1], 'new years': [0, 1], "valentine's day": [1, 14], 'valentines day': [1, 14], valentines: [1, 14] };
+const UNTIL_DATE = /^(?:how (?:many days|long)|days) (?:is it |are there )?(?:until|till|to|before) (?:the )?(?:([a-z]+) (\d{1,2})(?:st|nd|rd|th)?|(\d{1,2})(?:st|nd|rd|th)? (?:of )?([a-z]+)|([a-z' ]+))$/;
+
+// A month and day, or a fixed-date holiday, as [month, day] or null when it is not a real date.
+function calendarDate(month, day, holiday) {
+  if (holiday) return HOLIDAYS[holiday.trim()] || null;
+  const m = MONTHS.indexOf(String(month).slice(0, 3));
+  const d = Number(day);
+  if (m < 0 || d < 1 || d > 31 || !/^(?:[a-z]{3}|january|february|march|april|june|july|august|september|october|november|december)$/.test(month)) return null;
+  return new Date(2024, m, d).getMonth() === m ? [m, d] : null;
+}
+
 // "How many days until Friday" and "what day is it in 10 days" depend on today's date, which the model does not have.
 function dateMath(key, now = new Date()) {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -47,6 +60,15 @@ function dateMath(key, now = new Date()) {
     const name = until[1];
     const days = (DAYS.indexOf(name) - today.getDay() + 7) % 7 || 7;
     return `${days} day${days === 1 ? '' : 's'} until ${name.replace(/^./, (c) => c.toUpperCase())}.`;
+  }
+  const date = UNTIL_DATE.exec(key);
+  const when = date && calendarDate(date[1] || date[4], date[2] || date[3], date[5]);
+  if (when) {
+    let target = new Date(today.getFullYear(), when[0], when[1]);
+    if (target < today) target = new Date(today.getFullYear() + 1, when[0], when[1]);
+    const days = Math.round((target - today) / 864e5);
+    const label = target.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+    return days === 0 ? `That's today, ${label}.` : `${days} day${days === 1 ? '' : 's'} until ${label}.`;
   }
   return null;
 }
