@@ -132,6 +132,17 @@ test('memory: categories, per-task groups, forget', () => {
   assert.strictEqual(memory.all().length, 1);
 });
 
+test('memory: forget needs most words to match, and "what I just said" matches nothing', () => {
+  const memory = new Memory(path.join(tmp(), 'memory.db'));
+  memory.add('I prefer just short answers');
+  memory.add('Dentist appointment is on Friday');
+  memory.add('Accountant appointment is in May');
+  assert.strictEqual(memory.forget(parseCommand('forget what I just said').text).length, 0);
+  assert.strictEqual(memory.forget('forget the last thing').length, 0);
+  assert.strictEqual(memory.forget('forget my dentist appointment').length, 1);
+  assert.strictEqual(memory.all().length, 2);
+});
+
 test('commands: remember with a colon, forget idioms are not deletions, blanket forget is flagged', () => {
   assert.deepStrictEqual(parseCommand('Remember: my name is Sam'), { action: 'remember', text: 'my name is Sam' });
   for (const t of ['forget it', 'forget about it', 'forget that']) assert.strictEqual(parseCommand(t), null, t);

@@ -224,11 +224,11 @@ class Memory {
 
   // "forget that I'm vegetarian" → removes facts that share most of those words.
   forget(text) {
-    const FILLER = new Set(['that', 'the', 'not', 'any', 'more', 'anymore', 'forget', 'about', 'please', 'this', 'what']);
+    const FILLER = new Set(['that', 'the', 'not', 'any', 'more', 'anymore', 'forget', 'about', 'please', 'this', 'what', 'just', 'said', 'told', 'last', 'thing', 'things', 'earlier', 'before', 'you']);
     const words = [...new Set((text.toLowerCase().match(/[a-z]{3,}/g) || []).filter((w) => !FILLER.has(w)))];
     const removed = this.all().filter((e) => {
       const hits = words.filter((w) => e.text.toLowerCase().includes(w)).length;
-      return hits && hits >= Math.ceil(words.length / 2);
+      return hits && hits >= Math.ceil(words.length * 0.6);
     });
     for (const e of removed) this.remove(e.id);
     return removed;

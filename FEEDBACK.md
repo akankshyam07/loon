@@ -2685,3 +2685,13 @@ As a user, nearly all of them worked. The two wrong results were "cat: notes.txt
 Fixed: the error line check in extension/lib/classify.js now recognizes "No such file or directory" and ssh connect failures. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: a bare "Traceback", "Connection refused", "Out of memory" and "Killed: 9" are still words. A short dash bullet list reads as one sentence. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-17 — memory commands (seventh pass)
+
+Tried 75 phrasings such as "remember I'm allergic to peanuts", "pls remember I hate cilantro", "forget what I just said", "forget the last thing", "forget my dentist appointment", "don't forget my dentist appointment", "do you know my name" and "remember my password is hunter2".
+
+As a user, the worst problem was in forget. "Forget what I just said" and "forget the last thing" were matched word by word against saved facts, so any fact containing "just", "said", "last" or "thing" was a candidate. A two word request such as "forget my dentist appointment" also removed any fact that held only "appointment", so an unrelated appointment went with it. The confirm card does not show which facts will go.
+
+Fixed: Memory.forget now ignores those conversational words and needs about 60 percent of the remaining words to match, so two word requests need both. Vague references now answer "I didn't have anything like that saved". Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: "remember me?", "remember what I said" and "remember the milk" save junk facts such as "me". "Forget it" and "forget that" go to the model, which may promise to forget. "What's my name", "who am I" and typos like "remmeber" also go to the model. The confirm card for forget should list the facts it would remove. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
