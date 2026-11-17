@@ -523,3 +523,12 @@ test('parseQuantity multiplies a chain of packs, counts tea bags, and parsePrice
   assert.strictEqual(shopping.parsePrice('$1 299.00'), 1299);
   assert.strictEqual(shopping.parsePrice('Pack 2 100.00'), 2);
 });
+
+test('menu: poutine and tonkatsu are not vegetarian, and fish and chips, poutine and masala are not light', () => {
+  const items = food.extractMenu('Poutine $9\nVeggie Poutine $9\nTonkatsu $14\nFish and Chips $14\nChicken Tikka Masala $15\nGrilled Chicken Salad $12');
+  const veg = food.recommend(items, 'vegetarian', { count: 10 }).text;
+  assert.match(veg, /Veggie Poutine/);
+  assert.doesNotMatch(veg, /\*\*(Poutine|Tonkatsu)/);
+  const lightest = food.recommend(items, 'lightest', { count: 2 }).text;
+  assert.doesNotMatch(lightest, /Fish and Chips|Masala|\*\*Poutine/);
+});

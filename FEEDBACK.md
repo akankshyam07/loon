@@ -2795,3 +2795,13 @@ As a user, the worst problem was tips. Natural orders like "tip 18% on 64.20" an
 Fixed: the tip rule in brain/calc.js now accepts the percent after "tip", "tip of", "a" before the amount and "bill", "check" or "meal" after it. Test added in test/brain.test.js and checked to fail before the change.
 
 Left for later: "10 % 3", "1.5k + 2k", "double 35", "cube root of 27", "pi * 2", "log 100" and "what should I tip on 64.20" (no percent given) still go to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-17 — food and menu (seventeenth pass)
+
+Tried a 28 item menu with poutine, bao, empanadas, tikka masala, katsu, fish and chips, parmesan dishes and curries, and asked for lightest and vegetarian picks.
+
+As a user, Poutine and Tonkatsu were listed as vegetarian, and Poutine, Fish and Chips, Chicken Tikka Masala and Tonkatsu all scored as light as a salad. That would send a vegetarian to beef gravy and a dieter to a fryer.
+
+Fixed: brain/food.js now treats poutine and tonkatsu as meat dishes (a veggie or vegan poutine still counts as vegetarian) and adds poutine, katsu, tonkatsu, chips, masala and parmigiana to the heavy words. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: bao and empanadas have vegetarian versions, so they are not marked as meat and a plain "Pork Bao" only gets caught through "pork". Breaded "Chicken Parmesan" still scores 0 because parmesan alone is just cheese. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
