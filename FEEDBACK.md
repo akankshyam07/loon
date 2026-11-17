@@ -2705,3 +2705,13 @@ As a user, the worst problem was that checkout.stripe.com, pay.google.com, pay.a
 Fixed: these hosts are now in the sensitive list. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: Shopify style checkouts (`/checkouts/...` with a `credit_card` field name) and card fields inside iframes are still not seen. Kaiser and other health portals on custom hosts are still ordinary pages. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-17 — memory and privacy, redaction (fifteenth pass)
+
+Tried 39 snippets such as card numbers, SSNs with spaces, .env lines, curl headers, OTP and PIN lines, IBANs, a private key and bare tokens from many services.
+
+As a user, the worst leak was a bare token with no "key=" label in front of it. GitLab (`glpat-`), Hugging Face (`hf_`), SendGrid (`SG.`), Google OAuth (`ya29.`), PyPI, Shopify and Slack webhook URLs all went to the model untouched. Most other shapes were already hidden.
+
+Fixed: new api-key rules for those prefixes. Test added in test/browser.test.js. The failures in `npm test` here are the same ones as on main in this sandbox (WordNet, quicktype, Harper and other missing data).
+
+Left for later: `pwd=abc` and `client_secret: abc` with a value under 4 characters, "user bob pass hunter22", Discord bot tokens, and an unquoted multi-word password still leak the later words.

@@ -320,3 +320,16 @@ test('redaction hides seed phrases and passwords written with a dash or "for the
   assert.equal(redact('password - a quick guide').count, 0);
   assert.equal(redact('the recovery phrase is shown once').count, 0);
 });
+
+test('redaction hides bare tokens from GitLab, Hugging Face, SendGrid, Google OAuth, PyPI, Shopify and Slack webhooks', () => {
+  for (const token of [
+    'glpat-abcdefghijklmnopqrst',
+    `hf_${'aB3dE'.repeat(7)}`,
+    `SG.${'aB3dE'.repeat(4)}.${'xY7zQ'.repeat(8)}`,
+    'ya29.a0AfH6SMBabcdefghijklmnopqrstuvwxyz',
+    `pypi-${'AgEIcHlwaS5vcmc'.repeat(3)}`,
+    `shpat_${'ab12'.repeat(8)}`,
+    `https://hooks.slack.com/services/T01${'A'.repeat(6)}/B01${'A'.repeat(6)}/${'aB3dE'.repeat(5)}`,
+  ]) assert.equal(redact(`use ${token} here`).text, 'use [redacted:api-key] here', token);
+  assert.equal(redact('the hf_ prefix and SG. docs').count, 0);
+});
