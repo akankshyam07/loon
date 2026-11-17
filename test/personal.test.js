@@ -365,3 +365,11 @@ test('feedback: "too detailed" and "no emojis in answers" change the matching se
   assert.deepStrictEqual(parseFeedback('no emojis in answers').patch, { emoji: false });
   assert.strictEqual(parseFeedback('too much detail in the code'), null);
 });
+
+test('onboarding reads "I can\'t eat pork", "no gluten" and "I have a peanut allergy" correctly', () => {
+  assert.deepStrictEqual(onboardingResult({ allergies: "I can't eat gluten" }).facts, ['I avoid gluten']);
+  assert.deepStrictEqual(onboardingResult({ allergies: 'no gluten, soy' }).facts, ['I\'m allergic to soy', 'I avoid gluten']);
+  assert.deepStrictEqual(onboardingResult({ allergies: 'I have a peanut allergy' }).facts, ["I'm allergic to peanut"]);
+  assert.deepStrictEqual(onboardingResult({ allergies: 'nada' }).facts, []);
+  assert.deepStrictEqual(onboardingResult({ interests: 'I like to hike' }).facts, ["I'm interested in hike"]);
+});

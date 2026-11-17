@@ -2745,3 +2745,13 @@ As a user, "how many days until Christmas" and "days until July 4th" went to the
 Fixed: dateMath now answers days until a month and day ("july 4th", "25 december", "3rd of march") and a few fixed holidays (Christmas, Christmas Eve, Halloween, New Year, Valentine's Day). A date already passed this year counts to next year, today says so, and impossible dates like feb 30 fall through to the model. Test added in test/brain.test.js and it fails before the change.
 
 Left for later: "what week is it", "how long until 5pm", moving holidays like Thanksgiving and Easter, "what time is it in pst" and "what's my timezone" still go to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-17 — onboarding first run, allergy and interest wording (fourteenth pass)
+
+Tried 54 answers for the "Get to know you" boxes, such as "I can't eat gluten", "I don't eat pork", "no gluten", "I have a peanut allergy", "nada", "celiac", "I like to read, bake and hike" and a range of names.
+
+As a user, the worst problem was wrong allergy facts. "I can't eat gluten" was saved as "I'm allergic to I can't eat gluten", "no gluten" as an allergy to "no gluten", and "I have a peanut allergy" as an allergy to "I have a peanut". "nada" was saved as an allergy. These facts are pinned and sent with every question.
+
+Fixed: the allergy box now reads "no X", "without X", "I can't eat X" and "I don't eat X" as avoided foods, drops "I have" and "I got" lead-ins, and treats "nada" as no answer. The interests box drops "I like to". Test added in test/personal.test.js.
+
+Left for later: "celiac", "severe peanut allergy" (saved as "severe peanut") and "Nope :)" are still saved as allergy names. Names keep their case as typed ("ada lovelace"). The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

@@ -213,8 +213,8 @@ const ROLES = {
 const DIETS = { vegetarian: "I'm vegetarian", vegan: "I'm vegan", pescatarian: "I'm pescatarian", gluten_free: "I'm gluten-free", halal: 'I eat halal', kosher: 'I keep kosher', lactose: "I'm lactose intolerant" };
 const tidy = (text, max = 80) => String(text || '').replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
 // "None" and "n/a" are answers, not allergies; "I'm allergic to peanuts" is typed often, so the lead-in is dropped.
-const NO_ANSWER = /^(?:i (?:have|got|don'?t have)(?: any)? )?(?:(?:none|no|nope|nil|nothing|n\/?a|na|-+|idk|skip|pass|thanks?|prefer not to say)(?: (?:known |food )?(?:allergies|really|at all|thanks?|that i know of))*|not (?:that i know of|really|sure)|i'?m not allergic to anything|i don'?t have any(?: allergies)?)$/i;
-const list = (text, split = /\s*(?:,|;|\band\b| & )\s*/i) => (NO_ANSWER.test(tidy(text, 200).replace(/[.!]+$/, '')) ? '' : tidy(text, 200)).replace(/\p{Extended_Pictographic}\uFE0F?/gu, '').trim().replace(/^(?:(?:i(?:'m| am)\s+)?(?:allergic to|interested in|into)|i (?:like|love|enjoy)|(?:my )?(?:allergies|interests|hobbies) (?:(?:is|are|include)\b:?|:)|(?:my )?(?:allergies|interests|hobbies):|i(?:'m| am))\s*/i, '').split(split)
+const NO_ANSWER = /^(?:i (?:have|got|don'?t have)(?: any)? )?(?:(?:none|no|nope|nada|nil|nothing|n\/?a|na|-+|idk|skip|pass|thanks?|prefer not to say)(?: (?:known |food )?(?:allergies|really|at all|thanks?|that i know of))*|not (?:that i know of|really|sure)|i'?m not allergic to anything|i don'?t have any(?: allergies)?)$/i;
+const list = (text, split = /\s*(?:,|;|\band\b| & )\s*/i) => (NO_ANSWER.test(tidy(text, 200).replace(/[.!]+$/, '')) ? '' : tidy(text, 200)).replace(/\p{Extended_Pictographic}\uFE0F?/gu, '').trim().replace(/^(?:(?:i(?:'m| am)\s+)?(?:allergic to|interested in|into)|i (?:like|love|enjoy)(?: to)?|i (?:have|got)(?: an?)?|(?:my )?(?:allergies|interests|hobbies) (?:(?:is|are|include)\b:?|:)|(?:my )?(?:allergies|interests|hobbies):|i(?:'m| am))\s*/i, '').split(split)
   .map((x) => x.replace(/[.!]+$/, '').trim()).filter((x) => x && !NO_ANSWER.test(x))
   .filter((x, i, all) => all.findIndex((y) => y.toLowerCase() === x.toLowerCase()) === i).slice(0, 6);
 const joinList = (items) => (items.length > 1 ? `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}` : items[0] || '');
@@ -235,7 +235,8 @@ function onboardingResult(answers = {}) {
   const intolerant = /\s+intoleran(?:t|ce)$/i;
   const food = list(answers.allergies, /\s*(?:,|;|\/|\band\b| & )\s*/i).map((x) => x.replace(/\s+allerg(?:y|ies)$/i, ''));
   // "dairy-free" is a diet, not an allergy to "dairy-free".
-  const free = /[- ]free$/i;
+  // "no gluten" and "I can't eat pork" are avoided foods too.
+  const free = /[- ]free$|^(?:i (?:can'?t|cannot|don'?t|do not) (?:eat|have|drink)|no|without) /i;
   const allergies = food.filter((x) => !intolerant.test(x) && !free.test(x));
   const avoided = food.filter((x) => free.test(x)).map((x) => x.replace(free, ''));
   if (allergies.length) facts.push(`I'm allergic to ${joinList(allergies)}`);
