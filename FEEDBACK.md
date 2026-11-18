@@ -2835,3 +2835,13 @@ As a user, the worst problem was that closing a chat politely, such as "ok thank
 Fixed: a thanks followed by a goodbye now gets the goodnight reply from code, "gtg", "gotta go" and "brb" count as goodbyes, and the thanks rule accepts "lol", "haha", "oh" and "ah" openers, "thanks cat", "thanks a million", "much obliged", "thanku" and "tnx". Thanks followed by a request still goes to the model. Test added in test/brain.test.js and checked to fail before the change.
 
 Left for later: "ok", "k", "np", "no problem", "you too", "sweet", "neat", "oh I see", "makes sense now" and "yep" still go to the model. Plain "ok" can answer a question from the cat, so it needs a look at the last answer first. The 5 failures in `npm test` here are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-18 — developer help, JSON to DTO (thirteenth pass)
+
+Tried 24 pasted inputs such as nested objects, null fields, empty arrays, mixed number arrays, objects in an array with different keys, big ids, Java keyword keys, dates, an HTTP request line before the body and cut off JSON.
+
+As a user, nearly everything worked. The miss was an object whose keys look like data, for example a monthly series `{"2024-01": 10, "2024-02": 12}` or keys with spaces. quicktype read it as a map, so the TypeScript answer was an empty code block and the Java answer was a page of converter boilerplate with no class.
+
+Fixed: jsonToDto checks that the output holds a real class or interface and otherwise generates again with map inference off, so the fields are shown. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: the Kotlin entry in `DTO_LANGUAGES` still uses an invalid option, and Kotlin throws. A top-level array of arrays says "no fields" without explaining. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

@@ -534,3 +534,12 @@ test('menu: poutine and tonkatsu are not vegetarian, and fish and chips, poutine
   const lightest = food.recommend(items, 'lightest', { count: 2 }).text;
   assert.doesNotMatch(lightest, /Fish and Chips|Masala|\*\*Poutine/);
 });
+
+test('json to dto: an object whose keys look like a map still gets a class with fields', async () => {
+  const ts = await jsonToDto('{"2024-01": 10, "2024-02": 12}', 'typescript');
+  assert.match(ts, /interface Root/);
+  assert.match(ts, /"2024-01": number/);
+  const java = await jsonToDto('{"1st": 1, "my key": 2}', 'java');
+  assert.match(java, /public class Root/);
+  assert.doesNotMatch(java, /Converter/);
+});

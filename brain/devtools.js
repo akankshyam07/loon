@@ -128,12 +128,18 @@ async function jsonToDto(json, language = 'java', name = 'Root') {
   // Plain getters only bind to JSON keys that are already simple lowercase words. Any other key (first-name, created_at,
   // userId) needs Jackson's @JsonProperty or Spring Boot silently leaves the field null.
   const needsNames = lang === 'java' && keysOf(parsed).some((k) => !/^[a-z][a-z0-9]*$/.test(k) || JAVA_KEYWORDS.has(k));
-  const input = jsonInputForTargetLanguage(lang);
-  await input.addSource({ name, samples: objects.map((v) => JSON.stringify(v)) });
-  const inputData = new InputData();
-  inputData.addInput(input);
-  const result = await quicktype({ inputData, lang, rendererOptions: needsNames ? { framework: 'jackson', 'array-type': 'list' } : options });
-  const code = result.lines.join('\n').replace(/^\/\/ Converter\.java[\s\S]*?(?=^\/\/ \w+\.java$)/m, '').replace(/^\/\/ .*\n\n?/m, '').replace(/^package io\.quicktype;\n\n?/gm, '').trim();
+  const generate = async (inferMaps) => {
+    const input = jsonInputForTargetLanguage(lang);
+    await input.addSource({ name, samples: objects.map((v) => JSON.stringify(v)) });
+    const inputData = new InputData();
+    inputData.addInput(input);
+    const result = await quicktype({ inputData, lang, inferMaps, rendererOptions: needsNames ? { framework: 'jackson', 'array-type': 'list' } : options });
+    return result.lines.join('\n').replace(/^\/\/ Converter\.java[\s\S]*?(?=^\/\/ \w+\.java$)/m, '').replace(/^\/\/ .*\n\n?/m, '').replace(/^package io\.quicktype;\n\n?/gm, '').trim();
+  };
+  // Keys like "2024-01" or "my key" make quicktype read the whole object as a Map, which leaves no class to show (an empty
+  // block in TypeScript, converter boilerplate in Java). Pasting an object means wanting its fields, so retry without maps.
+  let code = await generate(true);
+  if (!/\b(class|interface)\s+(?!Converter\b)\w/.test(code)) code = await generate(false);
   const each = Array.isArray(parsed) ? ' (one per item in the array)' : '';
   return `**${label} types**${each}\n\`\`\`${lang}\n${code}\n\`\`\``;
 }
