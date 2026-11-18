@@ -2865,3 +2865,13 @@ As a user, nearly all of them worked. The miss was the way many people write a t
 Fixed: the shared time pattern in brain/routines.js now reads "7.30" and "0730" or "1900" as clock times. Test added in test/routines.test.js and checked to fail before the change.
 
 Left for later: "tous les jours à 8h" and "every day at 9 am and 5 pm" are refused, which is fine. `npm test` shows the same 5 WordNet and demo failures as main in this sandbox.
+
+## 2026-11-18 — page kinds, more banks, health and cloud consoles (fifteenth pass)
+
+Tried 48 hosts such as UK, Canadian, German and Colombian banks, health portals, cloud consoles, password vaults, look-alike domains and Gmail.
+
+As a user, the worst problem was that logged-in pages of nationwide.co.uk, halifax.co.uk, tsb.co.uk, rbcroyalbank.com, tdcanadatrust.com, commerzbank.de, dkb.de, postbank.de, deutsche-bank.de, comdirect.de, bancolombia.com, kaiserpermanente.org, 23andme.com, portal.azure.com and console.cloud.google.com counted as ordinary pages. Loon would offer to read a balance or a health result.
+
+Fixed: these hosts are now in the sensitive list. The existing host test in test/browser.test.js covers a sample and was checked to fail before the change.
+
+Left for later: the list is still a hand-kept list, so other banks will keep slipping through. A generic "bank" or "banking" label rule (banking.example.com) would catch more but could hit news sites. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

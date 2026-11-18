@@ -19,6 +19,8 @@
     'bmo.com', 'scotiabank.com', 'cibc.com', 'westpac.com.au', 'anz.com', 'nab.com.au', 'bankwest.com.au', 'n26.com', 'starlingbank.com',
     'wealthfront.com', 'betterment.com', 'synchrony.com', 'tdameritrade.com', 'klarna.com', 'affirm.com', 'bitwarden.eu', '1password.eu', 'zocdoc.com',
     'checkout.stripe.com', 'pay.google.com', 'pay.amazon.com', 'account.microsoft.com', 'console.aws.amazon.com', 'login.salesforce.com', 'studentaid.gov',
+    'nationwide.co.uk', 'halifax.co.uk', 'tsb.co.uk', 'rbcroyalbank.com', 'tdcanadatrust.com', 'commerzbank.de', 'dkb.de', 'postbank.de', 'deutsche-bank.de', 'comdirect.de', 'bancolombia.com',
+    'kaiserpermanente.org', '23andme.com', 'portal.azure.com', 'console.cloud.google.com',
   ];
   // Country sites of the same banks (wellsfargo.com.au, hsbc.co.uk, chase.co.uk); a look-alike such as
   // bankofamerica.com.evil.com does not match because only a two or three letter suffix may follow.
