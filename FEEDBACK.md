@@ -2825,3 +2825,13 @@ As a user, once I had told Loon to be shorter or to drop emoji there was no way 
 Fixed: parseFeedback in brain/personal.js now reads "normal/default/regular length", "back to normal", "not so long", "not so short" and the ways of turning emoji back on. Test added in test/personal.test.js and checked to fail before the change.
 
 Left for later: "reset style", "tone it down", "be terse", "stop being so brief" and "explain more" have no rule. Resetting everything would also wipe custom instructions, so it should ask first. The 5 failing tests in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-18 — follow-up conversations, thanks with a goodbye (fourteenth pass)
+
+Tried 70 short replies inside an open thread such as "ok thanks bye", "thanks, that is all", "ty bye", "gtg", "brb", "lol thanks", "ohh thanks", "thanks cat", "thanks a million", "much obliged", "thanku", "np", "sweet", "neat" and "oh I see".
+
+As a user, the worst problem was that closing a chat politely, such as "ok thanks bye" or "gtg", cost a full local model call, and the model tends to answer with a fresh explanation when I am leaving.
+
+Fixed: a thanks followed by a goodbye now gets the goodnight reply from code, "gtg", "gotta go" and "brb" count as goodbyes, and the thanks rule accepts "lol", "haha", "oh" and "ah" openers, "thanks cat", "thanks a million", "much obliged", "thanku" and "tnx". Thanks followed by a request still goes to the model. Test added in test/brain.test.js and checked to fail before the change.
+
+Left for later: "ok", "k", "np", "no problem", "you too", "sweet", "neat", "oh I see", "makes sense now" and "yep" still go to the model. Plain "ok" can answer a question from the cat, so it needs a look at the last answer first. The 5 failures in `npm test` here are the WordNet and demo ones from the sandbox install.

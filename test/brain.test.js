@@ -414,3 +414,18 @@ test('dictionaryTerm and antonymTerm accept "what do you mean by X", "X means wh
   assert.strictEqual(dictionaryTerm('what do you mean by that'), null);
   assert.strictEqual(antonymTerm('hot opposite'), 'hot');
 });
+
+test('ladder: thanks with a goodbye, "gtg" and "thanks cat" are answered from code, thanks with a request is not', async () => {
+  let asked = 0;
+  const brain = { modelId: () => 'fake', chat: async (_p, { onText }) => { asked++; onText('Sure.'); } };
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));
+  const resolver = new Resolver({ brain, cacheFile: path.join(dir, 'c.json'), countsFile: path.join(dir, 'n.json') });
+  const history = [{ question: 'explain tcp', answer: 'It is reliable.', target: 'fast' }];
+  for (const q of ['ok thanks bye', 'thanks, that is all', 'ty bye', 'thx bye loon', 'gtg', 'brb', 'lol thanks', 'ohh thanks', 'thanks cat', 'thanks a million', 'much obliged', 'thanku']) {
+    assert.strictEqual((await resolver.ask(q, { onText: () => {}, firstInThread: false, history })).tier, 'code', q);
+  }
+  assert.strictEqual(asked, 0);
+  for (const q of ['thanks, now explain udp', 'thanks but why', 'bye the way what is udp']) {
+    assert.notStrictEqual((await resolver.ask(q, { onText: () => {}, firstInThread: false, history })).tier, 'code', q);
+  }
+});
