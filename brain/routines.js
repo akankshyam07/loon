@@ -23,14 +23,14 @@ const hm = (time) => time.split(':').map(Number);
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
 // ---------- times ----------
-const TIME = String.raw`(?:noon|midnight|\d{1,2}(?::\d{2})?\s*(?:am|pm|a\.m\.|p\.m\.)?)`;
+const TIME = String.raw`(?:noon|midnight|(?:[01]\d|2[0-3])[0-5]\d|\d{1,2}(?:[:.]\d{2})?\s*(?:am|pm|a\.m\.|p\.m\.)?)`;
 
 // "8:30" → "08:30", "12am" → "00:00", "at 10" at night → "22:00". Without am/pm, 1–6 means pm (like commands.js).
 function parseTime(raw, part = null) {
-  const t = String(raw).toLowerCase().replace(/\./g, '').trim();
+  const t = String(raw).toLowerCase().replace(/([ap])\.m\.?/g, '$1m').trim();
   if (t === 'noon') return '12:00';
   if (t === 'midnight') return '00:00';
-  const m = t.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/);
+  const m = t.match(/^(\d{2})(\d{2})$/) || t.match(/^(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)?$/);
   if (!m) return null;
   let h = Number(m[1]);
   const min = Number(m[2] || 0);

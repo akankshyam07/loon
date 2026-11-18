@@ -2855,3 +2855,13 @@ As a user, the worst problem was that "show my past chats", "look up docker in h
 Fixed: parseCommand in brain/commands.js now reads these as a history search ("look up X in history" with the word, the others as the plain history list). Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: bare "recall", "what was that thing about css", typos such as "wat did i ask", "history of my questions" and "what did you tell me earlier" still reach the model. "find that thing about css" is read as a file search. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-18 — routines, dotted and four-digit times (sixteenth pass)
+
+Tried 30 phrasings such as "every weekday at 8:30am …", "every day at noon …", "every mon wed fri at 6pm …", "every hour …", "monthly on the 1st …", "every other day at 9 …", "every day at 7.30 …" and "every day at 0730 …".
+
+As a user, nearly all of them worked. The miss was the way many people write a time. "every day at 7.30 walk" made a 7:00 routine with the message ".30 walk", and "every day at 0730 walk" fell back to 9:00 with the message "0730 walk". Neither gave a warning.
+
+Fixed: the shared time pattern in brain/routines.js now reads "7.30" and "0730" or "1900" as clock times. Test added in test/routines.test.js and checked to fail before the change.
+
+Left for later: "tous les jours à 8h" and "every day at 9 am and 5 pm" are refused, which is fine. `npm test` shows the same 5 WordNet and demo failures as main in this sandbox.

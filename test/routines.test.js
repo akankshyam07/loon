@@ -95,6 +95,11 @@ test('routines: ~20 phrasings parse in code, and their wording reads back to the
   const stretch = R.parseRoutine('in 20 minutes remind me to stretch', { now: NOW });
   assert.deepStrictEqual([stretch.action, stretch.schedule], ['reminder', { type: 'once', at: NOW.getTime() + 20 * MIN }]);
   assert.strictEqual(R.parseRoutine('in an hour tell me to call back', { now: NOW }).schedule.at, NOW.getTime() + 60 * MIN);
+  // dotted and four-digit clock times keep their minutes and stay out of the message
+  for (const [text, time] of [['every day at 7.30 walk', '07:30'], ['every day at 0730 walk', '07:30'], ['every day at 1900 dinner', '19:00']]) {
+    const r = R.parseRoutine(text, { now: NOW });
+    assert.deepStrictEqual([r.schedule.time, /^\d|^\./.test(r.payload.message)], [time, false], text);
+  }
   // edge cases: 12am/12pm, every other day's anchor, a window crossing midnight is refused
   assert.strictEqual(R.parseTime('12am'), '00:00');
   assert.strictEqual(R.parseTime('12pm'), '12:00');
