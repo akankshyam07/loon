@@ -2915,3 +2915,13 @@ As a user, the worst problem was file names. "config.yaml" became "configuration
 Fixed: fixGrammar now skips words that touch a dot, slash, #, @ or $ with no space, so file names, paths, hashtags, handles and variables stay as typed. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: "nyc" becomes "nag", because a three letter word allows an edit distance of 2. "The results was good", "1 dogs" and "Teh" at the start of a text are not flagged. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-18 — typed questions and instant answers, percent wording (seventeenth pass)
+
+Tried 40 phrasings such as "15% of 80", "what's 20% off 49.99", "increase 80 by 20%", "20 percent increase on 80", "1.5k * 3", "double 45", "pi * 2", "2 hours 30 minutes in minutes" and "5 stone in kg".
+
+As a user, the worst problems were two. "20% off 49.99" answered "39.992 after 20% off", which is not a price. "increase 80 by 20%" and "20 percent increase on 80" were not understood by the calculator, so they would go on to the model, which is the wrong place for arithmetic.
+
+Fixed: "% off" now rounds to cents, and brain/calc.js reads "increase/raise/decrease/reduce N by P%" and "P% increase/decrease on N", with a currency symbol kept. Cases added to the ladder test in test/brain.test.js and checked to fail before the change.
+
+Left for later: "1.5k", "double 45", "pi", "log", "2 hours 30 minutes in minutes", "5 stone in kg" and "100 usd to eur" are not handled by code. `npm test` shows 40 failures both before and after because this sandbox has no node_modules.

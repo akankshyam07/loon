@@ -169,7 +169,14 @@ function calc(question) {
   if (m) return `${m[1]}^3 = ${fmt(m[1] ** 3)}`;
 
   m = body.match(/^(\d+(?:\.\d+)?)\s*%\s*off\s+(\d+(?:\.\d+)?)$/);
-  if (m) return `${cash(m[2] * (1 - m[1] / 100))} after ${m[1]}% off.`;
+  if (m) return `${money ? cash(m[2] * (1 - m[1] / 100)) : fmt(Math.round(m[2] * (1 - m[1] / 100) * 100) / 100)} after ${m[1]}% off.`; // prices stop at cents
+
+  // "increase 80 by 20%", "reduce 80 by 20%", "20% increase on 80" and "20 percent decrease of 80"
+  m = body.match(/^(?:(increase|raise|decrease|reduce|cut)\s+(\d+(?:\.\d+)?)\s+by\s+(\d+(?:\.\d+)?)\s*%|(\d+(?:\.\d+)?)\s*%\s*(increase|decrease)\s+(?:on|of|to)\s+(\d+(?:\.\d+)?))$/);
+  if (m) {
+    const [verb, base, pct] = m[1] ? [m[1], m[2], m[3]] : [m[5], m[6], m[4]];
+    return `${cash(base * (1 + (/^(?:increase|raise)$/.test(verb) ? 1 : -1) * pct / 100))}.`;
+  }
 
   m = body.match(/^(-?\d+(?:\.\d+)?)\s*([a-z]+)\s+(?:to|in|into|as)\s+([a-z]+)$/);
   if (m && ALIASES[m[2]] && ALIASES[m[3]]) {
