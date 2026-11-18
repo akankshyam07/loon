@@ -334,3 +334,10 @@ test('redaction hides bare tokens from GitLab, Hugging Face, SendGrid, Google OA
   ]) assert.equal(redact(`use ${token} here`).text, 'use [redacted:api-key] here', token);
   assert.equal(redact('the hf_ prefix and SG. docs').count, 0);
 });
+
+test('redaction hides the AccountKey in an Azure storage connection string', () => {
+  const { text, count } = redact('DefaultEndpointsProtocol=https;AccountName=x;AccountKey=abc123abc123abc123abc123==;EndpointSuffix=core.windows.net');
+  assert.strictEqual(count, 1);
+  assert.ok(!text.includes('abc123abc123'));
+  assert.ok(text.includes('AccountName=x'));
+});

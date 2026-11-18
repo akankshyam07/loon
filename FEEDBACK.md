@@ -2885,3 +2885,13 @@ As a user, the worst problem was a wrong answer. A TypeScript `Cannot find modul
 Fixed: new entries for TypeScript module errors and for the ESM/CommonJS mix-up, placed before the Node module entry, and the Invalid JSON entry now matches "Unexpected end of JSON input". Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: no entries for Go deadlocks, linker errors ("undefined reference", "linker cc not found"), Java IllegalStateException, UnsupportedOperationException, Python "too many values to unpack", "module has no attribute" and unhandled promise rejections. `npm test` shows 39 failures both before and after my change because this sandbox has no node_modules.
+
+## 2026-11-18 — memory and privacy, redaction (sixteenth pass)
+
+Tried 33 pasted snippets such as passwords in env files, spoken passwords, API keys in headers and URLs, JDBC strings, card numbers with CVV, Stripe and Anthropic keys, and Azure connection strings.
+
+As a user, almost everything was hidden. The miss was an Azure storage connection string, where `AccountKey=…` went to the model in plain text.
+
+Fixed: the secret-name rule in brain/redact.js now also matches `AccountKey`. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: "login with user bob and pass hunter2", a spoken multi-word password ("correct horse battery staple" keeps its last words) and `api_key = "abc"` with a very short value are not hidden. `npm test` shows the same 5 WordNet and demo failures as main in this sandbox.
