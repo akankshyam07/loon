@@ -2815,3 +2815,13 @@ As a user, the worst problem was a mixed number. "1 1/2 lb" was read as half a p
 Fixed: the fraction rule in parseQuantity now adds a whole number in front of it ("1 1/2 lb", "2-1/2 gal"). Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: "pk of 12 500 ml" ignores the 12. A price range still uses the low end, and prices written as "$5⁹⁹" or "$ 5 99" read as 5. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-18 — settings UI, reply style feedback (twelfth pass)
+
+Tried 36 style requests such as "normal length", "back to normal length", "not so long", "not so short", "bring back the emojis", "you can use emojis again", "emojis back", "tone it down", "be terse" and "explain more".
+
+As a user, once I had told Loon to be shorter or to drop emoji there was no way to undo it by talking. "back to normal length" and "bring back the emojis" went to the model, which just chatted about it, and the setting stayed. "not so long" did nothing either.
+
+Fixed: parseFeedback in brain/personal.js now reads "normal/default/regular length", "back to normal", "not so long", "not so short" and the ways of turning emoji back on. Test added in test/personal.test.js and checked to fail before the change.
+
+Left for later: "reset style", "tone it down", "be terse", "stop being so brief" and "explain more" have no rule. Resetting everything would also wipe custom instructions, so it should ask first. The 5 failing tests in `npm test` are the usual WordNet and demo ones from the sandbox install.
