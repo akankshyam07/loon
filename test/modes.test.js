@@ -543,3 +543,11 @@ test('json to dto: an object whose keys look like a map still gets a class with 
   assert.match(java, /public class Root/);
   assert.doesNotMatch(java, /Converter/);
 });
+
+test('error table: TypeScript module errors, ESM mix-ups and empty JSON', () => {
+  assert.match(lookupKnown("error TS2307: Cannot find module './foo' or its corresponding type declarations."), /TypeScript can’t find/);
+  assert.match(lookupKnown("Uncaught SyntaxError: Cannot use import statement outside a module"), /ES modules/);
+  assert.match(lookupKnown('ReferenceError: require is not defined in ES module scope, you can use import instead'), /ES modules/);
+  assert.match(lookupKnown('SyntaxError: Unexpected end of JSON input'), /Invalid JSON/);
+  assert.match(lookupKnown("Error: Cannot find module 'express'"), /Module not found/, 'plain Node module errors keep their answer');
+});

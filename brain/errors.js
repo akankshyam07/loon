@@ -95,6 +95,18 @@ const KNOWN = [
     fix: ['Check spelling and imports.', 'In ES modules, globals like `require` or `__dirname` don’t exist.'],
   },
   {
+    match: /TS2307|Cannot find module '[^']+' or its corresponding type declarations/,
+    title: 'TypeScript can’t find that module',
+    explain: 'The compiler cannot resolve the import, or it found the package but has no type declarations for it.',
+    fix: ['For a relative import, check the path and file name.', 'For a package, run `npm install` and add its types with `npm i -D @types/<name>` if it has none.', 'Check `include`, `baseUrl` and `paths` in tsconfig.json.'],
+  },
+  {
+    match: /Cannot use import statement outside a module|require is not defined in ES module scope|exports is not defined in ES module scope|Unexpected token 'export'/,
+    title: 'ES modules and CommonJS mixed up (JavaScript)',
+    explain: 'The file uses `import`/`export` but Node or the browser is treating it as a plain script, or the other way round.',
+    fix: ['In Node, add `"type": "module"` to package.json or rename the file to `.mjs`.', 'In a browser, load the script with `<script type="module">`.', 'If the project is CommonJS, use `require` and `module.exports` instead.'],
+  },
+  {
     match: /Cannot find module|MODULE_NOT_FOUND|ERR_MODULE_NOT_FOUND|Module not found: (Error: )?Can't resolve/,
     title: 'Module not found (Node)',
     explain: 'Node couldn’t resolve an import: the package isn’t installed, or the path is wrong.',
@@ -263,7 +275,7 @@ const KNOWN = [
     fix: ['Fix it on the server: send `Access-Control-Allow-Origin` for your origin.', 'For cookies, also `Access-Control-Allow-Credentials: true` and a specific origin (not `*`).', 'In development, use your dev server’s proxy.'],
   },
   {
-    match: /Unexpected token .* in JSON|JSON\.parse|is not valid JSON/,
+    match: /Unexpected token .* in JSON|Unexpected end of JSON input|JSON\.parse|is not valid JSON/,
     title: 'Invalid JSON',
     explain: 'Code tried to parse text that isn’t JSON: often an HTML error page or an empty body.',
     fix: ['Log the raw response text before parsing.', 'Check the status code and `Content-Type` first.'],

@@ -2875,3 +2875,13 @@ As a user, the worst problem was that logged-in pages of nationwide.co.uk, halif
 Fixed: these hosts are now in the sensitive list. The existing host test in test/browser.test.js covers a sample and was checked to fail before the change.
 
 Left for later: the list is still a hand-kept list, so other banks will keep slipping through. A generic "bank" or "banking" label rule (banking.example.com) would catch more but could hit news sites. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-18 — developer help, error table (sixteenth pass)
+
+Tried 52 pasted errors across JavaScript, TypeScript, Python, Java, Rust, Go, git, npm and shell, such as "Cannot use import statement outside a module", "Unexpected end of JSON input", `error TS2307` and a Go deadlock.
+
+As a user, the worst problem was a wrong answer. A TypeScript `Cannot find module './foo' or its corresponding type declarations` was explained as a Node module problem, with advice to run `npm install` for a relative path. Two very common errors had no answer at all, the ESM versus CommonJS mix-up ("Cannot use import statement outside a module", "require is not defined in ES module scope") and "Unexpected end of JSON input" from an empty response body.
+
+Fixed: new entries for TypeScript module errors and for the ESM/CommonJS mix-up, placed before the Node module entry, and the Invalid JSON entry now matches "Unexpected end of JSON input". Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: no entries for Go deadlocks, linker errors ("undefined reference", "linker cc not found"), Java IllegalStateException, UnsupportedOperationException, Python "too many values to unpack", "module has no attribute" and unhandled promise rejections. `npm test` shows 39 failures both before and after my change because this sandbox has no node_modules.
