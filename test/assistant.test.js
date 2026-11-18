@@ -346,6 +346,8 @@ test('history questions drop time words and "you" instead of searching for them'
   for (const q of ['what did i ask loon', 'what was the last thing I asked you']) assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: '' }, q);
   for (const q of ['what did we discuss', 'what did we discuss yesterday']) assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: '' }, q);
   assert.deepStrictEqual(parseCommand('what did we talk about last week'), { action: 'recall', query: '' });
+  for (const q of ['show my past chats', 'my recent conversations', 'last thing we talked about', 'what was the last thing we discussed']) assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: '' }, q);
+  assert.deepStrictEqual(parseCommand('look up docker in history'), { action: 'recall', query: 'docker' });
   for (const q of ['what have I asked about docker', 'what have i looked up about docker']) assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: 'docker' }, q);
   for (const q of ['did we talk about docker', 'anything about docker in my history', 'show me what i asked about docker', 'remind me what we discussed about docker']) assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: 'docker' }, q);
   for (const q of ['what did we say about docker', 'what did we discuss about docker', 'find what I asked about docker', 'what did I ask about docker 🐳']) assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: 'docker' }, q);

@@ -2845,3 +2845,13 @@ As a user, nearly everything worked. The miss was an object whose keys look like
 Fixed: jsonToDto checks that the output holds a real class or interface and otherwise generates again with map inference off, so the fields are shown. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: the Kotlin entry in `DTO_LANGUAGES` still uses an invalid option, and Kotlin throws. A top-level array of arrays says "no fields" without explaining. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-18 — history (fifteenth pass)
+
+Tried 31 history phrasings such as "show my past chats", "look up docker in history", "last thing we talked about", "what was that thing about css", "wat did i ask" and "history of my questions".
+
+As a user, the worst problem was that "show my past chats", "look up docker in history" and "last thing we talked about" went to the language model, which cannot see past chats and may invent an answer.
+
+Fixed: parseCommand in brain/commands.js now reads these as a history search ("look up X in history" with the word, the others as the plain history list). Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: bare "recall", "what was that thing about css", typos such as "wat did i ask", "history of my questions" and "what did you tell me earlier" still reach the model. "find that thing about css" is read as a file search. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
