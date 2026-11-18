@@ -202,6 +202,8 @@ async function fixGrammar(text) {
     const word = fixed.slice(start, end);
     const first = best(l);
     if (!first || CHAT_SHORTHAND.has(word.toLowerCase()) || tried.has(`${start}:${word}`)) return false;
+    // Part of a file name (config.yaml), a hashtag, a @handle or a $VARIABLE is not prose.
+    if (/[#@$\/\\]/.test(fixed[start - 1] || '') || /\w\./.test(fixed.slice(start - 2, start)) || /^\.\w/.test(fixed.slice(end, end + 2))) return false;
     const to = first.get_replacement_text();
     // An unknown name has no near match ("Akankshya" → "Changsha"), and en dashes in phone numbers are style, not errors.
     // Expanding an initialism (ASAP → As soon as possible) is a style opinion, not a fix.

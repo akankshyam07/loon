@@ -2905,3 +2905,13 @@ As a user, "open slack for me" and "open Slack now" showed a confirm card to lau
 Fixed: trailing emoji and filler such as "for me", "now" and "real quick" are dropped from the target, and the folder shortcut only applies when the user did not say "app". Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: a link with a space in the query is treated as an app name. Typos like "spotfy" go to a confirm card and fail in macOS. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-18 — writing tools, fix grammar (ninth pass)
+
+Tried 26 texts such as "The file is config.yaml and main.js", "Hey @john check #todo and $HOME", links, an email address, "He dont know what to do", "Their going to the park tommorow", a letter with "writting" and "My name is akankshya and i live in nyc".
+
+As a user, the worst problem was file names. "config.yaml" became "configuration.Yam". "#todo" became "#to-do".
+
+Fixed: fixGrammar now skips words that touch a dot, slash, #, @ or $ with no space, so file names, paths, hashtags, handles and variables stay as typed. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: "nyc" becomes "nag", because a three letter word allows an edit distance of 2. "The results was good", "1 dogs" and "Teh" at the start of a text are not flagged. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

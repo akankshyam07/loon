@@ -356,6 +356,13 @@ test('grammar fixer leaves other languages and chat shorthand alone', async () =
   }
 });
 
+test('grammar fixer leaves file names, hashtags and handles alone', async () => {
+  for (const text of ['The file is config.yaml and main.js', 'Hey @john check #todo and $HOME', 'Open src/utils.js now']) {
+    assert.strictEqual((await fixGrammar(text)).fixed, text);
+  }
+  assert.strictEqual((await fixGrammar('I recieved it. Thanks.')).fixed, 'I received it. Thanks.');
+});
+
 test('grammar fixer does not swap unknown names for other words or restyle phone numbers', async () => {
   const name = 'Thanks,\n\nAkankshya';
   assert.strictEqual((await fixGrammar(name)).fixed, name);
