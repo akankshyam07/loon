@@ -2805,3 +2805,13 @@ As a user, Poutine and Tonkatsu were listed as vegetarian, and Poutine, Fish and
 Fixed: brain/food.js now treats poutine and tonkatsu as meat dishes (a veggie or vegan poutine still counts as vegetarian) and adds poutine, katsu, tonkatsu, chips, masala and parmigiana to the heavy words. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: bao and empanadas have vegetarian versions, so they are not marked as meat and a plain "Pork Bao" only gets caught through "pork". Breaded "Chicken Parmesan" still scores 0 because parmesan alone is just cheese. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-18 — shopping and unit price (seventeenth pass)
+
+Tried 34 size strings and 21 price strings such as "1 1/2 lb", "2-1/2 gal", "500 gr", "1 pint", "12 x 12 fl oz", "5 lb bag", "$5.00 - $7.00", "£3.50 each" and "$12.99/mo".
+
+As a user, the worst problem was a mixed number. "1 1/2 lb" was read as half a pound (226 g) because only the fraction was converted and the whole number was dropped, so a bag priced per pound would look three times too expensive.
+
+Fixed: the fraction rule in parseQuantity now adds a whole number in front of it ("1 1/2 lb", "2-1/2 gal"). Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: "pk of 12 500 ml" ignores the 12. A price range still uses the low end, and prices written as "$5⁹⁹" or "$ 5 99" read as 5. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
