@@ -2895,3 +2895,13 @@ As a user, almost everything was hidden. The miss was an Azure storage connectio
 Fixed: the secret-name rule in brain/redact.js now also matches `AccountKey`. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: "login with user bob and pass hunter2", a spoken multi-word password ("correct horse battery staple" keeps its last words) and `api_key = "abc"` with a very short value are not hidden. `npm test` shows the same 5 WordNet and demo failures as main in this sandbox.
+
+## 2026-11-18 — open and launch commands (seventh pass)
+
+Tried 32 phrasings such as "open chrome 🙂", "open slack for me", "open Slack now", "open music app", "open the Photos app", "open spotfy", "open apple.com.", "open slack and" and "open google.com/search?q=a b".
+
+As a user, "open slack for me" and "open Slack now" showed a confirm card to launch an app called "slack for me", which macOS cannot find. An emoji at the end did the same. "open music app" offered to open the Music folder instead of the Music app.
+
+Fixed: trailing emoji and filler such as "for me", "now" and "real quick" are dropped from the target, and the folder shortcut only applies when the user did not say "app". Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: a link with a space in the query is treated as an app name. Typos like "spotfy" go to a confirm card and fail in macOS. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

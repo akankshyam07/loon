@@ -54,6 +54,8 @@ test('commands: reminders, events, open, find, notes, memory; questions fall thr
   assert.deepStrictEqual(parseCommand('open localhost:3000', NOW), { action: 'open', target: 'http://localhost:3000', kind: 'url' });
   assert.deepStrictEqual(parseCommand('open http://127.0.0.1:8080/app', NOW), { action: 'open', target: 'http://127.0.0.1:8080/app', kind: 'url' });
   assert.deepStrictEqual(parseCommand('open "Visual Studio Code"', NOW), { action: 'open', target: 'Visual Studio Code', kind: 'app' });
+  // Trailing filler and emoji aren't part of the app name, and "music app" is the Music app, not the folder.
+  for (const [q, t] of [['open chrome 🙂', 'chrome'], ['open slack for me', 'slack'], ['open Slack now', 'Slack'], ['open the music app', 'music']]) assert.deepStrictEqual(parseCommand(q, NOW), { action: 'open', target: t, kind: 'app' }, q);
   assert.deepStrictEqual(parseCommand('open my downloads folder', NOW), { action: 'open', target: '~/Downloads', kind: 'folder' });
   assert.deepStrictEqual(parseCommand('open ~/Documents', NOW), { action: 'open', target: '~/Documents', kind: 'folder' });
   assert.deepStrictEqual(parseCommand('open my calendar', NOW), { action: 'open', target: 'calendar', kind: 'app' });

@@ -120,7 +120,8 @@ function parseCommand(input, now = new Date()) {
   if (/^(?:(?:show|open|pull up)(?: me)? )?(?:my )?(?:(?:recent|past|previous) (?:questions|searches|lookups|history|chats|conversations)|history|recent activity)\??$/i.test(text) || /^(?:(?:what(?:'?s| is| was| were| are)?|show me|show|pull up) )?(?:my (?:(?:last|latest|recent|previous)(?: \d+)? )?|(?:last|latest|recent|previous)(?: \d+)? )(?:questions?|searches|lookups?|history)\??$/i.test(text) || /^(?:what(?:'?s| is| was) )?(?:my |the )?(?:last|latest|previous) (?:thing i (?:asked(?: you)?|searched(?: for)?|looked up)|search|question|lookup)\??$/i.test(text) || /^(?:show me |tell me )?what (?:(?:have|did) )?i (?:been )?(?:ask(?:ed)?|asking|look(?:ed|ing)? up|search(?:ed|ing)?|google[d]?|googling)(?: you| for)*(?: (?:so far|lately|recently|earlier|today|yesterday|last (?:week|month|time)))?\??$/i.test(text) || /^what (?:did|have) we (?:talk(?:ed)?|chat(?:ted)?|discuss(?:ed)?)(?: about)?(?: (?:today|yesterday|earlier|lately|recently|last (?:week|month)))?\??$/i.test(text)) return { action: 'recall', query: '' };
   if ((m = text.match(/^(?:open|launch) (.+)$/i))) {
     // "the Calculator app" is a name macOS doesn't know. Files like "notes.txt" and "Node.js" are not websites.
-    const target = tidy(m[1]).replace(/^(["'“‘])(.+)["'”’]$/, '$2').replace(/^(?:the|my) /i, '').replace(/ app$/i, '');
+    const raw = tidy(m[1].replace(/(?:\s*(?:\p{Extended_Pictographic}|\uFE0F))+$/u, '').replace(/ (?:for me|now|right now|real quick|quickly|asap)$/i, '')).replace(/^(["'“‘])(.+)["'”’]$/, '$2').replace(/^(?:the|my) /i, '');
+    const target = raw.replace(/ app$/i, '');
     // Two-step requests ("open youtube and search cats") are not an app name, so the chat gets them.
     if (!target || /(?:,| and| then| &) (?:then )?(?:search|go|message|text|play|type|write|send|find|look|click|show|make|create|start|open|launch|take|ask|check)\b/i.test(target)) return null;
     if (/^(?:https?:\/\/)?(?:localhost|\d{1,3}(?:\.\d{1,3}){3})(?::\d+)?(?:\/\S*)?$/i.test(target)) return { action: 'open', target: /^https?:/i.test(target) ? target : `http://${target}`, kind: 'url' };
@@ -130,7 +131,7 @@ function parseCommand(input, now = new Date()) {
     // Not app names: "a new tab", "the file report.pdf", "the link", and two apps in one request. The chat explains what Loon can open.
     if (/^(?:an? |file |link$|app$|page$|website$|site$)| (?:and|&) /i.test(target)) return null;
     const folder = target.match(/^(?:~\/|(?:my )?(?:the )?)(downloads|documents|desktop|pictures|movies|music|applications)(?: folder)?$/i);
-    if (folder) return { action: 'open', target: `~/${folder[1][0].toUpperCase()}${folder[1].slice(1).toLowerCase()}`.replace('~/Applications', '/Applications'), kind: 'folder' };
+    if (folder && raw === target) return { action: 'open', target: `~/${folder[1][0].toUpperCase()}${folder[1].slice(1).toLowerCase()}`.replace('~/Applications', '/Applications'), kind: 'folder' };
     // Paths and file names aren't apps either, and Loon doesn't open files it can't name safely.
     if (/^[/~]|^[\w. -]+\.(?:js|ts|txt|md|py|json|java|pdf|png|jpe?g|csv|zip|docx?|xlsx?|html?|dmg|sh|app)$/i.test(target)) return null;
     const isUrl = /^(https?:\/\/)?[\w-]+(\.[\w-]+)+([/?#]\S*)?$/i.test(target) && (/^https?:|[/?#]|^www\./i.test(target) || !/\.(?:js|ts|txt|md|py|json|java|pdf|png|jpe?g|csv|zip|docx?|xlsx?|html?)$|^v?\d+(?:\.\d+)+$/i.test(target) || /^\d+(?:\.\d+){3}$/.test(target));
