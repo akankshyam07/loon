@@ -2985,3 +2985,13 @@ As a user, the problem was short error messages copied on their own. "Connection
 Fixed: a new whole-selection check in extension/lib/classify.js treats these known messages as errors. A longer sentence that only contains the phrase stays a sentence. Test added in test/browser.test.js.
 
 Left for later: a short dash bullet list reads as one sentence. "npm WARN deprecated ..." is a sentence. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-19 — reminders, timers and focus (seventeenth pass)
+
+Tried 34 phrasings such as "set timer 2h", "timer for an hour", "set a 25 minute pomodoro", "start a pomodoro", "remind me at noon to eat", "snooze 10 minutes", "alarm for 7am" and "what are my reminders".
+
+As a user, "set timer 2h" made a reminder called "Timer is up for set", because the word "set" was read as the name of the timer. "set a 25 minute pomodoro" and "start a pomodoro" were not understood and went to the model.
+
+Fixed: the named timer rule no longer takes "set" or "start" as a name, and pomodoro phrasings start a focus session. Tests added in test/assistant.test.js.
+
+Left for later: "cancel my timer", "show reminders", "delete all reminders", "alarm for 7am", "snooze 10 minutes" and "quiet mode for an hour" are not matched. "remind me to drink water every hour" still makes a one-time reminder with no time.

@@ -78,7 +78,7 @@ function parseCommand(input, now = new Date()) {
   let m;
   // Loon has no alarm clock of its own. Timers, alarms and "wake me" become Reminders, which the confirm card names.
   // "egg timer 5 minutes" names the timer before its length.
-  if ((m = text.match(/^(?:set |start )?(?:an? )?(?!(?:an?|the|my) )([a-z]+) timer (?:for |of )?(\d.*)$/i))) {
+  if ((m = text.match(/^(?:set |start )?(?:an? )?(?!(?:an?|the|my|set|start) )([a-z]+) timer (?:for |of )?(\d.*)$/i))) {
     const { date } = extractWhen(`in ${m[2].replace(/^\d+$/, '$& minutes')}`, now);
     return date ? { action: 'reminder', title: `Timer is up for ${m[1]}`, when: date } : null;
   }
@@ -178,12 +178,12 @@ function parseCommand(input, now = new Date()) {
     return { action: 'forget', text: all ? tidy(m[1]) : topic, all };
   }
   if (/^(?:good morning|(?:what'?s|what is) (?:on )?my (?:day|schedule|agenda)(?: (?:like )?today)?|my day|plan my day|what do i have today)\??$/i.test(text)) return { action: 'today' };
-  if ((m = text.match(/^(?:start (?:a )?)?focus(?: mode| timer| session)?(?: for)? (\d+(?:\.\d+)?|an?)\s*(m|mins?|minutes?|h|hrs?|hours?)?$/i)) || (m = text.match(/^(?:start |set )?(?:a |an )?(\d+(?:\.\d+)?)[\s-]*(m|mins?|minutes?|h|hrs?|hours?)? focus(?: mode| timer| session)?$/i))) {
+  if ((m = text.match(/^(?:start (?:a )?)?focus(?: mode| timer| session)?(?: for)? (\d+(?:\.\d+)?|an?)\s*(m|mins?|minutes?|h|hrs?|hours?)?$/i)) || (m = text.match(/^(?:start |set )?(?:a |an )?(\d+(?:\.\d+)?)[\s-]*(m|mins?|minutes?|h|hrs?|hours?)? (?:focus(?: mode| timer| session)?|pomodoro)$/i))) {
     const n = /^an?$/i.test(m[1]) ? 1 : Number(m[1]);
     if (/^an?$/i.test(m[1]) && !/^h/i.test(m[2] || '')) return null; // "focus a" is not a duration
     return { action: 'focus', minutes: Math.min(Math.round(n * (/^h/i.test(m[2] || '') ? 60 : 1)), 240) };
   }
-  if (/^(?:start (?:a )?)?focus(?: mode| timer| session)?$|^pomodoro$/i.test(text)) return { action: 'focus', minutes: 25 };
+  if (/^(?:start (?:a )?)?focus(?: mode| timer| session)?$|^(?:start |set )?(?:a )?pomodoro$/i.test(text)) return { action: 'focus', minutes: 25 };
   if (/^(?:stop|end|cancel) (?:the )?focus(?: mode| timer| session)?$/i.test(text)) return { action: 'focus', minutes: 0 };
   return null;
 }

@@ -490,6 +490,11 @@ test('commands: "quarter past 3" and "half past 4" are times, and "egg timer 5 m
   assert.strictEqual(egg.title, 'Timer is up for egg');
   assert.strictEqual(egg.when.getTime() - NOW.getTime(), 5 * 60000);
   assert.strictEqual(parseCommand('set a pasta timer for 10 min', NOW).when.getTime() - NOW.getTime(), 10 * 60000);
+  const plain = parseCommand('set timer 2h', NOW);
+  assert.strictEqual(plain.title, 'Timer is up');
+  assert.strictEqual(plain.when.getTime() - NOW.getTime(), 120 * 60000);
+  assert.deepStrictEqual(parseCommand('set a 25 minute pomodoro', NOW), { action: 'focus', minutes: 25 });
+  assert.deepStrictEqual(parseCommand('start a pomodoro', NOW), { action: 'focus', minutes: 25 });
 });
 
 test('commands: "always remember" and "memorize" save a fact, "remember me?" and "remember what I said" save nothing', () => {
