@@ -18,6 +18,9 @@
   // Short error lines with no trace around them: Node system error codes, HTTP status lines, build and test failures, a lone stack frame, TypeScript and browser console messages
   const ERROR_LINE = /^\s*error TS\d+:|\bCannot (read|set) propert(y|ies) of (undefined|null)\b|\bis not (defined|a function)\b|\bpanicked at \S|\bE(RESOLVE|LIFECYCLE|CONNREFUSED|CONNRESET|NOENT|ADDRINUSE|ACCES|PERM|TIMEDOUT|NOTFOUND|XIST)\b|\bexit(ed)? (with )?(code|status) [1-9]\d*\b|\bBUILD (FAILURE|FAILED)\b|^\s*FAILED \S+::|\bFailed to compile\b|^\s*Module not found: Error\b|\bCannot find module '|blocked by CORS policy|\bshould have a unique "key" prop\b|^\s*Failed to load resource: the server responded|^\s*\[ERROR\] Failed to execute goal|^\s*Hydration failed\b|\bUnhandled (Promise Rejection|rejection)\b|\bCould not find a version that satisfies\b|\bCompilation error\b|^\s*(zsh|bash|sh|fish): (.+: )?(permission denied|no such file or directory|command not found)|^\s*dyld: |^\s*Permission denied \(publickey|\bAccess denied for user\b|\bnet::ERR_[A-Z_]+|\b(CrashLoopBackOff|ImagePullBackOff|OOMKilled)\b|^\s*!?\s*\[rejected\]|^\s*CONFLICT \(|\bCERTIFICATE_VERIFY_FAILED\b|\bcertificate signed by unknown authority\b|^\s*Failed to fetch\s*$|\bundefined reference to\b|\bNo such file or directory\b|^\s*ssh: connect to host\b|^\s*at [\w$.<>]+\(.*:\d+\)\s*$|^\s*HTTP [45]\d\d\s*$|^\s*(HTTP\/[\d.]+ |HTTP )?[45]\d\d (Bad Request|Unauthorized|Forbidden|Not Found|Too Many Requests|Internal Server Error|Bad Gateway|Service Unavailable|Gateway Timeout)\s*$/i;
 
+  // Whole selections that are a known error message with no other words around it
+  const ERROR_PHRASE = /^\s*(Traceback|(Connection|Read) (refused|reset by peer|timed out)|Out of memory|Killed(: \d+)?|Permission denied|Access is denied|No module named \S+|FAIL \S+\.(test|spec)\.\S+)[.!]?\s*$/i;
+
   // A bare exception class name such as "NullPointerException" or "java.lang.IllegalStateException"
   const ERROR_NAME = /^[A-Za-z_][\w.]*[a-z](Error|Exception)$/;
 
@@ -61,7 +64,7 @@
     if (editable) return 'editable';
     if (looksLikeJson(t)) return 'json';
     if (STACK_TRACE.some((re) => re.test(t)) && (t.includes('\n') || /(error|exception|ERR!|fault|not found|fatal|traceback)/i.test(t))) return 'stacktrace';
-    if (ERROR_LINE.test(t) || ERROR_NAME.test(t)) return 'stacktrace';
+    if (ERROR_LINE.test(t) || ERROR_NAME.test(t) || ERROR_PHRASE.test(t)) return 'stacktrace';
     if (looksLikeCode(t, { monospace }) || looksLikeCommand(t)) return 'code';
     // CJK text has no spaces, so count roughly one word per two characters
     const cjk = (t.match(/[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]/g) || []).length;

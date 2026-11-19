@@ -88,9 +88,11 @@ test('selection kinds treat unspaced CJK text by length', () => {
     "Access denied for user 'root'@'localhost'", 'net::ERR_CONNECTION_REFUSED', 'CrashLoopBackOff', 'OOMKilled',
     '! [rejected] main -> main (non-fast-forward)', 'CONFLICT (content): Merge conflict in a.txt',
     'SSL: CERTIFICATE_VERIFY_FAILED', 'x509: certificate signed by unknown authority', 'Failed to fetch',
-    'cat: notes.txt: No such file or directory', 'ssh: connect to host 10.0.0.5 port 22: Connection timed out']) {
+    'cat: notes.txt: No such file or directory', 'ssh: connect to host 10.0.0.5 port 22: Connection timed out',
+    'Traceback', 'Connection refused', 'Out of memory', 'Killed: 9', 'Permission denied', 'No module named numpy', 'FAIL src/a.test.js']) {
     assert.strictEqual(classifySelection(line), 'stacktrace', line);
   }
+  assert.strictEqual(classifySelection('Connection refused by the host is common'), 'sentence');
   assert.strictEqual(classifySelection('The quick brown fox'), 'sentence');
   assert.strictEqual(classifySelection('console.log("hi")'), 'code');
   assert.strictEqual(classifySelection('x => x * 2'), 'code');

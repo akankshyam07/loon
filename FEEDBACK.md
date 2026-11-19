@@ -2975,3 +2975,13 @@ As a user, the misses were common ones. `getaddrinfo ENOTFOUND api.example.com` 
 Fixed: a new entry for DNS lookup failures (ENOTFOUND, EAI_AGAIN and the Linux and macOS wordings), the command-not-found rule now accepts `sh: 1: name: not found`, and the Python type rule accepts "can only concatenate". Tests added in test/modes.test.js.
 
 Left for later: Rust `unwrap()` on None, a missing C linker, Node unhandled promise rejections, Spring's Whitelabel Error Page and "HEAD detached" are not in the table. A Docker "permission denied while trying to connect to the Docker daemon socket" gets the generic permission answer instead of the docker group fix. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-19 — selection chips and classification (fifteenth pass)
+
+Tried 40 selections such as bare error words, Python and Node errors, shell commands, SQL, emails, URLs, paths, emoji and a short bullet list.
+
+As a user, the problem was short error messages copied on their own. "Connection refused", "Out of memory", "Killed: 9", "Permission denied", "No module named numpy", a bare "Traceback" and "FAIL src/a.test.js" read as one to three words, so Loon offered Define instead of the error help.
+
+Fixed: a new whole-selection check in extension/lib/classify.js treats these known messages as errors. A longer sentence that only contains the phrase stays a sentence. Test added in test/browser.test.js.
+
+Left for later: a short dash bullet list reads as one sentence. "npm WARN deprecated ..." is a sentence. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
