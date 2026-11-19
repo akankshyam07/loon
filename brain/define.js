@@ -62,7 +62,7 @@ async function define(phrase, { maxSenses = 4 } = {}) {
 
 // A typed dictionary question ("define ephemeral", "what does ephemeral mean?", "meaning of the word ephemeral") → the
 // term, or null. Pronouns and "the error" style phrases are left to the model, since they point at something on screen.
-const DICTIONARY_ASK = /^(?:(?:define|def|look up|explain(?= the (?:word|term) )):?|(?:(?:the|a) )?(?:definition|meaning) (?:of|for)|(?:definition|meaning):?|wh?[au]t(?:'?s| is| does)(?: the)? (?:meaning|definition) (?:of|for)|wh?[au]t does|wh?[au]t do you mean by)\s+(?:the (?:word|term) )?["'“‘]?([\p{L}-]+(?: [\p{L}-]+)??)["'”’]?(?: means?)?$|^wh?[au]t(?:'?s| is)? ([\p{L}-]+) means?$|^([\p{L}-]+) (?:meaning|definition|means(?: wh?[au]t)?)$/iu;
+const DICTIONARY_ASK = /^(?:(?:define|def|look up|explain(?= the (?:word|term) )):?|(?:(?:the|a|word) )?(?:definition|meaning) (?:of|for)|(?:definition|meaning):?|wh?[au]t(?:'?s| is| does)(?: the)? (?:meaning|definition) (?:of|for)|wh?[au]t does|wh?[au]t do you mean by)\s+(?:the (?:word|term) )?["'“‘]?([\p{L}-]+(?: [\p{L}-]+)??)["'”’]?(?: means?)?$|^wh?[au]t(?:'?s| is)? ([\p{L}-]+) means?$|^([\p{L}-]+) (?:meaning|definition|means(?: wh?[au]t)?)$/iu;
 const NOT_A_TERM = /^(?:this|that|it|these|those|here|there|the|my|your|his|her|our|their|a|an|going on|wrong|new|up|happening|next|today|time)\b/i;
 
 function dictionaryTerm(question) {
@@ -76,7 +76,7 @@ function dictionaryTerm(question) {
 }
 
 // "synonym for happy", "another word for big" → the word, or null.
-const SYNONYM_ASK = /^(?:(?:give me |find me |what(?:'?s| is| are) )?(?:a |some |the )?(?:synonyms?|(?:another|other|different|better) (?:words?|ways?) (?:for|to say|of saying)|another word|other words?|different word|similar words?|words similar|words? like|words? (?:that mean|meaning))(?:\s+(?:for|of|to))?|(?:what(?:'?s| is) )?(?:a |another |a better )?word for)\s+(?:the (?:word|term) )?["'“‘]?([\p{L}-]+)["'”’]?$|^([\p{L}-]+) synonyms?$/iu;
+const SYNONYM_ASK = /^(?:(?:give me |find me |what(?:'?s| is| are) )?(?:a |some |the )?(?:synonyms?|(?:another|other|different|better) (?:words?|ways?) (?:for|to say|of saying)|another word|other words?|different word|similar words?|words similar|words? like|words (?:that mean|meaning))(?:\s+(?:for|of|to))?|(?:what(?:'?s| is) )?(?:a |another |a better )?word for)\s+(?:the (?:word|term) )?["'“‘]?([\p{L}-]+)["'”’]?$|^([\p{L}-]+) synonyms?$/iu;
 
 function cleanAsk(question) {
   return String(question || '').trim().replace(/[’‘]/g, "'")

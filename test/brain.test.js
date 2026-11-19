@@ -429,3 +429,10 @@ test('ladder: thanks with a goodbye, "gtg" and "thanks cat" are answered from co
     assert.notStrictEqual((await resolver.ask(q, { onText: () => {}, firstInThread: false, history })).tier, 'code', q);
   }
 });
+
+test('"word meaning of X" is a definition, not a synonym ask', () => {
+  const { dictionaryTerm, synonymTerm } = require('../brain/define');
+  assert.strictEqual(dictionaryTerm('word meaning of ephemeral'), 'ephemeral');
+  assert.strictEqual(synonymTerm('word meaning of ephemeral'), null);
+  assert.strictEqual(synonymTerm('words meaning happy'), 'happy');
+});

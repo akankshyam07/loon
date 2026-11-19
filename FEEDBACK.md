@@ -2955,3 +2955,13 @@ As a user, the worst problems were junk facts and misses. "Remember me?" saved t
 Fixed: the remember rule accepts "always remember" and "memorize", and skips texts that are only "me", "us", "you", "what I said" or "the last thing I told you", with or without a question mark. Test added in test/assistant.test.js.
 
 Left for later: "remember the milk" still saves "the milk". "Fyi I'm vegetarian", "you should know I'm allergic to nuts", "turn off memory", "what's my name" and typos like "remmeber" go to the model. The 5 failures in `npm test` are the WordNet ones from the sandbox install.
+
+## 2026-11-19 — translation and definitions (seventeenth pass)
+
+Tried 32 typed dictionary, synonym and antonym asks such as "define the word ephemeral", "synonyms of big", "what's the antonym of love", "define ephemeral as a verb", "antonyms for good and bad", "word meaning of ephemeral" and "sinonimo de feliz".
+
+As a user, nearly all of them hit the offline dictionary. One was wrong. "word meaning of ephemeral" was read as a request for synonyms, so I got a list of words instead of a definition.
+
+Fixed: the synonym rule only takes the plural "words meaning X", and the definition rule accepts "word meaning of X". Test added in test/brain.test.js and it fails before the change.
+
+Left for later: "hot's opposite", "what's another word for very big", "what's a better word than good", "antonyms for good and bad" and "define X as a verb" are not parsed. The 5 failures in `npm test` are the usual sandbox ones and are the same without this change.
