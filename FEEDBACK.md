@@ -3005,3 +3005,13 @@ As a user, three results were wrong. "enquire" became "esquire". "Wich one is be
 Fixed: fixGrammar leaves "enquire" and its forms alone, prefers the suggestion that only adds a missing letter ("which" before "wish"), and skips expanding abbreviations in lowercase too. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: "your welcome", "There going to be late", "The results was good", "I seen him", "Please advice me", "an university" and "hows" are not flagged. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-19 — history (sixteenth pass)
+
+Tried 28 history phrasings such as "chat history", "show chat history", "history of my questions", "recall", "wat did i ask", "history docker" and "what did you tell me earlier".
+
+As a user, "chat history" and "show chat history" were the most natural way to ask and they went to the language model, which cannot see past chats. "history of my questions" had the same problem.
+
+Fixed: parseCommand in brain/commands.js now reads "chat/conversation/search/question history" and "history of my questions/searches/chats" as the plain history list. Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: bare "recall", "wat did i ask", "history docker", "what was that thing about css" and "what did you tell me earlier" still reach the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
