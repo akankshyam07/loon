@@ -359,6 +359,13 @@ test('grammar fixer leaves other languages and chat shorthand alone', async () =
   }
 });
 
+test('grammar fixer keeps enquire and asap, and prefers the dropped letter', async () => {
+  for (const text of ['I am writing to enquire about the job.', 'Please send it asap.']) {
+    assert.strictEqual((await fixGrammar(text)).fixed, text);
+  }
+  assert.strictEqual((await fixGrammar('Wich one is better?')).fixed, 'Which one is better?');
+});
+
 test('grammar fixer leaves file names, hashtags and handles alone', async () => {
   for (const text of ['The file is config.yaml and main.js', 'Hey @john check #todo and $HOME', 'Open src/utils.js now']) {
     assert.strictEqual((await fixGrammar(text)).fixed, text);

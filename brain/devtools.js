@@ -157,7 +157,8 @@ function linter() {
 
 // Words that are not typos, so a spelling "fix" would damage them: code identifiers (useState), stretched words (sooo)
 // and vowel-less abbreviations (tmrw → thaw).
-const NOT_A_TYPO = /[a-z][A-Z]|(.)\1\1|^[^aeiouyAEIOUY]+$/;
+// "enquire" is British English that Harper does not know and would turn into "esquire".
+const NOT_A_TYPO = /[a-z][A-Z]|(.)\1\1|^[^aeiouyAEIOUY]+$|^[Ee]nquir/;
 // Spellings that only differ by regional convention (colour/color, cancelled/canceled, organise/organize, centre/center).
 const dialectKey = (w) => w.toLowerCase().replace(/ou/g, 'o').replace(/ll/g, 'l').replace(/is(e|ing|ation)/g, 'iz$1').replace(/yse/g, 'yze').replace(/re\b/g, 'er');
 const CHAT_SHORTHAND = new Set('u ur ok k lol omg ty thx pls plz idk imo brb sec ya'.split(' '));
@@ -168,6 +169,12 @@ const ENGLISH_WORDS = new Set('the a an and or but of to in on at for with is ar
 function looksEnglish(text) {
   const words = String(text).toLowerCase().match(/[a-z']+/g) || [];
   return words.length < 3 || words.some((w) => ENGLISH_WORDS.has(w));
+}
+
+function isSubsequence(small, big) {
+  let i = 0;
+  for (const c of big) if (c === small[i]) i++;
+  return i === small.length;
 }
 
 function editDistance(a, b) {
@@ -195,7 +202,9 @@ async function fixGrammar(text) {
     const word = fixed.slice(l.span().start, l.span().end).toLowerCase();
     const all = l.suggestions();
     if (l.lint_kind() !== 'Spelling') return all[0];
-    return all.find((s) => s.get_replacement_text().toLowerCase() === word.replace(/(.)\1/, '$1')) || all[0];
+    const undoubled = all.find((s) => s.get_replacement_text().toLowerCase() === word.replace(/(.)\1/, '$1'));
+    // A dropped letter is the usual typo, so "wich" becomes "which" before "wish" (Harper lists the substitution first).
+    return undoubled || all.find((s) => s.get_replacement_text().length === word.length + 1 && isSubsequence(word, s.get_replacement_text().toLowerCase())) || all[0];
   };
   const usable = (l) => {
     const { start, end } = l.span();
@@ -208,7 +217,7 @@ async function fixGrammar(text) {
     // An unknown name has no near match ("Akankshya" → "Changsha"), and en dashes in phone numbers are style, not errors.
     // Expanding an initialism (ASAP → As soon as possible) is a style opinion, not a fix.
     // "very good" → "excellent" is a rewrite of the user's wording, not a correction.
-    if (l.lint_kind() === 'Formatting' || l.lint_kind() === 'Enhancement' || (l.lint_kind() === 'Miscellaneous' && /^[A-Z]{2,}$/.test(word))) return false;
+    if (l.lint_kind() === 'Formatting' || l.lint_kind() === 'Enhancement' || (l.lint_kind() === 'Miscellaneous' && /^[A-Za-z]{2,}$/.test(word))) return false;
     // An all-caps abbreviation (EOD, PDF) is not a misspelling, and a dialect spelling is the user's choice.
     if (l.lint_kind() === 'Spelling' && (/^[A-Z]{2,}s?$/.test(word) || (word.toLowerCase() !== to.toLowerCase() && dialectKey(word) === dialectKey(to)))) return false;
     // Harper reads "4B" as "4 bytes", "Your the" as a repeat of "Your" and "It's Dr. Smith's" as a wrong "its".

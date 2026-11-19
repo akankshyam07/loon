@@ -2995,3 +2995,13 @@ As a user, "set timer 2h" made a reminder called "Timer is up for set", because 
 Fixed: the named timer rule no longer takes "set" or "start" as a name, and pomodoro phrasings start a focus session. Tests added in test/assistant.test.js.
 
 Left for later: "cancel my timer", "show reminders", "delete all reminders", "alarm for 7am", "snooze 10 minutes" and "quiet mode for an hour" are not matched. "remind me to drink water every hour" still makes a one-time reminder with no time.
+
+## 2026-11-19 — writing tools, fix grammar (tenth pass)
+
+Tried 29 texts such as "Teh meeting is tommorow", "i think we should of gone", "Wich one is better?", "writting to enquire about the the job", "hey can u send me the doc asap", "He is more taller than me" and "a apple a day".
+
+As a user, three results were wrong. "enquire" became "esquire". "Wich one is better?" became "Wish one is better?". A lowercase "asap" was expanded to "as soon as possible", which is a style change nobody asked for.
+
+Fixed: fixGrammar leaves "enquire" and its forms alone, prefers the suggestion that only adds a missing letter ("which" before "wish"), and skips expanding abbreviations in lowercase too. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: "your welcome", "There going to be late", "The results was good", "I seen him", "Please advice me", "an university" and "hows" are not flagged. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
