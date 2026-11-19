@@ -145,6 +145,17 @@ test('memory: forget needs most words to match, and "what I just said" matches n
   assert.strictEqual(memory.all().length, 2);
 });
 
+test('memory: forget matches whole words, not parts of other words', () => {
+  const memory = new Memory(path.join(tmp(), 'memory.db'));
+  memory.add('I work as a manager');
+  memory.add('My cat is called Mo');
+  memory.add('I love Café Müller');
+  assert.strictEqual(memory.forget('my age').length, 0);
+  assert.strictEqual(memory.forget('the cats').length, 1);
+  assert.strictEqual(memory.forget('café').length, 1);
+  assert.strictEqual(memory.all().length, 1);
+});
+
 test('commands: remember with a colon, forget idioms are not deletions, blanket forget is flagged', () => {
   assert.deepStrictEqual(parseCommand('Remember: my name is Sam'), { action: 'remember', text: 'my name is Sam' });
   for (const t of ['forget it', 'forget about it', 'forget that']) assert.strictEqual(parseCommand(t), null, t);

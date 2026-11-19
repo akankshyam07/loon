@@ -3015,3 +3015,13 @@ As a user, "chat history" and "show chat history" were the most natural way to a
 Fixed: parseCommand in brain/commands.js now reads "chat/conversation/search/question history" and "history of my questions/searches/chats" as the plain history list. Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: bare "recall", "wat did i ask", "history docker", "what was that thing about css" and "what did you tell me earlier" still reach the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-19 — memory commands (second pass)
+
+Tried 34 phrasings such as "remember that i'm vegetarian", "pls remember…", "can you remember that…", "I'm allergic to peanuts, remember that", "forget my name", "forget about my dog", "keep in mind…", "save to memory: …", "recuerda que…" and several redaction checks on prose passwords, PINs, CVVs and cards.
+
+As a user, saving worked well and secrets are now refused. The worst problem was on the way out. "forget" matched words as substrings, so "forget my age" would delete "I work as a manager" and "forget my cat" would delete anything with "location". Names in other scripts (for example "café") were ignored by the matcher because it only read a-z.
+
+Fixed: Memory.forget now compares whole words (with a trailing s ignored) and reads letters in any script. Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: "for the record I'm 30" and "recuerda que…" are not understood as remember. "forget my name" still removes every fact that mentions a name, including a pet's. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

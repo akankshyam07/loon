@@ -225,9 +225,12 @@ class Memory {
   // "forget that I'm vegetarian" → removes facts that share most of those words.
   forget(text) {
     const FILLER = new Set(['that', 'the', 'not', 'any', 'more', 'anymore', 'forget', 'about', 'please', 'this', 'what', 'just', 'said', 'told', 'last', 'thing', 'things', 'earlier', 'before', 'you']);
-    const words = [...new Set((text.toLowerCase().match(/[a-z]{3,}/g) || []).filter((w) => !FILLER.has(w)))];
+    // Whole words only, so "forget my cat" keeps "I live in a location with…" and a name in another script still counts.
+    const stem = (w) => w.replace(/s$/, '');
+    const words = [...new Set((text.toLowerCase().match(/\p{L}{3,}/gu) || []).filter((w) => !FILLER.has(w)).map(stem))];
     const removed = this.all().filter((e) => {
-      const hits = words.filter((w) => e.text.toLowerCase().includes(w)).length;
+      const have = new Set((e.text.toLowerCase().match(/\p{L}{3,}/gu) || []).map(stem));
+      const hits = words.filter((w) => have.has(w)).length;
       return hits && hits >= Math.ceil(words.length * 0.6);
     });
     for (const e of removed) this.remove(e.id);
