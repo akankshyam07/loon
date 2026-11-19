@@ -2965,3 +2965,13 @@ As a user, nearly all of them hit the offline dictionary. One was wrong. "word m
 Fixed: the synonym rule only takes the plural "words meaning X", and the definition rule accepts "word meaning of X". Test added in test/brain.test.js and it fails before the change.
 
 Left for later: "hot's opposite", "what's another word for very big", "what's a better word than good", "antonyms for good and bad" and "define X as a verb" are not parsed. The 5 failures in `npm test` are the usual sandbox ones and are the same without this change.
+
+## 2026-11-19 — developer help, error table (seventeenth pass)
+
+Tried 65 pasted errors such as Python ValueError and KeyError, Rust borrow errors, npm ELIFECYCLE, React hook and key warnings, TypeScript errors, git and Docker failures, Go panics and Hibernate exceptions. Most hit the table with a sensible answer.
+
+As a user, the misses were common ones. `getaddrinfo ENOTFOUND api.example.com` is the usual Node network failure and went to the model. `sh: 1: vite: not found`, which npm scripts print when dependencies are not installed, was not seen as a missing command. Python's `can only concatenate str (not "int") to str` was not seen as a type problem.
+
+Fixed: a new entry for DNS lookup failures (ENOTFOUND, EAI_AGAIN and the Linux and macOS wordings), the command-not-found rule now accepts `sh: 1: name: not found`, and the Python type rule accepts "can only concatenate". Tests added in test/modes.test.js.
+
+Left for later: Rust `unwrap()` on None, a missing C linker, Node unhandled promise rejections, Spring's Whitelabel Error Page and "HEAD detached" are not in the table. A Docker "permission denied while trying to connect to the Docker daemon socket" gets the generic permission answer instead of the docker group fix. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

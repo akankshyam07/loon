@@ -202,6 +202,9 @@ test('errors: fingerprint ignores paths/values; known errors answer from the tab
   assert.match(lookupKnown('error: externally-managed-environment\n\n× This environment is externally managed'), /virtual environment/);
   assert.match(lookupKnown("java.sql.SQLException: Access denied for user 'root'@'localhost' (using password: YES)"), /Database login/);
   assert.match(lookupKnown('ssl.SSLCertVerificationError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed'), /certificate/i);
+  assert.match(lookupKnown('Error: getaddrinfo ENOTFOUND api.example.com'), /DNS/);
+  assert.match(lookupKnown('sh: 1: vite: not found'), /Command not found/);
+  assert.match(lookupKnown('TypeError: can only concatenate str (not "int") to str'), /Wrong type/);
   assert.match(lookupKnown('panic: runtime error: index out of range [3] with length 3'), /Index out of range/);
   assert.strictEqual(lookupKnown('SomethingTotallyNewError: flux capacitor'), null);
   assert.strictEqual(lookupKnown('ValueError: bad input\n  at run (/src/app.js:404:3)'), null, 'a line number is not an HTTP status');

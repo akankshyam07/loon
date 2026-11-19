@@ -185,7 +185,7 @@ const KNOWN = [
     fix: ['Check `document.querySelector(...)` really returned an element.', 'Run the script after the page has loaded (`defer` or `DOMContentLoaded`).'],
   },
   {
-    match: /: command not found|command not found:|is not recognized as the name of a cmdlet|is not recognized as an internal or external command/,
+    match: /: command not found|command not found:|\bsh: (?:\d+: )?[^\s:]+: not found|is not recognized as the name of a cmdlet|is not recognized as an internal or external command/,
     title: 'Command not found',
     explain: 'The shell can’t find a program with that name: it isn’t installed, or isn’t on your PATH.',
     fix: ['Check the spelling.', 'Install it (`brew install <name>` on macOS).', 'Tools like nvm or conda need their init lines in `~/.zshrc`, then open a new terminal.'],
@@ -267,6 +267,12 @@ const KNOWN = [
     title: 'Network timeout or reset',
     explain: 'The connection hung or was dropped before a reply arrived.',
     fix: ['Check you can reach the host (`curl -v <url>`).', 'Check VPN, proxy or firewall settings.', 'Retry with a longer timeout, or with backoff if the server is busy.'],
+  },
+  {
+    match: /ENOTFOUND|EAI_AGAIN|Name or service not known|Temporary failure in name resolution|nodename nor servname provided/,
+    title: 'Host name not found (DNS)',
+    explain: 'The name in the address could not be turned into an IP address, so the request never left your machine.',
+    fix: ['Check the host name for typos, including in the environment variable or config that holds it.', 'Check you are online and that a VPN or custom DNS is not blocking the lookup.', 'In Docker, use the service name from compose, not `localhost`, to reach another container.'],
   },
   {
     match: /has been blocked by CORS policy|No 'Access-Control-Allow-Origin' header/,
@@ -437,7 +443,7 @@ const KNOWN = [
     fix: ['Check the spelling and add the missing `import`.', 'For globals like `process` or `describe`, install the matching `@types/...` package.'],
   },
   {
-    match: /TypeError: '\w+' object is not (?:subscriptable|callable|iterable)|TypeError: unsupported operand type|AttributeError: '\w+' object has no attribute/,
+    match: /TypeError: '\w+' object is not (?:subscriptable|callable|iterable)|TypeError: unsupported operand type|TypeError: can only concatenate|AttributeError: '\w+' object has no attribute/,
     title: 'Wrong type for this operation (Python)',
     explain: 'The value is not the type the code assumed (for example an int used like a list, or a str added to an int).',
     fix: ['Print `type(x)` for the variable named in the message and trace back to where it was set.', 'Convert it first (`int(x)`, `str(x)`), or fix the code that returned the wrong type.'],
