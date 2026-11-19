@@ -3035,3 +3035,13 @@ As a user, the worst problem was a wildly wrong number. "12 pack of 500ml" was r
 Fixed: parseQuantity now reads "12 pack" before looking at "pack of N", and "pk of N" counts as a pack. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: "24 count 12 oz" ignores the 24. Prices like "$5⁹⁹" and "$5 - $7" still read as 5. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-19 — voice intents (thirteenth pass)
+
+Tried 46 spoken phrasings such as "explain this in plain english", "break this down", "help me understand this", "i don't get this", "give me a summary", "which one is the best deal", "make it longer", "read this to me", "translate this into french", "repeat that" and "wait".
+
+As a user, the plain-language asks went to the model as free questions with no selection attached, so it answered about nothing. "which one is the best deal" skipped the unit price code that "which one is the cheapest" already used.
+
+Fixed: "in plain english", "in simple words" and "in easy terms" now mean Simplify. "break this down", "help me understand this" and "i don't get this" run Explain. "give me a summary" runs Summarize, and "best deal" joins "best value". Test added in test/voice.test.js and checked to fail before the change.
+
+Left for later: "make it longer", "make it funnier", "read this to me", "translate this into french", "repeat that", "say that again" and "louder" still have no voice template. "what is this" is ambiguous between a selection and the page. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

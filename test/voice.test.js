@@ -207,3 +207,11 @@ test('natural yes and no answers to a confirm card are understood', () => {
   for (const t of ['no no no', 'oh no', 'actually no', "nope don't", 'no thank you loon']) assert.strictEqual(route(t, ask).type, 'no', t);
   assert.strictEqual(route('what is the capital of France', ask).type, 'question');
 });
+
+test('spoken plain-language, summary and best-deal phrasings run the chip task', () => {
+  for (const t of ['explain this in plain english', 'explain this in simple words']) assert.strictEqual(route(t).task, 'simplify', t);
+  for (const t of ['break this down', 'help me understand this', "I don't get this"]) assert.strictEqual(route(t).task, 'explain', t);
+  assert.strictEqual(route('give me a summary').task, 'summarize');
+  assert.strictEqual(route('which one is the best deal').task, 'shop_value');
+  assert.strictEqual(route('give me a summary of the war of 1812').type, 'question');
+});
