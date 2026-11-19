@@ -576,3 +576,8 @@ test('error table: TypeScript module errors, ESM mix-ups and empty JSON', () => 
   assert.match(lookupKnown('SyntaxError: Unexpected end of JSON input'), /Invalid JSON/);
   assert.match(lookupKnown("Error: Cannot find module 'express'"), /Module not found/, 'plain Node module errors keep their answer');
 });
+
+test('parseQuantity reads the pack count before "of" and knows "pk of"', () => {
+  assert.deepStrictEqual(shopping.parseQuantity('12 pack of 500ml'), { amount: 6000, unit: 'ml' });
+  assert.deepStrictEqual(shopping.parseQuantity('pk of 12 500 ml'), { amount: 6000, unit: 'ml' });
+});

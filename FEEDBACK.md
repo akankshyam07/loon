@@ -3025,3 +3025,13 @@ As a user, saving worked well and secrets are now refused. The worst problem was
 Fixed: Memory.forget now compares whole words (with a trailing s ignored) and reads letters in any script. Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: "for the record I'm 30" and "recuerda que…" are not understood as remember. "forget my name" still removes every fact that mentions a name, including a pet's. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-19 — shopping and unit price (eighteenth pass)
+
+Tried 34 size strings and 15 price strings such as "12 pack of 500ml", "pk of 12 500 ml", "Pack of 6, 330 ml each", "24 count 12 oz", "2 lbs 3 oz", "half gallon", "$5⁹⁹" and "Was $20 Now $15".
+
+As a user, the worst problem was a wildly wrong number. "12 pack of 500ml" was read as 250,000 ml because the 500 after "of" was taken as the pack count. That would make a 12 pack look absurdly cheap per ml and win every ranking. "pk of 12 500 ml" ignored the 12.
+
+Fixed: parseQuantity now reads "12 pack" before looking at "pack of N", and "pk of N" counts as a pack. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: "24 count 12 oz" ignores the 24. Prices like "$5⁹⁹" and "$5 - $7" still read as 5. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
