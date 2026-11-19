@@ -380,3 +380,9 @@ test('onboarding reads "I can\'t eat pork", "no gluten" and "I have a peanut all
   assert.deepStrictEqual(onboardingResult({ allergies: 'nada' }).facts, []);
   assert.deepStrictEqual(onboardingResult({ interests: 'I like to hike' }).facts, ["I'm interested in hike"]);
 });
+
+test('onboarding does not save a smiley, "not allergic to anything" or a severity word as an allergy', () => {
+  for (const t of ['Nope :)', 'no allergies :)', 'not allergic to anything']) assert.deepStrictEqual(onboardingResult({ allergies: t }).facts, [], t);
+  assert.deepStrictEqual(onboardingResult({ allergies: 'severe peanut allergy' }).facts, ["I'm allergic to peanut"]);
+  assert.deepStrictEqual(onboardingResult({ allergies: 'mild lactose intolerance' }).facts, ["I'm intolerant to lactose"]);
+});

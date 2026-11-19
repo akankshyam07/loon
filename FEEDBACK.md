@@ -2925,3 +2925,13 @@ As a user, the worst problems were two. "20% off 49.99" answered "39.992 after 2
 Fixed: "% off" now rounds to cents, and brain/calc.js reads "increase/raise/decrease/reduce N by P%" and "P% increase/decrease on N", with a currency symbol kept. Cases added to the ladder test in test/brain.test.js and checked to fail before the change.
 
 Left for later: "1.5k", "double 45", "pi", "log", "2 hours 30 minutes in minutes", "5 stone in kg" and "100 usd to eur" are not handled by code. `npm test` shows 40 failures both before and after because this sandbox has no node_modules.
+
+## 2026-11-19 — onboarding first run, allergy box (fifteenth pass)
+
+Tried 23 answers for the allergy box, such as "celiac", "severe peanut allergy", "Nope :)", "no allergies :)", "not allergic to anything", "mild lactose intolerance", "peanuts (severe)" and "nothing, thanks!".
+
+As a user, the worst problem was a wrong allergy fact for a person with no allergies. "not allergic to anything" was saved as "I'm allergic to not allergic to anything", "Nope :)" as an allergy to "Nope :)" and "no allergies :)" as "I avoid allergies :)". Severity words leaked into the name, so "severe peanut allergy" became an allergy to "severe peanut".
+
+Fixed: smileys are dropped before the answer is read, "not allergic to anything" counts as no answer, and a leading severe, serious, mild, slight or bad is removed. Test added in test/personal.test.js and checked to fail before the change.
+
+Left for later: "celiac disease" is saved as an allergy to "celiac disease", and "peanuts (severe)" keeps the brackets. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
