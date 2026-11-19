@@ -2945,3 +2945,13 @@ As a user, "Club Sandwich" and "Chef's Salad" were listed as likely vegetarian, 
 Fixed: brain/food.js now treats club sandwich and chef's salad (straight or curly apostrophe) as meat dishes, and adds chicken and veal parmesan to the heavy words. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: plain "Pad Thai", "Nachos Supreme" and "Quesadilla" count as vegetarian, though they often hide fish sauce or meat. "Tom Yum" is caught but "Mapo Tofu" style dishes depend on the word list. The 4 WordNet failures and 1 demo failure in `npm test` are the usual ones from the sandbox install.
+
+## 2026-11-19 — memory commands (eighth pass)
+
+Tried 36 phrasings such as "remember me?", "remember what I said", "remember the milk", "always remember that I use vim", "memorize that I like jazz", "forget it", "what's my name" and "turn off memory".
+
+As a user, the worst problems were junk facts and misses. "Remember me?" saved the fact "me" and "remember what I said" saved "what I said". "Always remember that I use vim" and "memorize that I like jazz" were not recognized, so the model answered and might promise to remember without saving anything.
+
+Fixed: the remember rule accepts "always remember" and "memorize", and skips texts that are only "me", "us", "you", "what I said" or "the last thing I told you", with or without a question mark. Test added in test/assistant.test.js.
+
+Left for later: "remember the milk" still saves "the milk". "Fyi I'm vegetarian", "you should know I'm allergic to nuts", "turn off memory", "what's my name" and typos like "remmeber" go to the model. The 5 failures in `npm test` are the WordNet ones from the sandbox install.

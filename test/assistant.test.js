@@ -491,3 +491,9 @@ test('commands: "quarter past 3" and "half past 4" are times, and "egg timer 5 m
   assert.strictEqual(egg.when.getTime() - NOW.getTime(), 5 * 60000);
   assert.strictEqual(parseCommand('set a pasta timer for 10 min', NOW).when.getTime() - NOW.getTime(), 10 * 60000);
 });
+
+test('commands: "always remember" and "memorize" save a fact, "remember me?" and "remember what I said" save nothing', () => {
+  assert.deepStrictEqual(parseCommand('always remember that I use vim'), { action: 'remember', text: 'I use vim' });
+  assert.deepStrictEqual(parseCommand('memorize that I like jazz'), { action: 'remember', text: 'I like jazz' });
+  for (const t of ['remember me?', 'remember what I said', 'remember the last thing I told you']) assert.strictEqual(parseCommand(t), null, t);
+});
