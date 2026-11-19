@@ -2935,3 +2935,13 @@ As a user, the worst problem was a wrong allergy fact for a person with no aller
 Fixed: smileys are dropped before the answer is read, "not allergic to anything" counts as no answer, and a leading severe, serious, mild, slight or bad is removed. Test added in test/personal.test.js and checked to fail before the change.
 
 Left for later: "celiac disease" is saved as an allergy to "celiac disease", and "peanuts (severe)" keeps the brackets. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-19 — food and menu (eighteenth pass)
+
+Tried a 29 item menu with bao, empanadas, parmesan dishes, club sandwiches, salads, tempura, pad thai and dumplings, and asked for lightest and vegetarian picks.
+
+As a user, "Club Sandwich" and "Chef's Salad" were listed as likely vegetarian, and the chef's salad was one of the lightest picks. Both carry ham, turkey or bacon. "Chicken Parmesan" scored as only a little heavy.
+
+Fixed: brain/food.js now treats club sandwich and chef's salad (straight or curly apostrophe) as meat dishes, and adds chicken and veal parmesan to the heavy words. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: plain "Pad Thai", "Nachos Supreme" and "Quesadilla" count as vegetarian, though they often hide fish sauce or meat. "Tom Yum" is caught but "Mapo Tofu" style dishes depend on the word list. The 4 WordNet failures and 1 demo failure in `npm test` are the usual ones from the sandbox install.

@@ -542,6 +542,14 @@ test('menu: poutine and tonkatsu are not vegetarian, and fish and chips, poutine
   assert.doesNotMatch(lightest, /Fish and Chips|Masala|\*\*Poutine/);
 });
 
+test('menu: club sandwiches and chef salads are not vegetarian, and chicken parmesan is not light', () => {
+  const items = food.extractMenu('Club Sandwich $11\nChef’s Salad $10\nGarden Salad $7\nChicken Parmesan $16\nMushroom Risotto $15');
+  const veg = food.recommend(items, 'vegetarian', { count: 10 }).text;
+  assert.match(veg, /Garden Salad/);
+  assert.doesNotMatch(veg, /Club Sandwich|Chef/);
+  assert.ok(food.score(items[3]).heaviness >= 2);
+});
+
 test('json to dto: an object whose keys look like a map still gets a class with fields', async () => {
   const ts = await jsonToDto('{"2024-01": 10, "2024-02": 12}', 'typescript');
   assert.match(ts, /interface Root/);
