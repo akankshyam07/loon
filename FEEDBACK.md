@@ -3045,3 +3045,13 @@ As a user, the plain-language asks went to the model as free questions with no s
 Fixed: "in plain english", "in simple words" and "in easy terms" now mean Simplify. "break this down", "help me understand this" and "i don't get this" run Explain. "give me a summary" runs Summarize, and "best deal" joins "best value". Test added in test/voice.test.js and checked to fail before the change.
 
 Left for later: "make it longer", "make it funnier", "read this to me", "translate this into french", "repeat that", "say that again" and "louder" still have no voice template. "what is this" is ambiguous between a selection and the page. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-20 — routines (seventeenth pass)
+
+Tried 30 phrasings such as "every morning at 8 remind me to take vitamins", "twice a day remind me…", "every 90 minutes…", "every other friday at 9 remind me to…", "every first monday of the month…" and "every year on march 3…".
+
+As a user, nearly everything was read correctly. The worst miss was "every other friday at 9 remind me to submit timesheet", which was not understood at all, while the longer "every other week on friday" worked. The cat would then ask me to fill in the When field by hand.
+
+Fixed: parseSchedule in brain/routines.js now rewrites "every other/second <weekday>" to the existing 14-day cycle. Test added in test/routines.test.js and checked to fail before the change.
+
+Left for later: "every first monday of the month" and "every year on march 3" are not understood (the card asks for a When). "every weekday … summarize my calendar and email me" quietly drops the "email me" part. A bare "remind me every day" makes a routine with no message. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

@@ -477,6 +477,13 @@ test('companion: routine phrasings reach the routine card before Apple Reminders
   assert.match((await say('show my routines')).message, /No routines yet/);
 });
 
+test('"every other friday" is read as the 14-day cycle, not dropped', () => {
+  const p = R.parseRoutine('every other friday at 9 remind me to submit timesheet', { now: NOW });
+  assert.strictEqual(p.understood, true);
+  assert.strictEqual(R.describeSchedule(p.schedule), 'every other Friday at 9:00 AM');
+  assert.strictEqual(p.payload.message, 'submit timesheet');
+});
+
 test('every N weeks keeps its cycle instead of turning into a weekly routine', () => {
   const p = R.parseRoutine('every 2 weeks on friday remind me to submit timesheet', { now: NOW });
   assert.strictEqual(R.describeSchedule(p.schedule), 'every other Friday at 9:00 AM');
