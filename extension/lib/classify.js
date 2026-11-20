@@ -59,6 +59,9 @@
       || (lines.length === 1 && SNIPPET.test(text.trim()));
   }
 
+  // Whole selections that are not a word to look up: a URL, an email address or a file path
+  const NOT_A_WORD = /^(https?:\/\/|www\.)\S+$|^[^\s@]+@[^\s@]+\.\w+$|^(~|[A-Za-z]:\\|\.{0,2}\/)\S*[\/\\]\S*$/i;
+
   function classifySelection(text, { editable = false, monospace = false } = {}) {
     const t = text.trim();
     if (editable) return 'editable';
@@ -72,7 +75,10 @@
     const wordCount = cjk > 0 ? words.length + Math.floor(cjk / 2) : words.length;
     // A short question such as "What is this?" is not a word to define
     const isQuestion = words.length > 1 && /\?$|^¿/.test(t);
-    if (wordCount <= 3 && !isQuestion) return 'word';
+    // Prices, dates, emoji, links and paths have no dictionary entry, so they get Explain instead of Define
+    const lookup = /\p{L}/u.test(t) && !NOT_A_WORD.test(t);
+    if (wordCount <= 3 && !isQuestion && lookup) return 'word';
+    if (wordCount <= 3 && !isQuestion) return 'sentence';
     const sentences = (t.replace(/\b(?:mr|mrs|ms|dr|prof|st|vs|etc)\.|\b[ap]\.m\.|\b(?:e\.g|i\.e)\./gi, ' ').match(/[.!?](\s|$)|[。！？]/g) || []).length;
     if (sentences <= 1 && t.length < 260) return 'sentence';
     return 'paragraph';

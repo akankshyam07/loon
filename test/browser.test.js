@@ -47,6 +47,7 @@ test('TextRank returns central sentences in page order', () => {
 
 test('selection kinds treat unspaced CJK text by length', () => {
   assert.strictEqual(classifySelection('人工智能'), 'word');
+  for (const t of ['$19.99', '42', '12/05/2026', '😀', 'https://example.com/a?b=1', 'a@b.com', '~/notes/todo.md', 'C:\\Users\\me\\file.txt']) assert.strictEqual(classifySelection(t), 'sentence', t);
   assert.strictEqual(classifySelection('我今天想去公园散步，天气很好。'), 'sentence');
   assert.strictEqual(classifySelection('npm install express'), 'code');
   assert.strictEqual(classifySelection('sudo apt-get update'), 'code');

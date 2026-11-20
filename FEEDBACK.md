@@ -3115,3 +3115,13 @@ As a user, the worst problem was getting stuck in another language. After "reply
 Fixed: parseFeedback in brain/personal.js now accepts "again" after a language, a bare "english only" style form, "terse" as a short-answer request and "use more emojis". Test added in test/personal.test.js and checked to fail before the change.
 
 Left for later: "tone it down", "reset style", "explain more", "be funnier", "talk like a pirate" and bullet point requests have no rule. "explain more" looks like a follow-up, so it should stay out. The 5 failing tests in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-20 — selection chips and classification (sixteenth pass)
+
+Tried 31 selections such as a bullet list, a price, a bare number, a date, a URL, an email address, a Windows path, emoji, SQL, shell commands, JSON and a short question.
+
+As a user, the problem was selections that are not words. "$19.99", "42", "12/05/2026", a link, an email address, a file path and a pair of emoji were all treated as a word to look up, so Loon ran Define on them straight away and showed a dictionary miss.
+
+Fixed: classifySelection in extension/lib/classify.js now keeps a short selection as a word only when it has a letter and is not a URL, email address or path. Everything else short is a sentence, so the bubble offers Explain. Test added in test/browser.test.js.
+
+Left for later: a dash bullet list still reads as one sentence, and two links selected together still read as a word. The 5 failing tests in `npm test` are the usual WordNet and demo ones from the sandbox install.
