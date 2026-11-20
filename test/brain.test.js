@@ -95,6 +95,20 @@ test('ladder: instant answers survive smart quotes, "?!", "right now" and a wake
   }
 });
 
+test('ladder: stretched greetings and "how are you" get an instant reply, greetings with a request go to the model', async () => {
+  let asked = 0;
+  const brain = { modelId: () => 'fake', chat: async () => { asked++; return { text: 'model' }; }, chatStream: async () => { asked++; return { text: 'model' }; } };
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));
+  const resolver = new Resolver({ brain, cacheFile: path.join(dir, 'c.json'), countsFile: path.join(dir, 'n.json') });
+  for (const q of ['heyyy', 'hellooo', 'hi there', 'hello there loon', 'morning', 'gm', 'hola', 'how are you', 'how are you?', 'how r u', 'how are you doing', "how's you", 'whats ur name']) {
+    assert.strictEqual((await resolver.ask(q, { onText: () => {}, firstInThread: true })).tier, 'code', q);
+  }
+  assert.strictEqual(asked, 0);
+  for (const q of ['hey what is a mutex', 'how are you doing with this error', 'morning routine ideas']) {
+    assert.notStrictEqual((await resolver.ask(q, { onText: () => {}, firstInThread: true })).tier, 'code', q);
+  }
+});
+
 test('ladder: a bare "time" or "date" inside a conversation is a follow-up, not a clock question', async () => {
   const brain = { modelId: () => 'fake', chat: async () => ({ text: 'model' }), chatStream: async () => ({ text: 'model' }) };
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));

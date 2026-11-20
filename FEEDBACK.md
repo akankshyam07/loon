@@ -3055,3 +3055,13 @@ As a user, nearly everything was read correctly. The worst miss was "every other
 Fixed: parseSchedule in brain/routines.js now rewrites "every other/second <weekday>" to the existing 14-day cycle. Test added in test/routines.test.js and checked to fail before the change.
 
 Left for later: "every first monday of the month" and "every year on march 3" are not understood (the card asks for a When). "every weekday … summarize my calendar and email me" quietly drops the "email me" part. A bare "remind me every day" makes a routine with no message. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-20 — follow-up conversations, greetings and "how are you" (fifteenth pass)
+
+Tried 53 short openers such as "heyyy", "hellooo", "hi there", "morning", "gm", "hola", "how are you", "how r u", "whats ur name", "tell me a joke", "meow" and "are you an ai".
+
+As a user, the most common opener of all, "how are you", went to the language model, and so did stretched greetings like "heyyy" and "hellooo" and "hi there". That costs a model call and a wait for a hello.
+
+Fixed: the greeting rule accepts stretched letters, "there", "morning", "gm" and a few other languages, "how are you" and its short forms get a quick reply from code, and "whats ur name" gets the identity answer. A greeting followed by a request ("hey what is a mutex", "how are you doing with this error") still goes to the model. Test added in test/brain.test.js and checked to fail before the change. One test in test/cli-provider.test.js used "hello there" as a stand-in question, so I changed it to "explain mutexes" because it is now answered in code.
+
+Left for later: "tell me a joke", "who made you", "are you an ai", "meow" and a lone wave emoji still go to the model. "who made you" and "are you an ai" deserve a fixed honest answer. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

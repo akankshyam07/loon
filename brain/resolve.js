@@ -98,8 +98,12 @@ const CODE_ANSWERS = [
     }),
   },
   {
-    match: /^(hi|hii+|hey|heya|hiya|howdy|hey there|hello|yo|sup|what'?s up|whats up|wassup|good (morning|afternoon|evening))( again)?( loon)?$/,
+    match: /^(?:(?:hi+|hey+|hello+|hiya|heya|howdy|yo+)(?: there)?|hola|bonjour|ciao|hallo|sup|what'?s up|whats up|wassup|(?:good )?morning|gm|good (?:morning|afternoon|evening))(?: again)?(?: loon)?$/,
     answer: () => ({ mood: 'happy', text: 'Hi! Highlight something, or ask me anything.' }),
+  },
+  {
+    match: /^how(?: are|'?s| r) (?:you|u|ya)(?: doing| today)?(?: loon)?$/,
+    answer: () => ({ mood: 'happy', text: 'Purring, thanks. *tail flick* What are we looking at?' }),
   },
   {
     match: /^(?:(?:ok|okay|great|perfect|cool|awesome|nice|got it|gotcha|makes sense|that helped|lol|haha|oh+|ah+)[ ,]+)?(?:(?:many )?thanks+|thank you|thank u|thankyou|thanku|tnx|thanks a million|much obliged|(?:muchas )?gracias|merci(?: beaucoup)?|danke(?: sch[oö]n)?|grazie|obrigad[oa]|arigato|thx|thnx|thanx|tysm|tyvm|ty+|cheers|(?:much )?appreciated?(?: it)?)(?:[ ,]+(?:a lot|a ton|a bunch|so much|very much|again|kindly|mate|that helps|that helped|that was (?:really |very )?helpful|loon|cat|for (?:that|this|the (?:help|answer|explanation)|your help|helping|explaining)))*$/,
@@ -135,7 +139,7 @@ const CODE_ANSWERS = [
     }),
   },
   {
-    match: /^(?:(?:who|what) are you|what(?:'s| is) your name|who are you again)$/,
+    match: /^(?:(?:who|what) are you|what(?:'s| is|s) (?:your|ur) name|who are you again)$/,
     answer: () => ({ mood: 'happy', text: "I'm Loon, a small black cat who lives on your screen. I run on your Mac, and nothing you ask leaves it unless you switch on Smarter answers in Settings." }),
   },
 ];
