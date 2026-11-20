@@ -4,7 +4,7 @@
 const DTO_LANGUAGES = {
   java: { lang: 'java', options: { 'just-types': 'true', 'array-type': 'list' }, label: 'Java' },
   typescript: { lang: 'typescript', options: { 'just-types': 'true' }, label: 'TypeScript' },
-  kotlin: { lang: 'kotlin', options: { framework: 'just-types' }, label: 'Kotlin' },
+  kotlin: { lang: 'kotlin', options: { 'just-types': 'true' }, label: 'Kotlin' },
 };
 
 function keysOf(value) {
@@ -134,7 +134,7 @@ async function jsonToDto(json, language = 'java', name = 'Root') {
     const inputData = new InputData();
     inputData.addInput(input);
     const result = await quicktype({ inputData, lang, inferMaps, rendererOptions: needsNames ? { framework: 'jackson', 'array-type': 'list' } : options });
-    return result.lines.join('\n').replace(/^\/\/ Converter\.java[\s\S]*?(?=^\/\/ \w+\.java$)/m, '').replace(/^\/\/ .*\n\n?/m, '').replace(/^package io\.quicktype;\n\n?/gm, '').trim();
+    return result.lines.join('\n').replace(/^\/\/ Converter\.java[\s\S]*?(?=^\/\/ \w+\.java$)/m, '').replace(/^\/\/ .*\n\n?/m, '').replace(/^package (?:io\.)?quicktype;?\n\n?/gm, '').trim();
   };
   // Keys like "2024-01" or "my key" make quicktype read the whole object as a Map, which leaves no class to show (an empty
   // block in TypeScript, converter boilerplate in Java). Pasting an object means wanting its fields, so retry without maps.

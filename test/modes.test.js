@@ -581,3 +581,9 @@ test('parseQuantity reads the pack count before "of" and knows "pk of"', () => {
   assert.deepStrictEqual(shopping.parseQuantity('12 pack of 500ml'), { amount: 6000, unit: 'ml' });
   assert.deepStrictEqual(shopping.parseQuantity('pk of 12 500 ml'), { amount: 6000, unit: 'ml' });
 });
+
+test('jsonToDto makes Kotlin data classes without the quicktype package line', async () => {
+  const kt = await jsonToDto('{"id": 7, "name": "Loon"}', 'kotlin');
+  assert.match(kt, /data class Root/);
+  assert.doesNotMatch(kt, /package/);
+});

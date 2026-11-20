@@ -3095,3 +3095,13 @@ As a user, "open gmail" and "open youtube" showed a confirm card to launch an ap
 Fixed: gmail, youtube, netflix and the main Google web apps now open as links. Spaced links and dotfiles go to the chat. Test added in test/assistant.test.js.
 
 Left for later: "open wifi settings", "open settings" and "open email" still offer an app with that exact name. They need a map to System Settings panes and the default mail app. `npm test` shows the same 5 WordNet and demo failures as main in this sandbox.
+
+## 2026-11-20 — developer help, JSON to DTO, Kotlin (fourteenth pass)
+
+Tried 7 odd top-level values (nested arrays, empty array, empty object, numbers, strings, null, objects with a null field) and every language in the DTO table.
+
+As a user, the plain cases all worked. The Kotlin entry left over from the last pass threw "Unknown value just-types for option framework" on every call, so any caller that offered Kotlin would have shown an error.
+
+Fixed: the Kotlin option is now `just-types`, and the quicktype `package quicktype` line is stripped from the output like the Java one. Test added in test/modes.test.js. Before the change the new test threw.
+
+Left for later: a top-level array of arrays still says "no fields" without saying why. No chip offers Kotlin yet. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
