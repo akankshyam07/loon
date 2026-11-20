@@ -3085,3 +3085,13 @@ As a user, most plain maths and conversions were answered in code. The worst mis
 Fixed: brain/calc.js reads "double", "twice" and "triple" before a number, and a k after a number inside an expression means thousand. The k rule stays out of unit conversions because "5 k to f" is kelvin. Cases added to the ladder test in test/brain.test.js. The old code returned nothing for them.
 
 Left for later: "5k to f" reads as kelvin, which is surprising. "2 hours 30 minutes in minutes", "5 stone in kg", "cube root of 27", "3 for $10, how much for 1", "100 usd to eur" and "20% of 50 + 10" are not handled by code. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-20 — open and launch commands (eighth pass)
+
+Tried 47 phrasings such as "open gmail", "open youtube", "open vs code", "open .env", "open http://localhost:3000/a b", "open slack!", "open Slack, please", "open www.google.com" and "open ~/Downloads".
+
+As a user, "open gmail" and "open youtube" showed a confirm card to launch an app with that name, which does not exist on a Mac, so they failed only after I pressed confirm. A localhost link with a space and a dotfile like ".env" did the same.
+
+Fixed: gmail, youtube, netflix and the main Google web apps now open as links. Spaced links and dotfiles go to the chat. Test added in test/assistant.test.js.
+
+Left for later: "open wifi settings", "open settings" and "open email" still offer an app with that exact name. They need a map to System Settings panes and the default mail app. `npm test` shows the same 5 WordNet and demo failures as main in this sandbox.

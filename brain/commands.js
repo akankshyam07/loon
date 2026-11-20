@@ -132,6 +132,11 @@ function parseCommand(input, now = new Date()) {
     if (/^(?:an? |file |link$|app$|page$|website$|site$)| (?:and|&) /i.test(target)) return null;
     const folder = target.match(/^(?:~\/|(?:my )?(?:the )?)(downloads|documents|desktop|pictures|movies|music|applications)(?: folder)?$/i);
     if (folder && raw === target) return { action: 'open', target: `~/${folder[1][0].toUpperCase()}${folder[1].slice(1).toLowerCase()}`.replace('~/Applications', '/Applications'), kind: 'folder' };
+    // These are websites with no Mac app, so `open -a` would only fail after the confirm card.
+    const site = { gmail: 'mail.google.com', youtube: 'www.youtube.com', netflix: 'www.netflix.com', 'google drive': 'drive.google.com', 'google docs': 'docs.google.com', 'google maps': 'maps.google.com', 'google calendar': 'calendar.google.com' }[target.toLowerCase()];
+    if (site) return { action: 'open', target: `https://${site}`, kind: 'url' };
+    // A link with a space in it, or a dotfile like ".env", is not something Loon can launch.
+    if (/^https?:\/\/\S*\s|^\./i.test(target)) return null;
     // Paths and file names aren't apps either, and Loon doesn't open files it can't name safely.
     if (/^[/~]|^[\w. -]+\.(?:js|ts|txt|md|py|json|java|pdf|png|jpe?g|csv|zip|docx?|xlsx?|html?|dmg|sh|app)$/i.test(target)) return null;
     const isUrl = /^(https?:\/\/)?[\w-]+(\.[\w-]+)+([/?#]\S*)?$/i.test(target) && (/^https?:|[/?#]|^www\./i.test(target) || !/\.(?:js|ts|txt|md|py|json|java|pdf|png|jpe?g|csv|zip|docx?|xlsx?|html?)$|^v?\d+(?:\.\d+)+$/i.test(target) || /^\d+(?:\.\d+){3}$/.test(target));

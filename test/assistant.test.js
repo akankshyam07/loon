@@ -56,6 +56,11 @@ test('commands: reminders, events, open, find, notes, memory; questions fall thr
   assert.deepStrictEqual(parseCommand('open "Visual Studio Code"', NOW), { action: 'open', target: 'Visual Studio Code', kind: 'app' });
   // Trailing filler and emoji aren't part of the app name, and "music app" is the Music app, not the folder.
   for (const [q, t] of [['open chrome 🙂', 'chrome'], ['open slack for me', 'slack'], ['open Slack now', 'Slack'], ['open the music app', 'music']]) assert.deepStrictEqual(parseCommand(q, NOW), { action: 'open', target: t, kind: 'app' }, q);
+  // Web services have no Mac app to launch, and spaced links and dotfiles go to the chat.
+  assert.deepStrictEqual(parseCommand('open gmail', NOW), { action: 'open', target: 'https://mail.google.com', kind: 'url' });
+  assert.deepStrictEqual(parseCommand('open YouTube', NOW), { action: 'open', target: 'https://www.youtube.com', kind: 'url' });
+  assert.strictEqual(parseCommand('open http://localhost:3000/a b', NOW), null);
+  assert.strictEqual(parseCommand('open .env', NOW), null);
   assert.deepStrictEqual(parseCommand('open my downloads folder', NOW), { action: 'open', target: '~/Downloads', kind: 'folder' });
   assert.deepStrictEqual(parseCommand('open ~/Documents', NOW), { action: 'open', target: '~/Documents', kind: 'folder' });
   assert.deepStrictEqual(parseCommand('open my calendar', NOW), { action: 'open', target: 'calendar', kind: 'app' });
