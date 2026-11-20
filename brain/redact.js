@@ -107,8 +107,14 @@ const RULES = [
   },
   {
     kind: 'secret',
-    re: /\b(api[ -]key|secret key|access token)(\s+is\s*[:=]?\s*|\s*[:=]\s*)(?!\[redacted)([A-Za-z0-9._~+\/=-]{12,})/gi,
+    re: /\b(api[ -]key|secret key|access token)(\s+is\s*[:=]?\s*|\s*[:=]\s*|\s+(?=[A-Za-z0-9._~+\/=-]*\d))(?!\[redacted)([A-Za-z0-9._~+\/=-]{12,})/gi,
+    // the bare-space form needs a digit so "api key management" stays readable
     replace: (m, name, sep) => `${name}${sep}[redacted:secret]`,
+  },
+  {
+    kind: 'secret',
+    re: /(\buser(?:name)?\s+[^\s"',;]+\s+(?:and\s+|with\s+)?(?:pass(?:word)?|pw)\s+(?:is\s+)?)(?!\[redacted)([^\s"',;]{3,})/gi,
+    replace: (m, head) => `${head}[redacted:secret]`,
   },
   {
     kind: 'account',

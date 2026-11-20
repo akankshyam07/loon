@@ -3135,3 +3135,13 @@ As a user, most phrasings already worked. Seven ordinary ones still went to the 
 Fixed: the templates in brain/intents.js now cover those phrasings. Cases added in test/voice.test.js.
 
 Left for later: "make it shorter and simpler" and "summarize this in one sentence" are combined edits and still go to the model. "translate this to spanish" is not parsed. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-20 — memory and privacy, redaction (seventeenth pass)
+
+Tried 33 pasted snippets such as spoken logins, env files, AWS keys, connection strings, card numbers in other languages, headers, cookies, JWTs and short secrets.
+
+As a user, almost everything was hidden. Two misses went to the model in plain text, "login with user bob and pass hunter2" and "api key abcdEFGH12345678" without an "is" or a colon.
+
+Fixed: brain/redact.js now hides the word after "pass", "password" or "pw" when it follows "user <name>", and accepts a bare space after "api key" when the value has a digit. Plain talk like "api key management" is untouched. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: "password hunter2" with nothing around it, one-word spoken passwords after "my password" and values under 4 characters are not hidden, since they read like normal prose. `npm test` shows the same 5 WordNet and demo failures as main in this sandbox.

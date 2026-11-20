@@ -346,3 +346,10 @@ test('redaction hides the AccountKey in an Azure storage connection string', () 
   assert.ok(!text.includes('abc123abc123'));
   assert.ok(text.includes('AccountName=x'));
 });
+
+test('redaction hides a spoken "user x and pass y" login and a bare "api key <value>"', () => {
+  assert.equal(redact('login with user bob and pass hunter2').text, 'login with user bob and pass [redacted:secret]');
+  assert.equal(redact('username bob pw s3cret!').text, 'username bob pw [redacted:secret]');
+  assert.equal(redact('api key abcdEFGH12345678').text, 'api key [redacted:secret]');
+  assert.equal(redact('api key management and api key authentication docs').count, 0);
+});
