@@ -44,6 +44,9 @@ function parseQuantity(text) {
       if (m.start >= last.end && m.base === first.base && ADJACENT.test(t.slice(last.end, m.start))) run.push(m);
     }
     const size = multi && /x/.test(multi[0]) ? first.amount : run.reduce((sum, m) => sum + m.amount, 0);
+    // "24 ct, 12 oz each" and "24 count 12 fl oz" are twenty-four of the size, not one.
+    const each = !multi && t.match(/(\d+)[\s-]?(?:ct|count|pcs|pieces|cans|bottles)\b[\s,;(]*(?:\d+(?:\.\d+)?\s*(?:fl\.?\s?oz|ml|cl|l)\b|\d+(?:\.\d+)?\s*[a-z.]+\s*(?:each|per)\b)/);
+    if (each) count = Number(each[1]);
     return { amount: size * count, unit: first.base };
   }
   const dozen = t.match(/(?:(\d+(?:\.\d+)?)|\b(a|one)|\b(half))[\s-]?dozen\b/) || t.match(/\b(dozen)\b/);

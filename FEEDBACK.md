@@ -3155,3 +3155,13 @@ As a user, the worst problem was "Rogan Josh" (a lamb curry) listed as likely ve
 Fixed: brain/food.js now treats rogan josh, keema and kebabs as meat, and lets veggie, mushroom, paneer, halloumi and tofu cancel pho and kebab. Test added in test/modes.test.js.
 
 Left for later: "Gyoza (veg)" with the marker in brackets is still read as meat, and misspellings like "Ceasar Salad" are not matched. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-20 — shopping and unit price (nineteenth pass)
+
+Tried 24 size strings and 9 price strings such as "24 ct, 12 oz each", "24 count 12 fl oz", "Pack of 2, 16 oz each", "12 fl oz (pack of 24)", "1 pint", "500 gr", "$5 - $7" and "R$ 1.299,90".
+
+As a user, the worst problem was a wrong number again. "24 ct, 12 oz each" was read as one 12 oz item, so a case of 24 looked 24 times pricier per ounce than it is.
+
+Fixed: parseQuantity now multiplies a count by the size listed right after it when the size is a liquid measure or is followed by "each" or "per". "100 count, 8 oz" stays one size on purpose. Test added in test/modes.test.js.
+
+Left for later: "24 count 12 oz" (dry ounces, no "each") is still read as one item because it could be the total weight. Prices like "$5⁹⁹" and "$5 - $7" still read as 5. The failures in `npm test` here are the usual missing-dependency ones from the sandbox install.
