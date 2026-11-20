@@ -3125,3 +3125,13 @@ As a user, the problem was selections that are not words. "$19.99", "42", "12/05
 Fixed: classifySelection in extension/lib/classify.js now keeps a short selection as a word only when it has a letter and is not a URL, email address or path. Everything else short is a sentence, so the bubble offers Explain. Test added in test/browser.test.js.
 
 Left for later: a dash bullet list still reads as one sentence, and two links selected together still read as a word. The 5 failing tests in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-20 — writing tools by voice and typed edits (twelfth pass)
+
+Tried 42 edit phrases on a selection, such as "tidy this up", "write this better", "polish my text", "less wordy", "simplify this for me", "make it easier to read", "rewrite in a professional tone", "make it shorter and simpler" and "translate this to spanish".
+
+As a user, most phrasings already worked. Seven ordinary ones still went to the model as free questions, so the answer had no Replace or Copy actions. The worst were "simplify this for me", "tidy this up" and "rewrite in a professional tone".
+
+Fixed: the templates in brain/intents.js now cover those phrasings. Cases added in test/voice.test.js.
+
+Left for later: "make it shorter and simpler" and "summarize this in one sentence" are combined edits and still go to the model. "translate this to spanish" is not parsed. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
