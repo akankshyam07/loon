@@ -3105,3 +3105,13 @@ As a user, the plain cases all worked. The Kotlin entry left over from the last 
 Fixed: the Kotlin option is now `just-types`, and the quicktype `package quicktype` line is stripped from the output like the Java one. Test added in test/modes.test.js. Before the change the new test threw.
 
 Left for later: a top-level array of arrays still says "no fields" without saying why. No chip offers Kotlin yet. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-20 — settings UI, reply style feedback (thirteenth pass)
+
+Tried 40 style requests such as "be terse", "tone it down", "use more emojis", "answer in english again", "english only", "answer in spanish again", "reset style", "explain more" and "stop with the bullets".
+
+As a user, the worst problem was getting stuck in another language. After "reply in Spanish", saying "answer in english again" did nothing and went to the model, so the setting stayed. "be terse" and "use more emojis" also missed.
+
+Fixed: parseFeedback in brain/personal.js now accepts "again" after a language, a bare "english only" style form, "terse" as a short-answer request and "use more emojis". Test added in test/personal.test.js and checked to fail before the change.
+
+Left for later: "tone it down", "reset style", "explain more", "be funnier", "talk like a pirate" and bullet point requests have no rule. "explain more" looks like a follow-up, so it should stay out. The 5 failing tests in `npm test` are the usual WordNet and demo ones from the sandbox install.

@@ -182,6 +182,10 @@ test('"Remember this?" detection: stated preferences and facts only', () => {
 });
 
 test('feedback messages change the reply style in code, before the model', async () => {
+  assert.deepStrictEqual(parseFeedback('be terse').patch, { length: 'short' });
+  assert.deepStrictEqual(parseFeedback('use more emojis').patch, { emoji: true });
+  assert.deepStrictEqual(parseFeedback('answer in english again').patch, { language: '' });
+  assert.deepStrictEqual(parseFeedback('Spanish only').patch, { language: 'Spanish' });
   assert.deepStrictEqual(parseFeedback('shorter please'), { patch: { length: 'short' }, note: 'Got it, shorter from now on. Change it in Settings.' });
   assert.deepStrictEqual(parseFeedback('That was too long!').patch, { length: 'short' });
   assert.deepStrictEqual(parseFeedback('more detail').patch, { length: 'detailed' });
