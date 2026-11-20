@@ -3145,3 +3145,13 @@ As a user, almost everything was hidden. Two misses went to the model in plain t
 Fixed: brain/redact.js now hides the word after "pass", "password" or "pw" when it follows "user <name>", and accepts a bare space after "api key" when the value has a digit. Plain talk like "api key management" is untouched. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: "password hunter2" with nothing around it, one-word spoken passwords after "my password" and values under 4 characters are not hidden, since they read like normal prose. `npm test` shows the same 5 WordNet and demo failures as main in this sandbox.
+
+## 2026-11-20 — food and menu (nineteenth pass)
+
+Tried 55 dishes such as "Rogan Josh", "Veggie Pho", "Paneer Kebab", "Chana Masala", "Crab Rangoon", "Ceasar Salad", "Gyoza (veg)" and "Impossible Burger".
+
+As a user, the worst problem was "Rogan Josh" (a lamb curry) listed as likely vegetarian, and "Veggie Pho" listed as meat because pho was on the meat list with no way to opt out.
+
+Fixed: brain/food.js now treats rogan josh, keema and kebabs as meat, and lets veggie, mushroom, paneer, halloumi and tofu cancel pho and kebab. Test added in test/modes.test.js.
+
+Left for later: "Gyoza (veg)" with the marker in brackets is still read as meat, and misspellings like "Ceasar Salad" are not matched. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

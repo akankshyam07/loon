@@ -587,3 +587,8 @@ test('jsonToDto makes Kotlin data classes without the quicktype package line', a
   assert.match(kt, /data class Root/);
   assert.doesNotMatch(kt, /package/);
 });
+
+test('menu: rogan josh and kebabs are meat, veggie pho and paneer kebab are not', () => {
+  for (const name of ['Rogan Josh', 'Lamb Kebab', 'Beef Pho', 'Lamb Keema Naan']) assert.strictEqual(food.score({ name, description: '' }).likelyVegetarian, false, name);
+  for (const name of ['Veggie Pho', 'Mushroom Pho', 'Paneer Kebab', 'Vegetable Kebab']) assert.strictEqual(food.score({ name, description: '' }).likelyVegetarian, true, name);
+});
