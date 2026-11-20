@@ -3075,3 +3075,13 @@ As a user, the worst miss was privacy. The sensitive-field check only looked at 
 Fixed: the identity and bank field check in extension/lib/page-kind.js now covers text areas too. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: a shop with only two prices and an add to cart button is "other". A login field named "login_pass" is not caught. Google Docs pages are "other" rather than a document kind. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-20 — typed questions and instant answers, shorthand maths (eighteenth pass)
+
+Tried 53 phrasings such as "1.5k * 3", "double 45", "half of 45", "what's 7 x 8", "2 hours 30 minutes in minutes", "5 stone in kg", "3 for $10, how much for 1", "cube root of 27", "$49.99 * 3" and several unit conversions.
+
+As a user, most plain maths and conversions were answered in code. The worst misses were everyday shorthand. "1.5k * 3" and "double 45" were not understood by the calculator, so they would go to the model, which is the wrong place for arithmetic.
+
+Fixed: brain/calc.js reads "double", "twice" and "triple" before a number, and a k after a number inside an expression means thousand. The k rule stays out of unit conversions because "5 k to f" is kelvin. Cases added to the ladder test in test/brain.test.js. The old code returned nothing for them.
+
+Left for later: "5k to f" reads as kelvin, which is surprising. "2 hours 30 minutes in minutes", "5 stone in kg", "cube root of 27", "3 for $10, how much for 1", "100 usd to eur" and "20% of 50 + 10" are not handled by code. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

@@ -97,6 +97,7 @@ function calc(question) {
     .replace(/(\d)\s*to the power of\s*(?=[\d(])/g, '$1^').replace(/(\d)\s*\*\*\s*(?=[\d(])/g, '$1^')
     .replace(/(\d)\s*mod(?:ulo)?\s*(?=\d)/g, '$1 mod ').replace(/(\d)\s*squared\b/g, '$1^2')
     .replace(/(\d(?:\^2)?)\s*plus\s*(?=[\d(])/g, '$1+')
+    .replace(/^(double|twice|triple)\s+(\d+(?:\.\d+)?)$/, (_, word, n) => `${n} * ${word === 'triple' ? 3 : 2}`)
     .replace(/^(\d+(?:\.\d+)?)\s+with\s+(?:a\s+)?(\d+(?:\.\d+)?)\s*%\s*tip$/, '$2% tip on $1').trim();
 
   let m = body.match(/^(\d+(?:\.\d+)?)\s*%\s*of\s+(\d+(?:\.\d+)?)$/);
@@ -186,7 +187,8 @@ function calc(question) {
     if (text) return `${fmt(value)} ${m[2]} is about ${text} ${m[3]}.`;
   }
 
-  const expression = body.replace(/[x×]/g, '*').replace(/÷/g, '/');
+  // "1.5k * 3": a k after a number means thousand, but only here, since "5 k to f" is kelvin above
+  const expression = body.replace(/(\d(?:\.\d+)?)k\b/g, '($1*1000)').replace(/[x×]/g, '*').replace(/÷/g, '/');
   if (/^[\d\s.+\-*/^()]+$/.test(expression) && /\d\s*[-+*/^][-+*/^\s]*[\d(]|\d\s*\)/.test(expression)) {
     // "555-1234" is a phone number unless asked as a question or spaced out
     if (!lead && !/[+*/^]| - /.test(expression)) return null;
