@@ -3065,3 +3065,13 @@ As a user, the most common opener of all, "how are you", went to the language mo
 Fixed: the greeting rule accepts stretched letters, "there", "morning", "gm" and a few other languages, "how are you" and its short forms get a quick reply from code, and "whats ur name" gets the identity answer. A greeting followed by a request ("hey what is a mutex", "how are you doing with this error") still goes to the model. Test added in test/brain.test.js and checked to fail before the change. One test in test/cli-provider.test.js used "hello there" as a stand-in question, so I changed it to "explain mutexes" because it is now answered in code.
 
 Left for later: "tell me a joke", "who made you", "are you an ai", "meow" and a lone wave emoji still go to the model. "who made you" and "are you an ai" deserve a fixed honest answer. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-20 — page kinds, secrets typed into text areas (sixteenth pass)
+
+Tried 17 pages such as a password reset form, a sign-up form, look-alike bank hosts, German and euro-comma shops, a two-price shop, Gmail, Google Docs, a hospital portal, an OTP field, and a text area for a private key.
+
+As a user, the worst miss was privacy. The sensitive-field check only looked at input tags, so a page with a text area named "private_key" or "seed_phrase" was read as an ordinary page and the cat would not look away.
+
+Fixed: the identity and bank field check in extension/lib/page-kind.js now covers text areas too. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: a shop with only two prices and an add to cart button is "other". A login field named "login_pass" is not caught. Google Docs pages are "other" rather than a document kind. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
