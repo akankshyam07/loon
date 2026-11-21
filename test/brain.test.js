@@ -320,6 +320,8 @@ test('dictionaryTerm handles typos and filler words in "what does X mean"', () =
 test('antonymTerm reads "opposite of X"; antonyms follow WordNet word links and the resolver answers in code', async () => {
   const { antonymTerm, antonyms } = require('../brain/define');
   assert.strictEqual(antonymTerm('opposite of happy'), 'happy');
+  assert.strictEqual(antonymTerm("hot's opposite"), 'hot');
+  assert.strictEqual(require('../brain/define').synonymTerm("what's a better word than good?"), 'good');
   assert.strictEqual(antonymTerm("what's the opposite of hot?"), 'hot');
   assert.strictEqual(antonymTerm('Antonym for "big" please'), 'big');
   assert.strictEqual(antonymTerm('opposite of this'), 'this');

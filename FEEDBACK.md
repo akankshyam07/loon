@@ -3185,3 +3185,13 @@ As a user, most common errors were answered, but three everyday ones went to the
 Fixed: three new entries in brain/errors.js. The JavaScript one skips the Python wording "'int' object is not iterable", which keeps its own entry. Test added in test/modes.test.js.
 
 Left for later: AssertionError, SQLAlchemy and psycopg2 connection errors, `Cannot GET /api/...`, HTTP 400 on its own, Spring IllegalStateException wrappers, Gradle dependency resolution and UnhandledPromiseRejectionWarning still go to the model. `npm test` shows the same 42 failures with and without this change in this sandbox, because node_modules and the built data are missing.
+
+## 2026-11-21 — translation and definitions (eighteenth pass)
+
+Tried 31 typed dictionary, synonym and antonym asks such as "hot's opposite", "whats the opposite of hot", "what's a better word than good", "define: ephemeral", "what does 'ubiquitous' mean 😅", "wat does ephemeral mean" and "another word for ephemeral thanks".
+
+As a user, almost all of them hit the offline dictionary. Two natural phrasings fell through to the language model. "hot's opposite" and "what's a better word than good" are both things I would type.
+
+Fixed: the antonym rule accepts "X's opposite" and the synonym rule accepts "better word than X". Assertions added to the existing tests in test/brain.test.js. They fail before the change.
+
+Left for later: "another word for very big", "define love and hate", "define x as a verb" and "synonyms for big and small" still go to the model, since they need more than one term. The 5 failures in `npm test` are the usual sandbox ones (missing WordNet data) and are the same without this change.
