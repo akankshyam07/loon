@@ -3225,3 +3225,13 @@ As a user, almost everything worked. The one wrong result was "remind me to pay 
 Fixed: "the Nth of this month" and "the Nth of next month" are now read as one date in the shared day-of-month step. Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: "remind me to take meds at 8am and 8pm" keeps only 8am and puts "and 8pm" in the title, so the second time is dropped quietly. "snooze 10 minutes" and "cancel my timer" are not matched. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-21 — onboarding first run, name and allergy sentences (sixteenth pass)
+
+Tried 36 answers such as "I'm Ada, nice to meet you", "my name is Ada and I like cats", "Ada & Bob", "peanuts (severe)", "Peanut allergy, severe", "none lol", "celiac disease" and interests like "AI/ML" and "i'm into f1".
+
+As a user, the worst problem was that a friendly sentence in the name box became the name, so the cat would call me "Ada nice to meet you" or "Ada and I like cats". Severity written after the allergy ("peanuts (severe)", "peanut allergy, severe") was saved as part of the fact or as a second allergy to "severe".
+
+Fixed: the name stops at a comma or at "and", "but", "nice", "pleased" or "glad". A trailing severity in brackets or as its own item is dropped from allergies. Test added in test/personal.test.js.
+
+Left for later: "celiac disease" is still saved as an allergy to "celiac disease", "none lol" is saved as an allergy, "Ada & Bob" becomes "Ada  Bob" with two spaces, and "i'm into f1" lowercases nothing but keeps odd wording like "interested in hike".

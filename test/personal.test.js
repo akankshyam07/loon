@@ -390,3 +390,10 @@ test('onboarding does not save a smiley, "not allergic to anything" or a severit
   assert.deepStrictEqual(onboardingResult({ allergies: 'severe peanut allergy' }).facts, ["I'm allergic to peanut"]);
   assert.deepStrictEqual(onboardingResult({ allergies: 'mild lactose intolerance' }).facts, ["I'm intolerant to lactose"]);
 });
+
+test('onboarding keeps only the name from a typed sentence and drops trailing severity from allergies', () => {
+  assert.deepStrictEqual(onboardingResult({ name: "I'm Ada, nice to meet you" }).facts, ['Call me Ada']);
+  assert.deepStrictEqual(onboardingResult({ name: 'my name is Ada and I like cats' }).facts, ['Call me Ada']);
+  assert.deepStrictEqual(onboardingResult({ allergies: 'peanuts (severe)' }).facts, ["I'm allergic to peanuts"]);
+  assert.deepStrictEqual(onboardingResult({ allergies: 'peanuts, severe' }).facts, ["I'm allergic to peanuts"]);
+});

@@ -228,14 +228,14 @@ const NAME_LEAD = /^(?:(?:(?:hi|hello|hey|yo)\b[\s,!.]*|(?:you can |please |just
 // shows: { facts: [text] (saved pinned), personal: patch for cleanPersonal, role }. Plain code, no model.
 function onboardingResult(answers = {}) {
   const facts = [];
-  const name = tidy(answers.name, 40).replace(/<[^>]*>/g, '').replace(/\s*\([^)]*\)/g, '').replace(/[\u2018\u2019]/g, "'").replace(NAME_LEAD, '').replace(/[^\p{L}\p{N} .'-]/gu, '').replace(/ (?:please|pls|thanks?|here)$/i, '').replace(/[. ]+$/, '').trim();
+  const name = tidy(answers.name, 40).replace(/<[^>]*>/g, '').replace(/\s*\([^)]*\)/g, '').replace(/[\u2018\u2019]/g, "'").replace(NAME_LEAD, '').replace(/\s*,.*$|\s+(?:and|but|nice|pleased|glad)\b.*$/i, '').replace(/[^\p{L}\p{N} .'-]/gu, '').replace(/ (?:please|pls|thanks?|here)$/i, '').replace(/[. ]+$/, '').trim();
   if (name && !NO_ANSWER.test(name)) facts.push(`Call me ${name}`);
   const role = Object.hasOwn(ROLES, answers.role) ? answers.role : '';
   if (role && ROLES[role].fact) facts.push(ROLES[role].fact);
   for (const d of answers.diets || []) if (Object.hasOwn(DIETS, d)) facts.push(DIETS[d]);
   // "peanuts/shellfish" is two allergies; "lactose intolerant" is not an allergy and gets its own wording.
   const intolerant = /\s+intoleran(?:t|ce)$/i;
-  const food = list(answers.allergies, /\s*(?:,|;|\/|\band\b| & )\s*/i).map((x) => x.replace(/\s+allerg(?:y|ies)$/i, '').replace(/^(?:severe|serious|mild|slight|bad)\s+/i, ''));
+  const food = list(answers.allergies, /\s*(?:,|;|\/|\band\b| & )\s*/i).map((x) => x.replace(/\s+allerg(?:y|ies)$/i, '').replace(/^(?:severe|serious|mild|slight|bad)\s+/i, '').replace(/\s*\((?:severe|serious|mild|slight|bad)\)$/i, '')).filter((x) => !/^(?:severe|serious|mild|slight|bad)$/i.test(x));
   // "dairy-free" is a diet, not an allergy to "dairy-free".
   // "no gluten" and "I can't eat pork" are avoided foods too.
   const free = /[- ]free$|^(?:i (?:can'?t|cannot|don'?t|do not) (?:eat|have|drink)|no|without) /i;
