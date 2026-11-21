@@ -3165,3 +3165,13 @@ As a user, the worst problem was a wrong number again. "24 ct, 12 oz each" was r
 Fixed: parseQuantity now multiplies a count by the size listed right after it when the size is a liquid measure or is followed by "each" or "per". "100 count, 8 oz" stays one size on purpose. Test added in test/modes.test.js.
 
 Left for later: "24 count 12 oz" (dry ounces, no "each") is still read as one item because it could be the total weight. Prices like "$5⁹⁹" and "$5 - $7" still read as 5. The failures in `npm test` here are the usual missing-dependency ones from the sandbox install.
+
+## 2026-11-21 — routines (eighteenth pass)
+
+Tried 30 phrasings such as "every 3rd thursday at 4 meeting", "every first monday of the month", "twice a day at 9 and 5", "every other day at 7", "every weekday except friday", "every hour remind me to stand" and "every quarter at 9".
+
+As a user, the worst problem was that "every 3rd thursday at 4 meeting" became the 3rd of every month and the message turned into "Thursday meeting". The confirm card would show a schedule I never asked for.
+
+Fixed: parseSchedule now declines an ordinal followed by a weekday, so the cat says it did not understand instead of guessing. Test added in test/routines.test.js and checked to fail before the change.
+
+Left for later: "every day" alone makes a routine with an empty message. "watch price of this daily" without a page makes a price watch with an empty url. Nth weekday of the month is not supported. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

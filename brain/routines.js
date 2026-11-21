@@ -90,6 +90,8 @@ function parseSchedule(input, now = new Date(), { allowOnce = false } = {}) {
   const state = { text: ` ${String(input).replace(/[()]/g, ' ').replace(/\b(\d{1,2})\.(\d{2})(?=\s*[ap]\.?m\b)/gi, '$1:$2').replace(/\b(half|quarter) (past|to) (\d{1,2})\b(?!:)/gi, clockWords)} ` };
   // "every other friday" is the 14-day cycle that "every other week on friday" already makes.
   state.text = state.text.replace(new RegExp(String.raw`\bevery\s+(?:other|second)\s+(${DAY_WORD})\b`, 'i'), 'every other week on $1');
+  // "every 3rd thursday" is neither a date nor a weekday, so the confirm card would show the wrong schedule.
+  if (new RegExp(String.raw`\b(?:every|each)\s+\d{1,2}(?:st|nd|rd|th)\s+(?:${DAY_WORD})\b`, 'i').test(state.text)) return { schedule: null, rest: tidyRest(state.text) };
   const at = now.getTime();
   const done = (schedule) => ({ schedule, rest: tidyRest(state.text) });
 

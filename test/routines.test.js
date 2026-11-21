@@ -544,3 +544,9 @@ test('"every week day" means weekdays, not weekly plus a stray word', () => {
   assert.deepStrictEqual(s.schedule.days, [1, 2, 3, 4, 5]);
   assert.strictEqual(s.label, 'Check mail');
 });
+
+test('"every 3rd thursday" is declined instead of becoming the 3rd of every month', () => {
+  assert.equal(R.parseRoutine('every 3rd thursday at 4 meeting', { now: NOW }), null);
+  assert.equal(R.parseRoutine('every 1st monday at 9 standup', { now: NOW }), null);
+  assert.equal(R.parseRoutine('every 3rd at 4 pay rent', { now: NOW }).schedule.monthDay, 3);
+});
