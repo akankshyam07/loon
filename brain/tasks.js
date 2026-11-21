@@ -40,6 +40,7 @@ const TASKS = {
   fix_grammar: { label: 'Fix grammar', tiers: ['grammar'] },
   shorter: { label: 'Shorter', instruction: () => 'Make this shorter while keeping its meaning and tone. Reply with only the rewritten text.', maxTokens: 400, replaceable: true },
   professional: { label: 'Professional', instruction: () => 'Rewrite this in a clear, professional tone. Reply with only the rewritten text.', maxTokens: 500, replaceable: true },
+  casual: { label: 'Casual', instruction: () => 'Rewrite this in a relaxed, casual tone. Reply with only the rewritten text.', maxTokens: 500, replaceable: true },
   warmer: { label: 'Warmer', instruction: () => 'Rewrite this to sound warmer and friendlier. Reply with only the rewritten text.', maxTokens: 500, replaceable: true },
   // Shopping (§3.6): the first four never call a model
   shop_value: { label: 'Best value', tiers: ['shopping'], page: true },
@@ -100,7 +101,7 @@ const SELECTION_CHIPS = {
   code: ['explain_code', 'find_bug', 'explain'],
   json: ['explain_json', 'make_dto_java', 'make_dto_ts'],
   stacktrace: ['explain_error', 'likely_fix'],
-  editable: ['fix_grammar', 'shorter', 'professional', 'warmer', 'rewrite', 'translate'],
+  editable: ['fix_grammar', 'shorter', 'professional', 'warmer', 'casual', 'rewrite', 'translate'],
   screenshot: ['extract_text', 'explain', 'summarize', 'translate'],
   csv: ['csv_overview', 'summarize', 'explain'],
   document: ['summarize', 'explain', 'quiz', 'simplify', 'translate'],
@@ -127,7 +128,7 @@ function contextBlock(packet, text) {
 function memoryGroup(taskId) {
   if (/^food_/.test(taskId)) return 'food';
   if (/^shop_/.test(taskId)) return 'shopping';
-  if (['rewrite', 'shorter', 'professional', 'warmer', 'fix_grammar'].includes(taskId)) return 'writing';
+  if (['rewrite', 'shorter', 'professional', 'warmer', 'casual', 'fix_grammar'].includes(taskId)) return 'writing';
   if (taskId === 'translate') return 'translate';
   return 'default';
 }

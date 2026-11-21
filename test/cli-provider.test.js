@@ -187,10 +187,10 @@ test('resolver falls back to the CLI when the local model is unavailable', async
   const brain = { modelId: () => 'fake', chat: async () => { throw new Error('No model available'); } };
   const settings = { privacy: false, cloudCli: 'codex' };
   const resolver = new Resolver({ brain, settings, cacheFile: path.join(tmp, 'c.json'), countsFile: path.join(tmp, 'n.json') });
-  const result = await resolver.ask('hello there', { onText: () => {} });
+  const result = await resolver.ask('explain mutexes', { onText: () => {} });
   assert.deepStrictEqual([result.tier, result.text], ['cloud', 'Codex answer.']);
   settings.privacy = true;
-  await assert.rejects(resolver.ask('hello again', { onText: () => {} }), /No model available/);
+  await assert.rejects(resolver.ask('tell me a story', { onText: () => {} }), /No model available/);
 });
 
 test('never API billing: refuses CLIs signed in with an API key, and strips API keys from their environment', async () => {

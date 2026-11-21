@@ -4,7 +4,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { execFileSync } = require('child_process');
-const { route, createSentenceSplitter, speakable, wakePhrase } = require('../brain/intents');
+const { route, selectionTask, createSentenceSplitter, speakable, wakePhrase } = require('../brain/intents');
 const { normalizeSpoken } = require('../brain/commands');
 const { VoiceEngine } = require('../main/voice');
 
@@ -24,6 +24,62 @@ test('common voice phrases route to templates or commands, never the model', () 
   assert.deepStrictEqual(leaked, []);
 });
 
+test('more ways to tell Loon to be quiet', () => {
+  for (const said of ['mute', 'go quiet', 'no more talking', 'Mute yourself!']) assert.strictEqual(route(said, { speaking: true }).type, 'stop', said);
+});
+
+test('spoken edits and explanations of a selection are templates', () => {
+  const expected = {
+    'Explain this to me': 'explain', 'explain it': 'explain', 'Make this shorter': 'shorter', 'shorten it': 'shorter',
+    'Simplify it': 'simplify', 'make it easier': 'simplify', 'Rewrite this': 'rewrite',
+    'Make this more professional': 'professional', 'make it friendlier': 'warmer', 'Summarize this': 'summarize',
+    'make this a bit shorter': 'shorter', 'tighten this up': 'shorter', 'Rephrase this': 'rewrite',
+    'make it sound professional': 'professional', 'rewrite this more professionally': 'professional',
+    'explain this to me simply': 'simplify', 'ELI5': 'simplify', "explain like I'm five": 'simplify', 'dumb it down': 'simplify',
+    'Fix the grammar': 'fix_grammar', 'proofread this': 'fix_grammar', 'fix typos': 'fix_grammar',
+    'fix my grammar': 'fix_grammar', 'check my spelling': 'fix_grammar', 'proofread': 'fix_grammar',
+    'summarize this for me': 'summarize', 'sum this up': 'summarize', 'rewrite this warmer': 'warmer', 'make it short': 'shorter',
+    'give me examples': 'examples', 'give me the gist': 'summarize', "what's the gist": 'summarize',
+    'summarize': 'summarize', 'tldr': 'summarize', 'tl;dr this': 'summarize',
+    'make it way shorter': 'shorter', 'cut this down': 'shorter', 'make it more polite': 'professional',
+    'rewrite this to be more polite': 'professional', 'rewrite it in a friendlier tone': 'warmer',
+    'make this sound more friendly': 'warmer', 'proofread this for me': 'fix_grammar', 'check this for typos': 'fix_grammar',
+    'simplify this paragraph': 'simplify', 'rewrite this email': 'rewrite', 'explain this sentence': 'explain',
+    'make it less wordy': 'shorter', 'make it brief': 'shorter', 'improve this': 'rewrite', 'polish it': 'rewrite', 'make this better': 'rewrite', 'fix grammer': 'fix_grammar', 'make it sound better': 'rewrite', 'make it clearer': 'rewrite', 'say it nicer': 'warmer', 'fix grammar and spelling': 'fix_grammar', 'say it shorter': 'shorter', 'make this a bit more polite': 'professional', 'write it more formally': 'professional',
+    'pls shorten this': 'shorter', 'plz proofread': 'fix_grammar', 'shorten it pls': 'shorter', 'warmer': 'warmer', 'friendlier': 'warmer', 'more formal': 'professional', 'more professional': 'professional',
+    'make this a lot shorter': 'shorter', 'rewrite this in a professional tone': 'professional', 'explain this in simple terms': 'simplify',
+    'make this more casual': 'casual', 'make it casual': 'casual', 'make it sound less formal': 'casual', 'write this more casually': 'casual',
+    'more casual': 'casual', 'rewrite this in a casual tone': 'casual',
+    'tidy this up': 'rewrite', 'tidy up this': 'rewrite', 'write this better': 'rewrite', 'polish my text': 'rewrite', 'rewrite it for me': 'rewrite', 'less wordy': 'shorter',
+    'simplify this for me': 'simplify', 'make it easier to read': 'simplify', 'rewrite in a professional tone': 'professional', 'rephrase it in a more formal tone': 'professional',
+    'be more concise': 'shorter', 'keep it short': 'shorter', 'shorten': 'shorter', 'make it shorter 😊': 'shorter', 'improve my writing': 'rewrite', 'rephrase': 'rewrite', 'clean this up': 'rewrite',
+    'make it sound more natural': 'rewrite', 'sound more professional': 'professional', 'sound friendlier': 'warmer', 'make it a little warmer': 'warmer', 'fix my english': 'fix_grammar',
+    'Translate it': 'translate', 'translate to english': 'translate', 'translate': 'translate', 'Loon, translate this for me': 'translate', 'translate that into English': 'translate', 'translate the selection': 'translate', 'What does this say in English?': 'translate', "what's this in english": 'translate', 'this in english please': 'translate',
+  };
+  for (const [said, task] of Object.entries(expected)) {
+    assert.deepStrictEqual(route(said), { type: 'task', task, needs: 'selection' }, said);
+  }
+  assert.strictEqual(route('Summarize this page').task, 'page_summary');
+  const dev = { 'fact check this': 'fact_check', 'is this true': 'fact_check', 'explain this code': 'explain_code', 'what does this code do': 'explain_code', 'what does this error mean': 'explain_error', "what's this error": 'explain_error', 'why am I getting this error': 'explain_error', "what's wrong with this code": 'find_bug', 'how do I fix this error': 'likely_fix' };
+  for (const [said, task] of Object.entries(dev)) assert.deepStrictEqual(route(said), { type: 'task', task, needs: 'selection' }, said);
+  const pageTasks = { 'turn this page into notes': 'page_notes', 'make a checklist from this page': 'page_checklist', 'summarize the reviews': 'shop_reviews', 'what do people say in the reviews': 'shop_reviews' };
+  for (const [said, task] of Object.entries(pageTasks)) assert.deepStrictEqual(route(said), { type: 'task', task }, said);
+  for (const said of ['explain this page', 'tell me what this page is about']) assert.strictEqual(route(said).task, 'page_summary', said);
+  for (const said of ["what's the cheapest one", 'which one is cheaper']) assert.strictEqual(route(said).task, 'shop_value', said);
+  for (const said of ['summarise this article', 'summarize the website']) assert.strictEqual(route(said).task, 'page_summary', said);
+  for (const said of ["what's cheapest", 'what is the cheapest one']) assert.strictEqual(route(said).task, 'shop_value', said);
+  assert.deepStrictEqual(route('turn private mode off'), { type: 'toggle', key: 'privacy', value: false });
+});
+
+test('typed edits of a selection map to the chip task, other questions do not', () => {
+  assert.strictEqual(selectionTask('Fix my grammar'), 'fix_grammar');
+  assert.strictEqual(selectionTask('make it shorter pls'), 'shorter');
+  assert.strictEqual(selectionTask('rewrite this professionally'), 'professional');
+  assert.strictEqual(selectionTask('is this grammar correct?'), null);
+  assert.strictEqual(selectionTask('summarize this page'), null); // a page task, not an edit of the selection
+  assert.strictEqual(selectionTask('define: ephemeral'), null);
+});
+
 test('open questions still go to the model; yes/no only count while confirming', () => {
   assert.strictEqual(route('Why is the sky blue?').type, 'question');
   assert.strictEqual(route('What is a black hole?').text, 'What is a black hole?');
@@ -31,6 +87,7 @@ test('open questions still go to the model; yes/no only count while confirming',
   assert.strictEqual(route('Yes.', { awaitingConfirmation: true }).type, 'yes');
   assert.strictEqual(route('Nope', { awaitingConfirmation: true }).type, 'no');
   assert.strictEqual(route('Stop!', { speaking: true }).type, 'stop');
+  for (const p of ['stop talking', 'Shut up', 'okay stop', "that's enough", 'stop speaking']) assert.strictEqual(route(p, { speaking: true }).type, 'stop', p);
   assert.deepStrictEqual(route('Define serendipity.'), { type: 'task', task: 'define', slot: 'text', text: 'serendipity' });
 });
 
@@ -58,6 +115,17 @@ test('streamed text splits into sentences; only prose gets spoken', () => {
   assert.strictEqual(truncated, true);
 });
 
+test('decimals and abbreviations do not end a spoken sentence', () => {
+  assert.strictEqual(speakable('It costs $3.50 per lb. Dr. Smith agrees. Third.').text, 'It costs $3.50 per lb. Dr. Smith agrees.');
+  assert.strictEqual(speakable('The U.S. price is lower. Use e.g. the 24-pack.').text, 'The U.S. price is lower. Use e.g. the 24-pack.');
+  assert.strictEqual(speakable('Rated 4.5 (see [reviews](https://x.com/a.b)). Fine.').text, 'Rated 4.5 (see reviews). Fine.');
+  const got = [];
+  const splitter = createSentenceSplitter((s) => got.push(s));
+  for (const chunk of ['It costs $3.', '50 total. Dr. Smith', ' agrees. Ok']) splitter.push(chunk);
+  splitter.flush();
+  assert.deepStrictEqual(got, ['It costs $3.50 total.', 'Dr. Smith agrees.', 'Ok']);
+});
+
 const engine = new VoiceEngine(path.join(os.homedir(), 'Library/Application Support/loon/voice'));
 test('speech → end of turn → text, all on this Mac', { skip: !engine.modelsReady() && 'voice models not downloaded' }, () => {
   const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'loon-voice-')), 'cmd.wav');
@@ -74,4 +142,82 @@ test('speech → end of turn → text, all on this Mac', { skip: !engine.modelsR
   const text = engine.transcribe(utterances[0]);
   assert.match(text, /remind me to call mom at five/i);
   assert.strictEqual(route(text).type, 'command');
+});
+
+test('spoken confirmations, focus and define phrasings route to the right intent', () => {
+  assert.strictEqual(route('Yes, do it.', { awaitingConfirmation: true }).type, 'yes');
+  assert.strictEqual(route('No thanks', { awaitingConfirmation: true }).type, 'no');
+  assert.strictEqual(route('not now', { awaitingConfirmation: true }).type, 'no');
+  assert.deepStrictEqual(route('turn off focus'), { type: 'toggle', key: 'focus', value: false });
+  assert.deepStrictEqual(route('go to sleep, Loon'), { type: 'toggle', key: 'focus', value: true });
+  assert.deepStrictEqual(route('define: ephemeral'), { type: 'task', task: 'define', slot: 'text', text: 'ephemeral' });
+  assert.strictEqual(route('define the word ephemeral').text, 'ephemeral');
+});
+
+test('spoken fillers, "turn focus off", private mode and "what\'s the cheapest" are understood', () => {
+  assert.deepStrictEqual(route('turn focus off'), { type: 'toggle', key: 'focus', value: false });
+  assert.deepStrictEqual(route('turn on private mode'), { type: 'toggle', key: 'privacy', value: true });
+  assert.deepStrictEqual(route('turn off private mode'), { type: 'toggle', key: 'privacy', value: false });
+  assert.deepStrictEqual(route("what's the cheapest"), { type: 'task', task: 'shop_value' });
+  assert.deepStrictEqual(route('um, make this shorter please'), { type: 'task', task: 'shorter', needs: 'selection' });
+  assert.strictEqual(route('uh yes', { awaitingConfirmation: true }).type, 'yes');
+  assert.strictEqual(route('yeah sure', { awaitingConfirmation: true }).type, 'yes');
+});
+
+test('spoken privacy and focus toggles, page and shopping variants reach their templates', () => {
+  const toggle = (t) => { const r = route(t); return `${r.type}:${r.key}:${r.value}`; };
+  assert.strictEqual(toggle('turn private mode on'), 'toggle:privacy:true');
+  assert.strictEqual(toggle('enable privacy mode'), 'toggle:privacy:true');
+  assert.strictEqual(toggle('disable private mode'), 'toggle:privacy:false');
+  assert.strictEqual(toggle('exit focus mode'), 'toggle:focus:false');
+  assert.strictEqual(toggle('disable focus mode'), 'toggle:focus:false');
+  for (const t of ['explain this page to me', "what's this page", 'summarize page']) assert.strictEqual(route(t).task, 'page_summary', t);
+  for (const t of ["which one's the cheapest", "what's the cheapest option", 'which is cheaper']) assert.strictEqual(route(t).task, 'shop_value', t);
+});
+
+test('spoken ways to leave private or focus mode and to ask for quiet turn the toggle off or focus on', () => {
+  const toggle = (t) => { const r = route(t); return `${r.type}:${r.key}:${r.value}`; };
+  for (const t of ['leave private mode', 'end privacy mode', 'stop private mode', 'turn private mode off please']) assert.strictEqual(toggle(t), 'toggle:privacy:false', t);
+  for (const t of ['do not disturb', "don't disturb me", 'unfocus', 'un-focus']) assert.strictEqual(toggle(t), t.includes('focus') ? 'toggle:focus:false' : 'toggle:focus:true', t);
+  assert.strictEqual(toggle('leave focus mode'), 'toggle:focus:false');
+});
+
+test('turn on do not disturb, "which one is the cheapest option", bare "shorter" and "explain it to me like I\'m five" are understood', () => {
+  const r = route('turn on do not disturb');
+  assert.deepStrictEqual([r.type, r.key, r.value], ['toggle', 'focus', true]);
+  assert.strictEqual(route('which one is the cheapest option').task, 'shop_value');
+  assert.strictEqual(route('shorter please').task, 'shorter');
+  assert.strictEqual(route('simpler').task, 'simplify');
+  assert.strictEqual(route("explain it to me like I'm five").task, 'simplify');
+});
+
+test('stacked politeness and "no, don\'t" still route to the right intent', () => {
+  assert.strictEqual(route('Could you please summarize this').task, 'summarize');
+  assert.strictEqual(route('can you please explain this').task, 'explain');
+  assert.strictEqual(route("No, don't", { awaitingConfirmation: true }).type, 'no');
+  assert.strictEqual(route('no stop', { awaitingConfirmation: true }).type, 'no');
+  assert.strictEqual(route('tl;dr this page').task, 'page_summary');
+});
+
+test('fillers and the wake phrase can come in any order before a spoken command', () => {
+  assert.strictEqual(route('um hey loon explain this').task, 'explain');
+  assert.strictEqual(route('uh, hey loon, summarize this').task, 'summarize');
+  assert.strictEqual(route('can you like explain this').task, 'explain');
+  assert.strictEqual(route('so like make it shorter').task, 'shorter');
+  assert.strictEqual(route('um loon, remind me to stretch in twenty minutes').type, 'command');
+});
+
+test('natural yes and no answers to a confirm card are understood', () => {
+  const ask = { awaitingConfirmation: true };
+  for (const t of ['yeah go for it', 'yes yes', 'sure thing', 'absolutely', 'of course', 'yes, send it']) assert.strictEqual(route(t, ask).type, 'yes', t);
+  for (const t of ['no no no', 'oh no', 'actually no', "nope don't", 'no thank you loon']) assert.strictEqual(route(t, ask).type, 'no', t);
+  assert.strictEqual(route('what is the capital of France', ask).type, 'question');
+});
+
+test('spoken plain-language, summary and best-deal phrasings run the chip task', () => {
+  for (const t of ['explain this in plain english', 'explain this in simple words']) assert.strictEqual(route(t).task, 'simplify', t);
+  for (const t of ['break this down', 'help me understand this', "I don't get this"]) assert.strictEqual(route(t).task, 'explain', t);
+  assert.strictEqual(route('give me a summary').task, 'summarize');
+  assert.strictEqual(route('which one is the best deal').task, 'shop_value');
+  assert.strictEqual(route('give me a summary of the war of 1812').type, 'question');
 });
