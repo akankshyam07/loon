@@ -24,6 +24,10 @@ test('common voice phrases route to templates or commands, never the model', () 
   assert.deepStrictEqual(leaked, []);
 });
 
+test('more ways to tell Loon to be quiet', () => {
+  for (const said of ['mute', 'go quiet', 'no more talking', 'Mute yourself!']) assert.strictEqual(route(said, { speaking: true }).type, 'stop', said);
+});
+
 test('spoken edits and explanations of a selection are templates', () => {
   const expected = {
     'Explain this to me': 'explain', 'explain it': 'explain', 'Make this shorter': 'shorter', 'shorten it': 'shorter',
@@ -35,7 +39,7 @@ test('spoken edits and explanations of a selection are templates', () => {
     'Fix the grammar': 'fix_grammar', 'proofread this': 'fix_grammar', 'fix typos': 'fix_grammar',
     'fix my grammar': 'fix_grammar', 'check my spelling': 'fix_grammar', 'proofread': 'fix_grammar',
     'summarize this for me': 'summarize', 'sum this up': 'summarize', 'rewrite this warmer': 'warmer', 'make it short': 'shorter',
-    'give me examples': 'examples',
+    'give me examples': 'examples', 'give me the gist': 'summarize', "what's the gist": 'summarize',
     'summarize': 'summarize', 'tldr': 'summarize', 'tl;dr this': 'summarize',
     'make it way shorter': 'shorter', 'cut this down': 'shorter', 'make it more polite': 'professional',
     'rewrite this to be more polite': 'professional', 'rewrite it in a friendlier tone': 'warmer',

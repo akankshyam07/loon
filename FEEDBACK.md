@@ -3205,3 +3205,13 @@ As a user, the worst case was "remember when I asked about kafka". It was read a
 Fixed: parseCommand in brain/commands.js now reads "remember when I/we asked/talked about X" as a history search, and "chat/conversation/search history for X" as a search for X. Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: bare "recall", "wat did i ask", "history docker", "what did i google about cats", "whats in my history", "what did you tell me earlier" and "old questions" still reach the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-21 — voice intents (fourteenth pass)
+
+Tried 43 spoken phrasings such as "make it longer", "translate this into french", "repeat that", "louder", "give me the gist", "what's the gist", "mute", "go quiet", "no more talking", "put this in bullet points" and "tell me more".
+
+As a user, the worst miss was asking Loon to be quiet while it spoke. "mute", "go quiet" and "no more talking" went to the model as questions, so the cat kept talking and then answered about muting. "give me the gist" also went to the model with no selection attached.
+
+Fixed: the stop words in brain/intents.js now include "mute", "go quiet", "silence" and "no more talking". "give me the gist", "what's the gist" and "gist" run Summarize. Tests added in test/voice.test.js and checked to fail before the change.
+
+Left for later: "make it longer", "translate this into french", "read this to me", "repeat that", "louder", "turn this into bullet points" and "check this for errors" still have no voice template. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

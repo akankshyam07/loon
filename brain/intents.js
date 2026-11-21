@@ -3,7 +3,7 @@
 // anything left is an ordinary question for the resolver ladder.
 const { parseCommand, normalizeSpoken } = require('./commands');
 
-const STOP = /^(stop( talking| speaking)?|cancel|never ?mind|shh+|quiet|be quiet|hush|shut up|that's enough|that is enough|enough|ok(ay)? (stop|enough)|stop it)$/i;
+const STOP = /^(stop( talking| speaking)?|cancel|never ?mind|shh+|quiet|be quiet|go quiet|mute|mute (it|yourself)|silence|no more talking|hush|shut up|that's enough|that is enough|enough|ok(ay)? (stop|enough)|stop it)$/i;
 const YES = /^((yes|yeah|yep|yup|sure|thing|ok(ay)?|absolutely|definitely|of course|do it|go ahead|go for it|send it|confirm|please do|please|correct|right)( |$))+$/i;
 const NO = /^(oh )?((no|nope|nah)( (no|nope|nah|don't|do not|stop|cancel|never ?mind|thanks|thank you|not now))*|don't|do not|(don't|do not) do it|wrong|not now|cancel|stop|never ?mind)$/i;
 
@@ -17,7 +17,7 @@ const TEMPLATES = [
   { re: /^(make (this|that|it) (sound )?((a (bit|little) )?more |a (bit|little) )?|(rewrite|reword|rephrase) (this|that|it) (to be |to sound |in a )?)(warmer|friendlier|nicer|friendly|warm|nice)( tone)?$|^say (this|that|it) (warmer|friendlier|nicer)$|^(sound )?(warmer|friendlier|nicer|more friendly)$/, route: { type: 'task', task: 'warmer', needs: 'selection' } },
   { re: /^(make (this|that|it) (sound )?(more |a bit more |a little more )?|(rewrite|reword|rephrase|write|say) (this|that|it) (to be |to sound |in a )?(more )?)(casual|casually|informal|informally|relaxed|chill|less formal)( tone)?$|^make (this|that|it) (sound )?less formal$|^(more casual|less formal|more informal)$/, route: { type: 'task', task: 'casual', needs: 'selection' } },
   { re: /^(fix|correct|proofread|check) (the |my )?(grammar|grammer|spelling|typos)( and (grammar|grammer|spelling|typos))?( (in|of) (this|that|it))?$|^(fix|correct|proofread) (this|that|it)( for me)?$|^fix my english$|^make (this|that|it) grammatically correct$|^proofread$|^check (this|that|it) for (typos|spelling|grammar)( mistakes| errors)?$/, route: { type: 'task', task: 'fix_grammar', needs: 'selection' } },
-  { re: /^(summari[sz]e|sum up|sum) (this|that|it|the selection)( up)?( for me)?$|^summari[sz]e$|^tl;?dr( (this|that|it))?$|^(give|show) me a (quick |short )?(summary|tl;?dr)( of (this|that|it))?$/, route: { type: 'task', task: 'summarize', needs: 'selection' } },
+  { re: /^(summari[sz]e|sum up|sum) (this|that|it|the selection)( up)?( for me)?$|^(give me |what'?s |what is )the gist( of (this|that|it))?$|^gist( of (this|that|it))?$|^summari[sz]e$|^tl;?dr( (this|that|it))?$|^(give|show) me a (quick |short )?(summary|tl;?dr)( of (this|that|it))?$/, route: { type: 'task', task: 'summarize', needs: 'selection' } },
   { re: /^(give me |show me )?(some )?examples( of (this|that|it))?$|^(give|show) (me )?an example$/, route: { type: 'task', task: 'examples', needs: 'selection' } },
   { re: /^translate( (this|that|it|the selection|selection))?( for me)?( (to|into) english)?$|^(what does (this|that|it) say|what'?s (this|that)|what is (this|that)) in english$|^(this|that|it) in english( please)?$/, route: { type: 'task', task: 'translate', needs: 'selection' } },
   { re: /^fact[- ]?check( this| that| it)?( for me)?$|^(is|are) (this|that|it) (true|accurate|correct|right|real|legit)$|^check (this|that) claim$/, route: { type: 'task', task: 'fact_check', needs: 'selection' } },
