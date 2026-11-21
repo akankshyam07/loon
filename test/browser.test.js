@@ -50,6 +50,8 @@ test('selection kinds treat unspaced CJK text by length', () => {
   for (const t of ['$19.99', '42', '12/05/2026', '😀', 'https://example.com/a?b=1', 'a@b.com', '~/notes/todo.md', 'C:\\Users\\me\\file.txt']) assert.strictEqual(classifySelection(t), 'sentence', t);
   assert.strictEqual(classifySelection('我今天想去公园散步，天气很好。'), 'sentence');
   assert.strictEqual(classifySelection('npm install express'), 'code');
+  for (const t of ['x = 5', 'count += 1', 'total = a * b', 'i == 0']) assert.strictEqual(classifySelection(t), 'code', t);
+  assert.strictEqual(classifySelection('E = mc²'), 'word');
   assert.strictEqual(classifySelection('sudo apt-get update'), 'code');
   assert.strictEqual(classifySelection("git commit -m 'fix'"), 'code');
   assert.strictEqual(classifySelection('SELECT * FROM users WHERE id = 1;'), 'code');

@@ -3275,3 +3275,13 @@ As a user, the annoying case was a response copied from a log or console. It sho
 Fixed: parseJson in brain/devtools.js now unwraps a string that holds an object or array, and accepts the same text without the outer quotes. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: Kotlin keys such as `first-name` become `firstName` with no `@JsonProperty`, so Jackson would leave them null (Java already switches to Jackson for this). The Jackson Kotlin output carries a lot of mapper boilerplate, so it needs a decision. Line-numbered JSON and HTML-escaped quotes (`&quot;`) still fail. A 20-digit integer becomes a double. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-21 — selection chips and classification (seventeenth pass)
+
+Tried 70 selections such as single words, contractions, CJK, prices, URLs, one-line errors, SQL, shell commands, hashtags, "x = 5", "x += 1", "{{ name }}" and "E = mc²".
+
+As a user, the clear miss was a short assignment like "x = 5" or "count += 1". It was classed as a word, so the bubble offered Define instead of Explain code.
+
+Fixed: the snippet check in extension/lib/classify.js now treats a one-line assignment that starts with a lowercase name as code. "E = mc²" stays a word. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: "{{ name }}" and "Error 404" are classed as words, "Mon, Jan 5" gets Define, and a lone "404" gets Explain only. In this sandbox `npm test` shows 43 failures with and without the change because node_modules is not installed.
