@@ -3175,3 +3175,13 @@ As a user, the worst problem was that "every 3rd thursday at 4 meeting" became t
 Fixed: parseSchedule now declines an ordinal followed by a weekday, so the cat says it did not understand instead of guessing. Test added in test/routines.test.js and checked to fail before the change.
 
 Left for later: "every day" alone makes a routine with an empty message. "watch price of this daily" without a page makes a price watch with an empty url. Nth weekday of the month is not supported. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-21 — developer help, error table (eighteenth pass)
+
+Tried 41 pasted errors such as Python ValueError and AttributeError, Rust borrow errors, npm ELIFECYCLE, Java exceptions, "x is not iterable", git https login failures, EADDRINUSE and Spring errors.
+
+As a user, most common errors were answered, but three everyday ones went to the model. `AttributeError: module 'numpy' has no attribute 'int'` (any AttributeError except NoneType), the JavaScript `TypeError: x is not iterable`, and `fatal: could not read Username for 'https://github.com': terminal prompts disabled`, which every person pushing over https meets.
+
+Fixed: three new entries in brain/errors.js. The JavaScript one skips the Python wording "'int' object is not iterable", which keeps its own entry. Test added in test/modes.test.js.
+
+Left for later: AssertionError, SQLAlchemy and psycopg2 connection errors, `Cannot GET /api/...`, HTTP 400 on its own, Spring IllegalStateException wrappers, Gradle dependency resolution and UnhandledPromiseRejectionWarning still go to the model. `npm test` shows the same 42 failures with and without this change in this sandbox, because node_modules and the built data are missing.

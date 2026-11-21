@@ -214,6 +214,10 @@ test('errors: fingerprint ignores paths/values; known errors answer from the tab
   assert.doesNotMatch(lookupKnown('git@github.com: Permission denied (publickey).'), /\*\*Permission denied\*\*/, 'an SSH key problem is not a file permission problem');
   assert.match(lookupKnown("ValueError: invalid literal for int() with base 10: 'abc'"), /isn’t a number/);
   assert.match(lookupKnown('ZeroDivisionError: division by zero'), /Division by zero/);
+  assert.match(lookupKnown("AttributeError: module 'numpy' has no attribute 'int'"), /Missing attribute/);
+  assert.match(lookupKnown('TypeError: items is not iterable'), /not iterable \(JavaScript\)/);
+  assert.match(lookupKnown("TypeError: 'int' object is not iterable"), /Wrong type/, 'the Python wording keeps its own entry');
+  assert.match(lookupKnown("fatal: could not read Username for 'https://github.com': terminal prompts disabled"), /Git can’t log in/);
   assert.match(lookupKnown("TypeError: Cannot read property 'length' of undefined"), /Reading a property/);
   assert.match(lookupKnown("TypeError: Cannot set property 'x' of undefined"), /Setting a property/);
   assert.match(lookupKnown("Module not found: Error: Can't resolve 'react' in '/app/src'"), /Module not found/);

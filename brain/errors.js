@@ -586,6 +586,24 @@ const KNOWN = [
     explain: 'Exit code 137 means the process was killed with SIGKILL. In containers that is almost always the memory limit.',
     fix: ['Raise the memory limit for the container or pod, or give Docker Desktop more memory.', 'Find the leak or the large load, like reading a big file whole.', 'Confirm with `docker inspect <id>` (`OOMKilled`) or `kubectl describe pod <pod>`.'],
   },
+  {
+    match: /AttributeError: (?!.*'NoneType')/,
+    title: 'Missing attribute (Python)',
+    explain: 'Python looked for an attribute or method that the object does not have. Usually a typo, the wrong type, or a library that renamed or removed it.',
+    fix: ['Read the quoted type and name: it says which object lacked which attribute.', 'Print `type(x)` and `dir(x)` to see what it does have.', 'If it is a library, check its version and changelog (for example `numpy.int` was removed, use `int`).', 'A local file named like the library (`random.py`, `numpy.py`) can shadow it, so rename it.'],
+  },
+  {
+    match: /(?<!object )\bis not iterable/,
+    title: 'Value is not iterable (JavaScript)',
+    explain: 'Code tried to spread, destructure or loop over something that is not an array or other iterable, often `undefined` or a plain object.',
+    fix: ['Log the value just before the failing line: it is probably `undefined` because data has not loaded yet.', 'For a plain object use `Object.entries(x)` or `Object.keys(x)` instead of `for…of` or `[...x]`.', 'Default it: `const [a, b] = value ?? []`.'],
+  },
+  {
+    match: /could not read (Username|Password) for|terminal prompts disabled|Authentication failed for 'https?:/i,
+    title: 'Git can’t log in over https',
+    explain: 'Git needed a username or token for the https remote but had none, or the saved one was rejected. GitHub no longer accepts account passwords here.',
+    fix: ['Create a personal access token and use it as the password, or sign in with `gh auth login`.', 'Check the saved login: on macOS remove the old entry in Keychain Access (search "github.com").', 'Or switch the remote to SSH with `git remote set-url origin git@github.com:OWNER/REPO.git`.'],
+  },
 ];
 
 function lookupKnown(text) {
