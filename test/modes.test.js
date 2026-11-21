@@ -598,6 +598,14 @@ test('jsonToDto makes Kotlin data classes without the quicktype package line', a
   assert.doesNotMatch(kt, /package/);
 });
 
+test('JSON copied from a log as an escaped string still becomes types', async () => {
+  for (const text of ['"{\\"id\\": 7, \\"name\\": \\"Loon\\"}"', '{\\"id\\": 7, \\"name\\": \\"Loon\\"}']) {
+    assert.deepStrictEqual(parseJson(text), { id: 7, name: 'Loon' }, text);
+    assert.match(await jsonToDto(text, 'java'), /class Root/, text);
+  }
+  assert.strictEqual(parseJson('"just words"'), 'just words');
+});
+
 test('menu: rogan josh and kebabs are meat, veggie pho and paneer kebab are not', () => {
   for (const name of ['Rogan Josh', 'Lamb Kebab', 'Beef Pho', 'Lamb Keema Naan']) assert.strictEqual(food.score({ name, description: '' }).likelyVegetarian, false, name);
   for (const name of ['Veggie Pho', 'Mushroom Pho', 'Paneer Kebab', 'Vegetable Kebab']) assert.strictEqual(food.score({ name, description: '' }).likelyVegetarian, true, name);

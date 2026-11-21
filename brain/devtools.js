@@ -82,6 +82,13 @@ function topLevelValues(text) {
 // Tries the text as JSON, then as a JS/Python literal, then with prose cut off before the first and after the last
 // bracket ("Here is the response: {...} hope that helps"), then as JSON lines (one object per line, becomes an array), then as several values pasted one after another.
 function parseJson(text) {
+  const value = parseJsonText(text);
+  // Logs and API consoles show a response as a string ("{\"a\":1}"), or as that string without its outer quotes.
+  if (typeof value === 'string' && /^\s*[{[]/.test(value)) return parseJsonText(value);
+  return value;
+}
+
+function parseJsonText(text) {
   const json = String(text).replace(/^\s*```\w*\s*\n?|\n?\s*```\s*$/g, '');
   const attempt = (s) => {
     try {
@@ -106,6 +113,7 @@ function parseJson(text) {
   const pieces = topLevelValues(json);
   const many = pieces.length > 1 ? pieces.map(attempt) : [];
   if (many.length && many.every((r) => r && r.value && typeof r.value === 'object')) return many.map((r) => r.value);
+  if (/^\s*[{[]\s*\\"/.test(json)) return JSON.parse(`"${json.trim()}"`);
   JSON.parse(json);
 }
 

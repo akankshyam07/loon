@@ -3265,3 +3265,13 @@ As a user, the worst miss was privacy. A login form whose password box is a plai
 Fixed: the identity and bank field check in extension/lib/page-kind.js now knows those names. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: a shop with only two prices and an add to cart button is still "other". A card holder or expiry field alone is not caught. Google Docs pages are "other" rather than a document kind. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-21 — developer help, JSON to DTO (fifteenth pass)
+
+Tried 15 pastes such as a huge integer, null-only fields, mixed arrays, dates, nested arrays, a BOM, a trailing semicolon, `const x = {...}`, a curl prompt line, an empty string, a Kotlin key like `first-name`, line-numbered JSON, HTML-escaped quotes and JSON copied from a log as an escaped string.
+
+As a user, the annoying case was a response copied from a log or console. It shows up as `"{\"a\":1}"` or as `{\"a\":1}`. The first said "no fields (just plain values)", which is wrong, and the second failed with a JSON syntax error.
+
+Fixed: parseJson in brain/devtools.js now unwraps a string that holds an object or array, and accepts the same text without the outer quotes. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: Kotlin keys such as `first-name` become `firstName` with no `@JsonProperty`, so Jackson would leave them null (Java already switches to Jackson for this). The Jackson Kotlin output carries a lot of mapper boilerplate, so it needs a decision. Line-numbered JSON and HTML-escaped quotes (`&quot;`) still fail. A 20-digit integer becomes a double. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
