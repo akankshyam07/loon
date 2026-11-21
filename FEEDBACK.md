@@ -3195,3 +3195,13 @@ As a user, almost all of them hit the offline dictionary. Two natural phrasings 
 Fixed: the antonym rule accepts "X's opposite" and the synonym rule accepts "better word than X". Assertions added to the existing tests in test/brain.test.js. They fail before the change.
 
 Left for later: "another word for very big", "define love and hate", "define x as a verb" and "synonyms for big and small" still go to the model, since they need more than one term. The 5 failures in `npm test` are the usual sandbox ones (missing WordNet data) and are the same without this change.
+
+## 2026-11-21 — history (seventeenth pass)
+
+Tried 45 history phrasings such as "remember when I asked about kafka", "chat history for docker", "wat did i ask", "what was that thing about css", "whats in my history", "did i ask about react" and "show me old questions".
+
+As a user, the worst case was "remember when I asked about kafka". It was read as a memory command and quietly saved "when i asked about kafka" as a memory, when I wanted to look up the past question. "chat history for docker" also missed the history search.
+
+Fixed: parseCommand in brain/commands.js now reads "remember when I/we asked/talked about X" as a history search, and "chat/conversation/search history for X" as a search for X. Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: bare "recall", "wat did i ask", "history docker", "what did i google about cats", "whats in my history", "what did you tell me earlier" and "old questions" still reach the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
