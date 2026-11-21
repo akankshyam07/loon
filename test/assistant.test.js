@@ -520,3 +520,11 @@ test('commands: "always remember" and "memorize" save a fact, "remember me?" and
   assert.deepStrictEqual(parseCommand('memorize that I like jazz'), { action: 'remember', text: 'I like jazz' });
   for (const t of ['remember me?', 'remember what I said', 'remember the last thing I told you']) assert.strictEqual(parseCommand(t), null, t);
 });
+
+test('commands: "the 1st of next month" is a date, so "of next month" does not stay in the reminder title', () => {
+  const now = new Date(2026, 10, 21, 10, 0);
+  const r = parseCommand('remind me to pay bill on the 1st of next month', now);
+  assert.strictEqual(r.title, 'pay bill');
+  assert.strictEqual(r.when.getMonth(), 11);
+  assert.strictEqual(r.when.getDate(), 1);
+});

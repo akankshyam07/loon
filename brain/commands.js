@@ -40,6 +40,11 @@ function extractWhen(text, now = new Date(), { morning = false } = {}) {
 // chrono does not read "on the 1st" or "the 15th"; rewrite it to the next such day as "Nov 1".
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 function dayOfMonth(text, now) {
+  // "the 1st of next month" names its month, so "of next month" must not stay behind in the title.
+  text = text.replace(/\b(?:on )?the (\d{1,2})(?:st|nd|rd|th) of (this|next) month\b/i, (all, d, which) => {
+    const c = new Date(now.getFullYear(), now.getMonth() + (/next/i.test(which) ? 1 : 0), Number(d));
+    return c.getDate() === Number(d) ? `${MONTHS[c.getMonth()]} ${Number(d)} ${c.getFullYear()}` : all;
+  });
   return text.replace(/\b(?:on )?the (\d{1,2})(?:st|nd|rd|th)\b/i, (all, d) => {
     const day = Number(d);
     for (let i = 0; i < 13 && day >= 1; i++) {

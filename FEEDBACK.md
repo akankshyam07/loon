@@ -3215,3 +3215,13 @@ As a user, the worst miss was asking Loon to be quiet while it spoke. "mute", "g
 Fixed: the stop words in brain/intents.js now include "mute", "go quiet", "silence" and "no more talking". "give me the gist", "what's the gist" and "gist" run Summarize. Tests added in test/voice.test.js and checked to fail before the change.
 
 Left for later: "make it longer", "translate this into french", "read this to me", "repeat that", "louder", "turn this into bullet points" and "check this for errors" still have no voice template. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-21 — reminders, timers and focus (eighteenth pass)
+
+Tried 34 phrasings such as "remind me in an hour and a half", "remind me tmrw at 9", "remind me on the 25th", "set a reminder for 3pm to call bob", "reminder: dentist friday 2pm", "wake me up at 6:30 tomorrow", "focus 90" and "remind me to pay bill on the 1st of next month".
+
+As a user, almost everything worked. The one wrong result was "remind me to pay bill on the 1st of next month", which made a reminder titled "pay bill of next month". The date was right but the leftover words made the title look sloppy.
+
+Fixed: "the Nth of this month" and "the Nth of next month" are now read as one date in the shared day-of-month step. Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: "remind me to take meds at 8am and 8pm" keeps only 8am and puts "and 8pm" in the title, so the second time is dropped quietly. "snooze 10 minutes" and "cancel my timer" are not matched. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
