@@ -3255,3 +3255,13 @@ As a user, I asked the questions people ask a new assistant first. These went to
 Fixed: a fixed honest answer in the instant rules says Loon is an AI, not a real cat, and that answers come from a model on the Mac unless Smarter answers is on. Questions about other things ("who made the first computer") still go to the model. Test added in test/brain.test.js.
 
 Left for later: "tell me a joke", "meow" and a lone wave emoji still go to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-21 — page kinds, sensitive field names (seventeenth pass)
+
+Tried 14 pages such as fields named login_pass, user_pass, passphrase, secret_key, access_token, cardnum, a sign-up form, a two-price shop, a one-price product page and a Google Docs page.
+
+As a user, the worst miss was privacy. A login form whose password box is a plain text field named "login_pass" or "user_pass" was read as an ordinary page, and so were fields for a passphrase, secret key, access token or "cardnum". The cat would not look away on those pages.
+
+Fixed: the identity and bank field check in extension/lib/page-kind.js now knows those names. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: a shop with only two prices and an add to cart button is still "other". A card holder or expiry field alone is not caught. Google Docs pages are "other" rather than a document kind. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
