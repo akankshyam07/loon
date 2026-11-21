@@ -3235,3 +3235,13 @@ As a user, the worst problem was that a friendly sentence in the name box became
 Fixed: the name stops at a comma or at "and", "but", "nice", "pleased" or "glad". A trailing severity in brackets or as its own item is dropped from allergies. Test added in test/personal.test.js.
 
 Left for later: "celiac disease" is still saved as an allergy to "celiac disease", "none lol" is saved as an allergy, "Ada & Bob" becomes "Ada  Bob" with two spaces, and "i'm into f1" lowercases nothing but keeps odd wording like "interested in hike".
+
+## 2026-11-21 — memory commands (third pass)
+
+Tried 35 phrasings such as "for the record I'm 30", "FYI I use a Mac", "I want you to remember that I'm vegan", "from now on remember I like tea", "also remember…", "remember about me that…", "forget what I said about my age", "stop remembering my location" and "update my name to Sam".
+
+As a user, the plain forms worked. Natural lead-ins did not. "I want you to remember…", "from now on remember…" and "for the record I'm 30" all fell through to the model, which cannot save anything and may claim it did. "remember about me that I'm 30" saved the text "about me that I'm 30".
+
+Fixed: stripPoliteness drops "I want you to", "I'd like you to", "from now on", "also", "and" and "btw" before remember, forget and memorize. "for the record", "FYI" and "just so you know" save the fact only when it is about the user (starts with I, my, we or our), so "fyi the meeting moved" is not saved. "remember about me that" keeps only the fact. Test added in test/assistant.test.js.
+
+Left for later: "stop remembering my location" and "update my name to Sam" still go to the model. Spanish "recuerda que…" is not understood. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install and are identical on main.

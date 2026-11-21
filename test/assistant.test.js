@@ -528,3 +528,12 @@ test('commands: "the 1st of next month" is a date, so "of next month" does not s
   assert.strictEqual(r.when.getMonth(), 11);
   assert.strictEqual(r.when.getDate(), 1);
 });
+
+test('commands: "for the record", "I want you to remember" and "from now on remember" save a fact', () => {
+  assert.deepStrictEqual(parseCommand("for the record, I'm vegetarian"), { action: 'remember', text: "I'm vegetarian" });
+  assert.deepStrictEqual(parseCommand('FYI my dog is called Rex'), { action: 'remember', text: 'my dog is called Rex' });
+  assert.strictEqual(parseCommand('fyi the meeting moved to 3'), null);
+  assert.deepStrictEqual(parseCommand('I want you to remember that I am vegan'), { action: 'remember', text: 'I am vegan' });
+  assert.deepStrictEqual(parseCommand('from now on remember I like tea'), { action: 'remember', text: 'I like tea' });
+  assert.deepStrictEqual(parseCommand('remember about me that I am 30'), { action: 'remember', text: 'I am 30' });
+});

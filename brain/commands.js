@@ -74,6 +74,7 @@ function stripPoliteness(input) {
   return String(input).trim()
     .replace(/^(?:(?:hey|ok|okay) )?loon[,\s]+(?=\S)/i, '')
     .replace(/^(?:(?:hey|ok|okay) )?(?:loon[,\s]+)?(?:(?:please|pls|plz|can you|could you|would you|will you)\s+)+/i, '')
+    .replace(/^(?:(?:i (?:want|need|would like)|i'?d like) you to|(?:from now on|also|and|oh and|btw),?)\s+(?=(?:always )?(?:remember|forget|memori[sz]e)\b)/i, '')
     .replace(/[,\s]+(?:please|pls|plz|thanks|thank you)[.!?]*$/i, '')
     .trim();
 }
@@ -178,7 +179,9 @@ function parseCommand(input, now = new Date()) {
   if (/^(?:delete|remove|erase|forget|clear|wipe) (?:absolutely )?(?:everything|all|what) (?:that )?you (?:know|remember|have saved|saved)(?: (?:about|on) me)?$/i.test(text)) return { action: 'forget', text: 'everything', all: true };
   if ((m = text.match(/^(?:delete|remove|erase|clear) (?:the |my |your )?(?:memory|memories|saved facts?) (?:about|of|on) (.+)$/i)) && tidy(m[1])) return { action: 'forget', text: tidy(m[1]), all: false };
   if (/^(?:delete|clear|wipe|erase|reset) (?:all )?(?:of )?(?:my |your |the )?(?:memory|memories)$/i.test(text)) return { action: 'forget', text: 'everything', all: true };
-  if ((m = text.match(/^(?:(?:always )?remember|memori[sz]e|(?:do not|don'?t|never) forget|keep (?:that |this |it )?in mind|(?:save|add|put|store) (?:this |it )?(?:to|in|into) (?:my |your )?memory)(?: this)?[:,]?\s+(?:that )?(.+)$/i)) && tidy(m[1]) && !/^(?:nothing|it|everything|all of (?:it|this)|me|us|you|what (?:i|we) (?:just )?(?:said|told you)|the (?:last|previous) thing(?: i (?:said|told you))?)\??$/i.test(tidy(m[1]))) return { action: 'remember', text: tidy(m[1]) };
+  if ((m = text.match(/^(?:(?:always )?remember|memori[sz]e|(?:do not|don'?t|never) forget|keep (?:that |this |it )?in mind|(?:save|add|put|store) (?:this |it )?(?:to|in|into) (?:my |your )?memory)(?: this)?[:,]?\s+(?:(?:about me )?that )?(.+)$/i)) && tidy(m[1]) && !/^(?:nothing|it|everything|all of (?:it|this)|me|us|you|what (?:i|we) (?:just )?(?:said|told you)|the (?:last|previous) thing(?: i (?:said|told you))?)\??$/i.test(tidy(m[1]))) return { action: 'remember', text: tidy(m[1]) };
+  // "for the record I'm 30" states a fact about the user. Other FYIs ("fyi the meeting moved") are not saved.
+  if ((m = text.match(/^(?:for the record|fyi|just so you know)[:,]?\s+((?:i|i'm|i’m|my|we|our)\s.+)$/i))) return { action: 'remember', text: tidy(m[1]) };
   if ((m = text.match(/^(.+?),?\s+(?:please )?remember (?:that|this|it)$/i)) && !/^(?:do not|don'?t|never|stop)$/i.test(tidy(m[1]))) return { action: 'remember', text: tidy(m[1]) };
   // "call me back" and "call me when you can" are not names. Only one or two plain words count.
   if ((m = text.match(/^(?:(?:from now on|going forward|in future),?\s+)?(?:you can |you should |just )?call me (\p{L}[\p{L}'-]*(?: \p{L}[\p{L}'-]*)?)$/iu)) && !/^(?:back|later|maybe|tomorrow|tonight|today|now|soon|anytime|sometime|whenever|if|when|at|on|crazy|names)\b/i.test(m[1])) return { action: 'remember', text: `Call me ${tidy(m[1])}` };
