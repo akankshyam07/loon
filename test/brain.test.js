@@ -109,6 +109,20 @@ test('ladder: stretched greetings and "how are you" get an instant reply, greeti
   }
 });
 
+test('ladder: "are you an ai" and "who made you" get an honest instant answer', async () => {
+  let asked = 0;
+  const brain = { modelId: () => 'fake', chat: async () => { asked++; return { text: 'model' }; }, chatStream: async () => { asked++; return { text: 'model' }; } };
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));
+  const resolver = new Resolver({ brain, cacheFile: path.join(dir, 'c.json'), countsFile: path.join(dir, 'n.json') });
+  for (const q of ['are you an ai', 'Are you a bot?', 'are you chatgpt', 'who made you', 'who created you?', 'what model are you', 'are you real']) {
+    const r = await resolver.ask(q, { onText: () => {}, firstInThread: true });
+    assert.strictEqual(r.tier, 'code', q);
+    assert.match(r.text, /AI/, q);
+  }
+  assert.strictEqual(asked, 0);
+  assert.notStrictEqual((await resolver.ask('who made the first computer', { onText: () => {}, firstInThread: true })).tier, 'code');
+});
+
 test('ladder: a bare "time" or "date" inside a conversation is a follow-up, not a clock question', async () => {
   const brain = { modelId: () => 'fake', chat: async () => ({ text: 'model' }), chatStream: async () => ({ text: 'model' }) };
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));

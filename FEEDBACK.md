@@ -3245,3 +3245,13 @@ As a user, the plain forms worked. Natural lead-ins did not. "I want you to reme
 Fixed: stripPoliteness drops "I want you to", "I'd like you to", "from now on", "also", "and" and "btw" before remember, forget and memorize. "for the record", "FYI" and "just so you know" save the fact only when it is about the user (starts with I, my, we or our), so "fyi the meeting moved" is not saved. "remember about me that" keeps only the fact. Test added in test/assistant.test.js.
 
 Left for later: "stop remembering my location" and "update my name to Sam" still go to the model. Spanish "recuerda que…" is not understood. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install and are identical on main.
+
+## 2026-11-21 — follow-up conversations, small talk about Loon itself (sixteenth pass)
+
+Tried 28 openers such as "are you an ai", "are you a bot?", "are you chatgpt", "who made you", "what model are you", "are you real", "tell me a joke", "meow" and a lone wave emoji.
+
+As a user, I asked the questions people ask a new assistant first. These went to the language model, which can say it is ChatGPT or invent a maker. A companion that gets its own identity wrong in the first minute loses trust.
+
+Fixed: a fixed honest answer in the instant rules says Loon is an AI, not a real cat, and that answers come from a model on the Mac unless Smarter answers is on. Questions about other things ("who made the first computer") still go to the model. Test added in test/brain.test.js.
+
+Left for later: "tell me a joke", "meow" and a lone wave emoji still go to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

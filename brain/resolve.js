@@ -139,6 +139,11 @@ const CODE_ANSWERS = [
     }),
   },
   {
+    // Without this the model may claim to be ChatGPT or invent a maker.
+    match: /^(?:are (?:you|u) (?:an? )?(?:ai|a\.i\.|bot|robot|human|real|real cat|really a cat|chatgpt|gpt|claude|gemini|siri|alexa|person|cat)|who (?:made|built|created|programmed) (?:you|u)|what (?:model|llm|ai) are (?:you|u)|what (?:model|llm) (?:do you|are you) (?:use|running|on))$/,
+    answer: () => ({ mood: 'happy', text: "I'm an AI, not a real cat, though I try. I'm Loon, a screen companion. My answers come from a language model on your Mac, unless you switched on Smarter answers in Settings." }),
+  },
+  {
     match: /^(?:(?:who|what) are you|what(?:'s| is|s) (?:your|ur) name|who are you again)$/,
     answer: () => ({ mood: 'happy', text: "I'm Loon, a small black cat who lives on your screen. I run on your Mac, and nothing you ask leaves it unless you switch on Smarter answers in Settings." }),
   },
