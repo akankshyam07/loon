@@ -233,6 +233,9 @@ async function fixGrammar(text) {
     if (l.lint_kind() === 'Repetition' && new Set(word.toLowerCase().split(/\s+/)).size > 1) return false;
     if (l.lint_kind() === 'Agreement' && /^it's$/i.test(word) && /^\s+[A-Z]/.test(fixed.slice(end))) return false;
     if (['Spelling', 'Typo'].includes(l.lint_kind()) && NOT_A_TYPO.test(word)) return false;
+    // A misspelling cut to its first half (Thankyou → Thank) or split into two words (belive → be live) loses meaning; only
+    // boundary errors (alot → a lot) are real splits.
+    if (['Spelling', 'Typo'].includes(l.lint_kind()) && (/\s/.test(to) || (to.length < word.length - 2 && word.toLowerCase().startsWith(to.toLowerCase())))) return false;
     if (l.lint_kind() === 'Spelling' && editDistance(word.toLowerCase(), to.toLowerCase()) > Math.max(2, Math.ceil(word.length / 3))) return false;
     return !(/^[A-Z][a-z]/.test(word) && to === word.toUpperCase()) && !(word.length > 1 && to.length === 1);
   };

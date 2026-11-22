@@ -370,6 +370,13 @@ test('grammar fixer keeps enquire and asap, and prefers the dropped letter', asy
   assert.strictEqual((await fixGrammar('Wich one is better?')).fixed, 'Which one is better?');
 });
 
+test('grammar fixer does not cut a misspelling short or split it into two words', async () => {
+  assert.strictEqual((await fixGrammar('Thankyou for your help')).fixed, 'Thankyou for your help');
+  assert.strictEqual((await fixGrammar('I belive you')).fixed, 'I belive you');
+  assert.strictEqual((await fixGrammar('I recieve it')).fixed, 'I receive it');
+  assert.strictEqual((await fixGrammar('alot of it')).fixed, 'a lot of it');
+});
+
 test('grammar fixer leaves file names, hashtags and handles alone', async () => {
   for (const text of ['The file is config.yaml and main.js', 'Hey @john check #todo and $HOME', 'Open src/utils.js now']) {
     assert.strictEqual((await fixGrammar(text)).fixed, text);

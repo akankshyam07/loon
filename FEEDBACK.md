@@ -3295,3 +3295,13 @@ As a user, plain maths, percentages and single-unit conversions were answered in
 Fixed: brain/calc.js now adds two sizes of one kind side by side before converting (the old feet and inches rule stays), knows stones, and reads "cube root of N". Cases added to the ladder test in test/brain.test.js and checked to fail before the change.
 
 Left for later: "20% of 50 + 10", "100 usd to eur", "abs(-4)", "pi" and "3 dozen" are not handled by code. Answers like "half of 90" come back as a bare "45." which reads a little cryptic. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-22 — writing tools, fix grammar (eleventh pass)
+
+Tried 26 texts such as "Thankyou for you're help", "i cant belive its already friday", "your welcome", "The results was good", "I seen him", "an university", "alot of it", "infront of me" and "definately going to recieve it tomorow".
+
+As a user, two results were wrong. "belive" became "be live", which changes the meaning. "Thankyou" became "Thank", which drops a word the person meant to write.
+
+Fixed: fixGrammar skips a spelling suggestion that splits one word into two, or that cuts the word down to a short prefix. Real boundary fixes such as "alot" to "a lot" still work. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: "your welcome", "There going to be late", "The results was good", "I seen him", "Please advice me", "an university", "hows" and "sent" after "please" are still not flagged, and "belive" is now left as is instead of becoming "believe". The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
