@@ -3395,3 +3395,13 @@ As a user, common proofreading and rewrite phrasings still went to the model as 
 Fixed: the templates in brain/intents.js now cover those phrasings. Cases added in test/voice.test.js and checked to fail before the change.
 
 Left for later: tone edits with no task today ("make it more direct", "soften the tone", "make it funny"), length edits ("expand this", "make it longer"), "turn this into bullet points" and non-English edits still go to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-22 — translation by voice and typed (fifth pass)
+
+Tried 38 translate asks on a selection, such as "in english", "say this in english", "make this english", "translate this word", "how do you say this in english", "can u translate that", "english version", "translate this to spanish" and "traduce al inglés".
+
+As a user, the short natural phrasings ("in english", "say this in english", "translate this word") went to the model as free questions, so I got no offline translation and no Replace or Copy actions. "can u" was not treated as a polite prefix.
+
+Fixed: the translate template in brain/intents.js now covers those phrasings and "can u" and "could u" are dropped as polite prefixes. Cases added in test/voice.test.js and checked to fail before the change.
+
+Left for later: "translate this to spanish", "what language is this", "tell me what this says", "translate this into plain english", typos like "trnaslate" and non-English asks still go to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

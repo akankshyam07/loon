@@ -19,7 +19,7 @@ const TEMPLATES = [
   { re: /^(fix|correct|proofread|check) (the |my )?(grammar|grammer|spelling|typos)( and (grammar|grammer|spelling|typos))?( (in|of) (this|that|it))?$|^(fix|correct|proofread) (this|that|it)( for me)?$|^fix my english$|^make (this|that|it) grammatically correct$|^proofread( (this|that|it|my (text|writing)))?$|^check (this|that|it) for (typos|spelling|grammar|mistakes|errors)( mistakes| errors)?$|^spell[ -]?check( (this|that|it))?$|^run a spell[ -]?check$|^fix (any |the |all )?(mistakes|errors)( in (this|that|it))?$|^check for (mistakes|errors)$/, route: { type: 'task', task: 'fix_grammar', needs: 'selection' } },
   { re: /^(summari[sz]e|sum up|sum) (this|that|it|the selection)( up)?( for me)?$|^(give me |what'?s |what is )the gist( of (this|that|it))?$|^gist( of (this|that|it))?$|^summari[sz]e$|^tl;?dr( (this|that|it))?$|^(give|show) me (a |the )?(quick |short )?(summary|tl;?dr)( of (this|that|it))?$/, route: { type: 'task', task: 'summarize', needs: 'selection' } },
   { re: /^(give me |show me )?(some )?examples( of (this|that|it))?$|^(give|show) (me )?an example$/, route: { type: 'task', task: 'examples', needs: 'selection' } },
-  { re: /^translate( (this|that|it|the selection|selection))?( for me)?( (to|into) english)?$|^(what does (this|that|it) say|what'?s (this|that)|what is (this|that)) in english$|^(this|that|it) in english( please)?$/, route: { type: 'task', task: 'translate', needs: 'selection' } },
+  { re: /^translate( (this|that|it|the selection|selection|(this |that |the )?(word|text|sentence|paragraph)))?( for me)?( (to|into) english)?$|^(what does (this|that|it) say|what'?s (this|that)|what is (this|that)|how (do|would) you say (this|that|it)|say (this|that|it)|put (this|that|it)|give me (this|that|it)) in english$|^(this|that|it) in english( please)?$|^in english$|^make (this|that|it) english$|^english( version)?$/, route: { type: 'task', task: 'translate', needs: 'selection' } },
   { re: /^fact[- ]?check( this| that| it)?( for me)?$|^(is|are) (this|that|it) (true|accurate|correct|right|real|legit)$|^check (this|that) claim$/, route: { type: 'task', task: 'fact_check', needs: 'selection' } },
   { re: /^(explain|walk me through) (this|that|the) code( to me)?$|^what does (this|that|the) code do$/, route: { type: 'task', task: 'explain_code', needs: 'selection' } },
   { re: /^(explain|what does) (this|that|the) error( to me)?( mean)?$|^what'?s (this|that|the) error$|^what is (this|that|the) error$|^why (am i getting|do i get|did i get) (this|that|the) error$/, route: { type: 'task', task: 'explain_error', needs: 'selection' } },
@@ -49,7 +49,7 @@ function normalize(transcript) {
   return transcript
     .toLowerCase()
     .replace(LEAD_IN, '')
-    .replace(/^((please|pls|plz|can you|could you|would you|will you|like|just)[,\s]+)+/, '')
+    .replace(/^((please|pls|plz|can you|can u|could you|could u|would you|will you|like|just)[,\s]+)+/, '')
     .replace(/[,.!?]+|\p{Extended_Pictographic}/gu, ' ')
     .replace(/\s+(please|pls|plz|loon)$/, '')
     .replace(/\s{2,}/g, ' ')
