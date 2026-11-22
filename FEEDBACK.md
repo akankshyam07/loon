@@ -3345,3 +3345,13 @@ As a user, almost everything parsed correctly. The one wrong answer was a multip
 Fixed: parseQuantity now multiplies "N x M pack" (or "pk") into 12 and 36. "2 x 12 ct" and measures such as "2 x 12 pack 330ml" give the right totals. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: "30 servings" and "1 each" return nothing, so they drop out of the ranking. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-22 — page kinds, card fields found by id (thirteenth pass)
+
+Tried 40 pages such as lookalike bank hosts, country bank sites, mail hosts, sign-in forms, OTP and card fields, euro and kr shops, blog posts that mention prices, menus, wiki and video sites.
+
+As a user, the worst miss was a checkout form whose card box is only named by its id (`id="card-number"`, `id="credit-card-number"`) or called `creditcard`. The cat did not go private, so a card form could be read as a normal page.
+
+Fixed: the card field check in extension/lib/page-kind.js now also looks at ids and at the name `creditcard`. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: lab and patient portals (labcorp, questdiagnostics) and `pay.stripe.com` are not on the sensitive list, and a field named `expiry` alone is not caught. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
