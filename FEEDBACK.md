@@ -3365,3 +3365,13 @@ As a user, creating routines worked well. The one annoying answer was "delete al
 Fixed: a pause or delete command that starts with "all", "every" or "each" and mentions routines now explains that Loon changes one routine at a time and points to "show my routines". Other phrases such as "turn off all notifications" still fall through. Test added in test/routines.test.js.
 
 Left for later: "every first monday of the month", "every last friday", "every year on march 3" and "9am and 5pm" are not understood, so they get a card to fix by hand. That is honest but slow. Five WordNet and demo tests fail in `npm test` here because the sandbox install skips the built data.
+
+## 2026-11-22 — settings UI, reply style feedback (fourteenth pass)
+
+Tried 45 style requests such as "tone it down", "less sassy", "be funnier", "more sass", "be chill", "talk normally", "reset style", "reply in español", "bullet points" and "explain in more detail".
+
+As a user, the most annoying misses were the tone requests that mention sass. "tone it down" and "less sassy" went to the model, which chatted about it while the setting stayed. "be funnier", "sassier" and "more sass" also did nothing, so there was no spoken way back to the playful tone.
+
+Fixed: parseFeedback in brain/personal.js now reads "tone it down" and "less sassy, snarky or sarcastic" as the plain tone, and "funnier", "sassier", "snarkier", "cuter" and "more sass" as the playful tone. Test added in test/personal.test.js and checked to fail before the change.
+
+Left for later: "reset style", "be chill", "talk normally", "reply in español" (language names in other languages), and bullet point requests have no rule. The 5 failing tests in `npm test` are the usual WordNet and demo ones from the sandbox install.
