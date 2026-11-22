@@ -64,6 +64,8 @@ test('commands: reminders, events, open, find, notes, memory; questions fall thr
   assert.deepStrictEqual(parseCommand('open my downloads folder', NOW), { action: 'open', target: '~/Downloads', kind: 'folder' });
   assert.deepStrictEqual(parseCommand('open ~/Documents', NOW), { action: 'open', target: '~/Documents', kind: 'folder' });
   assert.deepStrictEqual(parseCommand('open my calendar', NOW), { action: 'open', target: 'calendar', kind: 'app' });
+  for (const [q, t] of [['open settings', 'System Settings'], ['open system preferences', 'System Settings'], ['open vs code', 'Visual Studio Code'], ['open my email', 'Mail']]) assert.deepStrictEqual(parseCommand(q, NOW), { action: 'open', target: t, kind: 'app' }, q);
+  assert.strictEqual(parseCommand('open wifi settings', NOW), null);
   assert.deepStrictEqual(parseCommand('find my resume', NOW), { action: 'find', query: 'resume' });
   assert.deepStrictEqual(parseCommand('note: buy cat food', NOW), { action: 'note', text: 'buy cat food' });
   assert.deepStrictEqual(parseCommand('remember that I am vegetarian', NOW), { action: 'remember', text: 'I am vegetarian' });

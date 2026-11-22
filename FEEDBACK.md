@@ -3325,3 +3325,13 @@ As a user, the worst problem was that a menu's own vegetarian marker was ignored
 Fixed: brain/food.js now trusts a bracketed marker made only of veg, vegan, vegetarian, v, vg or ve (optionally with gf, df or n, like "(GF, VG)"). "(no veg)", "(with veg)" and "(pork)" do not count. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: "Beef-free Burger" and "Chicken-less Nuggets" are still read as meat, and "Ceasar Salad" misspellings are not matched. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-22 — open and launch commands (ninth pass)
+
+Tried 36 phrasings such as "open settings", "open wifi settings", "open email", "open system preferences", "open vscode", "open calc", "open bluetooth settings", "open task manager" and "open google calendar".
+
+As a user, "open settings" and "open system preferences" showed a confirm card to launch an app called "settings", which macOS cannot find, so it failed only after I pressed confirm. "open wifi settings" and similar pane names did the same. "open vs code" and "open email" had the same problem.
+
+Fixed: settings, system preferences, vs code, email and calc now map to the real app names (System Settings, Visual Studio Code, Mail, Calculator). Names ending in "settings" go to the chat because Loon cannot open a single pane. Test added in test/assistant.test.js.
+
+Left for later: "open vscode" without a space, "open code", "open task manager" and "open cmd" still offer an app with that exact name. `npm test` shows the same 5 WordNet and demo failures as main in this sandbox.

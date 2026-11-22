@@ -138,6 +138,10 @@ function parseCommand(input, now = new Date()) {
     if (/^(?!https?:)[a-z][a-z0-9+.-]*:\/?\/?/i.test(target) && !/^[\w.-]+:\d+/.test(target) || /^(?:trash|bin|home(?: folder| directory)?)$/i.test(target)) return null;
     // Not app names: "a new tab", "the file report.pdf", "the link", and two apps in one request. The chat explains what Loon can open.
     if (/^(?:an? |file |link$|app$|page$|website$|site$)| (?:and|&) /i.test(target)) return null;
+    // "settings" is not an app name on macOS, and a pane like "wifi settings" has no app to launch, so the chat explains.
+    if (/^.+ settings$/i.test(target)) return null;
+    const alias = { settings: 'System Settings', 'system preferences': 'System Settings', preferences: 'System Settings', vscode: 'Visual Studio Code', 'vs code': 'Visual Studio Code', email: 'Mail', calc: 'Calculator' }[target.toLowerCase()];
+    if (alias) return { action: 'open', target: alias, kind: 'app' };
     const folder = target.match(/^(?:~\/|(?:my )?(?:the )?)(downloads|documents|desktop|pictures|movies|music|applications)(?: folder)?$/i);
     if (folder && raw === target) return { action: 'open', target: `~/${folder[1][0].toUpperCase()}${folder[1].slice(1).toLowerCase()}`.replace('~/Applications', '/Applications'), kind: 'folder' };
     // These are websites with no Mac app, so `open -a` would only fail after the confirm card.
