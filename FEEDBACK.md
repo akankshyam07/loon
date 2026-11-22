@@ -3385,3 +3385,13 @@ As a user, the most common asks failed. "whats in my history" and "show me old q
 Fixed: parseCommand in brain/commands.js now reads "what's in my history" and "old questions" as the history list, and "what did I google about X" as a search for X. Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: "wat did i ask", "history docker", bare "recall", "what did you tell me earlier", "what did I say earlier" and "repeat my last question" still reach the model, and "find my chat about docker" is read as a file search. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-22 — writing tools by voice and typed edits (thirteenth pass)
+
+Tried 44 edit phrases on a selection, such as "spell check this", "fix any mistakes", "proofread my text", "say it better", "paraphrase", "shorten it a bit", "give me the tl;dr", "make it more direct", "expand this" and "hazlo más formal".
+
+As a user, common proofreading and rewrite phrasings still went to the model as free questions, so the answer had no Replace or Copy actions. The worst were "spell check this" and "fix any mistakes".
+
+Fixed: the templates in brain/intents.js now cover those phrasings. Cases added in test/voice.test.js and checked to fail before the change.
+
+Left for later: tone edits with no task today ("make it more direct", "soften the tone", "make it funny"), length edits ("expand this", "make it longer"), "turn this into bullet points" and non-English edits still go to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
