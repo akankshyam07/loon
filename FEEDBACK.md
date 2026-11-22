@@ -3285,3 +3285,13 @@ As a user, the clear miss was a short assignment like "x = 5" or "count += 1". I
 Fixed: the snippet check in extension/lib/classify.js now treats a one-line assignment that starts with a lowercase name as code. "E = mc²" stays a word. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: "{{ name }}" and "Error 404" are classed as words, "Mon, Jan 5" gets Define, and a lone "404" gets Explain only. In this sandbox `npm test` shows 43 failures with and without the change because node_modules is not installed.
+
+## 2026-11-22 — typed questions and instant answers, compound units (nineteenth pass)
+
+Tried 36 phrasings such as "2 hours 30 minutes in minutes", "5 lb 8 oz to kg", "5 stone in kg", "cube root of 27", "half of 90", "100 usd to eur", "abs(-4)", "pi" and "how much is 3 dozen".
+
+As a user, plain maths, percentages and single-unit conversions were answered in code. The worst misses were a time or weight written in two parts ("2 hours 30 minutes in minutes"), British stones, and cube roots. They went on to the model, which is the wrong place for numbers.
+
+Fixed: brain/calc.js now adds two sizes of one kind side by side before converting (the old feet and inches rule stays), knows stones, and reads "cube root of N". Cases added to the ladder test in test/brain.test.js and checked to fail before the change.
+
+Left for later: "20% of 50 + 10", "100 usd to eur", "abs(-4)", "pi" and "3 dozen" are not handled by code. Answers like "half of 90" come back as a bare "45." which reads a little cryptic. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

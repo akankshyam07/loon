@@ -3,7 +3,7 @@ const LEAD = /^(?:(?:what(?:'?s| is)|how much is|calculate|calc|compute|convert)
 
 const UNITS = {
   length: { m: 1, km: 1000, cm: 0.01, mm: 0.001, mi: 1609.344, yd: 0.9144, ft: 0.3048, in: 0.0254 },
-  mass: { kg: 1, g: 0.001, mg: 1e-6, lb: 0.45359237, oz: 0.028349523125 },
+  mass: { kg: 1, stone: 6.35029318, g: 0.001, mg: 1e-6, lb: 0.45359237, oz: 0.028349523125 },
   volume: { l: 1, ml: 0.001, gal: 3.785411784, qt: 0.946352946, pt: 0.473176473, cup: 0.2365882365, floz: 0.0295735295625, tbsp: 0.01478676478125, tsp: 0.00492892159375 },
   speed: { mps: 1, kph: 1 / 3.6, mph: 0.44704, kn: 0.514444 },
   time: { sec: 1, min: 60, hr: 3600, day: 86400, wk: 604800, yr: 31536000 },
@@ -13,7 +13,7 @@ const ALIASES = {
   cm: 'cm', centimeter: 'cm', centimeters: 'cm', mm: 'mm', mile: 'mi', miles: 'mi', mi: 'mi', yard: 'yd', yards: 'yd', yd: 'yd',
   foot: 'ft', feet: 'ft', ft: 'ft', inch: 'in', inches: 'in', in: 'in',
   kg: 'kg', kilo: 'kg', kilos: 'kg', kilogram: 'kg', kilograms: 'kg', g: 'g', gram: 'g', grams: 'g', mg: 'mg',
-  lb: 'lb', lbs: 'lb', pound: 'lb', pounds: 'lb', oz: 'oz', ounce: 'oz', ounces: 'oz',
+  stone: 'stone', stones: 'stone', lb: 'lb', lbs: 'lb', pound: 'lb', pounds: 'lb', oz: 'oz', ounce: 'oz', ounces: 'oz',
   l: 'l', liter: 'l', liters: 'l', litre: 'l', litres: 'l', ml: 'ml', gallon: 'gal', gallons: 'gal', gal: 'gal',
   quart: 'qt', quarts: 'qt', pint: 'pt', pints: 'pt', cup: 'cup', cups: 'cup', tbsp: 'tbsp', tablespoon: 'tbsp', tablespoons: 'tbsp',
   tsp: 'tsp', teaspoon: 'tsp', teaspoons: 'tsp',
@@ -155,6 +155,9 @@ function calc(question) {
     return `The average of ${nums.map(fmt).join(', ')} is ${fmt(nums.reduce((a, b) => a + b, 0) / nums.length)}.`;
   }
 
+  m = body.match(/^(?:the\s+)?cube root of\s+(-?\d+(?:\.\d+)?)$/);
+  if (m) return `∛${m[1]} = ${fmt(Math.cbrt(m[1]))}`;
+
   m = body.match(/^(\d+) factorial$/);
   if (m) return +m[1] <= 170 ? `${m[1]}! = ${fmt(Array.from({ length: +m[1] }, (_, i) => i + 1).reduce((a, b) => a * b, 1))}` : `${m[1]}! is too big for me to write out.`;
 
@@ -164,6 +167,13 @@ function calc(question) {
     const inches = m[1] * 12 + +m[2];
     const out = convert(inches, 'in', ALIASES[m[3]]);
     if (out !== null) return `${m[1]} ft ${m[2]} in is about ${fmt(out)} ${m[3]}.`;
+  }
+
+  // "2 hours 30 minutes in minutes", "5 lb 8 oz to kg": two sizes of one kind side by side are one amount
+  m = body.match(/^(\d+(?:\.\d+)?)\s*([a-z]+)\s+(\d+(?:\.\d+)?)\s*([a-z]+)\s+(?:to|in|into|as)\s+([a-z]+)$/);
+  if (m && ALIASES[m[2]] && ALIASES[m[4]] && ALIASES[m[5]] && ALIASES[m[2]] !== ALIASES[m[4]]) {
+    const [a, b, to] = [convert(+m[1], ALIASES[m[2]], ALIASES[m[5]]), convert(+m[3], ALIASES[m[4]], ALIASES[m[5]]), ALIASES[m[5]]];
+    if (a !== null && b !== null && to !== 'C' && to !== 'F' && to !== 'K') return `${m[1]} ${m[2]} ${m[3]} ${m[4]} is about ${fmt(a + b)} ${m[5]}.`;
   }
 
   m = body.match(/^(\d+(?:\.\d+)?)\s*cubed$/);
