@@ -411,6 +411,9 @@ test('routines: "show my routines", "pause the water reminder", "delete the Frid
 
   await routines.handleText(5, 'delete the gym reminder', bubble, { execute });
   assert.match(seen.opened.at(-1).message, /don't have a routine like/);
+  await routines.handleText(7, 'delete all routines', bubble, { execute });
+  assert.match(seen.opened.at(-1).message, /one routine at a time/);
+  assert.strictEqual(await routines.handleText(8, 'turn off all notifications', bubble, { execute }), false);
   assert.strictEqual(await routines.handleText(6, 'turn off privacy mode', bubble, { execute }), false); // not about routines
   assert.deepStrictEqual(R.parseRoutineCommand('list my routines'), { action: 'routines' });
   assert.deepStrictEqual(R.parseRoutineCommand('stop the vitamins routine'), { action: 'routinePause', on: false, query: 'the vitamins routine' });

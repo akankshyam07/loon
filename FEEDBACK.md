@@ -3355,3 +3355,13 @@ As a user, the worst miss was a checkout form whose card box is only named by it
 Fixed: the card field check in extension/lib/page-kind.js now also looks at ids and at the name `creditcard`. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: lab and patient portals (labcorp, questdiagnostics) and `pay.stripe.com` are not on the sensitive list, and a field named `expiry` alone is not caught. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-22 — routines (third pass)
+
+Tried 30 routine phrasings such as "every night at 10pm remind me to lock up", "twice a day…", "every weekday except friday…", "every day at 9am and 5pm…", "every year on march 3…", and 13 routine commands such as "delete all routines", "cancel my routines" and "turn off the stretch routine".
+
+As a user, creating routines worked well. The one annoying answer was "delete all routines". Loon said it had no routine like "all routines", which sounds like a bug.
+
+Fixed: a pause or delete command that starts with "all", "every" or "each" and mentions routines now explains that Loon changes one routine at a time and points to "show my routines". Other phrases such as "turn off all notifications" still fall through. Test added in test/routines.test.js.
+
+Left for later: "every first monday of the month", "every last friday", "every year on march 3" and "9am and 5pm" are not understood, so they get a card to fix by hand. That is honest but slow. Five WordNet and demo tests fail in `npm test` here because the sandbox install skips the built data.
