@@ -3315,3 +3315,13 @@ As a user, most lines were already covered. Three ways of saying a password or P
 Fixed: a new rule redacts a value with a digit after pin, passcode or password, with an optional "number" or "code", followed by "is", "was" or "to". "password to log in" stays readable. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: "password: p@ss w0rd" leaks the second word, "passphrase hunter2" and "token is abc123def456" without a colon are not redacted, and a bare "secret=abc" is too short to match. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-22 — food and menu (twentieth pass)
+
+Tried 43 dish names such as "Gyoza (veg)", "Wonton Soup (veg)", "Spring Rolls (GF, VG)", "Egg Fried Rice", "Caesar Salad (no anchovies)", "Chicken-less Nuggets" and "Meatless Monday Wrap".
+
+As a user, the worst problem was that a menu's own vegetarian marker was ignored. "Gyoza (veg)" and "Wonton Soup (veg)" were listed as meat because gyoza and wonton are on the meat list, so the vegetarian filter hid dishes the menu had labelled for me.
+
+Fixed: brain/food.js now trusts a bracketed marker made only of veg, vegan, vegetarian, v, vg or ve (optionally with gf, df or n, like "(GF, VG)"). "(no veg)", "(with veg)" and "(pork)" do not count. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: "Beef-free Burger" and "Chicken-less Nuggets" are still read as meat, and "Ceasar Salad" misspellings are not matched. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

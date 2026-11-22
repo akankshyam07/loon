@@ -617,3 +617,8 @@ test('menu: rogan josh and kebabs are meat, veggie pho and paneer kebab are not'
   for (const name of ['Rogan Josh', 'Lamb Kebab', 'Beef Pho', 'Lamb Keema Naan']) assert.strictEqual(food.score({ name, description: '' }).likelyVegetarian, false, name);
   for (const name of ['Veggie Pho', 'Mushroom Pho', 'Paneer Kebab', 'Vegetable Kebab']) assert.strictEqual(food.score({ name, description: '' }).likelyVegetarian, true, name);
 });
+
+test('menu: a (veg) or [V] marker on the dish name makes it vegetarian, other brackets do not', () => {
+  for (const name of ['Gyoza (veg)', 'Wonton Soup [V]', 'Spring Rolls (GF, VG)', 'Dumplings (vegetarian)']) assert.strictEqual(food.score({ name, description: '' }).likelyVegetarian, true, name);
+  for (const name of ['Gyoza (pork)', 'Wonton Soup (no veg)', 'Gyoza (with veg)', 'Chicken Wrap (veg option)']) assert.strictEqual(food.score({ name, description: '' }).likelyVegetarian, false, name);
+});
