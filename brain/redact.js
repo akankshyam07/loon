@@ -90,6 +90,12 @@ const RULES = [
   },
   {
     kind: 'secret',
+    re: /\b((?:pin|passcode|password|passwd)(?:\s+(?:number|code))?\s+(?:was|to|is)\s+)(?!\[redacted)(?=[^\s"',;]*\d)([^\s"',;]{4,})/gi,
+    // needs a digit in the value so "password to log in" stays readable
+    replace: (m, head) => `${head}[redacted:secret]`,
+  },
+  {
+    kind: 'secret',
     re: /\b((?:secret )?(?:recovery|seed|backup) phrase|mnemonic|seed words)(\s*(?:is\s*)?[:=-]?\s*)(?!\[redacted)(?:[a-z]{3,8}\s+){11,23}[a-z]{3,8}\b/gi,
     replace: (m, name, sep) => `${name}${sep}[redacted:secret]`,
   },

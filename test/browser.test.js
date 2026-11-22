@@ -358,3 +358,9 @@ test('redaction hides a spoken "user x and pass y" login and a bare "api key <va
   assert.equal(redact('api key abcdEFGH12345678').text, 'api key [redacted:secret]');
   assert.equal(redact('api key management and api key authentication docs').count, 0);
 });
+
+test('redaction hides "pin number is", "password was" and "set my password to" values', () => {
+  const out = redact('the pin number is 4921, my password was hunter2, set my password to hunter22').text;
+  assert.doesNotMatch(out, /4921|hunter/);
+  assert.equal(redact('password to log in').count, 0);
+});

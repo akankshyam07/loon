@@ -3305,3 +3305,13 @@ As a user, two results were wrong. "belive" became "be live", which changes the 
 Fixed: fixGrammar skips a spelling suggestion that splits one word into two, or that cuts the word down to a short prefix. Real boundary fixes such as "alot" to "a lot" still work. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: "your welcome", "There going to be late", "The results was good", "I seen him", "Please advice me", "an university", "hows" and "sent" after "please" are still not flagged, and "belive" is now left as is instead of becoming "believe". The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-22 — memory and privacy, redaction (eighteenth pass)
+
+Tried 31 lines such as "the pin number is 4921", "my password was hunter2", "set my password to hunter2", "wifi password is correct horse battery", env exports, connection strings, Spanish and German password sentences, card numbers and cookies.
+
+As a user, most lines were already covered. Three ways of saying a password or PIN still leaked the value. "pin number is 4921", "my password was hunter2" and "set my password to hunter2" went through unredacted.
+
+Fixed: a new rule redacts a value with a digit after pin, passcode or password, with an optional "number" or "code", followed by "is", "was" or "to". "password to log in" stays readable. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: "password: p@ss w0rd" leaks the second word, "passphrase hunter2" and "token is abc123def456" without a colon are not redacted, and a bare "secret=abc" is too short to match. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
