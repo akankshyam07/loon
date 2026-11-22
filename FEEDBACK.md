@@ -3375,3 +3375,13 @@ As a user, the most annoying misses were the tone requests that mention sass. "t
 Fixed: parseFeedback in brain/personal.js now reads "tone it down" and "less sassy, snarky or sarcastic" as the plain tone, and "funnier", "sassier", "snarkier", "cuter" and "more sass" as the playful tone. Test added in test/personal.test.js and checked to fail before the change.
 
 Left for later: "reset style", "be chill", "talk normally", "reply in español" (language names in other languages), and bullet point requests have no rule. The 5 failing tests in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-22 — history (eighteenth pass)
+
+Tried 36 history phrasings such as "whats in my history", "what's in my history", "wat did i ask", "history docker", "old questions", "show me old questions", "what did i google about cats", "recall", "did we talk about spring" and "what was my last question".
+
+As a user, the most common asks failed. "whats in my history" and "show me old questions" went to the model, which can only guess. "what did i google about cats" did the same.
+
+Fixed: parseCommand in brain/commands.js now reads "what's in my history" and "old questions" as the history list, and "what did I google about X" as a search for X. Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: "wat did i ask", "history docker", bare "recall", "what did you tell me earlier", "what did I say earlier" and "repeat my last question" still reach the model, and "find my chat about docker" is read as a file search. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

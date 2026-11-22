@@ -183,6 +183,8 @@ test('commands: "clear my history" points at Settings and never searches memorie
     assert.ok(c && c.action === 'forget' && c.history && c.all, t);
   }
   assert.strictEqual(parseCommand('show history').action, 'recall');
+  for (const q of ["what's in my history", 'whats in my history', 'show me old questions']) assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: '' }, q);
+  assert.deepStrictEqual(parseCommand('what did i google about cats'), { action: 'recall', query: 'cats' });
 });
 
 test('commands: bare "remember that" saves nothing, "never forget" saves a fact, "delete memory about X" forgets X', () => {
