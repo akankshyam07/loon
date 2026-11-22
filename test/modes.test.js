@@ -22,6 +22,14 @@ test('parseQuantity handles multipacks, compound weights and counts', () => {
   assert.strictEqual(q('no size here'), null);
 });
 
+test('parseQuantity multiplies "N x M pack" and keeps the size measure', () => {
+  const q = (s) => shopping.parseQuantity(s);
+  assert.deepEqual(q('2 x 6 pack'), { amount: 12, unit: 'count' });
+  assert.deepEqual(q('3 x 12 pack'), { amount: 36, unit: 'count' });
+  assert.deepEqual(q('2 x 12 pack 330ml'), { amount: 7920, unit: 'ml' });
+  assert.deepEqual(q('2 x 12 ct'), { amount: 24, unit: 'count' });
+});
+
 test('parseQuantity does not double count restated sizes and reads spelled-out units', () => {
   const q = (s) => shopping.parseQuantity(s);
   assert.strictEqual(Math.round(q('16 oz (1 lb)').amount), 454);

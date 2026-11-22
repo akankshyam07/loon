@@ -27,6 +27,9 @@ function parseQuantity(text) {
   // "2 x 6 x 330 ml" is twelve cans.
   const chain = multi && t.match(/(\d+)\s*x\s*(\d+)\s*x\s*\d/);
   if (chain) count = Number(chain[1]) * Number(chain[2]);
+  // "3 x 12 pack" is thirty-six, the pack size is the second number.
+  const packs = multi && !chain && t.match(/(\d+)\s*x\s*(\d+)[\s-]?(?:pack|pk)\b/);
+  if (packs) count = Number(packs[1]) * Number(packs[2]);
   const trailing = !multi && t.match(/[a-z.]\s*x\s*(\d+)\b(?!\s*[.,]?\d*\s*[a-z])/);
   if (trailing) count = Number(trailing[1]);
   const measures = [...t.matchAll(MEASURE)].map((m) => {

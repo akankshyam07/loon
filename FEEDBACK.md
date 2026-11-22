@@ -3335,3 +3335,13 @@ As a user, "open settings" and "open system preferences" showed a confirm card t
 Fixed: settings, system preferences, vs code, email and calc now map to the real app names (System Settings, Visual Studio Code, Mail, Calculator). Names ending in "settings" go to the chat because Loon cannot open a single pane. Test added in test/assistant.test.js.
 
 Left for later: "open vscode" without a space, "open code", "open task manager" and "open cmd" still offer an app with that exact name. `npm test` shows the same 5 WordNet and demo failures as main in this sandbox.
+
+## 2026-11-22 — shopping and unit price (twentieth pass)
+
+Tried 48 size strings and 23 price strings such as "2 x 6 pack", "pack of 12 x 330ml", "1 lb 8 oz", "half gallon", "$5 - $10", "1 299 kr" and "R$ 12,50".
+
+As a user, almost everything parsed correctly. The one wrong answer was a multipack of packs. "2 x 6 pack" was read as 2 items and "3 x 12 pack" as 3, so the unit price would be several times too high.
+
+Fixed: parseQuantity now multiplies "N x M pack" (or "pk") into 12 and 36. "2 x 12 ct" and measures such as "2 x 12 pack 330ml" give the right totals. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: "30 servings" and "1 each" return nothing, so they drop out of the ranking. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
