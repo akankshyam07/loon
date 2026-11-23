@@ -341,12 +341,14 @@ test('dictionaryTerm handles typos and filler words in "what does X mean"', () =
   assert.strictEqual(dictionaryTerm('what does ephemeral mean again'), 'ephemeral');
   assert.strictEqual(dictionaryTerm('what does ephemeral mean thanks'), 'ephemeral');
   assert.strictEqual(dictionaryTerm('what do you mean'), null);
+  assert.strictEqual(dictionaryTerm('do you know what ephemeral means?'), 'ephemeral');
 });
 
 test('antonymTerm reads "opposite of X"; antonyms follow WordNet word links and the resolver answers in code', async () => {
   const { antonymTerm, antonyms } = require('../brain/define');
   assert.strictEqual(antonymTerm('opposite of happy'), 'happy');
   assert.strictEqual(antonymTerm("hot's opposite"), 'hot');
+  assert.strictEqual(antonymTerm("what is happy's opposite"), 'happy');
   assert.strictEqual(require('../brain/define').synonymTerm("what's a better word than good?"), 'good');
   assert.strictEqual(antonymTerm("what's the opposite of hot?"), 'hot');
   assert.strictEqual(antonymTerm('Antonym for "big" please'), 'big');

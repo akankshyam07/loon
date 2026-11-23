@@ -67,7 +67,7 @@ const NOT_A_TERM = /^(?:this|that|it|these|those|here|there|the|my|your|his|her|
 
 function dictionaryTerm(question) {
   const m = String(question || '').trim().replace(/[’‘]/g, "'")
-    .replace(/^(?:(?:hey|ok|okay) )?(?:loon[,\s]+)?(?:(?:please|pls|plz|can (?:you|u)|could (?:you|u)|would (?:you|u))\s+)*(?:(?:tell|give|show) me (?=(?:the |a )|wh?[au]t ))?/i, '')
+    .replace(/^(?:(?:hey|ok|okay) )?(?:loon[,\s]+)?(?:(?:please|pls|plz|can (?:you|u)|could (?:you|u)|would (?:you|u))\s+)*(?:do (?:you|u) know (?=wh?[au]t ))?(?:(?:tell|give|show) me (?=(?:the |a )|wh?[au]t ))?/i, '')
     .replace(/[\s?!.\p{Extended_Pictographic}]*$/u, '')
     .replace(/(?:,? (?:please|pls|for me|in english|exactly|lol|again|thanks|thx|btw|tho|loon))+$/i, '')
     .replace(/[\s?!.]*$/, '').replace(/ (?:even|actually|really|exactly)(?= means?$)/i, '').match(DICTIONARY_ASK);
@@ -90,7 +90,7 @@ function synonymTerm(question) {
 }
 
 // "opposite of happy", "antonym for big" → the word, or null.
-const ANTONYM_ASK = /^(?:(?:give me |find me |what(?:'?s| is| are) )?(?:the |an |some )?(?:opposites?(?: words?)?|antonyms?|contrary)\s+(?:of|for|to)|what(?:'?s| is) the opposite of)\s+(?:the (?:word|term) )?["'“‘]?([\p{L}-]+)["'”’]?$|^([\p{L}-]+)(?:'s)? (?:antonyms?|opposite)$/iu;
+const ANTONYM_ASK = /^(?:(?:give me |find me |what(?:'?s| is| are) )?(?:the |an |some )?(?:opposites?(?: words?)?|antonyms?|contrary)\s+(?:of|for|to)|what(?:'?s| is) the opposite of)\s+(?:the (?:word|term) )?["'“‘]?([\p{L}-]+)["'”’]?$|^(?:what(?:'?s| is) )?([\p{L}-]+)(?:'s)? (?:antonyms?|opposite)$/iu;
 
 function antonymTerm(question) {
   const m = cleanAsk(question).match(ANTONYM_ASK);

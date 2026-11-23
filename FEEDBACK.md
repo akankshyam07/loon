@@ -3505,3 +3505,13 @@ As a user, the worst problem was that obvious vegetarian dishes were hidden from
 Fixed: brain/food.js now treats bean, garden, lentil, chickpea, jackfruit and soy prefixes, and "meat/beef/pork/chicken/fish/lamb/turkey" followed by "-free" or "-less", as meat-free for burgers, carnitas, bolognese, ragu, banh mi and nuggets. "Gluten-free Chicken Wrap" is still meat. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: "Vegan Bacon Cheeseburger", "Pho Chay" and "Caesar-style Kale Salad" are still read as meat. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-23 — translation and definitions (nineteenth pass)
+
+Tried 39 typed dictionary, synonym and antonym asks such as "do you know what ephemeral means", "what is happy's opposite", "DEFINE EPHEMERAL", "define café", "what does \"carpe diem\" mean", "ephemeral definition please" and "what the heck does ephemeral mean".
+
+As a user, nearly everything hit the offline dictionary. Two ordinary phrasings still went to the language model, "do you know what X means" and "what is X's opposite".
+
+Fixed: the dictionary rule drops a leading "do you know" before "what", and the antonym rule accepts a "what is" lead-in on "X's opposite". Assertions added to the existing tests in test/brain.test.js.
+
+Left for later: "what the heck does X mean", "another word for very big" and "how do you spell X" still go to the model. The 5 failures in `npm test` are the usual sandbox ones (missing WordNet data).
