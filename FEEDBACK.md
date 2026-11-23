@@ -3415,3 +3415,13 @@ As a user, JSON copied from a docs site or a code viewer failed with a syntax er
 Fixed: parseJson in brain/devtools.js now retries after removing those three kinds of clutter, only when the plain parse fails, so valid input is never changed. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: Kotlin keys such as `first-name` still lose their JSON name. A 20-digit integer becomes a double. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-23 — reminders, timers and focus (nineteenth pass)
+
+Tried 75 phrasings such as "remind me on the weekend to clean", "remind me at 1730", "remind me at quarter to 5", "timer 90 seconds", "10 minute timer for pasta", "remind me in a couple hours", "schedule a meeting with sam tomorrow at 2pm" and "stop focus". Recurring phrasings go through routines first, so I checked those only in the real order.
+
+As a user, almost everything worked. "remind me on the weekend to clean" made a reminder titled "the to clean", and "remind me at 1730" got no time at all.
+
+Fixed: extractWhen now reads "on the weekend" as "this weekend" and reads "at 1730" as a 24-hour time. Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: "remind me to take meds at 8am and 8pm" still keeps only 8am and leaves "and 8pm" in the title. "snooze 10 minutes" is not matched. "cancel my timer" goes to the routine delete path and then the model, and timers are one-shot reminders, so the answer may promise something Loon cannot do. "remind me later" and "in a bit" give a reminder with no time. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

@@ -7,6 +7,9 @@ function extractWhen(text, now = new Date(), { morning = false } = {}) {
   text = dayOfMonth(text, now)
     .replace(/\b(?:end of (?:the )?(?:work ?)?day|eod|close of business|cob)\b/gi, 'at 5pm')
     .replace(/\b(\d+)\s*secs?\b/gi, '$1 seconds')
+    // chrono reads "weekend" but leaves "on the" behind in the title. "at 1730" is a 24-hour time, not a year.
+    .replace(/\bon the weekend\b/gi, 'this weekend')
+    .replace(/\b(at|by|until) ([01]\d|2[0-3])([0-5]\d)\b/gi, '$1 $2:$3')
     // "in 10 to check oven" is how people type minutes.
     .replace(/\bin (\d+)(?=\s+(?:to|and(?! a half)|so|that)\b|\s*$)/gi, 'in $1 minutes')
     .replace(/\b(quarter|half) (past|after) (\d{1,2})\b/gi, (all, part, _w, h) => `${h}:${part.toLowerCase() === 'half' ? '30' : '15'}`)

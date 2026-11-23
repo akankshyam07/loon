@@ -541,3 +541,12 @@ test('commands: "for the record", "I want you to remember" and "from now on reme
   assert.deepStrictEqual(parseCommand('from now on remember I like tea'), { action: 'remember', text: 'I like tea' });
   assert.deepStrictEqual(parseCommand('remember about me that I am 30'), { action: 'remember', text: 'I am 30' });
 });
+
+test('commands: "on the weekend" leaves no "the" in the title and "at 1730" is 5:30pm', () => {
+  const now = new Date(2026, 10, 23, 10, 0);
+  assert.strictEqual(parseCommand('remind me on the weekend to clean', now).title, 'clean');
+  const r = parseCommand('remind me at 1730 to leave', now);
+  assert.strictEqual(r.title, 'leave');
+  assert.strictEqual(r.when.getHours(), 17);
+  assert.strictEqual(r.when.getMinutes(), 30);
+});
