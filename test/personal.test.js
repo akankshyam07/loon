@@ -401,3 +401,11 @@ test('onboarding keeps only the name from a typed sentence and drops trailing se
   assert.deepStrictEqual(onboardingResult({ allergies: 'peanuts (severe)' }).facts, ["I'm allergic to peanuts"]);
   assert.deepStrictEqual(onboardingResult({ allergies: 'peanuts, severe' }).facts, ["I'm allergic to peanuts"]);
 });
+
+test('onboarding keeps long allergy lists, "and also" and "name:" or "my friends call me" leads', () => {
+  const seven = onboardingResult({ allergies: 'peanuts, tree nuts, soy, wheat, eggs, milk, fish' }).facts;
+  assert.deepStrictEqual(seven, ["I'm allergic to peanuts, tree nuts, soy, wheat, eggs, milk and fish"]);
+  assert.deepStrictEqual(onboardingResult({ allergies: 'peanuts and also shellfish' }).facts, ["I'm allergic to peanuts and shellfish"]);
+  assert.deepStrictEqual(onboardingResult({ name: 'name: Tom' }).facts, ['Call me Tom']);
+  assert.deepStrictEqual(onboardingResult({ name: 'my friends call me Dizzy' }).facts, ['Call me Dizzy']);
+});

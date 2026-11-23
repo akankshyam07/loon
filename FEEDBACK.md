@@ -3425,3 +3425,13 @@ As a user, almost everything worked. "remind me on the weekend to clean" made a 
 Fixed: extractWhen now reads "on the weekend" as "this weekend" and reads "at 1730" as a 24-hour time. Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: "remind me to take meds at 8am and 8pm" still keeps only 8am and leaves "and 8pm" in the title. "snooze 10 minutes" is not matched. "cancel my timer" goes to the routine delete path and then the model, and timers are one-shot reminders, so the answer may promise something Loon cannot do. "remind me later" and "in a bit" give a reminder with no time. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-23 — onboarding first run, long allergy lists and name leads (seventeenth pass)
+
+Tried 48 answers for the name, allergy and interest boxes, such as "Mary-Jane O'Brien", "my friends call me Dizzy", "name: Tom", "peanuts and also shellfish", a seven item allergy list, "celiac", "Nuts (anaphylaxis)" and "I'm into F1 racing".
+
+As a user, the worst problem was a silent loss. Typing seven allergies saved only six, and "fish" was dropped without a word. Smaller problems were "name: Tom" saved as "Call me name Tom", "my friends call me Dizzy" saved as "Call me my friends call me Dizzy", and "peanuts and also shellfish" saved as an allergy to "also shellfish".
+
+Fixed: the list reader in brain/personal.js now keeps up to 12 items, treats "and also" as "and", and the name reader drops "name:" and "my friends/family/mom/dad call me". Test added in test/personal.test.js and checked to fail before the change.
+
+Left for later: "it's me, Kai" saves "Call me me". "Lactose", "celiac" and "Peanut allergy" are stored as allergies with odd wording ("allergic to celiac"). Notes such as "nuts - severe" keep the note in the text. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
