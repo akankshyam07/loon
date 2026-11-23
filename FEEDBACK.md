@@ -3455,3 +3455,13 @@ As a user, three common errors had no instant answer and went to the model. "The
 Fixed: added entries for the first two with the exact command to run, and the duplicate rule now covers E11000. Tests added in test/modes.test.js.
 
 Left for later: "linker cc not found" (Rust), "Killed: 9" on macOS and the Windows "cannot find the path specified" message still go to the model. The 5 failing tests in `npm test` here are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-23 — selection chips and classification (eighteenth pass)
+
+Tried 41 selections such as "Error 404", "Mon, Jan 5", "{{ name }}", "TL;DR", "e.g.", "192.168.1.1", "a/b/c.txt", "</div>", "import os", Cyrillic, emoji and a Spanish question.
+
+As a user, the clear misses were a relative file path like "src/app/main.js" and a lone HTML tag like "</div>". Both were classed as a word, so the bubble offered Define.
+
+Fixed: a relative path whose last part has an extension now counts as not a word to look up, and a whole-selection HTML tag counts as code. "and/or" stays a word. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: "import os" is still a word, because "import taxes" is plain prose and the two look alike. "{{ name }}", "Error 404" and "Mon, Jan 5" still get Define. In this sandbox `npm test` shows 44 failures with and without the change because node_modules is not installed.

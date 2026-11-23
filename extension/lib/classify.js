@@ -51,7 +51,7 @@
   const IMPORT = /^\s*(import\s+[\w{*][^\n]*\sfrom\s+['"]|import\s+[\w.]+(\.\*)?;|from\s+[\w.]+\s+import\s+\w|#include\s*[<"]|using\s+[\w.]+;|package\s+[\w.]+;)/;
 
   // Short snippets have too few symbols for the density check, so "console.log('hi')" and "x += 1" would get Define
-  const SNIPPET = /^[\w$.]+\(.*\);?$|^[a-z_$][\w$.[\]]*\s*([-+*\/%|&^]|\*\*|\?\?|\|\|)?={1,3}\s*\S|=>|^\s*(pub\s+)?fn\s+\w+\s*\(/;
+  const SNIPPET = /^[\w$.]+\(.*\);?$|^[a-z_$][\w$.[\]]*\s*([-+*\/%|&^]|\*\*|\?\?|\|\|)?={1,3}\s*\S|=>|^\s*(pub\s+)?fn\s+\w+\s*\(|^<\/?[a-z][\w-]*(\s[^<>]*)?\/?>$/;
 
   function looksLikeCommand(text) {
     const lines = text.split('\n').filter((l) => l.trim());
@@ -60,7 +60,7 @@
   }
 
   // Whole selections that are not a word to look up: a URL, an email address or a file path
-  const NOT_A_WORD = /^(https?:\/\/|www\.)\S+$|^[^\s@]+@[^\s@]+\.\w+$|^(~|[A-Za-z]:\\|\.{0,2}\/)\S*[\/\\]\S*$/i;
+  const NOT_A_WORD = /^(https?:\/\/|www\.)\S+$|^[^\s@]+@[^\s@]+\.\w+$|^(~|[A-Za-z]:\\|\.{0,2}\/)\S*[\/\\]\S*$|^[\w.-]+(\/[\w.-]+)*\/[\w-]+\.\w{1,5}$/i;
 
   function classifySelection(text, { editable = false, monospace = false } = {}) {
     const t = text.trim();
