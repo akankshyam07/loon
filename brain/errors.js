@@ -251,6 +251,18 @@ const KNOWN = [
     fix: ['Run `git pull --rebase` and push again.', 'Never force push to a shared branch unless you are sure.'],
   },
   {
+    match: /has no upstream branch/,
+    title: 'Git branch has no upstream',
+    explain: 'This branch only exists on your machine, so a plain `git push` does not know where to send it.',
+    fix: ['Run the command git suggests: `git push --set-upstream origin <branch>` (or `git push -u origin HEAD`).', 'After that, plain `git push` and `git pull` work on this branch.'],
+  },
+  {
+    match: /ERR_OSSL_EVP_UNSUPPORTED|digital envelope routines::unsupported/,
+    title: 'OpenSSL 3 rejects an old hash (Node)',
+    explain: 'Node 17 and newer use OpenSSL 3, which dropped the old MD4 hash that older webpack and react-scripts versions use.',
+    fix: ['Best fix: upgrade webpack or react-scripts to a current version.', 'Quick workaround: `NODE_OPTIONS=--openssl-legacy-provider npm start`.', 'Or switch to Node 16 with nvm.'],
+  },
+  {
     match: /cannot find symbol/,
     title: 'Cannot find symbol (Java)',
     explain: 'The compiler found a name it does not know. It is usually a typo, a missing import, or a method that does not exist on that type.',
@@ -455,7 +467,7 @@ const KNOWN = [
     fix: ['Add `key={item.id}` to the outermost element inside `.map()`.', 'Use the array index only if the list never reorders.'],
   },
   {
-    match: /duplicate key value violates unique constraint|UNIQUE constraint failed|Duplicate entry .* for key/,
+    match: /duplicate key value violates unique constraint|E11000 duplicate key|UNIQUE constraint failed|Duplicate entry .* for key/,
     title: 'Duplicate value (SQL)',
     explain: 'An insert or update would create a second row with a value that must be unique.',
     fix: ['Check the constraint name in the message to see which column it protects.', 'Look the row up first, or use an upsert (`ON CONFLICT` / `ON DUPLICATE KEY UPDATE`).'],

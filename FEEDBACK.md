@@ -3445,3 +3445,13 @@ As a user, "ok cool thanks" and a bare "cool" or "wow" after an answer went to t
 Fixed: the thanks rule in brain/resolve.js accepts up to two acknowledgement words before it ("ok cool thanks", "alright thanks"), and "cool", "neat", "sweet" and "wow" count as praise. Test added in test/brain.test.js and checked to fail before the change.
 
 Left for later: a bare "ok" or "okay" still goes to the model on purpose, because it may be the answer to "want me to go on?". "tell me a joke" and "meow" still go to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-23 — developer help, error table (nineteenth pass)
+
+Tried 45 pasted errors across git, Node, Python, Java, SQL, Rust, React and Kubernetes. Almost all got a fitting entry.
+
+As a user, three common errors had no instant answer and went to the model. "The current branch has no upstream branch" is the first thing every new branch hits. The Node 17 "digital envelope routines::unsupported" error is a classic after a Node upgrade. Mongo "E11000 duplicate key" was not recognized as a duplicate value.
+
+Fixed: added entries for the first two with the exact command to run, and the duplicate rule now covers E11000. Tests added in test/modes.test.js.
+
+Left for later: "linker cc not found" (Rust), "Killed: 9" on macOS and the Windows "cannot find the path specified" message still go to the model. The 5 failing tests in `npm test` here are the WordNet and demo ones from the sandbox install.

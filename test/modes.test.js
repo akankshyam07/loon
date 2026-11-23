@@ -205,6 +205,9 @@ test('errors: fingerprint ignores paths/values; known errors answer from the tab
   assert.match(lookupKnown('Access to fetch at x has been blocked by CORS policy'), /CORS/);
   assert.match(lookupKnown("error: pathspec 'main' did not match any file(s) known to git"), /branch or file/);
   assert.match(lookupKnown('docker: Error response from daemon: Conflict. The container name "/web" is already in use by container abc.'), /docker rm/);
+  assert.match(lookupKnown('fatal: The current branch feature has no upstream branch.\nTo push the current branch and set the remote as upstream, use'), /set-upstream/);
+  assert.match(lookupKnown('Error: error:0308010C:digital envelope routines::unsupported\n  opensslErrorStack'), /openssl-legacy-provider/);
+  assert.match(lookupKnown('MongoServerError: E11000 duplicate key error collection: app.users index: email_1'), /Duplicate value/);
   assert.match(lookupKnown('ssh: connect to host example.com port 22: Operation timed out'), /SSH connection timed out/);
   assert.match(lookupKnown('psql: error: connection to server on socket "/tmp/.s.PGSQL.5432" failed: No such file or directory'), /Postgres/);
   assert.match(lookupKnown('error: externally-managed-environment\n\n× This environment is externally managed'), /virtual environment/);
