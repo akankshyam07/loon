@@ -3465,3 +3465,13 @@ As a user, the clear misses were a relative file path like "src/app/main.js" and
 Fixed: a relative path whose last part has an extension now counts as not a word to look up, and a whole-selection HTML tag counts as code. "and/or" stays a word. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: "import os" is still a word, because "import taxes" is plain prose and the two look alike. "{{ name }}", "Error 404" and "Mon, Jan 5" still get Define. In this sandbox `npm test` shows 44 failures with and without the change because node_modules is not installed.
+
+## 2026-11-23 — memory commands, privacy switches (fourth pass)
+
+Tried 38 phrasings such as "stop remembering my location", "update my name to Sam", "turn off memory", "pause memory", "go private", "private mode on", "don't remember anything about me", "save this: …" and "rembember that…".
+
+As a user, the worst problem was that every way of asking Loon to stop remembering fell through to the model. The model cannot change a setting, so it could say it had stopped when it had not.
+
+Fixed: "stop remembering…", "don't remember anything", "turn off memory", "pause memory", "go private" and "private mode on" now answer in code and point to Settings → Privacy mode, the same way "clear my history" points to Settings. Test added in test/assistant.test.js.
+
+Left for later: "update my name to Sam", "stop remembering my location", "save this: …" and typos such as "rembember" still go to the model. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install and are identical on main.

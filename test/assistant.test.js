@@ -187,6 +187,15 @@ test('commands: "clear my history" points at Settings and never searches memorie
   assert.deepStrictEqual(parseCommand('what did i google about cats'), { action: 'recall', query: 'cats' });
 });
 
+test('commands: "stop remembering" and "go private" point at Privacy mode and never reach the model', () => {
+  for (const t of ['stop remembering my stuff', "don't remember anything about me", 'never save anything', 'turn off memory', 'pause memory', 'private mode on', 'go private', 'please stop remembering things.']) {
+    const c = parseCommand(t);
+    assert.ok(c && c.action === 'forget' && c.privacy && c.all, t);
+  }
+  assert.strictEqual(parseCommand('remember that I like private jets').action, 'remember');
+  assert.strictEqual(parseCommand('go private equity analysis'), null);
+});
+
 test('commands: bare "remember that" saves nothing, "never forget" saves a fact, "delete memory about X" forgets X', () => {
   assert.strictEqual(parseCommand('remember that'), null);
   assert.strictEqual(parseCommand('remember this'), null);
