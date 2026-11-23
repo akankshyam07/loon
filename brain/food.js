@@ -13,7 +13,7 @@ const PROTEIN = /\b(chicken|turkey|salmon|tuna|shrimp|prawns?|beef|steak|pork|to
 // Classic recipes hide meat or fish in these dishes (anchovy in Caesar, bacon in Cobb, guanciale in carbonara, beef stock in French onion)
 const MEAT = /\b(chicken|turkey|beef|steak|pork|bacon|ham|sausage|salami|pepperoni|lamb|veal|venison|duck|prosciutto|chorizo|meatballs?|(?:ham|cheese)?burger|hot dogs?|brisket|pastrami|ribs|anchov(y|ies)|fish|salmon|tuna|shrimp|prawns?|cod|crab|lobster|clams?|mussels|oysters?|scallops?|squid|calamari|octopus|gelatin|pancetta|guanciale|mortadella|bresaola|bolognese|ragu|carbonara|caesar|cobb|fish sauce|french onion|gyros?|doner|shawarma|schnitzel|paella|bouillabaisse|poke|tonkotsu|cheesesteak|blt|reuben|meat|meatloaf|gumbo|jambalaya|carne|carnitas|al pastor|lox|ceviche|foie gras|escargot|unagi|nicoise|surf and turf|sloppy joes?|bangers|haggis|wings?|dumplings?|gyoza|potstickers?|wontons?|siu mai|shumai|lasagn[ae]|pho|banh mi|california roll|corn dogs?|pigs in a blanket|shepherd'?s pie|cottage pie|bulgogi|mapo|bibimbap|miso soup|tom kha|tom yum|worcestershire|lard|bone broth|poutine|tonkatsu|rogan josh|keema|kebabs?|kababs?|club sandwich|chef['’]?s salad)\b/i;
 // "veggie burger" and friends name a meat dish on purpose without meat
-const MEAT_FREE = /\b(veggie|veg|vegetable|vegetarian|vegan|plant-based|meatless|impossible|beyond|cauliflower|spinach|mushroom|paneer|halloumi|tofu)\s+(?:(?:meat|beef)\s+)?(?:(?:ham|cheese)?burgers?|sausages?|hot dogs?|meatballs?|bacon|chicken|ribs|wings?|dumplings?|gyoza|potstickers?|wontons?|lasagn[ae]|poutine|pho|kebabs?|kababs?)\b/gi;
+const MEAT_FREE = /\b(veggie|veg|vegetable|vegetarian|vegan|plant-based|meatless|impossible|beyond|cauliflower|spinach|mushroom|paneer|halloumi|tofu|black bean|bean|garden|lentil|chickpea|jackfruit|soy|quinoa|(?:meat|beef|pork|chicken|fish|lamb|turkey)-(?:free|less))\s+(?:(?:meat|beef)\s+)?(?:(?:ham|cheese)?burgers?|sausages?|hot dogs?|meatballs?|bacon|chicken|ribs|wings?|dumplings?|gyoza|potstickers?|wontons?|lasagn[ae]|poutine|pho|kebabs?|kababs?|carnitas|bolognese|ragu|banh mi|nuggets?)\b/gi;
 // "Gyoza (veg)", "Wonton Soup [V]" and "Curry (GF, VG)": the menu itself says vegetarian, so implied meat in the dish name does not count
 const VEG_MARK = /[(\[]\s*(?:(?:gf|df|n|vg|ve|v|veg|vegan|vegetarian)\s*[,/&]\s*)*(?:vg|ve|v|veg|vegan|vegetarian)(?:\s*[,/&]\s*(?:gf|df|n|vg|ve|v|veg|vegan|vegetarian))*\s*[)\]]/i;
 const TIPS = [
@@ -46,7 +46,7 @@ function extractMenu(text) {
 function score(item) {
   const text = `${item.name} ${item.description}`.toLowerCase();
   // "chicken-fried steak" is a beef dish with a chicken-style crust, not chicken, and "chicken-free" or "vegan chicken" has none
-  const proteinText = text.replace(/\b(chicken|country)[- ]fried\b/g, 'fried').replace(MEAT_FREE, '').replace(/\b[a-z]+-free\b/g, '');
+  const proteinText = text.replace(/\b(chicken|country)[- ]fried\b/g, 'fried').replace(MEAT_FREE, '').replace(/\b[a-z]+-(?:free|less)\b/g, '');
   let heaviness = 0;
   const reasons = [];
   for (const [word, weight] of Object.entries({ ...HEAVY, ...LIGHT })) {
@@ -58,7 +58,7 @@ function score(item) {
   let proteins = [...new Set((proteinText.match(PROTEIN) || []).map((p) => p.toLowerCase()))];
   // "beer-battered cod" is one fish, not two proteins
   if (proteins.some((p) => ['salmon', 'tuna', 'cod'].includes(p))) proteins = proteins.filter((p) => p !== 'fish');
-  return { ...item, heaviness, reasons, proteins, likelyVegetarian: VEG_MARK.test(item.name) || !MEAT.test(text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(MEAT_FREE, '').replace(/\b[a-z]+-free\b/g, '')), tips: TIPS.filter(([re]) => re.test(text)).map(([, tip]) => tip) };
+  return { ...item, heaviness, reasons, proteins, likelyVegetarian: VEG_MARK.test(item.name) || !MEAT.test(text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(MEAT_FREE, '').replace(/\b[a-z]+-(?:free|less)\b/g, '')), tips: TIPS.filter(([re]) => re.test(text)).map(([, tip]) => tip) };
 }
 
 const GOALS = {

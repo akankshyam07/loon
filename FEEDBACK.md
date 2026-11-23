@@ -3495,3 +3495,13 @@ As a user, the worst problem was that natural ways to interrupt were read as new
 Fixed: the stop list now includes "hush now", "I said stop", "thanks stop", "that's enough thanks", "cancel that", "forget it" and "okay that's enough". "wait", "hold on", "not yet" and "no wait" stop Loon only while it is speaking or asking, so a plain "wait" stays a normal utterance. Test added in test/voice.test.js and checked to fail before the change.
 
 Left for later: "repeat that", "say that again", "slower" and "louder" still go to the model, since there is no replay or speed control yet. "what has the most protein" and "is this a good deal" are free questions without a food or shopping task. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-23 — food and menu (twenty-first pass)
+
+Tried 42 dish names such as "Black Bean Burger", "Garden Burger", "Beef-free Burger", "Chicken-less Nuggets", "Jackfruit Carnitas", "Lentil Bolognese", "Tofu Banh Mi", "Pho Chay" and "Fish Tacos".
+
+As a user, the worst problem was that obvious vegetarian dishes were hidden from the vegetarian filter. "Black Bean Burger" and "Garden Burger" were read as meat because "burger" is on the meat list, and "Beef-free Burger" and "Chicken-less Nuggets" were still meat (the leftover from the last run). "Chicken-less Nuggets" also listed chicken as its protein.
+
+Fixed: brain/food.js now treats bean, garden, lentil, chickpea, jackfruit and soy prefixes, and "meat/beef/pork/chicken/fish/lamb/turkey" followed by "-free" or "-less", as meat-free for burgers, carnitas, bolognese, ragu, banh mi and nuggets. "Gluten-free Chicken Wrap" is still meat. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: "Vegan Bacon Cheeseburger", "Pho Chay" and "Caesar-style Kale Salad" are still read as meat. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

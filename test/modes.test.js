@@ -643,3 +643,9 @@ test('menu: a (veg) or [V] marker on the dish name makes it vegetarian, other br
   for (const name of ['Gyoza (veg)', 'Wonton Soup [V]', 'Spring Rolls (GF, VG)', 'Dumplings (vegetarian)']) assert.strictEqual(food.score({ name, description: '' }).likelyVegetarian, true, name);
   for (const name of ['Gyoza (pork)', 'Wonton Soup (no veg)', 'Gyoza (with veg)', 'Chicken Wrap (veg option)']) assert.strictEqual(food.score({ name, description: '' }).likelyVegetarian, false, name);
 });
+
+test('menu: bean, garden and "-free" burgers and "-less" nuggets are vegetarian, real meat dishes are not', () => {
+  for (const name of ['Black Bean Burger', 'Garden Burger', 'Beef-free Burger', 'Chicken-less Nuggets', 'Jackfruit Carnitas', 'Lentil Bolognese']) assert.strictEqual(food.score({ name, description: '' }).likelyVegetarian, true, name);
+  for (const name of ['Bacon Burger', 'Pork Carnitas', 'Beef Bolognese']) assert.strictEqual(food.score({ name, description: '' }).likelyVegetarian, false, name);
+  assert.deepStrictEqual(food.score({ name: 'Chicken-less Nuggets', description: '' }).proteins, []);
+});
