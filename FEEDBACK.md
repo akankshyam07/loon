@@ -3405,3 +3405,13 @@ As a user, the short natural phrasings ("in english", "say this in english", "tr
 Fixed: the translate template in brain/intents.js now covers those phrasings and "can u" and "could u" are dropped as polite prefixes. Cases added in test/voice.test.js and checked to fail before the change.
 
 Left for later: "translate this to spanish", "what language is this", "tell me what this says", "translate this into plain english", typos like "trnaslate" and non-English asks still go to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-23 — developer help, JSON to DTO (sixteenth pass)
+
+Tried 15 pastes including HTML-escaped quotes, a line-number gutter ("1 {" and "1| {"), non-breaking spaces, smart quotes, comments, a curl line, JSONP, NDJSON, an XSSI prefix, a BOM, NaN, an HTTP response with headers, Python literals and a trailing comma.
+
+As a user, JSON copied from a docs site or a code viewer failed with a syntax error. Three cases broke: `&quot;` quotes, line numbers on the left, and non-breaking spaces from web pages. These are common when copying from a browser.
+
+Fixed: parseJson in brain/devtools.js now retries after removing those three kinds of clutter, only when the plain parse fails, so valid input is never changed. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: Kotlin keys such as `first-name` still lose their JSON name. A 20-digit integer becomes a double. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

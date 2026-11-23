@@ -315,6 +315,14 @@ test('JSON → DTO reads JS object literals: single quotes, bare keys, comments'
   assert.throws(() => parseJson('{bad'));
 });
 
+test('JSON → DTO reads pastes with a line-number gutter, HTML-escaped quotes or non-breaking spaces', () => {
+  assert.deepStrictEqual(parseJson('1 {\n2   "a": 1,\n3   "b": "x"\n4 }'), { a: 1, b: 'x' });
+  assert.deepStrictEqual(parseJson('1| {\n2|   "a": 1\n3| }'), { a: 1 });
+  assert.deepStrictEqual(parseJson('{&quot;a&quot;:1,&quot;b&quot;:[1,2]}'), { a: 1, b: [1, 2] });
+  assert.deepStrictEqual(parseJson('{\u00a0"a":\u00a01}'), { a: 1 });
+  assert.deepStrictEqual(parseJson('[\n1,\n2\n]'), [1, 2]);
+});
+
 test('JSON → DTO reads Python literals, JSON lines and JSON with prose around it', () => {
   assert.deepStrictEqual(parseJson("{'ok': True, 'x': None, 'n': False}"), { ok: true, x: null, n: false });
   assert.deepStrictEqual(parseJson('{"a": 1}\n{"a": 2}'), [{ a: 1 }, { a: 2 }]);

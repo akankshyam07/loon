@@ -88,7 +88,28 @@ function parseJson(text) {
   return value;
 }
 
+// Copies from a web page or editor often carry non-breaking spaces, HTML-escaped quotes or a line-number gutter.
+function unclutter(text) {
+  let t = String(text).replace(/[\u00a0\u2007\u202f]/g, ' ');
+  if (/&quot;/.test(t)) t = t.replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  const lines = t.split('\n').filter((l) => l.trim());
+  if (lines.length > 1 && lines.every((l) => /^\s*\d+(?:\s*[|:.)]\s*|\s+)\S/.test(l) || /^\s*\d+\s*[|:.)]?\s*$/.test(l))) {
+    t = t.replace(/^[ \t]*\d+(?:[ \t]*[|:.)][ \t]?|[ \t]+|[ \t]*$)/gm, '');
+  }
+  return t;
+}
+
 function parseJsonText(text) {
+  try {
+    return parseJsonRaw(text);
+  } catch (err) {
+    const cleaned = unclutter(text);
+    if (cleaned === String(text)) throw err;
+    return parseJsonRaw(cleaned);
+  }
+}
+
+function parseJsonRaw(text) {
   const json = String(text).replace(/^\s*```\w*\s*\n?|\n?\s*```\s*$/g, '');
   const attempt = (s) => {
     try {
