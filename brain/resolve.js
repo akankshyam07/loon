@@ -106,11 +106,11 @@ const CODE_ANSWERS = [
     answer: () => ({ mood: 'happy', text: 'Purring, thanks. *tail flick* What are we looking at?' }),
   },
   {
-    match: /^(?:(?:ok|okay|great|perfect|cool|awesome|nice|got it|gotcha|makes sense|that helped|lol|haha|oh+|ah+)[ ,]+)?(?:(?:many )?thanks+|thank you|thank u|thankyou|thanku|tnx|thanks a million|much obliged|(?:muchas )?gracias|merci(?: beaucoup)?|danke(?: sch[oö]n)?|grazie|obrigad[oa]|arigato|thx|thnx|thanx|tysm|tyvm|ty+|cheers|(?:much )?appreciated?(?: it)?)(?:[ ,]+(?:a lot|a ton|a bunch|so much|very much|again|kindly|mate|that helps|that helped|that was (?:really |very )?helpful|loon|cat|for (?:that|this|the (?:help|answer|explanation)|your help|helping|explaining)))*$/,
+    match: /^(?:(?:ok|okay|alright|great|perfect|cool|awesome|nice|got it|gotcha|makes sense|that helped|lol|haha|oh+|ah+)[ ,]+){0,2}(?:(?:many )?thanks+|thank you|thank u|thankyou|thanku|tnx|thanks a million|much obliged|(?:muchas )?gracias|merci(?: beaucoup)?|danke(?: sch[oö]n)?|grazie|obrigad[oa]|arigato|thx|thnx|thanx|tysm|tyvm|ty+|cheers|(?:much )?appreciated?(?: it)?)(?:[ ,]+(?:a lot|a ton|a bunch|so much|very much|again|kindly|mate|that helps|that helped|that was (?:really |very )?helpful|loon|cat|for (?:that|this|the (?:help|answer|explanation)|your help|helping|explaining)))*$/,
     answer: () => ({ mood: 'happy', text: 'Anytime. *purrs*' }),
   },
   {
-    match: /^(?:(?:wow|aw+|ok|okay)[ ,]+)?(?:(?:that(?:'s| was| is)|this is|you(?:'re| are)|u r|it(?:'s| was)) )?(?:(?:so|very|really|super|pretty) )?(?:great|awesome|amazing|perfect|brilliant|helpful|wonderful|clever|smart|excellent|fantastic|the best|nice|good)(?: (?:one|job|work|answer|help|cat|kitty|bot))?(?: (?:loon|kitty))?$|^(?:well done|you (?:rock|rule)|love (?:it|that|this|you))(?: loon)?$/,
+    match: /^(?:(?:wow|aw+|ok|okay)[ ,]+)?(?:(?:that(?:'s| was| is)|this is|you(?:'re| are)|u r|it(?:'s| was)) )?(?:(?:so|very|really|super|pretty) )?(?:great|awesome|amazing|perfect|brilliant|helpful|wonderful|clever|smart|excellent|fantastic|the best|nice|good|cool|neat|sweet|wow)(?: (?:one|job|work|answer|help|cat|kitty|bot))?(?: (?:loon|kitty))?$|^(?:well done|you (?:rock|rule)|love (?:it|that|this|you))(?: loon)?$/,
     answer: () => ({ mood: 'happy', text: 'Aw, thanks. *purrs*' }),
   },
   {

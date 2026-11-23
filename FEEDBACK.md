@@ -3435,3 +3435,13 @@ As a user, the worst problem was a silent loss. Typing seven allergies saved onl
 Fixed: the list reader in brain/personal.js now keeps up to 12 items, treats "and also" as "and", and the name reader drops "name:" and "my friends/family/mom/dad call me". Test added in test/personal.test.js and checked to fail before the change.
 
 Left for later: "it's me, Kai" saves "Call me me". "Lactose", "celiac" and "Peanut allergy" are stored as allergies with odd wording ("allergic to celiac"). Notes such as "nuts - severe" keep the note in the text. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-23 — follow-up conversations, acknowledgements (seventeenth pass)
+
+Tried 47 short replies inside a thread, such as "ok", "cool", "wow", "ok cool thanks", "alright thanks", "yes", "no", "go on", "shorter", "why", "tell me a joke" and a few emoji.
+
+As a user, "ok cool thanks" and a bare "cool" or "wow" after an answer went to the language model for a wait and a wordy reply, while "thanks" and "nice" were instant.
+
+Fixed: the thanks rule in brain/resolve.js accepts up to two acknowledgement words before it ("ok cool thanks", "alright thanks"), and "cool", "neat", "sweet" and "wow" count as praise. Test added in test/brain.test.js and checked to fail before the change.
+
+Left for later: a bare "ok" or "okay" still goes to the model on purpose, because it may be the answer to "want me to go on?". "tell me a joke" and "meow" still go to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
