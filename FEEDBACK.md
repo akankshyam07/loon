@@ -3515,3 +3515,13 @@ As a user, nearly everything hit the offline dictionary. Two ordinary phrasings 
 Fixed: the dictionary rule drops a leading "do you know" before "what", and the antonym rule accepts a "what is" lead-in on "X's opposite". Assertions added to the existing tests in test/brain.test.js.
 
 Left for later: "what the heck does X mean", "another word for very big" and "how do you spell X" still go to the model. The 5 failures in `npm test` are the usual sandbox ones (missing WordNet data).
+
+## 2026-11-23 — routines (fourth pass)
+
+Tried 56 routine inputs such as "every day at 9am, remind me to stretch.", "every 90 minutes…", "every day at 1930…", "remind me weekly to clean", "every monday at 9am and every thursday at 3pm…", plus 25 routine commands such as "turn the stretch routine back on", "stop telling me to stretch" and "never remind me to stretch again".
+
+As a user, creating routines held up. Commands were the weak spot. "Turn the stretch routine back on" and "stop telling me to stretch again" were not recognised, so they went to the language model instead of pausing or resuming the routine.
+
+Fixed: brain/routines.js now reads "turn <routine or reminder> on/off" with an optional "back", and "stop telling me to X" with an optional "again". "Turn the music off" is still left alone. Test added in test/routines.test.js and checked to fail before the change.
+
+Left for later: "9am and 5pm" and "every first of the month" still get a card to fix by hand. "Never remind me…", "unschedule X", "clear routines" and "delete routine 2" are not understood. The 5 failures in `npm test` are the usual sandbox ones (missing WordNet data).

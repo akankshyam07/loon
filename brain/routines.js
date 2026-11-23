@@ -421,9 +421,11 @@ function parseRoutineCommand(input) {
   if ((m = text.match(/^(pause|resume|unpause|disable|enable|turn off|turn on|switch off|switch on|mute|unmute) (.+)$/i))) {
     return { action: 'routinePause', on: /^(?:resume|unpause|enable|turn on|switch on|unmute)$/i.test(m[1]), query: m[2] };
   }
+  // "turn the stretch routine back on": the verb comes before the routine and the switch after it.
+  if ((m = text.match(/^turn (.+?) (?:back )?(on|off)$/i)) && mentionsRoutine(m[1])) return { action: 'routinePause', on: /^on$/i.test(m[2]), query: m[1] };
   if ((m = text.match(/^(?:delete|remove|cancel) (.+)$/i))) return { action: 'routineDelete', query: m[1] };
   // "stop" is the reversible one: it pauses. Without a routine or reminder word it is left alone ("stop the music").
-  if ((m = text.match(/^stop (?:reminding me (?:to |about |of )?(.+)|(.+))$/i)) && (m[1] || mentionsRoutine(m[2]))) return { action: 'routinePause', on: false, query: m[1] || m[2] };
+  if ((m = text.match(/^stop (?:(?:reminding|telling) me (?:to |about |of )?(.+?)(?: again)?|(.+))$/i)) && (m[1] || mentionsRoutine(m[2]))) return { action: 'routinePause', on: false, query: m[1] || m[2] };
   return null;
 }
 

@@ -418,6 +418,10 @@ test('routines: "show my routines", "pause the water reminder", "delete the Frid
   assert.deepStrictEqual(R.parseRoutineCommand('list my routines'), { action: 'routines' });
   assert.deepStrictEqual(R.parseRoutineCommand('stop the vitamins routine'), { action: 'routinePause', on: false, query: 'the vitamins routine' });
   assert.deepStrictEqual(R.parseRoutineCommand('stop reminding me to stretch'), { action: 'routinePause', on: false, query: 'stretch' });
+  assert.deepStrictEqual(R.parseRoutineCommand('stop telling me to stretch again'), { action: 'routinePause', on: false, query: 'stretch' });
+  assert.deepStrictEqual(R.parseRoutineCommand('turn the stretch routine back on'), { action: 'routinePause', on: true, query: 'the stretch routine' });
+  assert.deepStrictEqual(R.parseRoutineCommand('turn my rent reminder off'), { action: 'routinePause', on: false, query: 'my rent reminder' });
+  assert.strictEqual(R.parseRoutineCommand('turn the music off'), null);
   assert.deepStrictEqual(R.parseRoutineCommand('cancel the stretch reminder'), { action: 'routineDelete', query: 'the stretch reminder' });
   assert.strictEqual(R.parseRoutineCommand('stop the music'), null);
 });
