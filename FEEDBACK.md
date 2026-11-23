@@ -3475,3 +3475,13 @@ As a user, the worst problem was that every way of asking Loon to stop rememberi
 Fixed: "stop remembering…", "don't remember anything", "turn off memory", "pause memory", "go private" and "private mode on" now answer in code and point to Settings → Privacy mode, the same way "clear my history" points to Settings. Test added in test/assistant.test.js.
 
 Left for later: "update my name to Sam", "stop remembering my location", "save this: …" and typos such as "rembember" still go to the model. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install and are identical on main.
+
+## 2026-11-23 — shopping and unit price (twenty-first pass)
+
+Tried 34 size strings and 18 price strings such as "6 x 8.45 fl oz", "Net Wt 14.5 oz (411g)", "1 qt 14 fl oz", "Pack of 2 (2 x 500ml)", "$12.99 ($0.54/oz)", "Was $20.00, now $15.00" and "¥1,200".
+
+As a user, nearly everything was right. The one wrong answer was "3 bottles of 500 ml", which was read as 500 ml, so the unit price came out three times too high.
+
+Fixed: parseQuantity now reads "N cans/bottles/bags of M" as a count of N. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: "30 servings" and "1 each" still return nothing. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
