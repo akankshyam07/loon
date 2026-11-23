@@ -3,9 +3,12 @@
 // anything left is an ordinary question for the resolver ladder.
 const { parseCommand, normalizeSpoken } = require('./commands');
 
-const STOP = /^(stop( talking| speaking)?|cancel|never ?mind|shh+|quiet|be quiet|go quiet|mute|mute (it|yourself)|silence|no more talking|hush|shut up|that's enough|that is enough|enough|ok(ay)? (stop|enough)|stop it)$/i;
+const STOP = /^(stop( talking| speaking)?|cancel|never ?mind|shh+|quiet|be quiet|go quiet|mute|mute (it|yourself)|silence|no more talking|hush( now)?|shut up|(i said )?stop|that's enough|that is enough|enough|ok(ay)? (stop|enough|that's enough)|stop it|(thanks|thank you),? stop|(that's|that is) enough,? (thanks|thank you)|(never ?mind|forget|cancel|drop) (it|that))$/i;
 const YES = /^((yes|yeah|yep|yup|sure|thing|ok(ay)?|absolutely|definitely|of course|do it|go ahead|go for it|send it|confirm|please do|please|correct|right)( |$))+$/i;
 const NO = /^(oh )?((no|nope|nah)( (no|nope|nah|don't|do not|stop|cancel|never ?mind|thanks|thank you|not now))*|don't|do not|(don't|do not) do it|wrong|not now|cancel|stop|never ?mind)$/i;
+
+// Only an interruption while Loon is talking or asking; as a plain utterance "wait" is just a word.
+const HOLD = /^(no )?(wait|hold on|hang on|not yet|one (sec|second|moment))$/i;
 
 // Fixed phrases → task/toggle. Alternatives written as regex; matched on the normalized utterance.
 const TEMPLATES = [
@@ -61,7 +64,7 @@ function normalize(transcript) {
 function route(transcript, { awaitingConfirmation = false, speaking = false } = {}) {
   const text = normalize(transcript || '');
   if (!text) return { type: 'empty' };
-  if ((speaking || awaitingConfirmation) && STOP.test(text)) return { type: 'stop' };
+  if ((speaking || awaitingConfirmation) && (STOP.test(text) || HOLD.test(text))) return { type: 'stop' };
   if (awaitingConfirmation) {
     if (YES.test(text)) return { type: 'yes' };
     if (NO.test(text)) return { type: 'no' };

@@ -92,6 +92,15 @@ test('open questions still go to the model; yes/no only count while confirming',
   assert.deepStrictEqual(route('Define serendipity.'), { type: 'task', task: 'define', slot: 'text', text: 'serendipity' });
 });
 
+test('spoken interruptions stop Loon, and "wait" only counts while it talks or asks', () => {
+  for (const p of ['hush now', "that's enough thanks", 'I said stop', 'thanks stop', 'cancel that', 'forget it', 'okay that\'s enough', 'wait', 'hold on', 'not yet', 'no wait']) {
+    assert.strictEqual(route(p, { speaking: true }).type, 'stop', p);
+    assert.strictEqual(route(p, { awaitingConfirmation: true }).type, 'stop', p);
+  }
+  assert.strictEqual(route('wait').type, 'question');
+  assert.strictEqual(route('cancel that').type, 'stop');
+});
+
 test('"Hey Loon" wake phrase: acts on commands after it, ignores everything else', () => {
   assert.deepStrictEqual(wakePhrase('Hey Loon, what time is it?'), { rest: 'what time is it?' });
   assert.deepStrictEqual(wakePhrase('Loon.'), { rest: '' });

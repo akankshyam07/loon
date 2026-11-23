@@ -3485,3 +3485,13 @@ As a user, nearly everything was right. The one wrong answer was "3 bottles of 5
 Fixed: parseQuantity now reads "N cans/bottles/bags of M" as a count of N. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: "30 servings" and "1 each" still return nothing. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-23 — voice intents, interrupting Loon (fifteenth pass)
+
+Tried 48 spoken phrasings such as "hush now", "that's enough thanks", "I said stop", "thanks stop", "cancel that", "forget it", "wait", "hold on", "not yet", "no wait", "repeat that" and "sounds good", plain and at a confirm card.
+
+As a user, the worst problem was that natural ways to interrupt were read as new questions. "hush now" or "cancel that" at a confirm card left the card open and sent the words to the model.
+
+Fixed: the stop list now includes "hush now", "I said stop", "thanks stop", "that's enough thanks", "cancel that", "forget it" and "okay that's enough". "wait", "hold on", "not yet" and "no wait" stop Loon only while it is speaking or asking, so a plain "wait" stays a normal utterance. Test added in test/voice.test.js and checked to fail before the change.
+
+Left for later: "repeat that", "say that again", "slower" and "louder" still go to the model, since there is no replay or speed control yet. "what has the most protein" and "is this a good deal" are free questions without a food or shopping task. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
