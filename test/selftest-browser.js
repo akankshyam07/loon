@@ -154,7 +154,7 @@ async function run(ctx, check) {
 
     await selectAndWait('#fr');
     const translated = await clickChip('translate', 60000);
-    check('Translate runs on the offline translator', /cat/i.test(translated?.text) && /offline translator/.test(translated?.tier), translated?.text.slice(0, 70));
+    check('Translate runs on the offline translator', /cat/i.test(translated?.text) && /offline translator/.test(translated?.tier), `${translated?.tier || 'no tier'} · ${translated?.text?.slice(0, 70) ?? 'no answer'}`);
 
     await selectAndWait('#s1');
     const explained = await clickChip('explain');
