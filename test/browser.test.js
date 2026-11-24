@@ -370,3 +370,13 @@ test('redaction hides "pin number is", "password was" and "set my password to" v
   assert.doesNotMatch(out, /4921|hunter/);
   assert.equal(redact('password to log in').count, 0);
 });
+
+test('redaction hides a password written as "password for X: value"', () => {
+  for (const s of ['the new password for gmail: Tr0ub4dor&3', 'pw for wifi: abc123xyz', 'Passwort für Netflix: Geheim123']) {
+    const { text, count } = redact(s);
+    assert.match(text, /\[redacted:secret\]/);
+    assert.doesNotMatch(text, /Tr0ub4dor|abc123xyz|Geheim123/);
+    assert.strictEqual(count, 1);
+  }
+  assert.strictEqual(redact('passwords for new accounts: must be 12 characters').count, 0);
+});

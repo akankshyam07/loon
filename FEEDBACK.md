@@ -3535,3 +3535,13 @@ As a user, nearly all of them were answered in code. The worst result was a plai
 Fixed: whole numbers below one quadrillion are now written in full with commas, and the typographic minus is read as a normal minus. Test added in test/brain.test.js and checked to fail before the change.
 
 Left for later: "10k + 5k", "5 million / 3", "3/4 of 100", "cube of 3", "pi * 2", "2(3+4)", "10% of 250 plus 5" and "how much is 3 dozen" still go to the model. "7 into 21" and "0.5 as a fraction" too. The 5 failing tests in `npm test` here are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-24 — memory and privacy, redaction (nineteenth pass)
+
+Tried 31 lines such as wifi and gmail passwords in prose, cards with expiry and CVV, SSNs, IBANs, API keys, connection strings, env lines, reset links with tokens, French and German passwords and a private key block.
+
+As a user, most lines were already covered. The one common phrasing that leaked was a password for a named service. "the new password for gmail: Tr0ub4dor&3", "pw for wifi: abc123xyz" and "Passwort für Netflix: Geheim123" went through unredacted, because the "password for X" rule only accepted a dash or "is" and not a colon.
+
+Fixed: that rule now accepts a colon, the names "pw" and "passwort", and "für". It still needs a digit in the value, so "passwords for new accounts: must be 12 characters" stays readable. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: "my wifi password is correct horse battery" (a passphrase of plain words) is not redacted, and neither is "password: p@ss w0rd" past the first word. Both risk hiding normal sentences. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
