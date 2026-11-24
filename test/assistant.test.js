@@ -58,6 +58,8 @@ test('commands: reminders, events, open, find, notes, memory; questions fall thr
   for (const [q, t] of [['open chrome 🙂', 'chrome'], ['open slack for me', 'slack'], ['open Slack now', 'Slack'], ['open the music app', 'music']]) assert.deepStrictEqual(parseCommand(q, NOW), { action: 'open', target: t, kind: 'app' }, q);
   // Web services have no Mac app to launch, and spaced links and dotfiles go to the chat.
   assert.deepStrictEqual(parseCommand('open gmail', NOW), { action: 'open', target: 'https://mail.google.com', kind: 'url' });
+  for (const [q, t] of [['open task manager', 'Activity Monitor'], ['open cmd', 'Terminal'], ['open explorer', 'Finder'], ['open notepad', 'TextEdit']]) assert.deepStrictEqual(parseCommand(q, NOW), { action: 'open', target: t, kind: 'app' }, q);
+  for (const [q, t] of [['open reddit', 'https://www.reddit.com'], ['open twitter', 'https://x.com'], ['open amazon', 'https://www.amazon.com']]) assert.deepStrictEqual(parseCommand(q, NOW), { action: 'open', target: t, kind: 'url' }, q);
   assert.deepStrictEqual(parseCommand('open YouTube', NOW), { action: 'open', target: 'https://www.youtube.com', kind: 'url' });
   assert.strictEqual(parseCommand('open http://localhost:3000/a b', NOW), null);
   assert.strictEqual(parseCommand('open .env', NOW), null);

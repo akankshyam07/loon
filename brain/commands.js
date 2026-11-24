@@ -143,12 +143,12 @@ function parseCommand(input, now = new Date()) {
     if (/^(?:an? |file |link$|app$|page$|website$|site$)| (?:and|&) /i.test(target)) return null;
     // "settings" is not an app name on macOS, and a pane like "wifi settings" has no app to launch, so the chat explains.
     if (/^.+ settings$/i.test(target)) return null;
-    const alias = { settings: 'System Settings', 'system preferences': 'System Settings', preferences: 'System Settings', vscode: 'Visual Studio Code', 'vs code': 'Visual Studio Code', email: 'Mail', calc: 'Calculator' }[target.toLowerCase()];
+    const alias = { settings: 'System Settings', 'system preferences': 'System Settings', preferences: 'System Settings', vscode: 'Visual Studio Code', 'vs code': 'Visual Studio Code', email: 'Mail', calc: 'Calculator', 'task manager': 'Activity Monitor', cmd: 'Terminal', 'command prompt': 'Terminal', explorer: 'Finder', 'control panel': 'System Settings', notepad: 'TextEdit' }[target.toLowerCase()];
     if (alias) return { action: 'open', target: alias, kind: 'app' };
     const folder = target.match(/^(?:~\/|(?:my )?(?:the )?)(downloads|documents|desktop|pictures|movies|music|applications)(?: folder)?$/i);
     if (folder && raw === target) return { action: 'open', target: `~/${folder[1][0].toUpperCase()}${folder[1].slice(1).toLowerCase()}`.replace('~/Applications', '/Applications'), kind: 'folder' };
     // These are websites with no Mac app, so `open -a` would only fail after the confirm card.
-    const site = { gmail: 'mail.google.com', youtube: 'www.youtube.com', netflix: 'www.netflix.com', 'google drive': 'drive.google.com', 'google docs': 'docs.google.com', 'google maps': 'maps.google.com', 'google calendar': 'calendar.google.com' }[target.toLowerCase()];
+    const site = { gmail: 'mail.google.com', youtube: 'www.youtube.com', netflix: 'www.netflix.com', 'google drive': 'drive.google.com', 'google docs': 'docs.google.com', 'google maps': 'maps.google.com', 'google calendar': 'calendar.google.com', reddit: 'www.reddit.com', twitter: 'x.com', instagram: 'www.instagram.com', facebook: 'www.facebook.com', linkedin: 'www.linkedin.com', amazon: 'www.amazon.com', wikipedia: 'www.wikipedia.org' }[target.toLowerCase()];
     if (site) return { action: 'open', target: `https://${site}`, kind: 'url' };
     // A link with a space in it, or a dotfile like ".env", is not something Loon can launch.
     if (/^https?:\/\/\S*\s|^\./i.test(target)) return null;

@@ -3605,3 +3605,13 @@ As a user, most were answered from the table. The common misses were the plain `
 Fixed: the push rule and the certificate rule now match those lines, and there are new entries for the Rust unwrap panic, the React object child and the missing Xcode tools. Tests added in test/modes.test.js and checked to fail before the change.
 
 Left for later: Spring's HikariPool timeout and the Whitelabel error page, SQL "Unknown column", detached HEAD, TS7006 implicit any, Go deadlock, C++ "undefined reference" and "not declared in this scope", `Invalid or unexpected token`, the GitHub password authentication removal, gyp build errors and Puppeteer launch failures still go to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-24 — open and launch commands (tenth pass)
+
+Tried 66 phrasings such as "open vscode", "open task manager", "open cmd", "open reddit", "open twitter", "open amazon", "open notepad", "open control panel", "open teams" and "open the app store".
+
+As a user, "open reddit", "open twitter" and "open amazon" showed a confirm card to launch an app with that name, which does not exist on a Mac, so it failed only after I pressed confirm. Windows habits such as "open task manager", "open cmd", "open notepad" and "open control panel" did the same.
+
+Fixed: reddit, twitter, instagram, facebook, linkedin, amazon and wikipedia now open their website. Task manager, cmd, command prompt, explorer, control panel and notepad map to Activity Monitor, Terminal, Finder, System Settings and TextEdit. Test added in test/assistant.test.js.
+
+Left for later: "open music" opens the Music folder, where most Mac users mean the Music app. "open vscode" style names such as "open code" and "open vs" still offer an app with that exact name. `npm test` shows the same 5 WordNet and demo failures as main in this sandbox.
