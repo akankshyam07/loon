@@ -117,7 +117,9 @@ function parseCommand(input, now = new Date()) {
     const { date, rest } = extractWhen(m[1], now);
     // "remind me tomorrow to buy milk" and "next friday about the dentist" leave the "to"/"about" in front of the task.
     // "remind me on friday" has no task; a reminder titled "on friday" would be noise.
-    const title = tidy(rest.replace(/^(?:to|about)\s+/i, '')) || (date ? 'Reminder' : tidy(m[1]));
+    // "remind me about this tomorrow" has no task text either; "this" alone says nothing when the reminder fires.
+    const task = tidy(rest.replace(/^(?:to|about)\s+/i, ''));
+    const title = task && !/^(?:this|that|it)$/i.test(task) ? task : (date ? 'Reminder' : tidy(m[1]));
     // A time already gone ("yesterday", "last friday") would fire at once or never; leave it blank so the card shows "no time".
     return /^(?:to|about)$/i.test(title) ? null : { action: 'reminder', title, when: date && date > now ? date : null };
   }

@@ -95,6 +95,7 @@ test('commands: focus with the length first, and a reminder with only a day gets
   assert.deepStrictEqual(parseCommand('focus for an hour', NOW), { action: 'focus', minutes: 60 });
   assert.strictEqual(parseCommand('focus a', NOW), null);
   assert.strictEqual(parseCommand('remind me on friday', NOW).title, 'Reminder');
+  for (const q of ['remind me about this tomorrow', 'remind me about that on friday', 'remind me about it tomorrow']) assert.strictEqual(parseCommand(q, NOW).title, 'Reminder', q);
 });
 
 test('commands: the time after "at" wins over a time inside the title, and focus takes decimals', () => {

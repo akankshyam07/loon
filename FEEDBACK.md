@@ -3635,3 +3635,13 @@ As a user, most phrasings worked. The bad one was "on the first of every month r
 Fixed: brain/routines.js now reads day-of-month words ("first" to "thirty-first") in "the first of every month", "every first of the month" and "every month on the fifteenth" as that day. Test added in test/routines.test.js and checked to fail before the change.
 
 Left for later: "9am and 5pm", "every last friday", "clear routines", "unschedule X", "never remind me to X" and "skip X today" are still not understood. "Every day remind me" makes a routine whose message is "Remind me". The 5 failures in `npm test` are the usual sandbox ones (missing WordNet data).
+
+## 2026-11-24 — follow-up conversations, short replies inside a thread (eighteenth pass)
+
+Tried 58 short follow-ups after an answer, such as "shorter", "why", "go on", "yes", "tl;dr", "eli5", "in spanish", "copy that", "save that", "stop" and "remind me about this tomorrow".
+
+As a user, almost all of them correctly go to the model with the thread as context, and "thanks" and "never mind" are instant. The one clear failure was "remind me about this tomorrow", which made a reminder titled "this". When it fires the reminder says nothing.
+
+Fixed: a reminder whose task is only "this", "that" or "it" is now titled "Reminder", the same as "remind me on friday". Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: "copy that", "save that", "read that out loud" and "stop" are not commands, so they reach the model, which cannot copy, save or speak. Loon should offer the Copy and Save buttons from the answer instead. A reminder about "this" cannot yet carry the text of the last answer. A bare "later" mid-thread gets the goodnight reply.
