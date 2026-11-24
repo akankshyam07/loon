@@ -3545,3 +3545,13 @@ As a user, most lines were already covered. The one common phrasing that leaked 
 Fixed: that rule now accepts a colon, the names "pw" and "passwort", and "für". It still needs a digit in the value, so "passwords for new accounts: must be 12 characters" stays readable. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: "my wifi password is correct horse battery" (a passphrase of plain words) is not redacted, and neither is "password: p@ss w0rd" past the first word. Both risk hiding normal sentences. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-24 — typed questions, math and conversions (second pass)
+
+Tried 80 inputs such as "sqrt(16)", "20% tip on 45", "5 ft 3 in in cm", "how many oz in a pound", "what is 15% of 80 please", "can you calculate 2+2", "hey loon what's 2+2, thanks!" and "convert 5 miles to kilometers please".
+
+As a user, the calculator was solid on the sums themselves. The annoying part was manners. Adding "please", "can you", "hey loon" or ", thanks" to a sum sent it to the language model, which is slower and can get the number wrong.
+
+Fixed: calc now uses the shared `stripPoliteness` from brain/commands.js before matching. Test added in test/brain.test.js.
+
+Left for later: "thx" and "tell me 5 times 5" still miss. Spelled-out numbers ("five plus five", "1 million times 3"), implicit multiplication like "3(4+1)", "1 ton to kg", area units and currency are not handled. "1,000 + 2,500" echoes the expression as "1000 + 2500". Exact results such as "12 inches is about 1 feet" say "about". The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install and fail the same way without this change.

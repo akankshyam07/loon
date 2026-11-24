@@ -1,4 +1,5 @@
 // Arithmetic, percentages and unit conversions: numbers are code's job, so these never reach the model.
+const { stripPoliteness } = require('./commands');
 const LEAD = /^(?:(?:what(?:'?s| is)|how much is|calculate|calc|compute|convert)\s+)?/;
 
 const UNITS = {
@@ -82,7 +83,7 @@ function convert(value, from, to) {
 
 // Returns the answer text, or null when the question isn't plain math.
 function calc(question) {
-  const q = question.toLowerCase().replace(/[’‘]/g, "'").replace(/(\d),(?=\d{3}\b)/g, '$1').replace(/[\s?!.=]+$/, (tail, at, all) => (tail[0] === '!' && /^\D*\d+$/.test(all.slice(0, at)) ? '!' : '')).trim(); // "5!" keeps its "!"
+  const q = stripPoliteness(question).toLowerCase().replace(/[’‘]/g, "'").replace(/(\d),(?=\d{3}\b)/g, '$1').replace(/[\s?!.=]+$/, (tail, at, all) => (tail[0] === '!' && /^\D*\d+$/.test(all.slice(0, at)) ? '!' : '')).trim(); // "5!" keeps its "!"
 
   const lead = q.match(LEAD)[0];
   // "15% of $80" is money: drop the symbol to calculate, put it back on the answer

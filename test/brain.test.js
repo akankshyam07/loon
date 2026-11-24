@@ -481,6 +481,14 @@ test('"word meaning of X" is a definition, not a synonym ask', () => {
   assert.strictEqual(synonymTerm('words meaning happy'), 'happy');
 });
 
+test('calc ignores polite wrapping around a sum', () => {
+  const { calc } = require('../brain/calc');
+  assert.match(calc('what is 15% of 80 please'), /^12\./);
+  assert.match(calc('can you calculate 2+2'), /= 4$/);
+  assert.match(calc('hey loon what is 2+2, thanks!'), /= 4$/);
+  assert.match(calc('convert 5 miles to kilometers please'), /8\.0467 kilometers/);
+});
+
 test('calc writes big whole numbers in full and reads a typographic minus', () => {
   const { calc } = require('../brain/calc');
   assert.match(calc('1000000 * 1000000'), /= 1,000,000,000,000$/);
