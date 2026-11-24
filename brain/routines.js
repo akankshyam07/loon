@@ -79,6 +79,7 @@ function take(state, re) {
 }
 
 const NUMBER_WORDS = { two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, twelve: 12, fifteen: 15, twenty: 20, thirty: 30 };
+const ORDINAL_WORDS = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth', 'fourteenth', 'fifteenth', 'sixteenth', 'seventeenth', 'eighteenth', 'nineteenth', 'twentieth', 'twenty-first', 'twenty-second', 'twenty-third', 'twenty-fourth', 'twenty-fifth', 'twenty-sixth', 'twenty-seventh', 'twenty-eighth', 'twenty-ninth', 'thirtieth', 'thirty-first'];
 const COUNT = `\\d+|${Object.keys(NUMBER_WORDS).join('|')}`;
 const countWord = (w) => (!w || /^(?:an?|one)$/i.test(w) ? 1 : /^other$/i.test(w) ? 2 : /^half an?$/i.test(w) ? 0.5 : NUMBER_WORDS[w.toLowerCase()] || Number(w));
 const unitMinutes = (u) => (/^h/i.test(u) ? 60 : 1);
@@ -88,6 +89,8 @@ const unitMinutes = (u) => (/^h/i.test(u) ? 60 : 1);
 function parseSchedule(input, now = new Date(), { allowOnce = false } = {}) {
   // "7.30pm" reads as 7:30pm.
   const state = { text: ` ${String(input).replace(/[()]/g, ' ').replace(/\b(\d{1,2})\.(\d{2})(?=\s*[ap]\.?m\b)/gi, '$1:$2').replace(/\b(half|quarter) (past|to) (\d{1,2})\b(?!:)/gi, clockWords)} ` };
+  // "on the first of every month" is the 1st; the spelled-out day would otherwise be read as today's date.
+  state.text = state.text.replace(new RegExp(String.raw`\b(${ORDINAL_WORDS.join('|')})(?=\s+of\s+(?:every|each|the)\s+month\b)|(?<=\b(?:every|each)\s+month\s+on\s+the\s+)(${ORDINAL_WORDS.join('|')})\b|(?<=\b(?:every|each)\s+)(first)(?=\s+of\s+the\s+month\b)`, 'gi'), (_, a, b, c) => `${ORDINAL_WORDS.indexOf((a || b || c).toLowerCase()) + 1}th`);
   // "every other friday" is the 14-day cycle that "every other week on friday" already makes.
   state.text = state.text.replace(new RegExp(String.raw`\bevery\s+(?:other|second)\s+(${DAY_WORD})\b`, 'i'), 'every other week on $1');
   // "every 3rd thursday" is neither a date nor a weekday, so the confirm card would show the wrong schedule.

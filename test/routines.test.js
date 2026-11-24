@@ -557,3 +557,11 @@ test('"every 3rd thursday" is declined instead of becoming the 3rd of every mont
   assert.equal(R.parseRoutine('every 1st monday at 9 standup', { now: NOW }), null);
   assert.equal(R.parseRoutine('every 3rd at 4 pay rent', { now: NOW }).schedule.monthDay, 3);
 });
+
+test('a day of the month spelled out as a word is that day, not today', () => {
+  for (const [text, day] of [['on the first of every month remind me to pay rent', 1], ['every first of the month remind me to pay rent', 1], ['every month on the fifteenth remind me to pay bills', 15], ['on the twenty-first of each month remind me to x', 21]]) {
+    const draft = R.parseRoutine(text, { now: NOW });
+    assert.strictEqual(draft.schedule && draft.schedule.monthDay, day, text);
+    assert.ok(!/\b(?:first|fifteenth|twenty-first|remind)\b/i.test(draft.payload.message), draft.payload.message);
+  }
+});

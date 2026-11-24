@@ -3625,3 +3625,13 @@ As a user, the worst problem was that dishes the menu itself calls vegan were hi
 Fixed: brain/food.js now treats a name containing "vegan" or "plant based" as vegetarian and drops meat and fish from its protein list. Eel is on the meat list. Test added in test/modes.test.js.
 
 Left for later: "Pho Chay", "Caesar-style Kale Salad" and "Tempeh Reuben" are still read as meat. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-24 — routines (fifth pass)
+
+Tried 26 routine inputs such as "every weekday at 8:30 am remind me to take meds", "every 2 weeks on friday…", "EVERY DAY AT 9AM…", "every day at 25:00…", "on the first of every month remind me to pay rent", plus 15 routine commands such as "clear routines", "unschedule stretch" and "skip stretch today".
+
+As a user, most phrasings worked. The bad one was "on the first of every month remind me to pay rent". Loon scheduled it for today's date (the 24th) and put "The first of remind me to…" in the message. "Every month on the fifteenth" did the same, and "every first of the month" got no schedule at all.
+
+Fixed: brain/routines.js now reads day-of-month words ("first" to "thirty-first") in "the first of every month", "every first of the month" and "every month on the fifteenth" as that day. Test added in test/routines.test.js and checked to fail before the change.
+
+Left for later: "9am and 5pm", "every last friday", "clear routines", "unschedule X", "never remind me to X" and "skip X today" are still not understood. "Every day remind me" makes a routine whose message is "Remind me". The 5 failures in `npm test` are the usual sandbox ones (missing WordNet data).
