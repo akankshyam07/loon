@@ -3585,3 +3585,13 @@ As a user, the worst miss was a lab results portal (labcorp, Quest) being read a
 Fixed: pay.stripe.com, billing.stripe.com, labcorp.com and questdiagnostics.com are on the sensitive list, and the card field check accepts the names expiry, exp_date and expiration. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: other health portals (for example regional hospital systems) are only caught by a password field. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-24 — settings UI, reply style feedback (fifteenth pass)
+
+Tried 27 style requests such as "reset style", "be chill", "talk normally", "chill out", "go back to playful", "normal tone", "too wordy tbh", "reply in español" and "ELI5".
+
+As a user, once I had turned the cat plain and short there was no spoken way back. "reset style", "go back to playful", "talk normally" and "be chill" all went to the model, which chatted about it while the setting stayed. A trailing "tbh" also broke "too wordy tbh".
+
+Fixed: parseFeedback in brain/personal.js now reads "reset style", "reset replies" and similar as a reset of length, tone and emoji. It reads "be chill", "chill out", "talk normally", "normal tone" and "go back to playful" as the playful tone, and ignores "tbh", "honestly" and "lol". A bare "reset" is left alone on purpose. Test added in test/personal.test.js and checked to fail before the change.
+
+Left for later: "reply in español" (language names in other languages), "ELI5" and bullet point requests have no rule. The 5 failing tests in `npm test` are the usual WordNet and demo ones from the sandbox install.

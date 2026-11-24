@@ -181,6 +181,16 @@ test('"Remember this?" detection: stated preferences and facts only', () => {
   assert.strictEqual(secondPerson('Call me Akku'), 'you go by Akku');
 });
 
+test('style feedback: reset, "be chill" and "tbh" filler', () => {
+  const cur = { length: 'short', tone: 'plain', emoji: false };
+  assert.deepStrictEqual(parseFeedback('reset style', cur).patch, { length: 'normal', tone: 'playful', emoji: true });
+  assert.strictEqual(parseFeedback('reset'), null);
+  assert.deepStrictEqual(parseFeedback('be chill').patch, { tone: 'playful' });
+  assert.deepStrictEqual(parseFeedback('talk normally').patch, { tone: 'playful' });
+  assert.deepStrictEqual(parseFeedback('go back to playful').patch, { tone: 'playful' });
+  assert.deepStrictEqual(parseFeedback('too wordy tbh').patch, { length: 'short' });
+});
+
 test('feedback messages change the reply style in code, before the model', async () => {
   assert.deepStrictEqual(parseFeedback('be terse').patch, { length: 'short' });
   assert.deepStrictEqual(parseFeedback('use more emojis').patch, { emoji: true });

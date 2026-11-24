@@ -58,7 +58,8 @@ const FEEDBACK = [
   [/^(?:(?:back to |go back to )(?:normal|default|regular|usual|standard)(?: length)?|(?:normal|default|regular|medium|standard) (?:length|answers|replies)|(?:normal|default|regular|medium|standard) length (?:answers|replies))$/, () => ({ length: 'normal' })],
   [/^(?:be |sound )?(?:more )?(?:formal|professional)(?: tone)?$|^too (?:casual|informal|silly)$/, () => ({ tone: 'formal' })],
   [/^(?:be (?:more )?serious|more serious|(?:be )?less playful|less silly|less cute|no jokes|fewer jokes|less jokes|no more jokes|stop (?:the )?jokes|stop joking(?: around)?|drop (?:the )?(?:jokes|puns)|(?:no|fewer|less|stop the) (?:cat )?puns|serious mode|tone down (?:the )?(?:jokes|humou?r|sass|snark|sarcasm)|tone (?:it|things) down|(?:less|no) (?:sass|snark|sarcasm|humou?r|attitude)|less (?:sassy|snarky|sarcastic)|stop being (?:so |too )?(?:sassy|snarky|sarcastic)|plainer|plain)$|^too (?:playful|silly|cute)$/, () => ({ tone: 'plain' })],
-  [/^(?:be )?(?:(?:more )?(?:playful|fun|funny|casual|cute|sass|snark)|funnier|sassier|snarkier|cuter|less formal|less serious)$|^too (?:formal|serious|stiff)$|^stop being (?:so |too )?(?:formal|serious|stiff)$/, () => ({ tone: 'playful' })],
+  [/^(?:reset|restore|default) (?:the |my |your )?(?:style|replies|reply style|answers|personality|tone and length)(?: to default)?$/, () => ({ length: 'normal', tone: 'playful', emoji: true })],
+  [/^(?:be )?(?:(?:go )?back to playful|playful again|chill(?: out)?|(?:normal|default|usual) tone|(?:talk|speak|be|act|sound) (?:normal(?:ly)?|like (?:normal|yourself))|(?:more )?(?:playful|fun|funny|casual|cute|sass|snark)|funnier|sassier|snarkier|cuter|less formal|less serious)$|^too (?:formal|serious|stiff)$|^stop being (?:so |too )?(?:formal|serious|stiff)$/, () => ({ tone: 'playful' })],
 ];
 const NOTES = {
   length: { short: 'shorter from now on', normal: 'back to normal-length answers', detailed: 'more detail from now on' },
@@ -72,12 +73,13 @@ function parseFeedback(text, current = PERSONAL_DEFAULTS) {
   const raw = String(text || '').toLowerCase();
   if (!raw.trim() || raw.length > 80) return null;
   const t = raw.replace(/[!.?]+\s*$/, '')
-    .replace(/\b(?:please|pls|plz|loon|hey|ok(?:ay)?|can you|could you|would you|try to|a bit|a little|a lot|way|far|much|kinda|slightly|from now on|going forward|next time|in (?:the )?future|always)\b/g, ' ')
+    .replace(/\b(?:please|pls|plz|loon|hey|ok(?:ay)?|can you|could you|would you|try to|a bit|a little|a lot|way|far|much|kinda|tbh|honestly|lol|slightly|from now on|going forward|next time|in (?:the )?future|always)\b/g, ' ')
     .replace(/[,]|\p{Extended_Pictographic}/gu, ' ').replace(/\s+/g, ' ').trim();
   const p = cleanPersonal(current);
   for (const [re, patchFor] of FEEDBACK) {
     if (!re.test(t)) continue;
     const patch = patchFor(p);
+    if (Object.keys(patch).length > 1) return { patch, note: 'Got it, back to my default style. Change it in Settings.' };
     const [key, value] = Object.entries(patch)[0];
     return { patch, note: `Got it, ${NOTES[key][String(value)]}. Change it in Settings.` };
   }
