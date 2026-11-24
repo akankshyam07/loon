@@ -158,6 +158,8 @@ function parseCommand(input, now = new Date()) {
     return { action: 'open', target: isUrl && !/^https?:/i.test(target) ? `https://${target}` : target, kind: isUrl ? 'url' : 'app' };
   }
   if ((m = text.match(/^(?:(?:search|look (?:through|in)|find in|pull up)(?: my)? history(?: for)?|(?:(?:show|pull up)(?: me)? )?(?:my )?(?:(?:chat|conversation|search) )?history (?:for|on|about)) (.+?)\??$/i)) || (m = text.match(/^(?:find|search for|look for|look up) (.+?) in (?:my )?history\??$/i))) return { action: 'recall', query: recallQuery(m[1]) };
+  // "find my chat about docker" and "history docker" are history searches, not file searches.
+  if ((m = text.match(/^(?:find|search for|look for|pull up)(?: me)?(?: my| our) (?:chats?|conversations?|questions?|searches) (?:about|on|for) (.+?)\??$/i)) || (m = text.match(/^history (?!(?:please|thanks|thank you|of|is|was|and|in|the|class|books?)\b)(?:(?:for|on|about) )?(.+?)\??$/i))) return { action: 'recall', query: recallQuery(m[1]) };
   if ((m = text.match(/^(?:(?:show|find|look up|pull up)(?: me)? )?(?:(?:my |all my )(?:past|previous|recent) (?:searches|questions|lookups)|everything i (?:asked|searched|looked up)) (?:about|for|on) (.+?)\??$/i))) return { action: 'recall', query: recallQuery(m[1]) };
   if (!/^find my (?:question|search)\b/i.test(text) && (m = text.match(/^(?:find|search for|look for|where is|where's)(?: my)? (.+?)(?: files?)?\??$/i))) {
     return { action: 'find', query: tidy(m[1]) };

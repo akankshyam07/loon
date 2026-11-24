@@ -3555,3 +3555,13 @@ As a user, the calculator was solid on the sums themselves. The annoying part wa
 Fixed: calc now uses the shared `stripPoliteness` from brain/commands.js before matching. Test added in test/brain.test.js.
 
 Left for later: "thx" and "tell me 5 times 5" still miss. Spelled-out numbers ("five plus five", "1 million times 3"), implicit multiplication like "3(4+1)", "1 ton to kg", area units and currency are not handled. "1,000 + 2,500" echoes the expression as "1000 + 2500". Exact results such as "12 inches is about 1 feet" say "about". The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install and fail the same way without this change.
+
+## 2026-11-24 — history (nineteenth pass)
+
+Tried 30 phrasings such as "history docker", "find my chat about docker", "wat did i ask", "recall", "repeat my last question", "what did you tell me earlier", "last conversation" and "hisotry".
+
+As a user, "find my chat about docker" was read as a file search, so Loon offered to look for files named "chat about docker". "history docker" went to the model, which cannot see my history.
+
+Fixed: parseCommand now reads "find/search for/pull up my (or our) chats, conversations, questions or searches about X" and "history X" as a history search. "history of rome" and "find my chat app" keep their old meaning. Tests added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: "wat did i ask", bare "recall", "what did you tell me earlier", "what did I say earlier", "repeat my last question", "continue our chat about X" and "last conversation" still reach the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

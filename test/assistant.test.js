@@ -185,6 +185,8 @@ test('commands: "clear my history" points at Settings and never searches memorie
   assert.strictEqual(parseCommand('show history').action, 'recall');
   for (const q of ["what's in my history", 'whats in my history', 'show me old questions']) assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: '' }, q);
   assert.deepStrictEqual(parseCommand('what did i google about cats'), { action: 'recall', query: 'cats' });
+  for (const q of ['find my chat about docker', 'history docker', 'search for our conversations about docker']) assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: 'docker' }, q);
+  assert.strictEqual(parseCommand('find my chat app').action, 'find');
 });
 
 test('commands: "stop remembering" and "go private" point at Privacy mode and never reach the model', () => {
