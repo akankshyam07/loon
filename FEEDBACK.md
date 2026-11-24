@@ -3575,3 +3575,13 @@ As a user, the fixed edits worked until I added a closing "thanks", "thank you",
 Fixed: the shared normalize in brain/intents.js now trims first and then drops any run of trailing please, pls, plz, loon, thanks, thank you, thx and lol. Test added in test/voice.test.js and checked to fail before the change.
 
 Left for later: "friendlier tone", "warmer tone" and "a more professional tone" still reach the model. So do "make it longer", "expand this", "soften the tone", "make it more confident", "make it punchier", "mke it shorter" and "too long, cut it down". Reply drafting asks pass as questions. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-24 — page kinds, lab portals and payment pages (fourteenth pass)
+
+Tried the gaps left by the last page kinds pass, with lab and patient portals, Stripe pay and billing pages, and card forms that only have an expiry box.
+
+As a user, the worst miss was a lab results portal (labcorp, Quest) being read as an ordinary page, and a card form where the only recognizable field is `expiry` or `exp_date`.
+
+Fixed: pay.stripe.com, billing.stripe.com, labcorp.com and questdiagnostics.com are on the sensitive list, and the card field check accepts the names expiry, exp_date and expiration. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: other health portals (for example regional hospital systems) are only caught by a password field. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

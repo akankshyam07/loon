@@ -18,7 +18,7 @@
     'ing.com', 'ing.nl', 'ing.de', 'abnamro.nl', 'bbva.com', 'bbva.es', 'nubank.com.br', 'itau.com.br', 'usaa.com', 'navyfederal.org', 'creditkarma.com', 'mint.intuit.com', 'zellepay.com', 'cigna.com', 'aetna.com', 'bcbs.com', 'healthequity.com',
     'bmo.com', 'scotiabank.com', 'cibc.com', 'westpac.com.au', 'anz.com', 'nab.com.au', 'bankwest.com.au', 'n26.com', 'starlingbank.com',
     'wealthfront.com', 'betterment.com', 'synchrony.com', 'tdameritrade.com', 'klarna.com', 'affirm.com', 'bitwarden.eu', '1password.eu', 'zocdoc.com',
-    'checkout.stripe.com', 'pay.google.com', 'pay.amazon.com', 'account.microsoft.com', 'console.aws.amazon.com', 'login.salesforce.com', 'studentaid.gov',
+    'checkout.stripe.com', 'pay.stripe.com', 'billing.stripe.com', 'labcorp.com', 'questdiagnostics.com', 'pay.google.com', 'pay.amazon.com', 'account.microsoft.com', 'console.aws.amazon.com', 'login.salesforce.com', 'studentaid.gov',
     'nationwide.co.uk', 'halifax.co.uk', 'tsb.co.uk', 'rbcroyalbank.com', 'tdcanadatrust.com', 'commerzbank.de', 'dkb.de', 'postbank.de', 'deutsche-bank.de', 'comdirect.de', 'bancolombia.com',
     'kaiserpermanente.org', '23andme.com', 'portal.azure.com', 'console.cloud.google.com',
   ];
@@ -79,7 +79,7 @@
   function detectPage(doc, location) {
     const host = location.hostname.replace(/^www\./, '');
     const passwordField = doc.querySelector('input[type="password" i], input[autocomplete="current-password"], input[autocomplete="one-time-code"]');
-    const cardField = doc.querySelector('input[autocomplete^="cc-"], input[name*="card" i][inputmode="numeric"], input[name*="cardnumber" i], input[name*="cc_number" i], input[name*="cc-number" i], input[name*="ccnumber" i], input[name="ccnum" i], input[name="card_no" i], input[name="card-no" i], input[name="cc-exp" i], input[name="cc_exp" i], input[name*="card-number" i], input[name*="card_number" i], input[id*="card-number" i], input[id*="card_number" i], input[id*="cardnumber" i], input[id*="cc-number" i], input[id*="cc_number" i], input[name*="creditcard" i], input[id*="creditcard" i], input[name*="cvv" i], input[name*="cvc" i], input[name*="security_code" i], input[name*="security-code" i], input[name*="securitycode" i], input[id*="security-code" i]');
+    const cardField = doc.querySelector('input[autocomplete^="cc-"], input[name*="card" i][inputmode="numeric"], input[name*="cardnumber" i], input[name*="cc_number" i], input[name*="cc-number" i], input[name*="ccnumber" i], input[name="ccnum" i], input[name="card_no" i], input[name="card-no" i], input[name="cc-exp" i], input[name="cc_exp" i], input[name*="card-number" i], input[name*="card_number" i], input[id*="card-number" i], input[id*="card_number" i], input[id*="cardnumber" i], input[id*="cc-number" i], input[id*="cc_number" i], input[name*="creditcard" i], input[id*="creditcard" i], input[name="expiry" i], input[name="exp_date" i], input[name="expiration" i], input[name*="cvv" i], input[name*="cvc" i], input[name*="security_code" i], input[name*="security-code" i], input[name*="securitycode" i], input[id*="security-code" i]');
     // Exact names for short ones: a substring "ssn" would also match "classname".
     // A show-password toggle turns type="password" into type="text", so the field name has to count too.
     // A field marked autocomplete="new-password" belongs to a sign-up form, which is not a private page.
