@@ -3615,3 +3615,13 @@ As a user, "open reddit", "open twitter" and "open amazon" showed a confirm card
 Fixed: reddit, twitter, instagram, facebook, linkedin, amazon and wikipedia now open their website. Task manager, cmd, command prompt, explorer, control panel and notepad map to Activity Monitor, Terminal, Finder, System Settings and TextEdit. Test added in test/assistant.test.js.
 
 Left for later: "open music" opens the Music folder, where most Mac users mean the Music app. "open vscode" style names such as "open code" and "open vs" still offer an app with that exact name. `npm test` shows the same 5 WordNet and demo failures as main in this sandbox.
+
+## 2026-11-24 — food and menu (twenty-second pass)
+
+Tried 48 dish names such as "Vegan Bacon Cheeseburger", "Vegan Caesar Salad", "Plant Based Chicken Sandwich", "Vegan BLT", "Vegan Mapo Tofu", "Eel Roll", "Falafel Wrap", "Egg Fried Rice" and "Beyond Burger".
+
+As a user, the worst problem was that dishes the menu itself calls vegan were hidden from the vegetarian filter because a classic meat word sits in the name. "Plant Based Chicken Sandwich" also listed chicken as its protein. "Eel Roll" was counted as vegetarian.
+
+Fixed: brain/food.js now treats a name containing "vegan" or "plant based" as vegetarian and drops meat and fish from its protein list. Eel is on the meat list. Test added in test/modes.test.js.
+
+Left for later: "Pho Chay", "Caesar-style Kale Salad" and "Tempeh Reuben" are still read as meat. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
