@@ -480,3 +480,9 @@ test('"word meaning of X" is a definition, not a synonym ask', () => {
   assert.strictEqual(synonymTerm('word meaning of ephemeral'), null);
   assert.strictEqual(synonymTerm('words meaning happy'), 'happy');
 });
+
+test('calc writes big whole numbers in full and reads a typographic minus', () => {
+  const { calc } = require('../brain/calc');
+  assert.match(calc('1000000 * 1000000'), /= 1,000,000,000,000$/);
+  assert.match(calc('−5 + 8'), /= 3$/);
+});

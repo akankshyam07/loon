@@ -25,7 +25,7 @@ const ALIASES = {
 
 function fmt(n) {
   if (!Number.isFinite(n)) return null;
-  const s = Math.abs(n) >= 1e9 || (n !== 0 && Math.abs(n) < 1e-4) ? n.toPrecision(6) : String(Math.round(n * 1e4) / 1e4);
+  const s = (Math.abs(n) >= 1e9 && !(Number.isInteger(n) && Math.abs(n) < 1e15)) || (n !== 0 && Math.abs(n) < 1e-4) ? n.toPrecision(6) : String(Math.round(n * 1e4) / 1e4);
   const [int, frac] = s.split('.');
   return int.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + (frac ? `.${frac}` : '');
 }
@@ -198,7 +198,7 @@ function calc(question) {
   }
 
   // "1.5k * 3": a k after a number means thousand, but only here, since "5 k to f" is kelvin above
-  const expression = body.replace(/(\d(?:\.\d+)?)k\b/g, '($1*1000)').replace(/[x×]/g, '*').replace(/÷/g, '/');
+  const expression = body.replace(/−/g, '-').replace(/(\d(?:\.\d+)?)k\b/g, '($1*1000)').replace(/[x×]/g, '*').replace(/÷/g, '/');
   if (/^[\d\s.+\-*/^()]+$/.test(expression) && /\d\s*[-+*/^][-+*/^\s]*[\d(]|\d\s*\)/.test(expression)) {
     // "555-1234" is a phone number unless asked as a question or spaced out
     if (!lead && !/[+*/^]| - /.test(expression)) return null;

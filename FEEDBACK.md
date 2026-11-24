@@ -3525,3 +3525,13 @@ As a user, creating routines held up. Commands were the weak spot. "Turn the str
 Fixed: brain/routines.js now reads "turn <routine or reminder> on/off" with an optional "back", and "stop telling me to X" with an optional "again". "Turn the music off" is still left alone. Test added in test/routines.test.js and checked to fail before the change.
 
 Left for later: "9am and 5pm" and "every first of the month" still get a card to fix by hand. "Never remind me…", "unschedule X", "clear routines" and "delete routine 2" are not understood. The 5 failures in `npm test` are the usual sandbox ones (missing WordNet data).
+
+## 2026-11-24 — typed questions and instant answers, big numbers and minus sign (twentieth pass)
+
+Tried 85 maths and conversion phrasings such as "whats 15 percent of 80?", "80 + 15%", "a third of 90", "30% of 150 dollars", "split 120 between 3", "1000000 * 1000000", "2^100", "−5 + 8", "10k + 5k" and "5 ft 10 in cm".
+
+As a user, nearly all of them were answered in code. The worst result was a plain product like "1000000 * 1000000", which came back as "1.00000e+12". A minus sign typed by macOS or pasted from a document ("−5 + 8") was not recognised and went to the model.
+
+Fixed: whole numbers below one quadrillion are now written in full with commas, and the typographic minus is read as a normal minus. Test added in test/brain.test.js and checked to fail before the change.
+
+Left for later: "10k + 5k", "5 million / 3", "3/4 of 100", "cube of 3", "pi * 2", "2(3+4)", "10% of 250 plus 5" and "how much is 3 dozen" still go to the model. "7 into 21" and "0.5 as a fraction" too. The 5 failing tests in `npm test` here are the WordNet and demo ones from the sandbox install.
