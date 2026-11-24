@@ -54,9 +54,9 @@ function normalize(transcript) {
     .replace(LEAD_IN, '')
     .replace(/^((please|pls|plz|can you|can u|could you|could u|would you|will you|like|just)[,\s]+)+/, '')
     .replace(/[,.!?]+|\p{Extended_Pictographic}/gu, ' ')
-    .replace(/\s+(please|pls|plz|loon)$/, '')
     .replace(/\s{2,}/g, ' ')
-    .trim();
+    .trim()
+    .replace(/(\s+(please|pls|plz|loon|thanks|thank you|thx|lol))+$/, '');
 }
 
 // → { type: 'stop' } | { type: 'yes' } | { type: 'no' } | { type: 'task', task, text? } | { type: 'toggle', key, value }

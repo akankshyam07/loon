@@ -3565,3 +3565,13 @@ As a user, "find my chat about docker" was read as a file search, so Loon offere
 Fixed: parseCommand now reads "find/search for/pull up my (or our) chats, conversations, questions or searches about X" and "history X" as a history search. "history of rome" and "find my chat app" keep their old meaning. Tests added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: "wat did i ask", bare "recall", "what did you tell me earlier", "what did I say earlier", "repeat my last question", "continue our chat about X" and "last conversation" still reach the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-24 — writing tools, typed edits with a closing thanks (fourteenth pass)
+
+Tried 64 typed edit asks such as "make it shorter thanks", "fix my grammar thx", "shorter please!", "make it professional lol", "mke it shorter", "soften the tone", "make it longer", "draft a reply to this email" and "friendlier tone".
+
+As a user, the fixed edits worked until I added a closing "thanks", "thank you", "thx" or "lol". They then went to the language model as free questions, which is slower and skips the cached edit. "shorter please!" failed the same way because the exclamation mark left a space before "please". "define this thx" tried to define the words "this thx".
+
+Fixed: the shared normalize in brain/intents.js now trims first and then drops any run of trailing please, pls, plz, loon, thanks, thank you, thx and lol. Test added in test/voice.test.js and checked to fail before the change.
+
+Left for later: "friendlier tone", "warmer tone" and "a more professional tone" still reach the model. So do "make it longer", "expand this", "soften the tone", "make it more confident", "make it punchier", "mke it shorter" and "too long, cut it down". Reply drafting asks pass as questions. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

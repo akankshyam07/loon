@@ -170,6 +170,9 @@ test('spoken fillers, "turn focus off", private mode and "what\'s the cheapest" 
   assert.deepStrictEqual(route('turn off private mode'), { type: 'toggle', key: 'privacy', value: false });
   assert.deepStrictEqual(route("what's the cheapest"), { type: 'task', task: 'shop_value' });
   assert.deepStrictEqual(route('um, make this shorter please'), { type: 'task', task: 'shorter', needs: 'selection' });
+  // A closing thanks, "lol" or "please!" must not turn a fixed edit into a free question.
+  for (const t of ['make it shorter thanks', 'make it shorter, thank you', 'fix my grammar thx', 'shorter please!', 'make it professional lol']) assert.strictEqual(selectionTask(t) !== null, true, t);
+  assert.strictEqual(selectionTask('make it shorter thanks'), 'shorter');
   assert.strictEqual(route('uh yes', { awaitingConfirmation: true }).type, 'yes');
   assert.strictEqual(route('yeah sure', { awaitingConfirmation: true }).type, 'yes');
 });
