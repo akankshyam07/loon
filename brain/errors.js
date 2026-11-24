@@ -233,7 +233,7 @@ const KNOWN = [
     fix: ['Run it in a debugger (`lldb` or `gdb`) or with AddressSanitizer to see the line.', 'Check for null pointers, freed memory and out of range array access.', 'If it comes from a package, update it or try another version.'],
   },
   {
-    match: /CERTIFICATE_VERIFY_FAILED|certificate verify failed|unable to verify the first certificate|UNABLE_TO_VERIFY_LEAF_SIGNATURE|self[- ]signed certificate/i,
+    match: /CERTIFICATE_VERIFY_FAILED|certificate verify failed|unable to verify the first certificate|UNABLE_TO_VERIFY_LEAF_SIGNATURE|self[- ]signed certificate|x509: certificate|ERR_CERT_/i,
     title: 'Certificate not trusted',
     explain: 'The TLS certificate could not be verified. Common causes are a company proxy, a self-signed certificate or a missing CA bundle.',
     fix: ['Point the tool at the right CA file (`NODE_EXTRA_CA_CERTS` or `SSL_CERT_FILE`).', 'Do not turn verification off except for a local test server.'],
@@ -245,7 +245,7 @@ const KNOWN = [
     fix: ['Run `git fetch` and then `git branch -a` to see the names git knows.', 'Check the spelling and the case, since branch names are case sensitive.'],
   },
   {
-    match: /failed to push some refs/,
+    match: /failed to push some refs|\[rejected\].*non-fast-forward/,
     title: 'Git push rejected',
     explain: 'The remote has commits you do not have, so git refused to overwrite them.',
     fix: ['Run `git pull --rebase` and push again.', 'Never force push to a shared branch unless you are sure.'],
@@ -459,6 +459,24 @@ const KNOWN = [
     title: 'Wrong type for this operation (Python)',
     explain: 'The value is not the type the code assumed (for example an int used like a list, or a str added to an int).',
     fix: ['Print `type(x)` for the variable named in the message and trace back to where it was set.', 'Convert it first (`int(x)`, `str(x)`), or fix the code that returned the wrong type.'],
+  },
+  {
+    match: /called `(?:Option::unwrap\(\)` on a `None`|Result::unwrap\(\)` on an `Err`)/,
+    title: 'unwrap on None or Err (Rust)',
+    explain: 'The code called `unwrap()` on a value that was empty (`None`) or an error (`Err`), so the program panicked on purpose.',
+    fix: ['Handle the empty case with `match`, `if let` or `?` instead of `unwrap()`.', 'Use `expect("why this must be set")` while debugging, so the panic says what you assumed.'],
+  },
+  {
+    match: /Objects are not valid as a React child/,
+    title: 'Object rendered as React child',
+    explain: 'JSX got a plain object where it needs text or elements, often an API response or a Date placed straight into the page.',
+    fix: ['Render a field of the object (`{user.name}`), not the object itself.', 'To inspect it, use `{JSON.stringify(value)}`.'],
+  },
+  {
+    match: /xcrun: error: invalid active developer path/,
+    title: 'Xcode command line tools missing (macOS)',
+    explain: 'macOS lost its developer tools, usually after an OS update, so git, clang and make cannot run.',
+    fix: ['Run `xcode-select --install` and accept the install prompt.', 'Then run the failed command again.'],
   },
   {
     match: /unique "key" prop/,

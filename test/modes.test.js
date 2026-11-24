@@ -209,6 +209,11 @@ test('errors: fingerprint ignores paths/values; known errors answer from the tab
   assert.match(lookupKnown('docker: Error response from daemon: Conflict. The container name "/web" is already in use by container abc.'), /docker rm/);
   assert.match(lookupKnown('fatal: The current branch feature has no upstream branch.\nTo push the current branch and set the remote as upstream, use'), /set-upstream/);
   assert.match(lookupKnown('Error: error:0308010C:digital envelope routines::unsupported\n  opensslErrorStack'), /openssl-legacy-provider/);
+  assert.match(lookupKnown(' ! [rejected]        main -> main (non-fast-forward)'), /git pull --rebase/);
+  assert.match(lookupKnown('Get "https://x": tls: failed. x509: certificate signed by unknown authority'), /Certificate not trusted/);
+  assert.match(lookupKnown("thread 'main' panicked at 'called `Option::unwrap()` on a `None` value', src/main.rs:4:5"), /unwrap on None or Err/);
+  assert.match(lookupKnown('Error: Objects are not valid as a React child (found: object with keys {a})'), /Render a field/);
+  assert.match(lookupKnown('xcrun: error: invalid active developer path (/Library/Developer/CommandLineTools)'), /xcode-select --install/);
   assert.match(lookupKnown('MongoServerError: E11000 duplicate key error collection: app.users index: email_1'), /Duplicate value/);
   assert.match(lookupKnown('ssh: connect to host example.com port 22: Operation timed out'), /SSH connection timed out/);
   assert.match(lookupKnown('psql: error: connection to server on socket "/tmp/.s.PGSQL.5432" failed: No such file or directory'), /Postgres/);

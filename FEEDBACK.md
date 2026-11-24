@@ -3595,3 +3595,13 @@ As a user, once I had turned the cat plain and short there was no spoken way bac
 Fixed: parseFeedback in brain/personal.js now reads "reset style", "reset replies" and similar as a reset of length, tone and emoji. It reads "be chill", "chill out", "talk normally", "normal tone" and "go back to playful" as the playful tone, and ignores "tbh", "honestly" and "lol". A bare "reset" is left alone on purpose. Test added in test/personal.test.js and checked to fail before the change.
 
 Left for later: "reply in español" (language names in other languages), "ELI5" and bullet point requests have no rule. The 5 failing tests in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-24 — developer help, error table (twentieth pass)
+
+Tried 90 pasted errors across JavaScript, Python, Java and Spring, Git, Rust, Go, Docker, Kubernetes, TLS and macOS tooling.
+
+As a user, most were answered from the table. The common misses were the plain `! [rejected] main -> main (non-fast-forward)` line from a push (only the "failed to push some refs" line matched), Go's `x509: certificate signed by unknown authority` and Chrome's `ERR_CERT_AUTHORITY_INVALID`, Rust's `called Option::unwrap() on a None value`, React's "Objects are not valid as a React child", and macOS `xcrun: error: invalid active developer path`, which every Mac user hits after an update.
+
+Fixed: the push rule and the certificate rule now match those lines, and there are new entries for the Rust unwrap panic, the React object child and the missing Xcode tools. Tests added in test/modes.test.js and checked to fail before the change.
+
+Left for later: Spring's HikariPool timeout and the Whitelabel error page, SQL "Unknown column", detached HEAD, TS7006 implicit any, Go deadlock, C++ "undefined reference" and "not declared in this scope", `Invalid or unexpected token`, the GitHub password authentication removal, gyp build errors and Puppeteer launch failures still go to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
