@@ -48,6 +48,8 @@ function dayOfMonth(text, now) {
     const c = new Date(now.getFullYear(), now.getMonth() + (/next/i.test(which) ? 1 : 0), Number(d));
     return c.getDate() === Number(d) ? `${MONTHS[c.getMonth()]} ${Number(d)} ${c.getFullYear()}` : all;
   });
+  // "the 3rd of march" names its month; chrono reads "3rd of march" but would leave "the" in the title.
+  text = text.replace(/\b(?:on )?the (\d{1,2}(?:st|nd|rd|th) of [a-z]{3,9})\b/i, (all, rest) => (/of (?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i.test(rest) ? rest : all));
   return text.replace(/\b(?:on )?the (\d{1,2})(?:st|nd|rd|th)\b/i, (all, d) => {
     const day = Number(d);
     for (let i = 0; i < 13 && day >= 1; i++) {

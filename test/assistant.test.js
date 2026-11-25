@@ -547,6 +547,15 @@ test('commands: "the 1st of next month" is a date, so "of next month" does not s
   assert.strictEqual(r.when.getDate(), 1);
 });
 
+test('commands: "the 3rd of march" is a date, so "the" does not stay in the reminder title', () => {
+  const now = new Date(2026, 10, 21, 10, 0);
+  const r = parseCommand('remind me on the 3rd of march to renew', now);
+  assert.strictEqual(r.title, 'renew');
+  assert.strictEqual(r.when.getMonth(), 2);
+  assert.strictEqual(r.when.getDate(), 3);
+  assert.strictEqual(parseCommand('remind me the 15th of December to pay', now).title, 'pay');
+});
+
 test('commands: "for the record", "I want you to remember" and "from now on remember" save a fact', () => {
   assert.deepStrictEqual(parseCommand("for the record, I'm vegetarian"), { action: 'remember', text: "I'm vegetarian" });
   assert.deepStrictEqual(parseCommand('FYI my dog is called Rex'), { action: 'remember', text: 'my dog is called Rex' });

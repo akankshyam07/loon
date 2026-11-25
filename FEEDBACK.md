@@ -3655,3 +3655,13 @@ As a user, the question parsing held up. The lookup failed on plural forms. "tom
 Fixed: the word forms tried by the dictionary now include "-oes" to the base, "-ves" to both "f" and "fe", and a trailing 's. Test added in test/brain.test.js and checked to fail before the change.
 
 Left for later: "dogs'" still finds nothing. "ran" shows the baseball noun before the verb. "what's ephemeral" and "what does ASAP stand for" go to the model, which is fine. `npm test` passes fully here once the wordpos index is built with `node tools/stat.js --no-stats index.adv index.adj index.verb index.noun` inside node_modules/wordpos.
+
+## 2026-11-25 — reminders, timers and focus (twentieth pass)
+
+Tried 57 phrasings such as "remind me at midnight to sleep", "set alarm for 6:30am", "timer for half an hour", "remind me in a couple of hours to stretch", "remind me on feb 30", "remind me the day after tomorrow", "focus 90" and "remind me on the 3rd of march to renew".
+
+As a user, nearly everything worked. "remind me on the 3rd of march to renew" made a reminder titled "the to renew", and "the 15th of December" did the same. The date was right but the title was wrong on the confirm card.
+
+Fixed: dayOfMonth now drops "the" in front of "3rd of march" and lets the date reader take the rest. Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: "remind me to take meds at 8am and 8pm" keeps only 8am and leaves "and 8pm" in the title. "snooze 10 minutes" and "cancel my timer" are not matched. "remind me later" and "in a bit" give a reminder with no time, and "remind me in 20 to call" guesses minutes. An emoji prefix such as "⏰ remind me at 3" is not parsed. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
