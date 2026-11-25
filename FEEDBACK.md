@@ -3735,3 +3735,13 @@ As a user, the short tone phrases I would type or say first ("friendlier tone", 
 Fixed: the warmer, professional and casual templates in brain/intents.js accept a bare "tone" phrase, and the warmer rewrite template accepts a missing pronoun. Test added in test/voice.test.js and checked to fail before the change.
 
 Left for later: "make it longer", "expand this", "soften the tone", "make it more confident", "make it punchier", "make it more direct", "less stiff", "shorten it a lot" and "too long, cut it down" still reach the model. They need new tasks (longer, direct) rather than regex changes. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-25 — memory and privacy, redaction (twentieth pass)
+
+Tried 66 lines such as cards, SSNs, env lines, URLs with tokens, "pass is" and "password to the router is" phrasings, door and alarm codes, and login pairs.
+
+As a user, two ordinary phrasings leaked. "the wifi pass is Sunshine99" went through unredacted because only "password" and "pin" were matched before "is". "the password to the router is admin1234" leaked too, since the "password for X" rule did not accept "to".
+
+Fixed: the "pass is / was / to" rule accepts "pass", and the "password for X" rule accepts "to". Both still need a digit in the value, so "pass is the word" and "password to log in" stay readable. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: "my login is bob password Spring2024!" and "password Spring2024!" with no separator, "my passwords are abc123 and def456", and "Security code: 123" (three digits) are not redacted. Emails and phone numbers are not redacted by design. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

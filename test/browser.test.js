@@ -386,3 +386,12 @@ test('redaction hides a password written as "password for X: value"', () => {
   }
   assert.strictEqual(redact('passwords for new accounts: must be 12 characters').count, 0);
 });
+
+test('redaction hides "wifi pass is X" and "password to the router is X"', () => {
+  for (const s of ['the wifi pass is Sunshine99', 'the password to the router is admin1234']) {
+    const { text, count } = redact(s);
+    assert.doesNotMatch(text, /Sunshine99|admin1234/);
+    assert.strictEqual(count, 1);
+  }
+  for (const s of ['pass is the word', 'the password to reset is easy', 'password to log in']) assert.strictEqual(redact(s).count, 0);
+});

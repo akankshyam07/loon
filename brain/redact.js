@@ -84,13 +84,13 @@ const RULES = [
   },
   {
     kind: 'secret',
-    re: /\b(passwords?|passcodes?|pw|passwort)(\s+(?:for|für)\s+(?:the\s+|my\s+)?[\w.-]+(?:\s+[\w.-]+)?)?(\s+[-–—]\s+|\s*:\s+|\s+is\s+)(?!\[redacted)(?=[^\s"',;]*\d)([^\s"',;]{4,})/gi,
+    re: /\b(passwords?|passcodes?|pw|passwort)(\s+(?:for|to|für)\s+(?:the\s+|my\s+)?[\w.-]+(?:\s+[\w.-]+)?)?(\s+[-–—]\s+|\s*:\s+|\s+is\s+)(?!\[redacted)(?=[^\s"',;]*\d)([^\s"',;]{4,})/gi,
     // needs a digit in the value so "password - a quick guide" stays readable
     replace: (m, name, forWhat, sep) => `${name}${forWhat || ''}${sep}[redacted:secret]`,
   },
   {
     kind: 'secret',
-    re: /\b((?:pin|passcode|password|passwd)(?:\s+(?:number|code))?\s+(?:was|to|is)\s+)(?!\[redacted)(?=[^\s"',;]*\d)([^\s"',;]{4,})/gi,
+    re: /\b((?:pin|passcode|password|passwd|pass)(?:\s+(?:number|code))?\s+(?:was|to|is)\s+)(?!\[redacted)(?=[^\s"',;]*\d)([^\s"',;]{4,})/gi,
     // needs a digit in the value so "password to log in" stays readable
     replace: (m, head) => `${head}[redacted:secret]`,
   },
