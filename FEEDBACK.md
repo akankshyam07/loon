@@ -3685,3 +3685,13 @@ As a user, the clear misses were things that are not words but still offered Def
 Fixed: these four shapes now count as not a word to look up, so the bubble offers Explain. "node.js", "AM" and ordinary words stay words. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: "Warning: unused variable" is a word while the lowercase form is a sentence. "@username", "#hashtag", "3 apples" and "Q3 2025" still get Define. "git@github.com:a/b.git" is a sentence, which is fine. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-25 — memory commands (ninth pass)
+
+Tried 40 phrasings such as "remember that I'm vegetarian", "keep in mind I'm on a budget", "forget my name", "forget that you remembered that", "clear my memory", "remove my name from memory" and "remember everything I say".
+
+As a user, "remember everything I say" saved a memory with that exact text, so Loon would confirm a promise it cannot keep. "remove my name from memory" and "delete everything from memory" were not understood and went to the model, which might claim it had done it.
+
+Fixed: "remove or delete X from memory" now forgets X, "delete everything from memory" is a wipe request, and "remember everything I say" saves nothing. Test added in test/assistant.test.js.
+
+Left for later: "remmeber" typos are not matched. "save this to memory" and "undo that" are not matched. "forget me" and "forget the last thing" search memories for those words, which finds nothing useful. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
