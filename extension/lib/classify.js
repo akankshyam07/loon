@@ -59,8 +59,8 @@
       || (lines.length === 1 && SNIPPET.test(text.trim()));
   }
 
-  // Whole selections that are not a word to look up: a URL, an email address or a file path
-  const NOT_A_WORD = /^(https?:\/\/|www\.)\S+$|^[^\s@]+@[^\s@]+\.\w+$|^(~|[A-Za-z]:\\|\.{0,2}\/)\S*[\/\\]\S*$|^[\w.-]+(\/[\w.-]+)*\/[\w-]+\.\w{1,5}$/i;
+  // Whole selections that are not a word to look up: a URL, an email address, a file path or name, a version, a colour or a clock time
+  const NOT_A_WORD = /^(https?:\/\/|www\.)\S+$|^[^\s@]+@[^\s@]+\.\w+$|^(~|[A-Za-z]:\\|\.{0,2}\/)\S*[\/\\]\S*$|^[\w.-]+(\/[\w.-]+)*\/[\w-]+\.\w{1,5}$|^v\d+(\.\d+)+$|^#[0-9a-f]{3,8}$|^\d{1,2}:\d{2}(:\d{2})?\s*([ap]\.?m\.?)?$|^[\w-]+\.(md|txt|pdf|json|ya?ml|csv|png|jpe?g|gif|zip|docx?|xlsx?|pptx?)$/i;
 
   function classifySelection(text, { editable = false, monospace = false } = {}) {
     const t = text.trim();

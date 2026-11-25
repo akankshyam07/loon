@@ -3675,3 +3675,13 @@ As a user, the worst problem was a confident claim with no data behind it. When 
 Fixed: verdict now says it cannot rank value when fewer than two products have comparable sizes, and gives only the cheapest sticker price. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: price ranges ("$5.00 - $7.00" reads as 5), "Was $20 Now $15" is read correctly but "$19.99 $24.99" assumes the first is the sale price. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-25 — selection chips and classification (nineteenth pass)
+
+Tried 80 selections such as "10:30 AM", "v1.2.3", "#ff0000", "README.md", "node.js", "Q3 2025", "O(n log n)", "git@github.com:a/b.git", Arabic and Cyrillic words, "¿Qué?" and single keywords like "return".
+
+As a user, the clear misses were things that are not words but still offered Define. A clock time ("10:30 AM"), a version ("v1.2.3"), a colour code ("#ff0000") and a plain file name ("README.md") were all classed as a word.
+
+Fixed: these four shapes now count as not a word to look up, so the bubble offers Explain. "node.js", "AM" and ordinary words stay words. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: "Warning: unused variable" is a word while the lowercase form is a sentence. "@username", "#hashtag", "3 apples" and "Q3 2025" still get Define. "git@github.com:a/b.git" is a sentence, which is fine. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
