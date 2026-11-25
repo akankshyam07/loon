@@ -3755,3 +3755,13 @@ As a user, the one gap was "log 100" and "ln 10". They went to the language mode
 Fixed: brain/calc.js answers log (base 10) and ln, and says plainly that zero has no log. Test added in test/brain.test.js.
 
 Left for later: "pi * 2", "1e3 * 2", "20% of 50% of 100" and "3 dozen eggs times 4" still reach the model. "every morning and evening take pills" keeps one time and asks on the confirm card. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-25 — history (twentieth pass)
+
+Tried 30 phrasings such as "wat did i ask", "recall", "what did you tell me earlier", "what did I say earlier", "repeat my last question", "last conversation", "show me my chats", "my previous conversation" and "pull up my last chat".
+
+As a user, the loose ways of asking for my history went to the model, which cannot see it and might pretend to remember. Seven of the eight phrasings left over from the last history pass still missed.
+
+Fixed: parseCommand now reads "wat/what did I ask", bare "recall", "what did I say / you tell me (earlier)", "repeat/show my last question, chat or conversation", "last conversation" and "show me my chats" as a history list. Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: "my previous conversation" and "what was the last thing you told me" still reach the model, and "continue our chat about X" has no continue action from typed text. "find that thing I asked about earlier" is treated as a file search. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

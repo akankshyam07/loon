@@ -195,6 +195,7 @@ test('commands: "clear my history" points at Settings and never searches memorie
   assert.strictEqual(parseCommand('show history').action, 'recall');
   for (const q of ["what's in my history", 'whats in my history', 'show me old questions']) assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: '' }, q);
   assert.deepStrictEqual(parseCommand('what did i google about cats'), { action: 'recall', query: 'cats' });
+  for (const q of ['wat did i ask', 'recall', 'what did you tell me earlier', 'what did I say earlier', 'repeat my last question', 'last conversation', 'show me my chats', 'pull up my last chat']) assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: '' }, q);
   for (const q of ['find my chat about docker', 'history docker', 'search for our conversations about docker']) assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: 'docker' }, q);
   assert.strictEqual(parseCommand('find my chat app').action, 'find');
 });
