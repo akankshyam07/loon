@@ -149,6 +149,10 @@ function calc(question) {
   m = body.match(/^(?:sqrt\s*\(?|sqrt of\s+|(?:the\s+)?square root of\s+)(\d+(?:\.\d+)?)\)?$/);
   if (m) return `√${m[1]} = ${fmt(Math.sqrt(m[1]))}`;
 
+  // "log 100", "log of 1000", "ln 10"; a plain log is base 10.
+  m = body.match(/^(log|ln)\s*\(?(?:of\s+)?(\d+(?:\.\d+)?)\)?$/);
+  if (m) return +m[2] > 0 ? `${m[1]} ${m[2]} = ${fmt((m[1] === 'ln' ? Math.log : Math.log10)(m[2]))}` : 'That has no answer, a log needs a number above zero.';
+
   // "average of 4, 8, 15" and "mean of 2 and 4"
   m = body.match(/^(?:the\s+)?(?:average|mean)\s+of\s+(-?\d+(?:\.\d+)?(?:\s*(?:,|and|&)\s*(?:and\s+)?-?\d+(?:\.\d+)?)+)$/);
   if (m) {

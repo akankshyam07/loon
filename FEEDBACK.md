@@ -3745,3 +3745,13 @@ As a user, two ordinary phrasings leaked. "the wifi pass is Sunshine99" went thr
 Fixed: the "pass is / was / to" rule accepts "pass", and the "password for X" rule accepts "to". Both still need a digit in the value, so "pass is the word" and "password to log in" stay readable. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: "my login is bob password Spring2024!" and "password Spring2024!" with no separator, "my passwords are abc123 and def456", and "Security code: 123" (three digits) are not redacted. Emails and phone numbers are not redacted by design. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-25 — typed questions and instant answers, logs (twenty-first pass)
+
+Tried 30 maths phrasings such as "what is 15% of 240", "240 + 15%", "half of 15", "7!", "$20 * 1.08", "how many ml in a cup", "10 mph to kph", "log 100" and "pi * 2". I also ran 30 recurring-routine phrasings ("every weekday at 9am summarize my notes", "twice a day remind me to stretch", "every monday and thursday at 7:30") and found them all parsed correctly or refused on purpose.
+
+As a user, the one gap was "log 100" and "ln 10". They went to the language model, which is poor at numbers.
+
+Fixed: brain/calc.js answers log (base 10) and ln, and says plainly that zero has no log. Test added in test/brain.test.js.
+
+Left for later: "pi * 2", "1e3 * 2", "20% of 50% of 100" and "3 dozen eggs times 4" still reach the model. "every morning and evening take pills" keeps one time and asks on the confirm card. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
