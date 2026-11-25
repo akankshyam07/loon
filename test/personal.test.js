@@ -419,3 +419,11 @@ test('onboarding keeps long allergy lists, "and also" and "name:" or "my friends
   assert.deepStrictEqual(onboardingResult({ name: 'name: Tom' }).facts, ['Call me Tom']);
   assert.deepStrictEqual(onboardingResult({ name: 'my friends call me Dizzy' }).facts, ['Call me Dizzy']);
 });
+
+test('onboarding does not turn "not allergic" into an allergy, and reads "it\'s me, Kai", "lactose" and "celiac"', () => {
+  assert.deepStrictEqual(onboardingResult({ allergies: 'not allergic' }).facts, []);
+  assert.deepStrictEqual(onboardingResult({ allergies: "I'm not allergic" }).facts, []);
+  assert.deepStrictEqual(onboardingResult({ name: "it's me, Kai" }).facts, ['Call me Kai']);
+  assert.deepStrictEqual(onboardingResult({ allergies: 'lactose' }).facts, ["I'm intolerant to lactose"]);
+  assert.deepStrictEqual(onboardingResult({ allergies: 'celiac' }).facts, ['I avoid gluten (celiac)']);
+});

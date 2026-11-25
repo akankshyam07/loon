@@ -3705,3 +3705,13 @@ As a user, the Kotlin output was the problem. `first-name` became `firstName` an
 Fixed: when a Kotlin paste has a key that is not plain camelCase, or is a Kotlin keyword, brain/devtools.js now asks quicktype for Jackson annotations and trims its mapper and converter boilerplate, so the answer is the annotated data classes plus one import. Plain camelCase pastes are unchanged. Test added in test/modes.test.js.
 
 Left for later: a 20 digit integer is still typed as a double (Java) or number (TypeScript), which loses precision. Kotlin Jackson output marks every field `required=true`. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-25 — onboarding first run, "not allergic" and condition names (eighteenth pass)
+
+Tried 38 answers for the name, allergy and interest boxes, such as "it's me, Kai", "kai the cat", "Mr. Anderson", "celiac", "lactose", "coeliac disease", "not allergic", "tree nuts (anaphylaxis)" and "ML/AI".
+
+As a user, the worst problem was a reversed meaning. Typing "not allergic" saved "I'm allergic to not allergic", and Loon would then act on a wrong medical fact. "it's me, Kai" saved "Call me me". "lactose" was saved as an allergy and "celiac" as "allergic to celiac".
+
+Fixed: the no-answer rule in brain/personal.js now accepts "not allergic" and "I'm not allergic". The name reader drops "it's me", "this is me" and "that's me". A bare "lactose" is stored as an intolerance and "celiac" or "coeliac disease" as "I avoid gluten (celiac)". Test added in test/personal.test.js and checked to fail before the change.
+
+Left for later: "nobody", "me" and "anonymous" are saved as names. "Peanut allergy" keeps the singular "Peanut". "tree nuts (anaphylaxis)" keeps the bracket note. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

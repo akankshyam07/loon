@@ -217,14 +217,14 @@ const ROLES = {
 const DIETS = { vegetarian: "I'm vegetarian", vegan: "I'm vegan", pescatarian: "I'm pescatarian", gluten_free: "I'm gluten-free", halal: 'I eat halal', kosher: 'I keep kosher', lactose: "I'm lactose intolerant" };
 const tidy = (text, max = 80) => String(text || '').replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
 // "None" and "n/a" are answers, not allergies; "I'm allergic to peanuts" is typed often, so the lead-in is dropped.
-const NO_ANSWER = /^(?:i (?:have|got|don'?t have)(?: any)? )?(?:(?:none|no|nope|nada|nil|nothing|n\/?a|na|-+|idk|skip|pass|thanks?|prefer not to say)(?: (?:known |food )?(?:allergies|really|at all|thanks?|that i know of))*|not (?:that i know of|really|sure)|(?:i'?m )?not allergic to anything|i don'?t have any(?: allergies)?)$/i;
+const NO_ANSWER = /^(?:i (?:have|got|don'?t have)(?: any)? )?(?:(?:none|no|nope|nada|nil|nothing|n\/?a|na|-+|idk|skip|pass|thanks?|prefer not to say)(?: (?:known |food )?(?:allergies|really|at all|thanks?|that i know of))*|not (?:that i know of|really|sure)|(?:i'?m )?not allergic(?: to anything)?|i don'?t have any(?: allergies)?)$/i;
 const list = (text, split = /\s*(?:,|;|\band(?: also)?\b| & )\s*/i) => (NO_ANSWER.test(tidy(text, 200).replace(/[.!]+$/, '')) ? '' : tidy(text, 200)).replace(/\p{Extended_Pictographic}\uFE0F?/gu, '').replace(/\s*[:;=]-?[()DPp]+(?=\s|$)/g, '').trim().replace(/^(?:(?:i(?:'m| am)\s+)?(?:allergic to|interested in|into)|i (?:like|love|enjoy)(?: to)?|i (?:have|got)(?: an?)?|(?:my )?(?:allergies|interests|hobbies) (?:(?:is|are|include)\b:?|:)|(?:my )?(?:allergies|interests|hobbies):|i(?:'m| am))\s*/i, '').split(split)
   .map((x) => x.replace(/[.!]+$/, '').trim()).filter((x) => x && !NO_ANSWER.test(x))
   .filter((x, i, all) => all.findIndex((y) => y.toLowerCase() === x.toLowerCase()) === i).slice(0, 12);
 const joinList = (items) => (items.length > 1 ? `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}` : items[0] || '');
 
 // "Hi, I'm Ada", "my name's Ada" and "you can call me Ada" are typed into the name box; only the name is kept.
-const NAME_LEAD = /^(?:(?:(?:hi|hello|hey|yo)\b[\s,!.]*|(?:you can |please |just |everyone |everybody |they |(?:my )?(?:friends|family|mom|mum|dad) )*calls? me\b[\s,:]*|(?:you can )?(?:just )?i go by\b[\s,:]*|my name(?:'s| is)\b[\s,:]*|name(?:'s| is|\b:)[\s,:]*|this is\b\s*|it'?s\b\s*|i'?m\b\s*|i am\b\s*))+/i;
+const NAME_LEAD = /^(?:(?:(?:hi|hello|hey|yo)\b[\s,!.]*|(?:you can |please |just |everyone |everybody |they |(?:my )?(?:friends|family|mom|mum|dad) )*calls? me\b[\s,:]*|(?:you can )?(?:just )?i go by\b[\s,:]*|my name(?:'s| is)\b[\s,:]*|name(?:'s| is|\b:)[\s,:]*|(?:it'?s|this is|that'?s) me\b[\s,:]*|this is\b\s*|it'?s\b\s*|i'?m\b\s*|i am\b\s*))+/i;
 
 // answers: { name, role, length, tone, diets: [], allergies, interests } (every one optional) → what the review screen
 // shows: { facts: [text] (saved pinned), personal: patch for cleanPersonal, role }. Plain code, no model.
@@ -237,7 +237,7 @@ function onboardingResult(answers = {}) {
   for (const d of answers.diets || []) if (Object.hasOwn(DIETS, d)) facts.push(DIETS[d]);
   // "peanuts/shellfish" is two allergies; "lactose intolerant" is not an allergy and gets its own wording.
   const intolerant = /\s+intoleran(?:t|ce)$/i;
-  const food = list(answers.allergies, /\s*(?:,|;|\/|\band(?: also)?\b| & )\s*/i).map((x) => x.replace(/\s+allerg(?:y|ies)$/i, '').replace(/^(?:severe|serious|mild|slight|bad)\s+/i, '').replace(/\s*\((?:severe|serious|mild|slight|bad)\)$/i, '')).filter((x) => !/^(?:severe|serious|mild|slight|bad)$/i.test(x));
+  const food = list(answers.allergies, /\s*(?:,|;|\/|\band(?: also)?\b| & )\s*/i).map((x) => x.replace(/^lactose$/i, 'lactose intolerant').replace(/^(?:celiac|coeliac)(?: disease)?$/i, 'no gluten (celiac)').replace(/\s+allerg(?:y|ies)$/i, '').replace(/^(?:severe|serious|mild|slight|bad)\s+/i, '').replace(/\s*\((?:severe|serious|mild|slight|bad)\)$/i, '')).filter((x) => !/^(?:severe|serious|mild|slight|bad)$/i.test(x));
   // "dairy-free" is a diet, not an allergy to "dairy-free".
   // "no gluten" and "I can't eat pork" are avoided foods too.
   const free = /[- ]free$|^(?:i (?:can'?t|cannot|don'?t|do not) (?:eat|have|drink)|no|without) /i;
