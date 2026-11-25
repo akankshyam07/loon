@@ -101,6 +101,13 @@ test('spoken interruptions stop Loon, and "wait" only counts while it talks or a
   assert.strictEqual(route('cancel that').type, 'stop');
 });
 
+test('"stop listening", "explain in simple terms" and "explain this stack trace" are templates, not model questions', () => {
+  assert.strictEqual(route('stop listening').type, 'stop');
+  assert.strictEqual(route('Explain in simple terms').task, 'simplify');
+  assert.strictEqual(route('explain this stack trace').task, 'explain_error');
+  assert.strictEqual(route('what does this exception mean').task, 'explain_error');
+});
+
 test('"Hey Loon" wake phrase: acts on commands after it, ignores everything else', () => {
   assert.deepStrictEqual(wakePhrase('Hey Loon, what time is it?'), { rest: 'what time is it?' });
   assert.deepStrictEqual(wakePhrase('Loon.'), { rest: '' });

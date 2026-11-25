@@ -3715,3 +3715,13 @@ As a user, the worst problem was a reversed meaning. Typing "not allergic" saved
 Fixed: the no-answer rule in brain/personal.js now accepts "not allergic" and "I'm not allergic". The name reader drops "it's me", "this is me" and "that's me". A bare "lactose" is stored as an intolerance and "celiac" or "coeliac disease" as "I avoid gluten (celiac)". Test added in test/personal.test.js and checked to fail before the change.
 
 Left for later: "nobody", "me" and "anonymous" are saved as names. "Peanut allergy" keeps the singular "Peanut". "tree nuts (anaphylaxis)" keeps the bracket note. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-25 — voice intents, stop, simple terms and stack traces (sixteenth pass)
+
+Tried 46 spoken phrasings such as "tldr", "explain it like I'm five", "make it sound nicer", "stop listening", "explain in simple terms", "explain this stack trace", "what does this exception mean", "is this a good deal" and "make it longer".
+
+As a user, the worst problem was that "stop listening" was sent to the model as a question. "explain in simple terms" and "explain this stack trace" also missed the templates, so they used a model call and had no selection check.
+
+Fixed: "stop listening" is a stop word, "explain simply" (and so "explain in simple terms") maps to simplify, and the error template accepts stack trace, traceback and exception. Test added in test/voice.test.js and checked to fail before the change.
+
+Left for later: "make it longer", "expand this", "turn this into bullets", "what language is this", "read this out loud", "save this to notes", "which is the healthiest" and "is this a good deal" still go to the model as free questions. There is no longer or bullets edit chip yet.
