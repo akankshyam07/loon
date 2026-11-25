@@ -146,6 +146,14 @@ test('extractor selectors apply to listings without structured data', async () =
   assert.match(shopping.verdict(mixed).text, /different kinds of products/);
 });
 
+test('verdict does not claim best value when sizes are unreadable', () => {
+  const item = (name, price) => ({ name, price, currency: 'USD', rating: null, reviewCount: null, sizeText: name });
+  const none = shopping.verdict(shopping.analyze([item('Blue Widget', 10), item('Red Widget', 20)])).text;
+  assert.match(none, /can't rank value/);
+  assert.doesNotMatch(none, /best value/);
+  assert.match(shopping.verdict(shopping.analyze([item('Rice 1kg', 5), item('Widget', 3)])).text, /can't rank value/);
+});
+
 test('reviews: aspects, stars and quotes without a model', async () => {
   const reviews = extractReviews(await dom(fixture('shop.html')));
   assert.strictEqual(reviews.length, 3);

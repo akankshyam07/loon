@@ -277,6 +277,8 @@ function verdict({ items, unit, cheapest, bestValue, premium, mixedUnits }, { ju
   if (!items.length) return { text: "I couldn't find prices I trust on this page.", mood: 'confused' };
   if (mixedUnits) return { text: `These are different kinds of products (some by weight, some by volume or count), so only total prices compare. ${short(cheapest.name)} is the cheapest at ${money(cheapest)}.`, mood: 'curious' };
   if (items.length === 1) return { text: `One product here: ${short(items[0].name)} at ${money(items[0])}. Add it to your compare basket to weigh it against others.`, mood: 'curious' };
+  // With fewer than two sizes to compare there is no value ranking, only a price ranking.
+  if (items.filter((i) => i.unitPrice != null && i.quantity?.unit === unit).length < 2) return { text: `I can't read the sizes here, so I can't rank value. ${short(cheapest.name)} is the cheapest at ${money(cheapest)}, but that only compares sticker prices.`, mood: 'curious' };
   const expensive = [...items].filter((i) => i.unitPrice != null).sort((a, b) => b.unitPrice - a.unitPrice)[0];
   if (bestValue === cheapest) return { text: `${short(cheapest.name)} is the cheapest *and* the best value. Easy choice.`, mood: 'happy' };
   if (premium > 0.4 && expensive) {

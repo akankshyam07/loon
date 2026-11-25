@@ -3665,3 +3665,13 @@ As a user, nearly everything worked. "remind me on the 3rd of march to renew" ma
 Fixed: dayOfMonth now drops "the" in front of "3rd of march" and lets the date reader take the rest. Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: "remind me to take meds at 8am and 8pm" keeps only 8am and leaves "and 8pm" in the title. "snooze 10 minutes" and "cancel my timer" are not matched. "remind me later" and "in a bit" give a reminder with no time, and "remind me in 20 to call" guesses minutes. An emoji prefix such as "⏰ remind me at 3" is not parsed. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-25 — shopping and unit price (twenty-second pass)
+
+Tried 31 size strings, 14 price strings and four small product lists through analyze and verdict. Sizes such as pint, dozen, sheets, "500 gr", "half gallon" and "Pack of 6" all read correctly now.
+
+As a user, the worst problem was a confident claim with no data behind it. When no size could be read (two "Widget" products) the cat said the cheapest one was "the cheapest and the best value. Easy choice", even for a 2.1 star item with 3 reviews. When only one product had a readable size it said that product "wins per 100 g, but it's close", although nothing was compared.
+
+Fixed: verdict now says it cannot rank value when fewer than two products have comparable sizes, and gives only the cheapest sticker price. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: price ranges ("$5.00 - $7.00" reads as 5), "Was $20 Now $15" is read correctly but "$19.99 $24.99" assumes the first is the sale price. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
