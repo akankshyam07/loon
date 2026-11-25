@@ -50,6 +50,7 @@ test('spoken edits and explanations of a selection are templates', () => {
     'make this a lot shorter': 'shorter', 'rewrite this in a professional tone': 'professional', 'explain this in simple terms': 'simplify',
     'make this more casual': 'casual', 'make it casual': 'casual', 'make it sound less formal': 'casual', 'write this more casually': 'casual',
     'more casual': 'casual', 'rewrite this in a casual tone': 'casual',
+    'friendlier tone': 'warmer', 'a warmer tone': 'warmer', 'a more professional tone': 'professional', 'more casual tone': 'casual', 'rewrite in a friendly tone': 'warmer',
     'tidy this up': 'rewrite', 'tidy up this': 'rewrite', 'write this better': 'rewrite', 'polish my text': 'rewrite', 'rewrite it for me': 'rewrite', 'less wordy': 'shorter',
     'simplify this for me': 'simplify', 'make it easier to read': 'simplify', 'rewrite in a professional tone': 'professional', 'rephrase it in a more formal tone': 'professional',
     'be more concise': 'shorter', 'keep it short': 'shorter', 'shorten': 'shorter', 'make it shorter 😊': 'shorter', 'improve my writing': 'rewrite', 'rephrase': 'rewrite', 'clean this up': 'rewrite',

@@ -3725,3 +3725,13 @@ As a user, the worst problem was that "stop listening" was sent to the model as 
 Fixed: "stop listening" is a stop word, "explain simply" (and so "explain in simple terms") maps to simplify, and the error template accepts stack trace, traceback and exception. Test added in test/voice.test.js and checked to fail before the change.
 
 Left for later: "make it longer", "expand this", "turn this into bullets", "what language is this", "read this out loud", "save this to notes", "which is the healthiest" and "is this a good deal" still go to the model as free questions. There is no longer or bullets edit chip yet.
+
+## 2026-11-25 — writing tools, bare tone asks (fifteenth pass)
+
+Tried 31 typed edit asks such as "friendlier tone", "a more professional tone", "make it longer", "expand this", "soften the tone", "make it punchier", "rewrite in a friendly tone", "shorten it a lot", "too long, cut it down" and "less stiff".
+
+As a user, the short tone phrases I would type or say first ("friendlier tone", "warmer tone", "a more professional tone") went to the model as free questions with no selection check. "rewrite in a friendly tone" failed too because the warmer template needed "this", "that" or "it".
+
+Fixed: the warmer, professional and casual templates in brain/intents.js accept a bare "tone" phrase, and the warmer rewrite template accepts a missing pronoun. Test added in test/voice.test.js and checked to fail before the change.
+
+Left for later: "make it longer", "expand this", "soften the tone", "make it more confident", "make it punchier", "make it more direct", "less stiff", "shorten it a lot" and "too long, cut it down" still reach the model. They need new tasks (longer, direct) rather than regex changes. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
