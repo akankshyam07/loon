@@ -494,3 +494,11 @@ test('calc writes big whole numbers in full and reads a typographic minus', () =
   assert.match(calc('1000000 * 1000000'), /= 1,000,000,000,000$/);
   assert.match(calc('−5 + 8'), /= 3$/);
 });
+
+test('define candidates reach the base word for -oes, -ves and possessive forms', () => {
+  const { candidates } = require('../brain/define');
+  assert.ok(candidates('tomatoes').includes('tomato'));
+  assert.ok(candidates('knives').includes('knife'));
+  assert.ok(candidates('shelves').includes('shelf'));
+  assert.ok(candidates("dog's").includes('dog'));
+});

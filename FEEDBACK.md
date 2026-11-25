@@ -3645,3 +3645,13 @@ As a user, almost all of them correctly go to the model with the thread as conte
 Fixed: a reminder whose task is only "this", "that" or "it" is now titled "Reminder", the same as "remind me on friday". Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: "copy that", "save that", "read that out loud" and "stop" are not commands, so they reach the model, which cannot copy, save or speak. Loon should offer the Copy and Save buttons from the answer instead. A reminder about "this" cannot yet carry the text of the last answer. A bare "later" mid-thread gets the goodnight reply.
+
+## 2026-11-25 — translation and definitions (twentieth pass)
+
+Tried 37 typed dictionary questions such as "define ephemeral", "whats the meaning of ephemeral", "ephemeral meaning?", "what does 'ephemeral' mean in english", "dEfInE EPHEMERAL!!", "define machine learning" and "explain the word ephemeral", then 20 inflected words through the WordNet lookup.
+
+As a user, the question parsing held up. The lookup failed on plural forms. "tomatoes" and "knives" found nothing and went on to the model, because the rules never tried dropping "es" after "o" and turned "ves" only into "f", so "knives" became "knif".
+
+Fixed: the word forms tried by the dictionary now include "-oes" to the base, "-ves" to both "f" and "fe", and a trailing 's. Test added in test/brain.test.js and checked to fail before the change.
+
+Left for later: "dogs'" still finds nothing. "ran" shows the baseball noun before the verb. "what's ephemeral" and "what does ASAP stand for" go to the model, which is fine. `npm test` passes fully here once the wordpos index is built with `node tools/stat.js --no-stats index.adv index.adj index.verb index.noun` inside node_modules/wordpos.

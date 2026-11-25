@@ -27,7 +27,7 @@ const POS_NAMES = { n: 'noun', v: 'verb', a: 'adjective', s: 'adjective', r: 'ad
 function candidates(word) {
   const w = word.toLowerCase();
   const out = [w, ...(IRREGULAR[w] ? [IRREGULAR[w]] : [])];
-  const rules = [[/ies$/, 'y'], [/ves$/, 'f'], [/(ches|shes|sses|xes|zes)$/, (m) => m.slice(0, -2)], [/s$/, ''],
+  const rules = [[/ies$/, 'y'], [/ves$/, 'f'], [/ves$/, 'fe'], [/'s?$/, ''], [/(ches|shes|sses|xes|zes|oes)$/, (m) => m.slice(0, -2)], [/s$/, ''],
     [/ied$/, 'y'], [/(.)\1ed$/, '$1'], [/ed$/, 'e'], [/ed$/, ''], [/(.)\1ing$/, '$1'], [/ing$/, 'e'], [/ing$/, ''],
     [/ier$/, 'y'], [/iest$/, 'y'], [/er$/, ''], [/est$/, '']];
   for (const [re, rep] of rules) if (re.test(w)) out.push(w.replace(re, rep));
