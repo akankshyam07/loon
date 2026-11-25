@@ -670,3 +670,13 @@ test('menu: a dish named vegan or plant based is vegetarian, and eel is not', ()
   assert.deepStrictEqual(food.score({ name: 'Plant Based Chicken Sandwich', description: '' }).proteins, []);
   assert.strictEqual(food.score({ name: 'Eel Roll', description: '' }).likelyVegetarian, false);
 });
+
+test('Kotlin DTOs keep the JSON names of keys that are not plain camelCase', async () => {
+  const kt = await jsonToDto('{"first-name":"a","user_id":1,"class":"x"}', 'kotlin');
+  assert.match(kt, /@get:JsonProperty\("first-name"/);
+  assert.match(kt, /@get:JsonProperty\("user_id"/);
+  assert.match(kt, /@get:JsonProperty\("class"/);
+  assert.ok(!/mapper|fromJson|toJson/.test(kt), 'no converter boilerplate');
+  const plain = await jsonToDto('{"firstName":"a","age":1}', 'kotlin');
+  assert.ok(!/JsonProperty/.test(plain));
+});

@@ -145,6 +145,18 @@ const keepDecimals = (text) => String(text).replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[
 // quicktype renames a key that is a Java keyword ("class" becomes rootClass), so plain getters would never bind to it.
 const JAVA_KEYWORDS = new Set('abstract assert boolean break byte case catch char class const continue default do double else enum extends final finally float for goto if implements import instanceof int interface long native new package private protected public return short static strictfp super switch synchronized this throw throws transient try void volatile while true false null'.split(' '));
 
+// Kotlin has its own hard keywords, and quicktype renames those keys the same way.
+const KOTLIN_KEYWORDS = new Set('as break class continue do else false for fun if in interface is null object package return super this throw true try typealias typeof val var when while'.split(' '));
+
+// With Jackson, quicktype wraps the classes in a mapper, converters and fromJson helpers. Only the annotated classes are wanted.
+const trimKotlinJackson = (code) => code
+  .replace(/^\/\/ [\s\S]*?(?=^package )/m, '')
+  .replace(/^package .*\n\n?/m, '')
+  .replace(/^import (?!com\.fasterxml\.jackson\.annotation\.\*).*\n/gm, '')
+  .replace(/^val mapper = [\s\S]*?^}\n\n?/m, '')
+  .replace(/^\) \{\n[\s\S]*?^}\n/gm, ')\n')
+  .trim();
+
 async function jsonToDto(json, language = 'java', name = 'Root') {
   const { quicktype, InputData, jsonInputForTargetLanguage } = await import('quicktype-core');
   const { lang, options, label } = DTO_LANGUAGES[language];
@@ -157,12 +169,14 @@ async function jsonToDto(json, language = 'java', name = 'Root') {
   // Plain getters only bind to JSON keys that are already simple lowercase words. Any other key (first-name, created_at,
   // userId) needs Jackson's @JsonProperty or Spring Boot silently leaves the field null.
   const needsNames = lang === 'java' && keysOf(parsed).some((k) => !/^[a-z][a-z0-9]*$/.test(k) || JAVA_KEYWORDS.has(k));
+  const kotlinNames = lang === 'kotlin' && keysOf(parsed).some((k) => !/^[a-z][a-zA-Z0-9]*$/.test(k) || KOTLIN_KEYWORDS.has(k));
   const generate = async (inferMaps) => {
     const input = jsonInputForTargetLanguage(lang);
     await input.addSource({ name, samples: objects.map((v) => JSON.stringify(v)) });
     const inputData = new InputData();
     inputData.addInput(input);
-    const result = await quicktype({ inputData, lang, inferMaps, rendererOptions: needsNames ? { framework: 'jackson', 'array-type': 'list' } : options });
+    const result = await quicktype({ inputData, lang, inferMaps, rendererOptions: needsNames ? { framework: 'jackson', 'array-type': 'list' } : kotlinNames ? { framework: 'jackson' } : options });
+    if (kotlinNames) return trimKotlinJackson(result.lines.join('\n'));
     return result.lines.join('\n').replace(/^\/\/ Converter\.java[\s\S]*?(?=^\/\/ \w+\.java$)/m, '').replace(/^\/\/ .*\n\n?/m, '').replace(/^package (?:io\.)?quicktype;?\n\n?/gm, '').trim();
   };
   // Keys like "2024-01" or "my key" make quicktype read the whole object as a Map, which leaves no class to show (an empty

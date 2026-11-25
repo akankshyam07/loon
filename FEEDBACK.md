@@ -3695,3 +3695,13 @@ As a user, "remember everything I say" saved a memory with that exact text, so L
 Fixed: "remove or delete X from memory" now forgets X, "delete everything from memory" is a wipe request, and "remember everything I say" saves nothing. Test added in test/assistant.test.js.
 
 Left for later: "remmeber" typos are not matched. "save this to memory" and "undo that" are not matched. "forget me" and "forget the last thing" search memories for those words, which finds nothing useful. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-25 — developer help, JSON to DTO, Kotlin names (seventeenth pass)
+
+Tried 8 pastes with hyphen and snake_case keys, Kotlin and Java keywords as keys, a 20 digit integer, nested arrays with nulls and ISO dates, in Java, TypeScript and Kotlin.
+
+As a user, the Kotlin output was the problem. `first-name` became `firstName` and `user_id` became `userID` with nothing linking them back to the JSON, so Spring Boot would leave those fields null. Keys such as `class` or `val` were renamed to `rootClass` and `rootVal` the same way. Java and TypeScript already handled this.
+
+Fixed: when a Kotlin paste has a key that is not plain camelCase, or is a Kotlin keyword, brain/devtools.js now asks quicktype for Jackson annotations and trims its mapper and converter boilerplate, so the answer is the annotated data classes plus one import. Plain camelCase pastes are unchanged. Test added in test/modes.test.js.
+
+Left for later: a 20 digit integer is still typed as a double (Java) or number (TypeScript), which loses precision. Kotlin Jackson output marks every field `required=true`. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
