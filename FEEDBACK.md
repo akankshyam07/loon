@@ -3825,3 +3825,13 @@ As a user, 44 were answered from the table. The ones I would hit on my own Mac a
 Fixed: brain/errors.js reads the Spring startup report as a missing bean, treats Postgres password failures as a database login problem (the Postgres connection rule no longer grabs them first), and the Xcode rule also covers the xcode-select wording. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: C++ "'iostream' file not found" and "undefined reference to", "Could not build wheels for", "Unable to locate package" and "Could not find or load main class" are still not in the table. Other "APPLICATION FAILED TO START" causes (datasource, port) rely on their own rules. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-26 — settings UI, reply style feedback (sixteenth pass)
+
+Tried 36 style requests such as "ELI5", "use bullet points", "stop being so playful", "don't be so wordy", "answers in german pls", "reply in español", "be nicer" and "english only".
+
+As a user, three natural phrasings went to the model and left the setting unchanged. "stop being so playful" and "don't be so wordy" are the obvious way to say what the settings already offer. "answers in german pls" missed because only "reply in" and "answer in" were known.
+
+Fixed: parseFeedback in brain/personal.js now reads "stop being so playful, silly or cute" as the plain tone, "don't be so wordy, chatty or verbose" as short replies, and "answers in X" or "replies in X" as a reply language. Test added in test/personal.test.js.
+
+Left for later: "reply in español" (language names in other languages), "ELI5", bullet point requests and "be nicer" have no rule. The 5 failing tests in `npm test` are the usual WordNet and demo ones from the sandbox install.

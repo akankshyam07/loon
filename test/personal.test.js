@@ -185,6 +185,9 @@ test('style feedback: reset, "be chill" and "tbh" filler', () => {
   const cur = { length: 'short', tone: 'plain', emoji: false };
   assert.deepStrictEqual(parseFeedback('reset style', cur).patch, { length: 'normal', tone: 'playful', emoji: true });
   assert.strictEqual(parseFeedback('reset'), null);
+  assert.deepStrictEqual(parseFeedback("don't be so wordy").patch, { length: 'short' });
+  assert.deepStrictEqual(parseFeedback('stop being so playful').patch, { tone: 'plain' });
+  assert.deepStrictEqual(parseFeedback('answers in german pls').patch, { language: 'German' });
   assert.deepStrictEqual(parseFeedback('be chill').patch, { tone: 'playful' });
   assert.deepStrictEqual(parseFeedback('talk normally').patch, { tone: 'playful' });
   assert.deepStrictEqual(parseFeedback('go back to playful').patch, { tone: 'playful' });
