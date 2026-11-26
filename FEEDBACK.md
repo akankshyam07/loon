@@ -3835,3 +3835,13 @@ As a user, three natural phrasings went to the model and left the setting unchan
 Fixed: parseFeedback in brain/personal.js now reads "stop being so playful, silly or cute" as the plain tone, "don't be so wordy, chatty or verbose" as short replies, and "answers in X" or "replies in X" as a reply language. Test added in test/personal.test.js.
 
 Left for later: "reply in español" (language names in other languages), "ELI5", bullet point requests and "be nicer" have no rule. The 5 failing tests in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-26 — writing and edit asks by voice and typed, find bugs (seventeenth pass)
+
+Tried 61 short asks about a selection such as "fix grammer", "tldr", "ELI5", "make it a bit shorter", "could you please proofread this for me", "say it nicer", "clean this up", "make it polite", "find bugs" and "any bugs?".
+
+As a user, nearly every edit phrasing already reached the right chip task. The one wrong result was "find bugs" and "find bugs in this code". They were read as a file search for the word "bugs", so a developer who selected code got a file search card instead of a review.
+
+Fixed: the find_bug template in brain/intents.js accepts "find bugs" with or without "in this (code)", and "any bugs" or "are there any bugs". Test added in test/voice.test.js and checked to fail before the change.
+
+Left for later: "summary", "sum up", "clearer", "summarize in one sentence", "simplify this for a child" and "why is this broken" still go to the model as free questions, which is fine but slower. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

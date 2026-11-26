@@ -64,6 +64,8 @@ test('spoken edits and explanations of a selection are templates', () => {
   assert.strictEqual(route('Summarize this page').task, 'page_summary');
   const dev = { 'fact check this': 'fact_check', 'is this true': 'fact_check', 'explain this code': 'explain_code', 'what does this code do': 'explain_code', 'what does this error mean': 'explain_error', "what's this error": 'explain_error', 'why am I getting this error': 'explain_error', "what's wrong with this code": 'find_bug', 'how do I fix this error': 'likely_fix' };
   for (const [said, task] of Object.entries(dev)) assert.deepStrictEqual(route(said), { type: 'task', task, needs: 'selection' }, said);
+  // "find bugs" must not become a file search for the word "bugs".
+  for (const said of ['find bugs', 'find bugs in this code', 'any bugs in this', 'are there any bugs']) assert.deepStrictEqual(route(said), { type: 'task', task: 'find_bug', needs: 'selection' }, said);
   const pageTasks = { 'turn this page into notes': 'page_notes', 'make a checklist from this page': 'page_checklist', 'summarize the reviews': 'shop_reviews', 'what do people say in the reviews': 'shop_reviews' };
   for (const [said, task] of Object.entries(pageTasks)) assert.deepStrictEqual(route(said), { type: 'task', task }, said);
   for (const said of ['explain this page', 'tell me what this page is about']) assert.strictEqual(route(said).task, 'page_summary', said);
