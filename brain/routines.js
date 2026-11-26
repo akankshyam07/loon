@@ -67,6 +67,8 @@ function formatTime(time) {
 // { type: 'interval', minutes, window, days }             every N minutes inside window (null = all day)
 const DAY_WORD = String.raw`(?:mon|tues?|wed(?:nes)?|thu(?:rs?)?|fri|sat(?:ur)?|sun)(?:day)?s?`;
 const DAY_LIST = new RegExp(String.raw`\b(?:every|each|on)\s+(${DAY_WORD}(?:(?:\s*(?:,|and|&)\s*|\s+)${DAY_WORD})*)\b`, 'i');
+// "mon-fri", "monday to friday", "every monday through thursday": both ends and everything between, wrapping past Sunday.
+const DAY_RANGE = new RegExp(String.raw`\b(?:(?:every|each|on|from)\s+)?(${DAY_WORD})\s*(?:-|–|to|through|thru|until|till)\s*(${DAY_WORD})\b`, 'i');
 const DAY_PLURAL = new RegExp(String.raw`\b((?:mon|tues|wednes|thurs|fri|satur|sun)days(?:\s*(?:,|and|&)\s*(?:mon|tues|wednes|thurs|fri|satur|sun)days)*)\b`, 'i');
 const dayIndex = (word) => ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].indexOf(word.toLowerCase().slice(0, 3));
 const RECURRING = /\b(?:every|each|everyday|daily|nightly|hourly|weekdays?|weekends?|weekly|monthly|(?:mon|tues|wednes|thurs|fri|satur|sun)days)\b/i;
@@ -119,8 +121,12 @@ function parseSchedule(input, now = new Date(), { allowOnce = false } = {}) {
   const except = take(state, new RegExp(String.raw`\b(?:except(?:\s+on)?|but\s+not|excluding|other\s+than)\s+(${DAY_WORD}(?:(?:\s*(?:,|and|&|or)\s*|\s+)${DAY_WORD})*)\b`, 'i'));
   let days = null;
   // A named day wins, so "every friday say have a good weekend" keeps its message.
-  const list = take(state, DAY_LIST) || take(state, DAY_PLURAL);
-  if (list) days = [...new Set(list[1].split(/\s*(?:,|and|&)\s*|\s+/).map(dayIndex).filter((d) => d >= 0))].sort();
+  const range = take(state, DAY_RANGE);
+  const list = !range && (take(state, DAY_LIST) || take(state, DAY_PLURAL));
+  if (range) {
+    const [from, to] = [dayIndex(range[1]), dayIndex(range[2])];
+    days = ALL_DAYS.filter((d) => (d - from + 7) % 7 <= (to - from + 7) % 7);
+  } else if (list) days = [...new Set(list[1].split(/\s*(?:,|and|&)\s*|\s+/).map(dayIndex).filter((d) => d >= 0))].sort();
   else if (take(state, /\b(?:every\s+|on\s+)?(?:week\s?days?|work\s?days?)\b/i)) days = WEEKDAYS;
   else if (take(state, /\b(?:every\s+|on\s+)?weekends?\b/i)) days = WEEKEND;
   if (except) {

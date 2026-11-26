@@ -565,3 +565,17 @@ test('a day of the month spelled out as a word is that day, not today', () => {
     assert.ok(!/\b(?:first|fifteenth|twenty-first|remind)\b/i.test(draft.payload.message), draft.payload.message);
   }
 });
+
+test('routines: day ranges like "mon-fri" and "monday to friday" cover every day between', () => {
+  const now = new Date(2026, 10, 26, 10, 0);
+  const days = (text) => R.parseRoutine(text, { now }).schedule.days;
+  assert.deepStrictEqual(days('every monday to friday at 8 remind me to commute'), [1, 2, 3, 4, 5]);
+  assert.deepStrictEqual(days('mon-fri at 9 remind me to log hours'), [1, 2, 3, 4, 5]);
+  assert.deepStrictEqual(days('every monday through thursday at 5pm remind me to stretch'), [1, 2, 3, 4]);
+  assert.deepStrictEqual(days('every friday to monday at 10 remind me to relax'), [0, 1, 5, 6]);
+  const p = R.parseRoutine('every mon-fri at 9am remind me to log hours', { now });
+  assert.strictEqual(p.payload.message, 'log hours');
+  assert.ok(p.understood);
+  // A weekday followed by an ordinary "to" is not a range.
+  assert.deepStrictEqual(days('every sunday at 9 remind me to monitor the oven'), [0]);
+});

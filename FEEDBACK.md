@@ -3765,3 +3765,13 @@ As a user, the loose ways of asking for my history went to the model, which cann
 Fixed: parseCommand now reads "wat/what did I ask", bare "recall", "what did I say / you tell me (earlier)", "repeat/show my last question, chat or conversation", "last conversation" and "show me my chats" as a history list. Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: "my previous conversation" and "what was the last thing you told me" still reach the model, and "continue our chat about X" has no continue action from typed text. "find that thing I asked about earlier" is treated as a file search. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-26 — routines, day ranges (sixth pass)
+
+Tried 24 routine inputs such as "every monday to friday at 8 remind me to commute", "mon-fri at 9 remind me to log hours", "every monday through thursday…", "every day at 9am for 5 days…", "twice a day…" and "every weekend…", plus 10 routine commands.
+
+As a user, "every monday to friday at 8" was the bad one. Loon made a routine for Monday only and put "Friday remind me to commute" in the message. "mon-fri at 9 remind me…" was not recognised at all.
+
+Fixed: brain/routines.js now reads day ranges ("mon-fri", "monday to friday", "monday through thursday", also across the weekend like "friday to monday") as every day between the two ends. Test added in test/routines.test.js and checked to fail before the change.
+
+Left for later: "for 5 days" and "until friday" limits are not supported, so the card shows the whole phrase as the message and is marked as not understood. "show reminders", "clear routines", "unschedule X", "never remind me to X" and "skip X today" are still not understood. The 5 failures in `npm test` are the usual sandbox ones (missing WordNet data).
