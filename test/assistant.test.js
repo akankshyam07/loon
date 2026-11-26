@@ -59,7 +59,10 @@ test('commands: reminders, events, open, find, notes, memory; questions fall thr
   // Web services have no Mac app to launch, and spaced links and dotfiles go to the chat.
   assert.deepStrictEqual(parseCommand('open gmail', NOW), { action: 'open', target: 'https://mail.google.com', kind: 'url' });
   for (const [q, t] of [['open task manager', 'Activity Monitor'], ['open cmd', 'Terminal'], ['open explorer', 'Finder'], ['open notepad', 'TextEdit']]) assert.deepStrictEqual(parseCommand(q, NOW), { action: 'open', target: t, kind: 'app' }, q);
-  for (const [q, t] of [['open reddit', 'https://www.reddit.com'], ['open twitter', 'https://x.com'], ['open amazon', 'https://www.amazon.com']]) assert.deepStrictEqual(parseCommand(q, NOW), { action: 'open', target: t, kind: 'url' }, q);
+  for (const [q, t] of [['open system settings', 'System Settings'], ['open code', 'Visual Studio Code'], ['open vs', 'Visual Studio Code']]) assert.deepStrictEqual(parseCommand(q, NOW), { action: 'open', target: t, kind: 'app' }, q);
+  for (const [q, t] of [['open github', 'https://github.com'], ['open chatgpt', 'https://chatgpt.com'], ['open google', 'https://www.google.com'], ['open yt', 'https://www.youtube.com']]) assert.deepStrictEqual(parseCommand(q, NOW), { action: 'open', target: t, kind: 'url' }, q);
+  assert.strictEqual(parseCommand('open wifi settings', NOW), null);
+  for (const [q, t] of [['open reddit', 'https://www.reddit.com'],['open twitter', 'https://x.com'], ['open amazon', 'https://www.amazon.com']]) assert.deepStrictEqual(parseCommand(q, NOW), { action: 'open', target: t, kind: 'url' }, q);
   assert.deepStrictEqual(parseCommand('open YouTube', NOW), { action: 'open', target: 'https://www.youtube.com', kind: 'url' });
   assert.strictEqual(parseCommand('open http://localhost:3000/a b', NOW), null);
   assert.strictEqual(parseCommand('open .env', NOW), null);

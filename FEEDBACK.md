@@ -3785,3 +3785,13 @@ As a user, the worst misses were private sites treated as ordinary pages, so Loo
 Fixed: those hosts are now in the sensitive domain list in extension/lib/page-kind.js. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: a general rule for hosts that start with "login", "secure" or "my" is not added, because it would catch shops. Hospital and pharmacy sites (walgreens.com, cvs.com) stay ordinary pages because most visits are shopping. The 5 failures in `npm test` are the usual sandbox ones (missing WordNet data).
+
+## 2026-11-26 — open and launch commands (eleventh pass)
+
+Tried 75 phrasings such as "open system settings", "open code", "open vs", "open github", "open chatgpt", "open google", "open yt", "open insta", "open stackoverflow", "open chrome browser" and "open wifi settings".
+
+As a user, "open system settings" did nothing and went to the chat, because the rule for panes like "wifi settings" also caught the real app name. "open code" and "open vs" offered an app with that exact name. Web-only names such as github, chatgpt, google, twitch, tiktok and ebay showed a confirm card for an app that does not exist.
+
+Fixed: "system settings" opens System Settings, "code" and "vs" open Visual Studio Code, and the web-only names above (plus yt, fb, ig, insta and wiki) open their website. Test added in test/assistant.test.js.
+
+Left for later: "open chrome browser", "open the browser", "open google meet" and "open drive" still offer an app with that exact name. "open music" still opens the Music folder. `npm test` shows the same 5 WordNet and demo failures as main in this sandbox.
