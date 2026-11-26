@@ -579,3 +579,9 @@ test('routines: day ranges like "mon-fri" and "monday to friday" cover every day
   // A weekday followed by an ordinary "to" is not a range.
   assert.deepStrictEqual(days('every sunday at 9 remind me to monitor the oven'), [0]);
 });
+
+test('"first monday of every month" is declined instead of becoming today\'s date each month', () => {
+  assert.equal(R.parseRoutine('first monday of every month at 10 call mom', { now: NOW }), null);
+  assert.equal(R.parseRoutine('remind me the last friday of each month to invoice', { now: NOW }), null);
+  assert.equal(R.parseRoutine('the 15th of every month at 9 pay rent', { now: NOW }).schedule.monthDay, 15);
+});

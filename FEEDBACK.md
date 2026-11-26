@@ -3875,3 +3875,13 @@ As a user, reminders, timers and recurring routines were solid. The weak spot wa
 Fixed: brain/commands.js reads those on and off phrasings as the focus command. The stop rule now runs before the timer rules, because "stop the focus timer" was read as a timer and dropped. Test added in test/hub.test.js.
 
 Left for later: "remind me at 25:00 to x" makes a reminder titled "at 25:00 to x" with no time, "cancel timer", "list reminders" and "snooze 10 min" have no command, and "focus until 3pm" goes to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-26 — routines, monthly and wording checks (seventh pass)
+
+Tried 31 routine inputs such as "every morning remind me to stretch", "every 2 weeks on friday submit timesheet", "first monday of every month at 10 call mom", "every day at 9am and 9pm take pills", "every wknd at 10 laundry" and "every day at 9 until friday stretch".
+
+As a user, most phrasings gave a sensible schedule. The bad one was "first monday of every month at 10 call mom". Loon made a routine for the 26th of every month (today's date) with the message "First monday of call mom", and the card looked fine.
+
+Fixed: brain/routines.js now declines "first monday of every month", "last friday of each month" and similar, the same way it already declines "every 3rd thursday". The card then shows the routine as not understood. Test added in test/routines.test.js and checked to fail before the change.
+
+Left for later: "all weekdays at 9 standup" keeps "All" in the message, "evry monday" (typo), "every wknd" and "every day at 9am and 9pm" are not understood at all, and "for 5 days" or "until friday" limits are still part of the message. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

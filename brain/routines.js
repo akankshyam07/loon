@@ -97,6 +97,8 @@ function parseSchedule(input, now = new Date(), { allowOnce = false } = {}) {
   state.text = state.text.replace(new RegExp(String.raw`\bevery\s+(?:other|second)\s+(${DAY_WORD})\b`, 'i'), 'every other week on $1');
   // "every 3rd thursday" is neither a date nor a weekday, so the confirm card would show the wrong schedule.
   if (new RegExp(String.raw`\b(?:every|each)\s+\d{1,2}(?:st|nd|rd|th)\s+(?:${DAY_WORD})\b`, 'i').test(state.text)) return { schedule: null, rest: tidyRest(state.text) };
+  // "first monday of every month" has no schedule shape here; reading it as today's date would be quietly wrong.
+  if (new RegExp(String.raw`\b(?:${ORDINAL_WORDS.join('|')}|last|\d{1,2}(?:st|nd|rd|th))\s+(?:${DAY_WORD})\s+of\s+(?:every|each|the)\s+month\b`, 'i').test(state.text)) return { schedule: null, rest: tidyRest(state.text) };
   const at = now.getTime();
   const done = (schedule) => ({ schedule, rest: tidyRest(state.text) });
 
