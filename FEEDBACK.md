@@ -3805,3 +3805,13 @@ As a user, most were instant, but "thanks man", "thanks buddy", "ur the best", "
 Fixed: the thanks rule accepts man, buddy, bro, friend and pal at the end, the praise rule accepts "ur" and "i love you", the acknowledgement rule accepts "that makes sense", and the apology rule accepts "sry". Test added in test/brain.test.js and checked to fail before the change.
 
 Left for later: "kthxbye", "my b", "meow", "purr" and a thanks with a mid-sentence goodbye ("thanks! bye") still go to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-26 — food and menu (twenty-third pass)
+
+Tried 50 dish names such as "Pho Chay", "Tempeh Reuben", "Ramen", "Miso Ramen", "Steamed Dumplings", "Saag Paneer", "Egg Drop Soup" and "Fish Tacos".
+
+As a user, the worst problem was a wrong vegetarian answer. Plain "Ramen" and "Miso Ramen" were listed as likely vegetarian although ramen broth and toppings usually hold pork. "Pho Chay" (vegetarian pho) and "Tempeh Reuben" were hidden from the vegetarian list.
+
+Fixed: brain/food.js treats ramen as a meat dish unless a veggie word comes before it, reads "chay" as a vegan marker, and lets tempeh, seitan and reuben count as meat-free wording. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: "Hot and Sour Soup" and "Kimchi Fried Rice" are listed as vegetarian although the broth or the kimchi often has pork or fish sauce. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
