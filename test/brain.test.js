@@ -231,6 +231,18 @@ test('ladder: stacked acknowledgements and bare reactions get an instant reply',
   assert.strictEqual(asked, 0);
 });
 
+test('ladder: thanks to a friend, "ur the best", "i love you", "that makes sense" and "sry" are instant', async () => {
+  let asked = 0;
+  const brain = { modelId: () => 'fake', chat: async (_p, { onText }) => { asked++; onText('Sure.'); } };
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));
+  const resolver = new Resolver({ brain, cacheFile: path.join(dir, 'c.json'), countsFile: path.join(dir, 'n.json') });
+  const history = [{ question: 'explain tcp', answer: 'It is reliable.', target: 'fast' }];
+  for (const q of ['thanks man', 'thanks buddy', 'ur the best', 'i love you', 'ok that makes sense', 'sry']) {
+    assert.strictEqual((await resolver.ask(q, { onText: () => {}, firstInThread: false, history })).tier, 'code', q);
+  }
+  assert.strictEqual(asked, 0);
+});
+
 test('ladder: thanks followed by a real request still goes to the model', async () => {
   const brain = { modelId: () => 'fake', chat: async (_p, { onText }) => onText('Sure.') };
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));

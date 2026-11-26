@@ -3795,3 +3795,13 @@ As a user, "open system settings" did nothing and went to the chat, because the 
 Fixed: "system settings" opens System Settings, "code" and "vs" open Visual Studio Code, and the web-only names above (plus yt, fb, ig, insta and wiki) open their website. Test added in test/assistant.test.js.
 
 Left for later: "open chrome browser", "open the browser", "open google meet" and "open drive" still offer an app with that exact name. "open music" still opens the Music folder. `npm test` shows the same 5 WordNet and demo failures as main in this sandbox.
+
+## 2026-11-26 — follow-up conversations, thanks and praise wording (nineteenth pass)
+
+Tried 43 short replies inside a thread, such as "thank u so much!!", "ty loon!", "thanks man", "ur the best", "i love you", "ok that makes sense", "sry", "kthxbye", "meow" and "thanks! bye".
+
+As a user, most were instant, but "thanks man", "thanks buddy", "ur the best", "i love you", "ok that makes sense" and "sry" went to the language model for a slow, wordy reply to a simple kind word.
+
+Fixed: the thanks rule accepts man, buddy, bro, friend and pal at the end, the praise rule accepts "ur" and "i love you", the acknowledgement rule accepts "that makes sense", and the apology rule accepts "sry". Test added in test/brain.test.js and checked to fail before the change.
+
+Left for later: "kthxbye", "my b", "meow", "purr" and a thanks with a mid-sentence goodbye ("thanks! bye") still go to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
