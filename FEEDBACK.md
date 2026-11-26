@@ -3815,3 +3815,13 @@ As a user, the worst problem was a wrong vegetarian answer. Plain "Ramen" and "M
 Fixed: brain/food.js treats ramen as a meat dish unless a veggie word comes before it, reads "chay" as a vegan marker, and lets tempeh, seitan and reuben count as meat-free wording. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: "Hot and Sour Soup" and "Kimchi Fried Rice" are listed as vegetarian although the broth or the kimchi often has pork or fish sauce. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-26 — developer help, error table (twenty-first pass)
+
+Tried 51 real error messages from Node, Python, Java and Spring, Rust, Go, git, Docker, npm, ssh and databases.
+
+As a user, 44 were answered from the table. The ones I would hit on my own Mac and Spring projects were missed. The standard Spring Boot "APPLICATION FAILED TO START ... required a bean of type" report, "password authentication failed" from Postgres, and "xcode-select: error: command line tools are not installed" all went to the model.
+
+Fixed: brain/errors.js reads the Spring startup report as a missing bean, treats Postgres password failures as a database login problem (the Postgres connection rule no longer grabs them first), and the Xcode rule also covers the xcode-select wording. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: C++ "'iostream' file not found" and "undefined reference to", "Could not build wheels for", "Unable to locate package" and "Could not find or load main class" are still not in the table. Other "APPLICATION FAILED TO START" causes (datasource, port) rely on their own rules. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

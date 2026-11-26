@@ -685,3 +685,10 @@ test('Kotlin DTOs keep the JSON names of keys that are not plain camelCase', asy
   const plain = await jsonToDto('{"firstName":"a","age":1}', 'kotlin');
   assert.ok(!/JsonProperty/.test(plain));
 });
+
+test('error table: Spring startup report, Postgres login and missing Xcode tools', () => {
+  assert.match(lookupKnown("APPLICATION FAILED TO START\n\nDescription:\n\nParameter 0 of constructor in com.x.Foo required a bean of type 'com.x.Bar' that could not be found."), /Spring can’t find a bean/);
+  assert.match(lookupKnown('psql: error: connection to server at "localhost" failed: FATAL:  password authentication failed for user "postgres"'), /Database login refused/);
+  assert.match(lookupKnown('FATAL: password authentication failed for user "app"'), /Database login refused/);
+  assert.match(lookupKnown('xcode-select: error: command line tools are not installed, use `xcode-select --install` to install them'), /Xcode command line tools/);
+});

@@ -41,7 +41,7 @@ const KNOWN = [
     fix: ['Check the dependency is in the runtime scope (not `provided`/`test`).', 'Rebuild cleanly (`mvn clean package` / `gradle clean build`).', 'Look for version conflicts: `mvn dependency:tree`.'],
   },
   {
-    match: /NoSuchBeanDefinitionException|No qualifying bean of type/,
+    match: /NoSuchBeanDefinitionException|No qualifying bean of type|required a bean of type .* that could not be found/,
     title: 'Spring can’t find a bean',
     explain: 'Spring was asked to inject a type, but no bean of that type is registered.',
     fix: ['Annotate the class (`@Service`, `@Component`, `@Repository`) or declare a `@Bean`.', 'Make sure its package is under your `@SpringBootApplication` package (component scan).', 'If there are several candidates, pick one with `@Qualifier` or `@Primary`.'],
@@ -155,7 +155,7 @@ const KNOWN = [
     fix: ['Check the base case really stops the recursion.', 'Make sure each call moves closer to it (a smaller input).', 'For very deep data, loop with your own stack instead.'],
   },
   {
-    match: /connection to server (on socket|at) .*failed/i,
+    match: /^(?!.*authentication failed)(?=.*connection to server (on socket|at) .*failed)/is,
     title: 'Postgres connection failed',
     explain: 'psql could not reach a Postgres server, so it is not running, or it listens somewhere other than where the client looks.',
     fix: ['Start the server (`brew services start postgresql`, `sudo systemctl start postgresql` or your Docker container).', 'Pass the host and port explicitly: `psql -h localhost -p 5432`.', 'If the message mentions a socket path, the server may be using a different socket directory.'],
@@ -473,7 +473,7 @@ const KNOWN = [
     fix: ['Render a field of the object (`{user.name}`), not the object itself.', 'To inspect it, use `{JSON.stringify(value)}`.'],
   },
   {
-    match: /xcrun: error: invalid active developer path/,
+    match: /xcrun: error: invalid active developer path|xcode-select: error: command line tools are not installed/,
     title: 'Xcode command line tools missing (macOS)',
     explain: 'macOS lost its developer tools, usually after an OS update, so git, clang and make cannot run.',
     fix: ['Run `xcode-select --install` and accept the install prompt.', 'Then run the failed command again.'],
@@ -545,7 +545,7 @@ const KNOWN = [
     fix: ['Make a virtual environment: `python3 -m venv .venv && source .venv/bin/activate`, then run pip again.', 'For a command-line tool, `pipx install <name>` keeps it isolated.', 'Avoid `--break-system-packages`, it can break tools that depend on the system Python.'],
   },
   {
-    match: /Access denied for user/,
+    match: /Access denied for user|password authentication failed for user/,
     title: 'Database login refused',
     explain: 'The database server was reached but rejected the username, password or the host you connected from.',
     fix: ['Check the username and password in your config or environment variables.', 'Make sure that user is allowed from this host, for example `\'root\'@\'localhost\'` is a different account from `\'root\'@\'%\'`.'],
