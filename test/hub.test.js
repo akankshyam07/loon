@@ -107,6 +107,8 @@ test('daily assistant: day and focus commands, and a day summary that survives m
   assert.deepStrictEqual(parseCommand('start a focus session for 1 hour'), { action: 'focus', minutes: 60 });
   assert.deepStrictEqual(parseCommand('pomodoro'), { action: 'focus', minutes: 25 });
   assert.deepStrictEqual(parseCommand('stop focus'), { action: 'focus', minutes: 0 });
+  for (const q of ['turn off focus mode', 'focus mode off', 'stop the focus timer', 'disable focus', 'exit focus mode']) assert.deepStrictEqual(parseCommand(q), { action: 'focus', minutes: 0 }, q);
+  for (const q of ['turn on focus mode', 'enable focus mode', 'focus mode on']) assert.deepStrictEqual(parseCommand(q), { action: 'focus', minutes: 25 }, q);
   const now = new Date(2026, 9, 5, 9, 0);
   const at = (h, m = 0) => new Date(2026, 9, 5, h, m);
   const text = formatDay({

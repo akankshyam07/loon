@@ -87,6 +87,8 @@ function stripPoliteness(input) {
 function parseCommand(input, now = new Date()) {
   const text = stripPoliteness(input);
   let m;
+  // Before the timer rules below, which would read "stop the focus timer" as a timer and give up.
+  if (/^(?:(?:stop|end|cancel|exit|quit|disable|leave)|(?:turn|switch) off) (?:the )?focus(?: mode| timer| session)?$|^focus(?: mode| timer| session)? off$/i.test(text)) return { action: 'focus', minutes: 0 };
   // Loon has no alarm clock of its own. Timers, alarms and "wake me" become Reminders, which the confirm card names.
   // "egg timer 5 minutes" names the timer before its length.
   if ((m = text.match(/^(?:set |start )?(?:an? )?(?!(?:an?|the|my|set|start) )([a-z]+) timer (?:for |of )?(\d.*)$/i))) {
@@ -216,8 +218,7 @@ function parseCommand(input, now = new Date()) {
     if (/^an?$/i.test(m[1]) && !/^h/i.test(m[2] || '')) return null; // "focus a" is not a duration
     return { action: 'focus', minutes: Math.min(Math.round(n * (/^h/i.test(m[2] || '') ? 60 : 1)), 240) };
   }
-  if (/^(?:start (?:a )?)?focus(?: mode| timer| session)?$|^(?:start |set )?(?:a )?pomodoro$/i.test(text)) return { action: 'focus', minutes: 25 };
-  if (/^(?:stop|end|cancel) (?:the )?focus(?: mode| timer| session)?$/i.test(text)) return { action: 'focus', minutes: 0 };
+  if (/^(?:(?:start|enable|turn on|switch on) (?:a )?)?focus(?: mode| timer| session)?(?: on)?$|^(?:start |set )?(?:a )?pomodoro$/i.test(text)) return { action: 'focus', minutes: 25 };
   return null;
 }
 

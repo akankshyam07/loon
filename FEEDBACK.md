@@ -3865,3 +3865,13 @@ As a user, most of it worked. The one wrong result was a list with an ampersand 
 Fixed: the list splitter in brain/personal.js now treats "," or ";" followed by "&" as one separator, for allergies and for interests. Test added in test/conversations.test.js and checked to fail before the change.
 
 Left for later: "Ada & Bob" keeps a double space in the name, "Ada Lovelace Jr." loses its final period, "名前は李雷です" is kept whole, and "ninguna" is saved as an allergy. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-26 — reminders, timers and focus (twenty-first pass)
+
+Tried 47 asks such as "remind me in half an hour", "timer 1:30", "wake me up at 7am", "remind me every weekday at 9 to standup", "turn off focus mode", "focus mode off" and "stop the focus timer".
+
+As a user, reminders, timers and recurring routines were solid. The weak spot was getting out of focus mode. "turn off focus mode", "focus off", "disable focus mode", "exit focus mode" and "stop the focus timer" all went to the model, which could only talk about it while the cat stayed quiet. "enable focus mode" and "turn on focus mode" missed too.
+
+Fixed: brain/commands.js reads those on and off phrasings as the focus command. The stop rule now runs before the timer rules, because "stop the focus timer" was read as a timer and dropped. Test added in test/hub.test.js.
+
+Left for later: "remind me at 25:00 to x" makes a reminder titled "at 25:00 to x" with no time, "cancel timer", "list reminders" and "snooze 10 min" have no command, and "focus until 3pm" goes to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
