@@ -392,7 +392,7 @@ test('synonymTerm reads "synonym for X" and "another word for X"; synonyms lists
   assert.strictEqual(require('../brain/define').antonymTerm('opposite word for hot'), 'hot');
   assert.strictEqual(require('../brain/define').antonymTerm('contrary of hot'), 'hot');
   const text = await synonyms('big');
-  assert.match(text, /^\*\*big\*\*: .*large/);
+  assert.match(text, /^\*\*big\*\*: large/, 'adverb senses like "boastfully" come after the adjective ones');
   assert.doesNotMatch(text, /\(a\)|_/);
   assert.strictEqual(await synonyms('zzqxv'), null);
 });

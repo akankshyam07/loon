@@ -104,7 +104,8 @@ async function synonyms(term, { max = 10 } = {}) {
     wordpos = new WordPOS();
   }
   for (const candidate of candidates(term.toLowerCase())) {
-    const senses = await wordpos.lookup(candidate);
+    // WordNet lists adverb senses before adjectives ("big" → "boastfully, vauntingly"), which is rarely what was asked.
+    const senses = (await wordpos.lookup(candidate)).sort((a, b) => (a.pos === 'r') - (b.pos === 'r'));
     const words = [...new Set(senses.flatMap((s) => s.synonyms).map((w) => w.replace(/\(\w\)$/, '').replace(/_/g, ' ')))]
       .filter((w) => w.toLowerCase() !== candidate);
     if (words.length) return `**${candidate}**: ${words.slice(0, max).join(', ')}`;

@@ -3845,3 +3845,13 @@ As a user, nearly every edit phrasing already reached the right chip task. The o
 Fixed: the find_bug template in brain/intents.js accepts "find bugs" with or without "in this (code)", and "any bugs" or "are there any bugs". Test added in test/voice.test.js and checked to fail before the change.
 
 Left for later: "summary", "sum up", "clearer", "summarize in one sentence", "simplify this for a child" and "why is this broken" still go to the model as free questions, which is fine but slower. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-26 — translation and definitions, synonyms (twenty-first pass)
+
+Tried 39 typed asks such as "define serendipity", "another word for big", "opposite of hot", "synonyms for angry", "defin ephemeral", "what does bonjour mean", "translate hello to spanish", "how do you say thank you in french" and "what rhymes with orange".
+
+As a user, definitions and antonyms were instant and sensible. Synonym lists were the weak spot. "another word for big" started with "boastfully, vauntingly" because WordNet lists adverb senses first.
+
+Fixed: brain/define.js now puts adverb senses after the other senses in a synonym list. Test updated in test/brain.test.js and checked to fail before the change.
+
+Left for later: "another word for fast" still starts with "fasting, debauched" because the noun and satellite senses come first and WordNet has no useful frequency counts for them. "defin ephemeral" (typo), spelling, plurals, rhymes, pronunciation and "what does bonjour mean" go to the model. `npm test` passes fully here once the wordpos index is built.
