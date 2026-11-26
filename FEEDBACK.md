@@ -3855,3 +3855,13 @@ As a user, definitions and antonyms were instant and sensible. Synonym lists wer
 Fixed: brain/define.js now puts adverb senses after the other senses in a synonym list. Test updated in test/brain.test.js and checked to fail before the change.
 
 Left for later: "another word for fast" still starts with "fasting, debauched" because the noun and satellite senses come first and WordNet has no useful frequency counts for them. "defin ephemeral" (typo), spelling, plurals, rhymes, pronunciation and "what does bonjour mean" go to the model. `npm test` passes fully here once the wordpos index is built.
+
+## 2026-11-26 — onboarding first run, name, allergy and interest boxes (nineteenth pass)
+
+Tried 30 names ("im ada", "Ada 🐱", "Ada (she/her)", "ada_99", "Ada & Bob"), 30 allergy answers ("eggs, dairy, & soy", "mild peanut allergy", "I don't have any", "nope") and 12 interest answers.
+
+As a user, most of it worked. The one wrong result was a list with an ampersand after a comma. "eggs, dairy, & soy" was saved as "I'm allergic to eggs, dairy and & soy", with a stray "&" in a pinned fact.
+
+Fixed: the list splitter in brain/personal.js now treats "," or ";" followed by "&" as one separator, for allergies and for interests. Test added in test/conversations.test.js and checked to fail before the change.
+
+Left for later: "Ada & Bob" keeps a double space in the name, "Ada Lovelace Jr." loses its final period, "名前は李雷です" is kept whole, and "ninguna" is saved as an allergy. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

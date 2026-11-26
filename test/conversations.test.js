@@ -186,6 +186,10 @@ test('"Save this chat": markdown in the notes folder, plus up to 3 stated facts 
   assert.deepStrictEqual(await companion.rememberFacts(['I like tea']), { saved: 0 });
 });
 
+test('"Get to know you": a comma before an ampersand does not leave a stray "&" in the list', () => {
+  assert.deepStrictEqual(onboardingResult({ allergies: 'eggs, dairy, & soy', interests: 'music, film, & books' }).facts, ["I'm allergic to eggs, dairy and soy", "I'm interested in music, film and books"]);
+});
+
 test('"Get to know you": answers map to pinned facts and reply settings; only ticked facts are saved', () => {
   assert.deepStrictEqual(onboardingResult({}), { facts: [], personal: {}, role: '' });
   assert.deepStrictEqual(onboardingResult({ name: '  Ada <script>  ', role: 'hacker', length: 'huge', tone: 'formal', diets: ['vegan', 'bogus'], allergies: 'peanuts, shellfish and sesame', interests: 'jazz' }), {
