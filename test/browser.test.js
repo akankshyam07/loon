@@ -167,6 +167,10 @@ test('page kinds: sensitive wins, shops and articles are recognized', async () =
   assert.strictEqual(page('<form><input type="text" name="pwd"></form>').kind, 'sensitive');
   assert.strictEqual(page('<form><input id="security-code"></form>').kind, 'sensitive');
   assert.strictEqual(page('<p>chat</p>', 'https://web.whatsapp.com/').kind, 'sensitive');
+  // Crypto exchanges and wallets, HR and payroll portals, and French health and bank sites
+  for (const host of ['crypto.com', 'exchange.gemini.com', 'metamask.io', 'acme.workday.com', 'www.doctolib.fr', 'www.etoro.com', 'www.bnpparibas.net', 'app.mercury.com']) {
+    assert.strictEqual(page('<p>Welcome</p>', `https://${host}/`).kind, 'sensitive', host);
+  }
   // Shops that price in kr, zł, Kč, yen or a trailing $ are still shops
   const shopHtml = (prices) => `<div>${prices.map((p) => `<p>Thing ${p}</p>`).join('')}<button>Add to cart</button></div>`;
   for (const prices of [['199 kr', '249 kr', '299,00 kr'], ['99,99 zł', '49 zł', '120 zł'], ['199 Kč', '299 Kč', '399 Kč'], ['1,980円', '2,980円', '3,980円'], ['99 PLN', '49 PLN', '20 PLN'], ['BRL 49,90', 'BRL 59,90', 'BRL 10,00'], ['19.99 $', '29.99 $', '39.99 $']]) {

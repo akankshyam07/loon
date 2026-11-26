@@ -3775,3 +3775,13 @@ As a user, "every monday to friday at 8" was the bad one. Loon made a routine fo
 Fixed: brain/routines.js now reads day ranges ("mon-fri", "monday to friday", "monday through thursday", also across the weekend like "friday to monday") as every day between the two ends. Test added in test/routines.test.js and checked to fail before the change.
 
 Left for later: "for 5 days" and "until friday" limits are not supported, so the card shows the whole phrase as the message and is marked as not understood. "show reminders", "clear routines", "unschedule X", "never remind me to X" and "skip X today" are still not understood. The 5 failures in `npm test` are the usual sandbox ones (missing WordNet data).
+
+## 2026-11-26 — page kinds, sensitive hosts (eighteenth pass)
+
+Tried 55 hostnames through detectPage with a plain page body, mixing banks, brokers, password managers, health sites, HR tools, crypto sites and ordinary sites.
+
+As a user, the worst misses were private sites treated as ordinary pages, so Loon would be willing to read them. Crypto exchanges and wallets (crypto.com, gemini.com, metamask.io, ledger.com), Workday and ADP payroll portals, Doctolib, eToro, BNP Paribas, Mercury and Gusto all came back as "other".
+
+Fixed: those hosts are now in the sensitive domain list in extension/lib/page-kind.js. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: a general rule for hosts that start with "login", "secure" or "my" is not added, because it would catch shops. Hospital and pharmacy sites (walgreens.com, cvs.com) stay ordinary pages because most visits are shopping. The 5 failures in `npm test` are the usual sandbox ones (missing WordNet data).
