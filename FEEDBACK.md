@@ -3925,3 +3925,13 @@ As a user, the one wrong answer was "what day was it yesterday", which said "Yes
 Fixed: yesterday answers now use the past tense, and "what was yesterday" and "what is tomorrow" are answered by code. Test added in test/brain.test.js, and the old "Yesterday is" expectation became "Yesterday was". The new test failed before the change.
 
 Left for later: "what week is it", "how many days are left in the year or month", "what time will it be in 3 hours", "how long until midnight", "time difference between london and tokyo" and "is it the weekend" all go to the model. Calc does not know pi, e, sin or cos. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-27 — selection chips and classification (twentieth pass)
+
+Tried 70 selections such as "$19.99", "google.com", "localhost:3000", "github.com/foo/bar", "@elonmusk", "5 kg", "C++", "São Paulo", "ok 👍", Arabic, Korean and Cyrillic words, and short code lines.
+
+As a user, a bare web address was treated as a word. Selecting "google.com" or "localhost:3000" offered Define, while "https://google.com" correctly offered Explain.
+
+Fixed: extension/lib/classify.js now counts a bare domain with a common ending, with an optional port or path, and "localhost", as not a word to look up. "node.js" and "Next.js" stay words. Test extended in test/browser.test.js and checked to fail before the change.
+
+Left for later: "@handle", "#hashtag", "5 kg" and "Nov 27" still offer Define. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
