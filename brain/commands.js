@@ -207,7 +207,7 @@ function parseCommand(input, now = new Date()) {
   if ((m = text.match(/^(?:(?:from now on|going forward|in future),?\s+)?(?:you can |you should |just )?call me (\p{L}[\p{L}'-]*(?: \p{L}[\p{L}'-]*)?)$/iu)) && !/^(?:back|later|maybe|tomorrow|tonight|today|now|soon|anytime|sometime|whenever|if|when|at|on|crazy|names)\b/i.test(m[1])) return { action: 'remember', text: `Call me ${tidy(m[1])}` };
   // "forget it" and "forget about it" are idioms, not a request to delete a memory.
   if ((m = text.match(/^(?:(?:you can|you may|feel free to) )?forget[:,]?\s+(?:that )?(.+)$/i)) && !/^(?:about )?(?:it|that|this|me not)$/i.test(tidy(m[1]))) {
-    const all = /^(?:about )?(?:everything|all|all of it|it all)$/i.test(tidy(m[1]));
+    const all = /^(?:about )?(?:everything|all|all of it|it all)$/i.test(tidy(m[1])) || /^(?:everything|all) about (?:me|myself)$/i.test(tidy(m[1]));
     // "forget everything about pork" is one topic, not a wipe.
     const topic = tidy(m[1]).replace(/^(?:(?:everything|all) )?about (?=\S)/i, '');
     return { action: 'forget', text: all ? tidy(m[1]) : topic, all };

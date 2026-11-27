@@ -584,3 +584,8 @@ test('commands: "on the weekend" leaves no "the" in the title and "at 1730" is 5
   assert.strictEqual(r.when.getHours(), 17);
   assert.strictEqual(r.when.getMinutes(), 30);
 });
+
+test('commands: "forget everything about me" is a wipe request, not a search for the word me', () => {
+  for (const t of ['forget everything about me', 'forget all about myself']) assert.strictEqual(parseCommand(t).all, true, t);
+  assert.strictEqual(parseCommand('forget everything about pork').all, false);
+});

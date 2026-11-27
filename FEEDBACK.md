@@ -3885,3 +3885,13 @@ As a user, most phrasings gave a sensible schedule. The bad one was "first monda
 Fixed: brain/routines.js now declines "first monday of every month", "last friday of each month" and similar, the same way it already declines "every 3rd thursday". The card then shows the routine as not understood. Test added in test/routines.test.js and checked to fail before the change.
 
 Left for later: "all weekdays at 9 standup" keeps "All" in the message, "evry monday" (typo), "every wknd" and "every day at 9am and 9pm" are not understood at all, and "for 5 days" or "until friday" limits are still part of the message. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-27 — memory commands (tenth pass)
+
+Tried 36 phrasings such as "remember that my wifi password is hunter22", "forget me", "forget the last thing", "forget everything about me", "save this to memory: I hate cilantro", "rememeber I like tea" and "memorize that my cat is called Loon".
+
+As a user, "forget everything about me" searched memories for the word "me", found nothing and said "I didn't have anything like that saved". It sounds like Loon forgot me and kept nothing, which is not what happened. Secrets in "remember" are already refused by the action, which I checked.
+
+Fixed: "forget everything about me" and "forget all about myself" are now a wipe request, so Loon points to Settings → Memory. Test added in test/assistant.test.js.
+
+Left for later: "rememeber" typos, "save that", "forget me" and "forget the last thing" are still not understood and search memories for those words. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
