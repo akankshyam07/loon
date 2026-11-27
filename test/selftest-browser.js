@@ -90,6 +90,8 @@ async function run(ctx, check) {
       return null;
     }
     await waitFor(async () => (await tierCount()) > before, timeoutMs, 250);
+    // The count can rise before this answer is done, so also wait for the last answer to carry its tier.
+    await waitFor(async () => Boolean((await lastAnswer())?.tier), Math.min(timeoutMs, 8000), 100);
     return lastAnswer();
   }
   const closeBubble = async () => {
