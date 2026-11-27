@@ -105,6 +105,13 @@ const RULES = [
     replace: (m) => m.replace(/(?<=[:=：]\s*)[^\s"',;]{3,}$/, '[redacted:secret]'),
   },
   { kind: 'secret', re: /\b(pin|passcode|cvv|cvc)(\s+)\d{3,8}\b/gi, replace: (m, name, sep) => `${name}${sep}[redacted:secret]` },
+  { kind: 'secret', re: /\b(security code|cvv|cvc)(\s*[:=]\s*)\d{3,4}\b/gi, replace: (m, name, sep) => `${name}${sep}[redacted:secret]` },
+  {
+    kind: 'secret',
+    re: /\b(password|passwd|passcode)(\s+)(?!\[redacted)(?=[^\s"',;]*\d)(?=[^\s"',;]*[A-Za-z])([^\s"',;]{6,})/gi,
+    // needs letters and a digit so "password 2024 update" and "password reset" stay readable
+    replace: (m, name, sep) => `${name}${sep}[redacted:secret]`,
+  },
   {
     kind: 'secret',
     re: /\b((?:set-)?cookie\s*:\s*)([^\r\n]+)/gi,

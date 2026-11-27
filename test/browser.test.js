@@ -400,3 +400,12 @@ test('redaction hides "wifi pass is X" and "password to the router is X"', () =>
   }
   for (const s of ['pass is the word', 'the password to reset is easy', 'password to log in']) assert.strictEqual(redact(s).count, 0);
 });
+
+test('redaction hides a password with no separator and a three digit security code', () => {
+  for (const s of ['my login is bob password Spring2024!', 'Security code: 123']) {
+    const { text, count } = redact(s);
+    assert.doesNotMatch(text, /Spring2024|123/);
+    assert.strictEqual(count, 1);
+  }
+  for (const s of ['password 2024 update', 'password reset link']) assert.strictEqual(redact(s).count, 0);
+});

@@ -3955,3 +3955,13 @@ As a user, most of these reach the model with the selection attached, which work
 Fixed: the summarize and rewrite templates in brain/intents.js now accept those bare forms. Test added in test/voice.test.js and checked to fail before the change.
 
 Left for later: "make it longer", "expand this", "make it funnier", "soften this", "turn this into bullets" and "simplify this for a child" have no chip task, so they go to the model. "undo" and "another version" have no memory of the last edit. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-27 — memory and privacy, redaction (twenty-first pass)
+
+Tried 24 lines such as "password Spring2024!", "my login is bob password Spring2024!", "Security code: 123", cards with cvv, SSNs with spaces, wifi passwords, verification codes, IBANs and German and Spanish password labels.
+
+As a user, two lines leaked. A password written with no "is" or colon ("password Spring2024!") went to the model untouched, and so did a three digit card security code written as "Security code: 123", because the account rule needs four characters.
+
+Fixed: a new rule hides a word after "password", "passwd" or "passcode" when it has both letters and a digit and is at least six characters, and the cvv rule now accepts "security code" with a colon. Test added in test/browser.test.js and checked to fail before the change. "password manager1" is now hidden too, which errs on the safe side.
+
+Left for later: "my passwords are abc123 and def456", multi-word passphrases (only the first word of "wifi password: correct horse battery" is hidden) and "login with bob and Spring2024!" are still not redacted. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
