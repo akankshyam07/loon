@@ -3945,3 +3945,13 @@ As a user, the worst miss was "delete my chats", which went to the model and mig
 Fixed: "delete/clear/wipe my chats, conversations, searches or questions" now wipes history like "clear history". "look at/go through my past questions", "show my chat history from last week" and "show me everything I asked (today)" now list history. Test added in test/assistant.test.js and checked to fail before the change.
 
 Left for later: "what was the last thing you told me", "what was my first question" and "continue our chat about X" still reach the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-27 — writing tools by voice and typed edits (eighteenth pass)
+
+Tried 38 short asks about a selection such as "sum up", "summary", "clearer", "make it longer", "expand this", "make it funnier", "soften this", "turn this into bullets", "reply to this", "undo" and "another version".
+
+As a user, most of these reach the model with the selection attached, which works but is slower. The clear misses were "sum up", "summary" and "a quick summary", which have one obvious meaning, and a bare "clearer", while "make it clearer" already worked.
+
+Fixed: the summarize and rewrite templates in brain/intents.js now accept those bare forms. Test added in test/voice.test.js and checked to fail before the change.
+
+Left for later: "make it longer", "expand this", "make it funnier", "soften this", "turn this into bullets" and "simplify this for a child" have no chip task, so they go to the model. "undo" and "another version" have no memory of the last edit. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
