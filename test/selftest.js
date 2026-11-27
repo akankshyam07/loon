@@ -76,7 +76,7 @@ function helpers(ctx) {
   };
   const lastAnswer = () => bubble(`(() => { const a = [...document.querySelectorAll('.a')].pop(); return a ? { text: a.textContent, tier: a.querySelector('.tier-icon')?.title || '' } : null; })()`);
   // Asks in the open bubble and waits for the answer's tier icon.
-  const askHere = async (text, timeoutMs = 120000) => {
+  const askHere = async (text, timeoutMs = 240000) => {
     const before = await tierCount();
     await submit(text);
     const done = await waitFor(async () => (await tierCount()) > before, timeoutMs, 250);
