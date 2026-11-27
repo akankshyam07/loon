@@ -3935,3 +3935,13 @@ As a user, a bare web address was treated as a word. Selecting "google.com" or "
 Fixed: extension/lib/classify.js now counts a bare domain with a common ending, with an optional port or path, and "localhost", as not a word to look up. "node.js" and "Next.js" stay words. Test extended in test/browser.test.js and checked to fail before the change.
 
 Left for later: "@handle", "#hashtag", "5 kg" and "Nov 27" still offer Define. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-27 — history (twenty-first pass)
+
+Tried 30 phrasings such as "delete my chats", "look at my past questions", "show my chat history from last week", "show me everything i asked today", "what was my first question" and "continue our chat about docker".
+
+As a user, the worst miss was "delete my chats", which went to the model and might claim it had deleted them. Several loose ways of listing history also missed.
+
+Fixed: "delete/clear/wipe my chats, conversations, searches or questions" now wipes history like "clear history". "look at/go through my past questions", "show my chat history from last week" and "show me everything I asked (today)" now list history. Test added in test/assistant.test.js and checked to fail before the change.
+
+Left for later: "what was the last thing you told me", "what was my first question" and "continue our chat about X" still reach the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

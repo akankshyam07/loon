@@ -402,6 +402,8 @@ test('history questions drop time words and "you" instead of searching for them'
   for (const q of ['what were we talking about', 'what were we talking about yesterday']) assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: '' }, q);
   for (const q of ['remember when I asked about docker', 'remember when we talked about docker?', 'chat history for docker']) assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: 'docker' }, q);
   for (const q of ['look up my past searches about docker', 'show me everything I asked about docker']) assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: 'docker' }, q);
+  for (const q of ['look at my past questions', 'show my chat history from last week', 'show me everything i asked today']) assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: '' }, q);
+  for (const q of ['delete my chats', 'clear my past conversations', 'wipe my searches']) assert.deepStrictEqual(parseCommand(q), { action: 'forget', text: 'history', all: true, history: true }, q);
   // "history of Rome" is a real question for the model, not a history search.
   assert.strictEqual(parseCommand('history of rome'), null);
 });
