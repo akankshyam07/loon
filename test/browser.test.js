@@ -23,6 +23,11 @@ test('redaction hides secrets and card numbers, keeps ordinary numbers', () => {
   assert.deepStrictEqual(kinds.sort(), ['api-key', 'card', 'connection-string', 'iban', 'secret', 'ssn']);
 });
 
+test('bare javac, zsh, HTTP and Chrome error names get the error chips, and an ellipsis is not a sentence', () => {
+  for (const t of ['Cannot find symbol', 'zsh: command not found: foo', 'command not found: foo', 'Error 404', 'ERR_CONNECTION_REFUSED']) assert.strictEqual(classifySelection(t), 'stacktrace', t);
+  assert.strictEqual(classifySelection('Wait... what?'), 'sentence');
+});
+
 test('redaction catches spoken passwords, PINs and Basic auth headers', () => {
   const { text, count } = redact('my password is hunter2, PIN: 4829, Authorization: Basic dXNlcjpwYXNzd29yZA==');
   assert.doesNotMatch(text, /hunter2|4829|dXNlcjpw/);

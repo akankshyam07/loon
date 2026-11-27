@@ -19,7 +19,7 @@
   const ERROR_LINE = /^\s*error TS\d+:|\bCannot (read|set) propert(y|ies) of (undefined|null)\b|\bis not (defined|a function)\b|\bpanicked at \S|\bE(RESOLVE|LIFECYCLE|CONNREFUSED|CONNRESET|NOENT|ADDRINUSE|ACCES|PERM|TIMEDOUT|NOTFOUND|XIST)\b|\bexit(ed)? (with )?(code|status) [1-9]\d*\b|\bBUILD (FAILURE|FAILED)\b|^\s*FAILED \S+::|\bFailed to compile\b|^\s*Module not found: Error\b|\bCannot find module '|blocked by CORS policy|\bshould have a unique "key" prop\b|^\s*Failed to load resource: the server responded|^\s*\[ERROR\] Failed to execute goal|^\s*Hydration failed\b|\bUnhandled (Promise Rejection|rejection)\b|\bCould not find a version that satisfies\b|\bCompilation error\b|^\s*(zsh|bash|sh|fish): (.+: )?(permission denied|no such file or directory|command not found)|^\s*dyld: |^\s*Permission denied \(publickey|\bAccess denied for user\b|\bnet::ERR_[A-Z_]+|\b(CrashLoopBackOff|ImagePullBackOff|OOMKilled)\b|^\s*!?\s*\[rejected\]|^\s*CONFLICT \(|\bCERTIFICATE_VERIFY_FAILED\b|\bcertificate signed by unknown authority\b|^\s*Failed to fetch\s*$|\bundefined reference to\b|\bNo such file or directory\b|^\s*ssh: connect to host\b|^\s*at [\w$.<>]+\(.*:\d+\)\s*$|^\s*HTTP [45]\d\d\s*$|^\s*(HTTP\/[\d.]+ |HTTP )?[45]\d\d (Bad Request|Unauthorized|Forbidden|Not Found|Too Many Requests|Internal Server Error|Bad Gateway|Service Unavailable|Gateway Timeout)\s*$/i;
 
   // Whole selections that are a known error message with no other words around it
-  const ERROR_PHRASE = /^\s*(Traceback|(Connection|Read) (refused|reset by peer|timed out)|Out of memory|Killed(: \d+)?|Permission denied|Access is denied|No module named \S+|FAIL \S+\.(test|spec)\.\S+)[.!]?\s*$/i;
+  const ERROR_PHRASE = /^\s*(Traceback|(Connection|Read) (refused|reset by peer|timed out)|Out of memory|Killed(: \d+)?|Permission denied|Access is denied|No module named \S+|Cannot find symbol|(zsh: )?command not found: \S+|Error [45]\d\d|ERR_[A-Z][A-Z_]{3,}|FAIL \S+\.(test|spec)\.\S+)[.!]?\s*$/i;
 
   // A bare exception class name such as "NullPointerException" or "java.lang.IllegalStateException"
   const ERROR_NAME = /^[A-Za-z_][\w.]*[a-z](Error|Exception)$/;
@@ -79,7 +79,7 @@
     const lookup = /\p{L}/u.test(t) && !NOT_A_WORD.test(t);
     if (wordCount <= 3 && !isQuestion && lookup) return 'word';
     if (wordCount <= 3 && !isQuestion) return 'sentence';
-    const sentences = (t.replace(/\b(?:mr|mrs|ms|dr|prof|st|vs|etc)\.|\b[ap]\.m\.|\b(?:e\.g|i\.e)\./gi, ' ').match(/[.!?](\s|$)|[。！？]/g) || []).length;
+    const sentences = (t.replace(/\.{2,}|…/g, ' ').replace(/\b(?:mr|mrs|ms|dr|prof|st|vs|etc)\.|\b[ap]\.m\.|\b(?:e\.g|i\.e)\./gi, ' ').match(/[.!?](\s|$)|[。！？]/g) || []).length;
     if (sentences <= 1 && t.length < 260) return 'sentence';
     return 'paragraph';
   }

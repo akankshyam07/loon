@@ -3995,3 +3995,13 @@ As a user, 26 were answered from the table. The four misses were all items an ea
 Fixed: brain/errors.js has new entries for a missing apt package, a missing C or C++ header (with the Xcode tools hint for Macs), linker errors and failed pip builds. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: other Docker and apt failures such as "Could not get lock" are not in the table. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-27 — selection chips and classification (twenty-first pass)
+
+Tried 65 selections such as prices, dates, emoji, paths, IPs, short error names, shell lines, SQL, CJK text and ellipsis sentences.
+
+As a user, a few error messages I would select got the Define chip instead of the error chips. "Cannot find symbol", "command not found: foo", "Error 404" and "ERR_CONNECTION_REFUSED" were treated as plain words. "Wait... what?" counted as three sentences and became a paragraph.
+
+Fixed: those error names are now recognised as errors in extension/lib/classify.js, and an ellipsis no longer counts as a sentence end. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: "what is this" without a question mark still gets Define, and "Jan 5, 2025" and "10 kg" get Define. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
