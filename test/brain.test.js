@@ -140,7 +140,7 @@ test('ladder: date questions and trailing emoji are answered by code, not guesse
   const brain = { modelId: () => 'fake', chat: async () => { throw new Error('model should not run'); } };
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));
   const resolver = new Resolver({ brain, cacheFile: path.join(dir, 'c.json'), countsFile: path.join(dir, 'n.json') });
-  const cases = [['what year is it', String(new Date().getFullYear())], ['what month is it?', new Date().toLocaleDateString([], { month: 'long' })], ['current date', 'It\u2019s|It\'s'], ["what's the day", "It's"], ['what day is tomorrow', 'Tomorrow is'], ['what day is yesterday', 'Yesterday is'], ['thanks 🙏', 'Anytime'], ['what time is it? 🕐', "It's"], ['how many days until christmas', /^\d+ days? until Christmas\.$|^Christmas is today\.$/], ['days till new year', /until New Year's Day\./]];
+  const cases = [['what year is it', String(new Date().getFullYear())], ['what month is it?', new Date().toLocaleDateString([], { month: 'long' })], ['current date', 'It\u2019s|It\'s'], ["what's the day", "It's"], ['what day is tomorrow', 'Tomorrow is'], ['what day is yesterday', 'Yesterday was'], ['thanks 🙏', 'Anytime'], ['what time is it? 🕐', "It's"], ['how many days until christmas', /^\d+ days? until Christmas\.$|^Christmas is today\.$/], ['days till new year', /until New Year's Day\./]];
   for (const [q, re] of cases) {
     const r = await resolver.ask(q, { onText: () => {}, firstInThread: true });
     assert.strictEqual(r.tier, 'code', q);
@@ -261,6 +261,19 @@ test('ladder: a bare "help" inside a conversation goes to the model with the thr
     assert.notStrictEqual((await resolver.ask(q, { onText: () => {}, firstInThread: false, history })).tier, 'code', q);
   }
   assert.strictEqual((await resolver.ask('what can you do', { onText: () => {}, firstInThread: false, history })).tier, 'code');
+});
+
+test('ladder: yesterday is answered in the past tense and bare "what was yesterday" is instant', async () => {
+  const brain = { modelId: () => 'fake', chat: async () => { throw new Error('model should not run'); } };
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));
+  const resolver = new Resolver({ brain, cacheFile: path.join(dir, 'c.json'), countsFile: path.join(dir, 'n.json') });
+  const ask = (q) => resolver.ask(q, { onText: () => {}, firstInThread: true });
+  for (const q of ['what day was it yesterday', 'what was yesterday']) {
+    const r = await ask(q);
+    assert.strictEqual(r.tier, 'code', q);
+    assert.match(r.text, /^Yesterday was /, q);
+  }
+  assert.match((await ask('what day is tomorrow')).text, /^Tomorrow is /);
 });
 
 test('ladder: arithmetic, percentages and unit conversions are answered by code', async () => {

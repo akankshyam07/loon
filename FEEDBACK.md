@@ -3915,3 +3915,13 @@ As a user, the one clear miss was a size written with a fraction character. "½ 
 Fixed: parseQuantity now turns ½, ¼, ¾, ⅓ and ⅔ into numbers, with an optional whole number in front. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: a price range ("$5.00 - $7.00") reads as 5, "$0.00" becomes a price of 0 that would win every value ranking, "Buy 2 get 1 free $6" reads as 2, and "20 count 1.5 oz bars" counts one bar. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-27 — typed questions and instant answers (twenty-second pass)
+
+Tried about 90 typed questions across maths, conversions, clock, date and day questions, "days until" forms and small talk, run through the resolver with a model that throws if it is called.
+
+As a user, the one wrong answer was "what day was it yesterday", which said "Yesterday is Thursday". A bare "what was yesterday" also went to the model, which cannot know the date.
+
+Fixed: yesterday answers now use the past tense, and "what was yesterday" and "what is tomorrow" are answered by code. Test added in test/brain.test.js, and the old "Yesterday is" expectation became "Yesterday was". The new test failed before the change.
+
+Left for later: "what week is it", "how many days are left in the year or month", "what time will it be in 3 hours", "how long until midnight", "time difference between london and tokyo" and "is it the weekend" all go to the model. Calc does not know pi, e, sin or cos. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

@@ -53,12 +53,12 @@ const CODE_ANSWERS = [
     },
   },
   {
-    match: /^what day (?:is|was)(?: it)? (tomorrow|yesterday)$|^what(?:'s| is| was) (?:the date (tomorrow|yesterday)|(tomorrow|yesterday)'?s date)$/,
+    match: /^what day (?:is|was)(?: it)? (tomorrow|yesterday)$|^what(?:'s| is| was) (?:the date (tomorrow|yesterday)|(tomorrow|yesterday)'?s date|(tomorrow|yesterday))$/,
     answer: (key) => {
       const when = key.match(/tomorrow|yesterday/)[0];
       const d = new Date();
       d.setDate(d.getDate() + (when === 'tomorrow' ? 1 : -1));
-      return { mood: 'happy', text: `${when.replace(/^./, (c) => c.toUpperCase())} is ${d.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}.` };
+      return { mood: 'happy', text: `${when.replace(/^./, (c) => c.toUpperCase())} ${when === 'tomorrow' ? 'is' : 'was'} ${d.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}.` };
     },
   },
   {
