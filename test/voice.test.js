@@ -76,6 +76,9 @@ test('spoken edits and explanations of a selection are templates', () => {
   for (const said of ['summarise this article', 'summarize the website']) assert.strictEqual(route(said).task, 'page_summary', said);
   for (const said of ["what's cheapest", 'what is the cheapest one']) assert.strictEqual(route(said).task, 'shop_value', said);
   assert.deepStrictEqual(route('turn private mode off'), { type: 'toggle', key: 'privacy', value: false });
+  for (const said of ['what does this function do', 'explain this method please', 'walk me through this script']) assert.strictEqual(route(said).task, 'explain_code', said);
+  assert.strictEqual(route("explain this like I'm five years old").task, 'simplify');
+  assert.strictEqual(route('give me a summary of this page').task, 'page_summary');
 });
 
 test('typed edits of a selection map to the chip task, other questions do not', () => {

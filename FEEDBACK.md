@@ -3965,3 +3965,13 @@ As a user, two lines leaked. A password written with no "is" or colon ("password
 Fixed: a new rule hides a word after "password", "passwd" or "passcode" when it has both letters and a digit and is at least six characters, and the cvv rule now accepts "security code" with a colon. Test added in test/browser.test.js and checked to fail before the change. "password manager1" is now hidden too, which errs on the safe side.
 
 Left for later: "my passwords are abc123 and def456", multi-word passphrases (only the first word of "wifi password: correct horse battery" is hidden) and "login with bob and Spring2024!" are still not redacted. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-27 — voice intents, code and page asks (seventeenth pass)
+
+Tried 40 spoken phrasings such as "what does this function do", "explain this like I'm five years old", "give me a summary of this page", "go quiet", "read this out loud", "save this to notes" and "which one is the healthiest".
+
+As a user, the worst problem was that code asks about a function, method or script missed the explain-code template and went to the model as a free question with no selection check. "Five years old" missed the simplify template, and "give me a summary of this page" did not run the page summary.
+
+Fixed: the explain-code template accepts function, method, class, snippet and script, the simplify template accepts "five years old", and the page summary template accepts "give me a summary of this page". Test added in test/voice.test.js and checked to fail before the change.
+
+Left for later: "what does this word mean", "which one is the healthiest", "read this out loud", "save this to notes", "summarize this in one sentence" and "turn this into a checklist" still go to the model. The last one is ambiguous between a selection and the page. `npm test` still shows the 5 WordNet and demo failures from the sandbox install.
