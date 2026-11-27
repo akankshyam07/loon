@@ -3985,3 +3985,13 @@ As a user, "open chrome browser" offered an app with that exact name, which macO
 Fixed: a trailing "browser" after one word is dropped, "google meet", "drive", "google sheets", "google slides" and "google photos" open their websites, and a bare "music" opens the Music app while "music folder" still opens the folder. Test added in test/assistant.test.js.
 
 Left for later: "open the browser" still offers an app called "browser", since Loon does not know the default browser. `npm test` shows the same 5 WordNet and demo failures as main in this sandbox.
+
+## 2026-11-27 — developer help, error table (twenty-second pass)
+
+Tried 30 pasted errors from Node, Python, Java, Rust, C and C++, apt, pip, npm, git, Docker and the browser console.
+
+As a user, 26 were answered from the table. The four misses were all items an earlier pass listed as left for later and would hit a Mac or Linux user setting up tools. "E: Unable to locate package", "fatal error: 'iostream' file not found", "undefined reference to" and "Could not build wheels for" went to the model.
+
+Fixed: brain/errors.js has new entries for a missing apt package, a missing C or C++ header (with the Xcode tools hint for Macs), linker errors and failed pip builds. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: other Docker and apt failures such as "Could not get lock" are not in the table. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

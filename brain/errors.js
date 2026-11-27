@@ -479,6 +479,30 @@ const KNOWN = [
     fix: ['Run `xcode-select --install` and accept the install prompt.', 'Then run the failed command again.'],
   },
   {
+    match: /E: Unable to locate package|Unable to locate package \S+/,
+    title: 'apt can’t find that package (Linux)',
+    explain: 'The package name is misspelled, or apt’s package list is out of date or lacks the repository that has it.',
+    fix: ['Run `sudo apt update` and try again.', 'Check the exact name with `apt search <name>`.', 'Some packages need an extra repository enabled first.'],
+  },
+  {
+    match: /fatal error: '[^']+\.h(pp)?' file not found|fatal error: [\w./+-]+: No such file or directory|'(iostream|vector|string|cstdio)' file not found/,
+    title: 'C or C++ header not found',
+    explain: 'The compiler cannot find an `#include` file. On a Mac this usually means the command line tools are missing or broken, otherwise a library is not installed or its include path is not given.',
+    fix: ['On macOS, run `xcode-select --install`.', 'Check the spelling of the include.', 'Add the library’s folder with `-I/path/to/include`, or install the library first.'],
+  },
+  {
+    match: /undefined reference to|ld: symbol\(s\) not found|Undefined symbols for architecture/,
+    title: 'Linker error (C or C++)',
+    explain: 'The code compiled, but the linker could not find the definition of a function or variable. It is declared but never built in, or a library is not linked.',
+    fix: ['Link the library with `-l<name>` and its folder with `-L`.', 'Make sure every .c/.cpp file that defines the function is on the build line.', 'Check that the function name and signature match, including `extern "C"` for C code used from C++.'],
+  },
+  {
+    match: /Could not build wheels? for|Failed building wheel for/,
+    title: 'Python package failed to build',
+    explain: 'pip had to compile this package from source and the build failed, often because a compiler, headers or a matching prebuilt wheel for your Python version is missing.',
+    fix: ['Upgrade the tools with `pip install --upgrade pip setuptools wheel`.', 'Read the lines above this one for the real compiler error.', 'Try a Python version the package supports, or install the system libraries it names.'],
+  },
+  {
     match: /unique "key" prop/,
     title: 'Missing key prop (React)',
     explain: 'Items rendered from a list need a stable `key` so React can tell them apart between renders.',

@@ -695,3 +695,10 @@ test('error table: Spring startup report, Postgres login and missing Xcode tools
   assert.match(lookupKnown('FATAL: password authentication failed for user "app"'), /Database login refused/);
   assert.match(lookupKnown('xcode-select: error: command line tools are not installed, use `xcode-select --install` to install them'), /Xcode command line tools/);
 });
+
+test('error table: apt package, C headers, linker and pip wheels', () => {
+  assert.match(lookupKnown('E: Unable to locate package htop'), /apt can’t find that package/);
+  assert.match(lookupKnown("fatal error: 'iostream' file not found"), /header not found/);
+  assert.match(lookupKnown("undefined reference to `main'\ncollect2: error: ld returned 1 exit status"), /Linker error/);
+  assert.match(lookupKnown('ERROR: Could not build wheels for numpy, which is required to install pyproject.toml-based projects'), /failed to build/);
+});
