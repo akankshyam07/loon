@@ -102,14 +102,24 @@ async function duo(ctx, check, h, sw) {
     // The cats settle into their duo spots after the window widens (and idle animation moves them a little), so each
     // point is read right before it's used, never from the first frame.
     await idle();
-    let at = await point(other);
-    const onOther = await h.hover(at.x, at.y, false);
+    // A cat's idle animation can move her a pixel or two between reading her point and the hover, so a hover that
+    // lands on a transparent pixel is tried again from a fresh point (at most three times).
+    const hoverCat = async (who) => {
+      let result = '';
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const where = await point(who);
+        result = await h.hover(where.x, where.y, false);
+        if (ctx.catIgnore().requested === false) break;
+      }
+      return result;
+    };
+    const onOther = await hoverCat(other);
     const otherCaptures = ctx.catIgnore().requested === false;
     const onEmpty = await h.hover(3, 3, true);
     const emptyPasses = ctx.catIgnore().requested === true;
-    at = await point(helper);
-    const onHelper = await h.hover(at.x, at.y, false);
+    const onHelper = await hoverCat(helper);
     check('duo: each cat captures clicks, the transparent space between passes them through', otherCaptures && emptyPasses && ctx.catIgnore().requested === false, `${onOther} · ${onEmpty} · ${onHelper}`);
+    let at;
 
     at = await point(other);
     await h.click(at.x, at.y);
