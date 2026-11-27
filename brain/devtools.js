@@ -149,7 +149,9 @@ const JAVA_KEYWORDS = new Set('abstract assert boolean break byte case catch cha
 const KOTLIN_KEYWORDS = new Set('as break class continue do else false for fun if in interface is null object package return super this throw true try typealias typeof val var when while'.split(' '));
 
 // With Jackson, quicktype wraps the classes in a mapper, converters and fromJson helpers. Only the annotated classes are wanted.
+// quicktype also marks every field in the sample required=true, which makes Jackson reject any payload that omits one.
 const trimKotlinJackson = (code) => code
+  .replace(/, required=true/g, '')
   .replace(/^\/\/ [\s\S]*?(?=^package )/m, '')
   .replace(/^package .*\n\n?/m, '')
   .replace(/^import (?!com\.fasterxml\.jackson\.annotation\.\*).*\n/gm, '')

@@ -3895,3 +3895,13 @@ As a user, "forget everything about me" searched memories for the word "me", fou
 Fixed: "forget everything about me" and "forget all about myself" are now a wipe request, so Loon points to Settings → Memory. Test added in test/assistant.test.js.
 
 Left for later: "rememeber" typos, "save that", "forget me" and "forget the last thing" are still not understood and search memories for those words. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-27 — developer help, JSON to DTO, Kotlin required fields (eighteenth pass)
+
+Tried 20 pastes in Java, Kotlin and TypeScript, including nested objects, arrays of objects with optional keys, keys named list, object and date, snake_case and hyphen keys, empty arrays, nulls and long numbers.
+
+As a user, the Kotlin answer for keys such as `first-name` marked every field `required=true`. The paste is only one sample, so a real payload that leaves a field out would fail to deserialize with a Jackson error. Java and TypeScript outputs looked right.
+
+Fixed: brain/devtools.js now drops `required=true` from the Kotlin Jackson annotations. Test extended in test/modes.test.js.
+
+Left for later: a 20 digit integer is still typed as double or number. A key named `date` makes a class called Date with no import note. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

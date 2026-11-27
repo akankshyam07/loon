@@ -682,6 +682,7 @@ test('Kotlin DTOs keep the JSON names of keys that are not plain camelCase', asy
   assert.match(kt, /@get:JsonProperty\("user_id"/);
   assert.match(kt, /@get:JsonProperty\("class"/);
   assert.ok(!/mapper|fromJson|toJson/.test(kt), 'no converter boilerplate');
+  assert.ok(!/required=true/.test(kt), 'a payload that omits a field must still deserialize');
   const plain = await jsonToDto('{"firstName":"a","age":1}', 'kotlin');
   assert.ok(!/JsonProperty/.test(plain));
 });
