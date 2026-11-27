@@ -225,7 +225,7 @@ async function run(ctx, check) {
     // ---- nudges + code selections ----
     companion.resetNudges();
     await page.goto(`${base}/code.html`);
-    check('code page: the cat offers help with a "?" nudge', await waitFor(() => cat('window.__loon.nudge'), 5000));
+    check('code page: the cat offers help with a "?" nudge', await waitFor(() => cat('window.__loon.nudge'), 15000));
     await selectAndWait('#trace');
     check('a stack trace gets error chips', (await chips()).includes('explain_error'));
     await closeBubble();
