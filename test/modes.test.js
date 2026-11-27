@@ -631,6 +631,8 @@ test('parseQuantity multiplies a count by the size listed with it', () => {
   assert.deepStrictEqual(shopping.parseQuantity('24 count 12 fl oz'), { amount: 24 * 12 * 29.5735295625, unit: 'ml' });
   assert.deepStrictEqual(shopping.parseQuantity('24 ct, 12 oz each'), { amount: 24 * 12 * 28.349523125, unit: 'g' });
   assert.deepStrictEqual(shopping.parseQuantity('100 count, 8 oz'), { amount: 8 * 28.349523125, unit: 'g' });
+  assert.deepStrictEqual(shopping.parseQuantity('½ lb'), { amount: 0.5 * 453.59237, unit: 'g' });
+  assert.deepStrictEqual(shopping.parseQuantity('1½ lb'), { amount: 1.5 * 453.59237, unit: 'g' });
 });
 
 test('jsonToDto makes Kotlin data classes without the quicktype package line', async () => {

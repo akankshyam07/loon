@@ -13,6 +13,7 @@ const WORDS = {
 const NUMBER_WORDS = { two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, twelve: 12 };
 const MEASURE = /(\d+(?:[.,]\d+)?)[\s-]?(fl\.?\s?oz|fluid ounces?|(?:milli|kilo)?grams?|kilos?|milli?lit(?:er|re)s?|lit(?:er|re)s?|ounces?|pounds?|gallons?|quarts?|pints?|mg|kg|gr|gm|g|lbs?|oz|ml|cl|l|gal|qt|pt)\b/gi;
 // Two measures add up only when they sit side by side ("2 lb 4 oz"), not in "16 oz (1 lb)".
+const VULGAR = { '½': 0.5, '¼': 0.25, '¾': 0.75, '⅓': 1 / 3, '⅔': 2 / 3 };
 const ADJACENT = /^\s*(?:and|,)?\s*$/;
 
 // "12 x 330ml" → 3960 ml · "2 lb 4 oz" → 1020.6 g · "pack of 6" → 6 count. Returns null when nothing parses.
@@ -20,7 +21,7 @@ function parseQuantity(text) {
   if (!text) return null;
   // "1/2 gallon" is half a gallon, not two, and "1 1/2 lb" is a pound and a half.
   // "1,000 g" is a thousand, but "0,125 l" is a European decimal.
-  const t = String(text).toLowerCase().replace(/×/g, 'x').replace(/\b(two|three|four|five|six|seven|eight|nine|ten|twelve)[\s-](?=pack\b)/g, (_, w) => NUMBER_WORDS[w] + '-').replace(/(?<![\d,.])([1-9]\d{0,2}(?:,\d{3})*),(?=\d{3}(?!\d))/g, (_, d) => d.replace(/,/g, '')).replace(/\b(?:a|an|one)\s+(?=(?:pound|ounce|gallon|quart|pint|lit(?:er|re)|kilo(?:gram)?|gram)s?\b)/g, '1 ').replace(/\bhalf[- ](?=gallon|liter|litre|quart|pint|pound|lb)/g, '0.5 ').replace(/\b(?:(\d+)[\s-])?([1-3])\/([2-4])\b(?=\s*(?:fl|gal|lb|oz|qt|pt|l\b|lit|kg|g\b|ml|pound|ounce|quart|pint))/g, (_, w, a, b) => Number(w || 0) + Number(a) / Number(b));
+  const t = String(text).toLowerCase().replace(/×/g, 'x').replace(/(\d+)?\s?([½¼¾⅓⅔])/g, (_, w, f) => Number(w || 0) + VULGAR[f]).replace(/\b(two|three|four|five|six|seven|eight|nine|ten|twelve)[\s-](?=pack\b)/g, (_, w) => NUMBER_WORDS[w] + '-').replace(/(?<![\d,.])([1-9]\d{0,2}(?:,\d{3})*),(?=\d{3}(?!\d))/g, (_, d) => d.replace(/,/g, '')).replace(/\b(?:a|an|one)\s+(?=(?:pound|ounce|gallon|quart|pint|lit(?:er|re)|kilo(?:gram)?|gram)s?\b)/g, '1 ').replace(/\bhalf[- ](?=gallon|liter|litre|quart|pint|pound|lb)/g, '0.5 ').replace(/\b(?:(\d+)[\s-])?([1-3])\/([2-4])\b(?=\s*(?:fl|gal|lb|oz|qt|pt|l\b|lit|kg|g\b|ml|pound|ounce|quart|pint))/g, (_, w, a, b) => Number(w || 0) + Number(a) / Number(b));
   let count = 1;
   const multi = t.match(/(\d+)\s*(?:(?:cans?|bottles?|bags?|boxes|pouches|jars|sticks)\s*)?x\s*\d/) || t.match(/(?<![a-z\d])x\s*(\d+)\s+\d/) || t.match(/(\d+)\s*[- ]?(?:pack|pk)\b/) || t.match(/(\d+)\s*(?:cans?|bottles?|bags?|boxes|pouches|jars|sticks)\s+of\s+\d/) || t.match(/\b(?:pack|pk|set|case|box|bundle) of (\d+)/);
   if (multi) count = Number(multi[1]);

@@ -3905,3 +3905,13 @@ As a user, the Kotlin answer for keys such as `first-name` marked every field `r
 Fixed: brain/devtools.js now drops `required=true` from the Kotlin Jackson annotations. Test extended in test/modes.test.js.
 
 Left for later: a 20 digit integer is still typed as double or number. A key named `date` makes a class called Date with no import note. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-27 — shopping and unit price (twenty-third pass)
+
+Tried 40 size strings and 20 price strings, including "500g x 2", "1,5 l", "8.5 oz/241 g", "Net Wt 1 lb 2 oz (510g)", "½ lb", "$5.00 - $7.00" and "2 for $5".
+
+As a user, the one clear miss was a size written with a fraction character. "½ lb" gave no size at all, so that product dropped out of the unit price ranking, and "1½ lb" would have been read as a pound at best.
+
+Fixed: parseQuantity now turns ½, ¼, ¾, ⅓ and ⅔ into numbers, with an optional whole number in front. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: a price range ("$5.00 - $7.00") reads as 5, "$0.00" becomes a price of 0 that would win every value ranking, "Buy 2 get 1 free $6" reads as 2, and "20 count 1.5 oz bars" counts one bar. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
