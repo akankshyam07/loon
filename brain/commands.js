@@ -140,7 +140,7 @@ function parseCommand(input, now = new Date()) {
   if ((m = text.match(/^(?:open|launch) (.+)$/i))) {
     // "the Calculator app" is a name macOS doesn't know. Files like "notes.txt" and "Node.js" are not websites.
     const raw = tidy(m[1].replace(/(?:\s*(?:\p{Extended_Pictographic}|\uFE0F))+$/u, '').replace(/ (?:for me|now|right now|real quick|quickly|asap)$/i, '')).replace(/^(["'“‘])(.+)["'”’]$/, '$2').replace(/^(?:the|my) /i, '');
-    const target = raw.replace(/ app$/i, '');
+    const target = raw.replace(/ app$/i, '').replace(/^(\w+) browser$/i, '$1');
     // Two-step requests ("open youtube and search cats") are not an app name, so the chat gets them.
     if (!target || /(?:,| and| then| &) (?:then )?(?:search|go|message|text|play|type|write|send|find|look|click|show|make|create|start|open|launch|take|ask|check)\b/i.test(target)) return null;
     if (/^(?:https?:\/\/)?(?:localhost|\d{1,3}(?:\.\d{1,3}){3})(?::\d+)?(?:\/\S*)?$/i.test(target)) return { action: 'open', target: /^https?:/i.test(target) ? target : `http://${target}`, kind: 'url' };
@@ -153,10 +153,12 @@ function parseCommand(input, now = new Date()) {
     if (/^.+ settings$/i.test(target) && !/^system settings$/i.test(target)) return null;
     const alias = { settings: 'System Settings', 'system settings': 'System Settings', 'system preferences': 'System Settings', preferences: 'System Settings', vscode: 'Visual Studio Code', code: 'Visual Studio Code', vs: 'Visual Studio Code', 'vs code': 'Visual Studio Code', email: 'Mail', calc: 'Calculator', 'task manager': 'Activity Monitor', cmd: 'Terminal', 'command prompt': 'Terminal', explorer: 'Finder', 'control panel': 'System Settings', notepad: 'TextEdit' }[target.toLowerCase()];
     if (alias) return { action: 'open', target: alias, kind: 'app' };
+    // A bare "music" means the Music app, the folder needs "folder" or a path.
+    if (/^music$/i.test(target)) return { action: 'open', target, kind: 'app' };
     const folder = target.match(/^(?:~\/|(?:my )?(?:the )?)(downloads|documents|desktop|pictures|movies|music|applications)(?: folder)?$/i);
     if (folder && raw === target) return { action: 'open', target: `~/${folder[1][0].toUpperCase()}${folder[1].slice(1).toLowerCase()}`.replace('~/Applications', '/Applications'), kind: 'folder' };
     // These are websites with no Mac app, so `open -a` would only fail after the confirm card.
-    const site = { gmail: 'mail.google.com', youtube: 'www.youtube.com', netflix: 'www.netflix.com', 'google drive': 'drive.google.com', 'google docs': 'docs.google.com', 'google maps': 'maps.google.com', 'google calendar': 'calendar.google.com', reddit: 'www.reddit.com', twitter: 'x.com', instagram: 'www.instagram.com', facebook: 'www.facebook.com', linkedin: 'www.linkedin.com', amazon: 'www.amazon.com', wikipedia: 'www.wikipedia.org', wiki: 'www.wikipedia.org', github: 'github.com', stackoverflow: 'stackoverflow.com', 'stack overflow': 'stackoverflow.com', chatgpt: 'chatgpt.com', google: 'www.google.com', twitch: 'www.twitch.tv', tiktok: 'www.tiktok.com', pinterest: 'www.pinterest.com', ebay: 'www.ebay.com', paypal: 'www.paypal.com', yt: 'www.youtube.com', insta: 'www.instagram.com', ig: 'www.instagram.com', fb: 'www.facebook.com' }[target.toLowerCase()];
+    const site = { gmail: 'mail.google.com', youtube: 'www.youtube.com', netflix: 'www.netflix.com', 'google drive': 'drive.google.com', drive: 'drive.google.com', 'google meet': 'meet.google.com', 'google sheets': 'sheets.google.com', 'google slides': 'slides.google.com', 'google photos': 'photos.google.com', 'google docs': 'docs.google.com', 'google maps': 'maps.google.com', 'google calendar': 'calendar.google.com', reddit: 'www.reddit.com', twitter: 'x.com', instagram: 'www.instagram.com', facebook: 'www.facebook.com', linkedin: 'www.linkedin.com', amazon: 'www.amazon.com', wikipedia: 'www.wikipedia.org', wiki: 'www.wikipedia.org', github: 'github.com', stackoverflow: 'stackoverflow.com', 'stack overflow': 'stackoverflow.com', chatgpt: 'chatgpt.com', google: 'www.google.com', twitch: 'www.twitch.tv', tiktok: 'www.tiktok.com', pinterest: 'www.pinterest.com', ebay: 'www.ebay.com', paypal: 'www.paypal.com', yt: 'www.youtube.com', insta: 'www.instagram.com', ig: 'www.instagram.com', fb: 'www.facebook.com' }[target.toLowerCase()];
     if (site) return { action: 'open', target: `https://${site}`, kind: 'url' };
     // A link with a space in it, or a dotfile like ".env", is not something Loon can launch.
     if (/^https?:\/\/\S*\s|^\./i.test(target)) return null;

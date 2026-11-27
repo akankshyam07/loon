@@ -3975,3 +3975,13 @@ As a user, the worst problem was that code asks about a function, method or scri
 Fixed: the explain-code template accepts function, method, class, snippet and script, the simplify template accepts "five years old", and the page summary template accepts "give me a summary of this page". Test added in test/voice.test.js and checked to fail before the change.
 
 Left for later: "what does this word mean", "which one is the healthiest", "read this out loud", "save this to notes", "summarize this in one sentence" and "turn this into a checklist" still go to the model. The last one is ambiguous between a selection and the page. `npm test` still shows the 5 WordNet and demo failures from the sandbox install.
+
+## 2026-11-27 — open and launch commands (twelfth pass)
+
+Tried 40 phrasings such as "open chrome browser", "open the browser", "open google meet", "open drive", "open music", "open my downloads", "open safari please", "open zoom" and "open figma".
+
+As a user, "open chrome browser" offered an app with that exact name, which macOS does not know. "open google meet" and "open drive" offered apps that do not exist, and "open music" opened the Music folder when most people mean the app.
+
+Fixed: a trailing "browser" after one word is dropped, "google meet", "drive", "google sheets", "google slides" and "google photos" open their websites, and a bare "music" opens the Music app while "music folder" still opens the folder. Test added in test/assistant.test.js.
+
+Left for later: "open the browser" still offers an app called "browser", since Loon does not know the default browser. `npm test` shows the same 5 WordNet and demo failures as main in this sandbox.

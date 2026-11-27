@@ -62,6 +62,9 @@ test('commands: reminders, events, open, find, notes, memory; questions fall thr
   for (const [q, t] of [['open system settings', 'System Settings'], ['open code', 'Visual Studio Code'], ['open vs', 'Visual Studio Code']]) assert.deepStrictEqual(parseCommand(q, NOW), { action: 'open', target: t, kind: 'app' }, q);
   for (const [q, t] of [['open github', 'https://github.com'], ['open chatgpt', 'https://chatgpt.com'], ['open google', 'https://www.google.com'], ['open yt', 'https://www.youtube.com']]) assert.deepStrictEqual(parseCommand(q, NOW), { action: 'open', target: t, kind: 'url' }, q);
   assert.strictEqual(parseCommand('open wifi settings', NOW), null);
+  for (const [q, t] of [['open chrome browser', 'chrome'], ['open music', 'music']]) assert.deepStrictEqual(parseCommand(q, NOW), { action: 'open', target: t, kind: 'app' }, q);
+  for (const [q, t] of [['open google meet', 'https://meet.google.com'], ['open drive', 'https://drive.google.com']]) assert.deepStrictEqual(parseCommand(q, NOW), { action: 'open', target: t, kind: 'url' }, q);
+  assert.deepStrictEqual(parseCommand('open music folder', NOW), { action: 'open', target: '~/Music', kind: 'folder' });
   for (const [q, t] of [['open reddit', 'https://www.reddit.com'],['open twitter', 'https://x.com'], ['open amazon', 'https://www.amazon.com']]) assert.deepStrictEqual(parseCommand(q, NOW), { action: 'open', target: t, kind: 'url' }, q);
   assert.deepStrictEqual(parseCommand('open YouTube', NOW), { action: 'open', target: 'https://www.youtube.com', kind: 'url' });
   assert.strictEqual(parseCommand('open http://localhost:3000/a b', NOW), null);
