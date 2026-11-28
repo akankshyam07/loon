@@ -190,6 +190,13 @@ test('"Get to know you": a comma before an ampersand does not leave a stray "&" 
   assert.deepStrictEqual(onboardingResult({ allergies: 'eggs, dairy, & soy', interests: 'music, film, & books' }).facts, ["I'm allergic to eggs, dairy and soy", "I'm interested in music, film and books"]);
 });
 
+test('"Get to know you": other ways of saying "no allergies" are not pinned as an allergy', () => {
+  for (const none of ['nope', 'nah', 'no allergy', 'I dont have allergies', 'I don\u2019t have any', 'none that I know', 'all good', 'ninguna', 'keine']) {
+    assert.deepStrictEqual(onboardingResult({ allergies: none }).facts, [], none);
+  }
+  assert.deepStrictEqual(onboardingResult({ allergies: 'nuts, none' }).facts, ["I'm allergic to nuts"]);
+});
+
 test('"Get to know you": answers map to pinned facts and reply settings; only ticked facts are saved', () => {
   assert.deepStrictEqual(onboardingResult({}), { facts: [], personal: {}, role: '' });
   assert.deepStrictEqual(onboardingResult({ name: '  Ada <script>  ', role: 'hacker', length: 'huge', tone: 'formal', diets: ['vegan', 'bogus'], allergies: 'peanuts, shellfish and sesame', interests: 'jazz' }), {
