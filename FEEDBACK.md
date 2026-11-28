@@ -4015,3 +4015,13 @@ As a user, "copy that", "save that" and "read that out loud" went to the languag
 Fixed: a new instant rule in brain/resolve.js answers those phrasings and points at the Copy button, Save to notes, Save this chat and voice replies. It works inside a thread and in a new one. "save money on groceries" still goes to the model. Test added in test/brain.test.js and checked to fail before the change.
 
 Left for later: a bare "stop" mid-answer and "email that to me" still reach the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-28 — writing tools, fix grammar (twelfth pass)
+
+Tried 22 texts such as "i dont no what to do", "She dont like it", "We was late", "I would of gone", "teh quick brown fox", "Meeting tomorow morning confirmed", "Hey!! how r u??" and several Spanish, French, German and Italian lines.
+
+As a user, "teh quick brown fox" and "Meeting tomorow morning confirmed" came back unchanged. The checker decided they were not English because they had no common word like "the" or "is", so a short English fragment with a typo got nothing.
+
+Fixed: a text with no common English word is now only skipped when more than half of its words are misspellings to Harper, which is what Spanish, French, German and Italian look like. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: Spanish with a word that is also English, such as "Buenos días a todos los amigos", still passes the first check and gets mangled ("Ben's dais a to-dos"). "gud morning evryone" is still skipped. "Your right", "who's car" and "less apples then you" are not flagged. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

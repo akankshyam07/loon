@@ -209,7 +209,8 @@ const dialectKey = (w) => w.toLowerCase().replace(/ou/g, 'o').replace(/ll/g, 'l'
 const CHAT_SHORTHAND = new Set('u ur ok k lol omg ty thx pls plz idk imo brb sec ya'.split(' '));
 
 // Harper only knows English and "fixes" other languages into nonsense (Hola → Hold), so a text of three or more words
-// with no common English word in it is left alone.
+// with no common English word in it is left alone, unless most of its words are one typo away from a real English word
+// ("teh quick brown fox").
 const ENGLISH_WORDS = new Set('the a an and or but of to in on at for with is are was were be been am i you he she it we they me my your this that these those not no do does did have has had will would can could should there their from as if so what when'.split(' '));
 function looksEnglish(text) {
   const words = String(text).toLowerCase().match(/[a-z']+/g) || [];
@@ -235,8 +236,12 @@ function editDistance(a, b) {
 // Applies Harper's first suggestion for each problem, re-linting after every change so spans stay valid.
 // Chat shorthand is skipped: Harper turns "u" into "uh", "thx" into "the" and "lol" into "loll".
 async function fixGrammar(text) {
-  if (!looksEnglish(text)) return { fixed: text, changes: [], notEnglish: true };
   const harper = await linter();
+  if (!looksEnglish(text)) {
+    const words = text.match(/[A-Za-z']+/g) || [];
+    const misspelled = (await harper.lint(text)).filter((l) => ['Spelling', 'Typo'].includes(l.lint_kind())).length;
+    if (misspelled * 2 > words.length || !words.length) return { fixed: text, changes: [], notEnglish: true };
+  }
   let fixed = text;
   const changes = [];
   // Some of Harper's suggestions are wrong or undo each other, so a span is tried once and a few kinds are skipped:

@@ -702,3 +702,10 @@ test('error table: apt package, C headers, linker and pip wheels', () => {
   assert.match(lookupKnown("undefined reference to `main'\ncollect2: error: ld returned 1 exit status"), /Linker error/);
   assert.match(lookupKnown('ERROR: Could not build wheels for numpy, which is required to install pyproject.toml-based projects'), /failed to build/);
 });
+
+test('grammar fixer still fixes English with typos when it has no common word', async () => {
+  assert.strictEqual((await fixGrammar('teh quick brown fox')).fixed, 'the quick brown fox');
+  assert.strictEqual((await fixGrammar('Meeting tomorow morning confirmed')).fixed, 'Meeting tomorrow morning confirmed');
+  const german = await fixGrammar('Guten Morgen, wie geht es dir');
+  assert.ok(german.notEnglish);
+});
