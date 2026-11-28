@@ -4045,3 +4045,13 @@ As a user, "every day at 9 o'clock remind me to meditate" was saved as a plain m
 Fixed: parseSchedule drops "o'clock" after a number and accepts "all weekdays" and "all weekends". Test added in test/routines.test.js and checked to fail before the change.
 
 Left for later: "every day at 7 pm tonight" keeps "Tonight" as the message. "everyday at 6" reads as 6 PM, which follows the house rule for bare hours. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.
+
+## 2026-11-28 — translation and definitions (twenty-second pass)
+
+Tried 34 typed asks such as "define serendipity", "what does 'in lieu of' mean", "definition of machine learning", "opposite for hot", "words like happy", "what does ephemeral means" and "hey loon, define ubiquitous".
+
+As a user, one and two word terms, synonyms and antonyms parsed well. A three word phrase such as "what does 'in lieu of' mean" was not read as a dictionary ask even though define() accepts three words, so it went to the model.
+
+Fixed: dictionaryTerm in brain/define.js now accepts up to three words. Test added in test/brain.test.js and checked to fail before the change.
+
+Left for later: "what does mean ephemeral" keeps "mean" in the term. "what is ephemeral" and "whats ephemeral" go to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

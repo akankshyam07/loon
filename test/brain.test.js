@@ -542,3 +542,10 @@ test('define candidates reach the base word for -oes, -ves and possessive forms'
   assert.ok(candidates('shelves').includes('shelf'));
   assert.ok(candidates("dog's").includes('dog'));
 });
+
+test('dictionaryTerm accepts a three-word phrase', () => {
+  const { dictionaryTerm } = require('../brain/define');
+  assert.strictEqual(dictionaryTerm("what does 'in lieu of' mean"), 'in lieu of');
+  assert.strictEqual(dictionaryTerm('define in vitro fertilization'), 'in vitro fertilization');
+  assert.strictEqual(dictionaryTerm('what does this error mean'), null);
+});

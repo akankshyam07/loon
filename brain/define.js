@@ -62,7 +62,7 @@ async function define(phrase, { maxSenses = 4 } = {}) {
 
 // A typed dictionary question ("define ephemeral", "what does ephemeral mean?", "meaning of the word ephemeral") → the
 // term, or null. Pronouns and "the error" style phrases are left to the model, since they point at something on screen.
-const DICTIONARY_ASK = /^(?:(?:define|def|look up|explain(?= the (?:word|term) )):?|(?:(?:the|a|word) )?(?:definition|meaning) (?:of|for)|(?:definition|meaning):?|wh?[au]t(?:'?s| is| does)(?: the)? (?:meaning|definition) (?:of|for)|wh?[au]t does|wh?[au]t do you mean by)\s+(?:the (?:word|term) )?["'“‘]?([\p{L}-]+(?: [\p{L}-]+)??)["'”’]?(?: means?)?$|^wh?[au]t(?:'?s| is)? ([\p{L}-]+) means?$|^([\p{L}-]+) (?:meaning|definition|means(?: wh?[au]t)?)$/iu;
+const DICTIONARY_ASK = /^(?:(?:define|def|look up|explain(?= the (?:word|term) )):?|(?:(?:the|a|word) )?(?:definition|meaning) (?:of|for)|(?:definition|meaning):?|wh?[au]t(?:'?s| is| does)(?: the)? (?:meaning|definition) (?:of|for)|wh?[au]t does|wh?[au]t do you mean by)\s+(?:the (?:word|term) )?["'“‘]?([\p{L}-]+(?: [\p{L}-]+){0,2}?)["'”’]?(?: means?)?$|^wh?[au]t(?:'?s| is)? ([\p{L}-]+) means?$|^([\p{L}-]+) (?:meaning|definition|means(?: wh?[au]t)?)$/iu;
 const NOT_A_TERM = /^(?:this|that|it|these|those|here|there|the|my|your|his|her|our|their|a|an|going on|wrong|new|up|happening|next|today|time)\b/i;
 
 function dictionaryTerm(question) {
