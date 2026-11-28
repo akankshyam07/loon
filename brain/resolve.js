@@ -131,6 +131,18 @@ const CODE_ANSWERS = [
     answer: () => ({ mood: 'sleepy', text: "Night! I'll keep watch. *curls up*" }),
   },
   {
+    // The model cannot copy, save or speak; it would claim it did. Point at the real buttons instead.
+    match: /^(?:(?:can|could) you )?(?:copy|save|read|speak)(?: (?:that|this|it|the answer))?(?: (?:to (?:my )?(?:clipboard|notes)|out loud|aloud))?$/,
+    answer: (key) => ({
+      mood: 'happy',
+      text: /^(?:(?:can|could) you )?copy/.test(key)
+        ? 'Use the **Copy** button under my answer.'
+        : /^(?:(?:can|could) you )?save/.test(key)
+          ? 'Use **Save to notes** under my answer, or the ⋯ menu for **Save this chat**.'
+          : 'I read answers aloud when you ask by voice with ⌥⇧V, and Settings → Speak replies turns that on.',
+    }),
+  },
+  {
     // The model cannot change settings, so it must not be left to promise "okay, I'll stop remembering".
     match: /^(?:stop (?:remembering|saving|learning)(?: (?:things|stuff|anything|everything|about me))?|(?:do not|don'?t) (?:remember|save|learn)(?: (?:things|stuff|anything|everything|about me|that|this|it))?|(?:turn|switch) off (?:your )?(?:memory|learning)|(?:disable|pause) (?:your )?memory)$/,
     answer: () => ({

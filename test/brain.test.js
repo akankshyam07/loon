@@ -109,6 +109,21 @@ test('ladder: stretched greetings and "how are you" get an instant reply, greeti
   }
 });
 
+test('ladder: "copy that", "save that" and "read that out loud" point at the real buttons instead of the model', async () => {
+  let asked = 0;
+  const brain = { modelId: () => 'fake', chat: async () => { asked++; return { text: 'model' }; }, chatStream: async () => { asked++; return { text: 'model' }; } };
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'loon-'));
+  const resolver = new Resolver({ brain, cacheFile: path.join(dir, 'c.json'), countsFile: path.join(dir, 'n.json') });
+  const history = [{ question: 'explain big o', answer: 'It measures growth.', target: 'fast' }];
+  for (const q of ['copy that', 'Copy it please', 'can you copy this?', 'save that', 'save it to notes', 'copy to clipboard', 'read that out loud', 'read it aloud']) {
+    const r = await resolver.ask(q, { onText: () => {}, firstInThread: false, history });
+    assert.strictEqual(r.tier, 'code', q);
+    assert.match(r.text, /Copy|Save|aloud|voice/, q);
+  }
+  assert.strictEqual(asked, 0);
+  assert.notStrictEqual((await resolver.ask('save money on groceries', { onText: () => {}, firstInThread: true })).tier, 'code');
+});
+
 test('ladder: "are you an ai" and "who made you" get an honest instant answer', async () => {
   let asked = 0;
   const brain = { modelId: () => 'fake', chat: async () => { asked++; return { text: 'model' }; }, chatStream: async () => { asked++; return { text: 'model' }; } };

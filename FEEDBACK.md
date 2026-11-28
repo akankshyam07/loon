@@ -4005,3 +4005,13 @@ As a user, a few error messages I would select got the Define chip instead of th
 Fixed: those error names are now recognised as errors in extension/lib/classify.js, and an ellipsis no longer counts as a sentence end. Test added in test/browser.test.js and checked to fail before the change.
 
 Left for later: "what is this" without a question mark still gets Define, and "Jan 5, 2025" and "10 kg" get Define. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-28 — follow-up conversations, copy, save and read aloud (twentieth pass)
+
+Tried 30 short follow-ups such as "copy that", "can you copy this?", "save it to notes", "copy to clipboard", "read that out loud", "save money on groceries", "shorter", "why" and "tl;dr".
+
+As a user, "copy that", "save that" and "read that out loud" went to the language model. It cannot copy, save or speak, so it could say "done" and do nothing. This was listed under left for later in two earlier entries.
+
+Fixed: a new instant rule in brain/resolve.js answers those phrasings and points at the Copy button, Save to notes, Save this chat and voice replies. It works inside a thread and in a new one. "save money on groceries" still goes to the model. Test added in test/brain.test.js and checked to fail before the change.
+
+Left for later: a bare "stop" mid-answer and "email that to me" still reach the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
