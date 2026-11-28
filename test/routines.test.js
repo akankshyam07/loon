@@ -23,6 +23,15 @@ test('routines: "@ 9pm" is a time, not part of the message', () => {
   assert.strictEqual(R.describeSchedule(d.schedule), 'every day at 9:00 PM');
 });
 
+test('routines: "o\'clock" and "all weekdays" do not leak into the message', () => {
+  const a = R.parseRoutine("every day at 9 o'clock remind me to meditate", { now: NOW });
+  assert.strictEqual(a.action, 'reminder');
+  assert.strictEqual(a.payload.message, 'meditate');
+  const b = R.parseRoutine('all weekdays at 8 open mail', { now: NOW });
+  assert.strictEqual(R.describeSchedule(b.schedule), 'weekdays at 8:00 AM');
+  assert.strictEqual(b.payload.message, 'Open mail');
+});
+
 test('routines: ~20 phrasings parse in code, and their wording reads back to the same schedule', () => {
   const cases = [
     ['every morning at 9 tell me my day', 'today', 'every day at 9:00 AM'],

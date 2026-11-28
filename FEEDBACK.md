@@ -4035,3 +4035,13 @@ As a user, the worst problem was a pinned fact that is wrong and goes into every
 Fixed: the shared no-answer rule in brain/personal.js now knows nah, nop, "no allergy", "I dont have allergies", "none that I know", "all good", curly apostrophes and "none" in Spanish, German, French and Italian. It also applies to the interests box. Test added in test/conversations.test.js and checked to fail before the change.
 
 Left for later: "never" is still saved as an allergy. Names such as "no name", "anonymous" and "I would rather not say" are saved as "Call me …". "Ada & Bob" becomes "Ada  Bob" with a double space, and "名前は李雷です" is kept whole. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-28 — routines (eighth pass)
+
+Tried 30 routine phrasings such as "every morning at 8 remind me to stretch", "every mon wed fri at 7:30 open mail", "twice a day remind me to take pills", "every day at 9 o'clock remind me to meditate", "all weekdays at 8" and "every last friday of the month at 3".
+
+As a user, "every day at 9 o'clock remind me to meditate" was saved as a plain message reading "O'clock remind me to meditate", so I would get a notification with that text and no reminder. "all weekdays at 8" got a message called "All".
+
+Fixed: parseSchedule drops "o'clock" after a number and accepts "all weekdays" and "all weekends". Test added in test/routines.test.js and checked to fail before the change.
+
+Left for later: "every day at 7 pm tonight" keeps "Tonight" as the message. "everyday at 6" reads as 6 PM, which follows the house rule for bare hours. The 5 failures in `npm test` are the WordNet and demo ones from the sandbox install.

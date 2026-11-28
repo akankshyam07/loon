@@ -90,7 +90,7 @@ const unitMinutes = (u) => (/^h/i.test(u) ? 60 : 1);
 // allowOnce: also accept a plain date ("tomorrow at 9") as a one-off, for the confirm card's When field.
 function parseSchedule(input, now = new Date(), { allowOnce = false } = {}) {
   // "7.30pm" reads as 7:30pm.
-  const state = { text: ` ${String(input).replace(/[()]/g, ' ').replace(/\b(\d{1,2})\.(\d{2})(?=\s*[ap]\.?m\b)/gi, '$1:$2').replace(/\b(half|quarter) (past|to) (\d{1,2})\b(?!:)/gi, clockWords)} ` };
+  const state = { text: ` ${String(input).replace(/[()]/g, ' ').replace(/(?<=\d)\s+o['’]?clock\b/gi, '').replace(/\b(\d{1,2})\.(\d{2})(?=\s*[ap]\.?m\b)/gi, '$1:$2').replace(/\b(half|quarter) (past|to) (\d{1,2})\b(?!:)/gi, clockWords)} ` };
   // "on the first of every month" is the 1st; the spelled-out day would otherwise be read as today's date.
   state.text = state.text.replace(new RegExp(String.raw`\b(${ORDINAL_WORDS.join('|')})(?=\s+of\s+(?:every|each|the)\s+month\b)|(?<=\b(?:every|each)\s+month\s+on\s+the\s+)(${ORDINAL_WORDS.join('|')})\b|(?<=\b(?:every|each)\s+)(first)(?=\s+of\s+the\s+month\b)`, 'gi'), (_, a, b, c) => `${ORDINAL_WORDS.indexOf((a || b || c).toLowerCase()) + 1}th`);
   // "every other friday" is the 14-day cycle that "every other week on friday" already makes.
@@ -129,8 +129,8 @@ function parseSchedule(input, now = new Date(), { allowOnce = false } = {}) {
     const [from, to] = [dayIndex(range[1]), dayIndex(range[2])];
     days = ALL_DAYS.filter((d) => (d - from + 7) % 7 <= (to - from + 7) % 7);
   } else if (list) days = [...new Set(list[1].split(/\s*(?:,|and|&)\s*|\s+/).map(dayIndex).filter((d) => d >= 0))].sort();
-  else if (take(state, /\b(?:every\s+|on\s+)?(?:week\s?days?|work\s?days?)\b/i)) days = WEEKDAYS;
-  else if (take(state, /\b(?:every\s+|on\s+)?weekends?\b/i)) days = WEEKEND;
+  else if (take(state, /\b(?:every\s+|on\s+|all\s+)?(?:week\s?days?|work\s?days?)\b/i)) days = WEEKDAYS;
+  else if (take(state, /\b(?:every\s+|on\s+|all\s+)?weekends?\b/i)) days = WEEKEND;
   if (except) {
     const skip = except[1].split(/\s*(?:,|and|&|or)\s*|\s+/).map(dayIndex);
     days = (days || ALL_DAYS).filter((d) => !skip.includes(d));
