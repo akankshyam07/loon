@@ -4075,3 +4075,13 @@ As a user, the clearest ways to say "no emoji", "no jokes" and "back to English"
 Fixed: parseFeedback in brain/personal.js now reads "emoji off" and "turn off emojis" as no emoji, "skip the jokes" and "cut the puns" as the plain tone, and a bare "english" or "english please" as English. Test added in test/personal.test.js and checked to fail before the change.
 
 Left for later: "be nicer", "ELI5", bullet point requests, "just the answer", "one sentence answers", "too much text" and "wayyy shorter" have no rule. Language names in other languages are still unknown. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-28 — page kinds, login fields and country banks (fifteenth pass)
+
+Tried 31 hosts and 12 form shapes, such as santander.com.br, dbs.com.sg, my.gov.au, mercadopago.com, login boxes named "pw" or "pass", and password boxes that only say so in a placeholder or an aria label.
+
+As a user, the worst problem was that Loon did not look away on a login form whose password box is a plain text input with no telling name, for example a show-password toggle with `placeholder="Password"`. A few banks and the Australian government sign-in were also missing from the sensitive list.
+
+Fixed: the password-name check in extension/lib/page-kind.js also matches the names "pw" and "pass", and a placeholder or aria label that contains "password". Added santander.com.br, dbs.com, dbs.com.sg, maybank2u.com.my, mufg.jp, my.gov.au and mercadopago. Test added in test/browser.test.js and checked to fail before the change.
+
+Left for later: the host list is still fixed, so rakuten-bank.co.jp, bancodechile.cl, nhs.uk login and a password in a textarea are only caught by a field rule. The failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

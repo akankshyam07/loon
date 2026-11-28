@@ -171,6 +171,13 @@ test('page kinds: sensitive wins, shops and articles are recognized', async () =
   }
   assert.notStrictEqual(page('<form><input name="private_note"><input name="seed_count"></form>').kind, 'sensitive');
   assert.strictEqual(page('<form><input type="text" name="pwd"></form>').kind, 'sensitive');
+  // Password boxes that only say so in a placeholder, an aria label or a short name, and more country banks.
+  for (const field of ['<input name="pw">', '<input name="pass">', '<input name="x" placeholder="Password">', '<input name="x" aria-label="Password">']) {
+    assert.strictEqual(page(`<form>${field}</form>`).kind, 'sensitive', field);
+  }
+  for (const host of ['www.santander.com.br', 'internet-banking.dbs.com.sg', 'www.maybank2u.com.my', 'my.gov.au']) {
+    assert.strictEqual(page('<p>hi</p>', `https://${host}/`).kind, 'sensitive', host);
+  }
   assert.strictEqual(page('<form><input id="security-code"></form>').kind, 'sensitive');
   assert.strictEqual(page('<p>chat</p>', 'https://web.whatsapp.com/').kind, 'sensitive');
   // Crypto exchanges and wallets, HR and payroll portals, and French health and bank sites
