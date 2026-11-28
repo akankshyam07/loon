@@ -8,7 +8,7 @@ const LANGUAGES = ['english', 'spanish', 'french', 'german', 'italian', 'portugu
   'turkish', 'arabic', 'hebrew', 'hindi', 'bengali', 'odia', 'tamil', 'telugu', 'urdu', 'chinese', 'mandarin', 'japanese', 'korean',
   'vietnamese', 'thai', 'indonesian', 'greek', 'czech'];
 
-const clip = (value, max) => String(value ?? '').replace(/\s+\n/g, '\n').trim().slice(0, max);
+const clip = (value, max) => (typeof value === 'string' ? value : '').replace(/\s+\n/g, '\n').trim().slice(0, max);
 
 // Settings come from disk and from the Settings window: keep only known keys, valid choices and capped text.
 function cleanPersonal(input = {}) {
@@ -19,7 +19,7 @@ function cleanPersonal(input = {}) {
     length: CHOICES.length.includes(p.length) ? p.length : PERSONAL_DEFAULTS.length,
     tone: CHOICES.tone.includes(p.tone) ? p.tone : PERSONAL_DEFAULTS.tone,
     emoji: p.emoji !== false,
-    language: clip(p.language, LIMITS.language).replace(/[^\p{L} ]/gu, ''),
+    language: clip(p.language, LIMITS.language).replace(/[^\p{L}\p{M}\- ]/gu, '').replace(/\s+/g, ' ').trim(),
   };
 }
 
@@ -49,15 +49,17 @@ const sensesFor = (length) => ({ short: 1, detailed: 6 }[length] || 4);
 
 // ---------- feedback: "shorter please", "less emoji", "be more formal" ----------
 const FEEDBACK = [
-  [/^(?:be |make (?:it|them|your (?:answers|replies)) |keep (?:it|them|answers|replies) |give (?:me )?)?(?:shorter|more concise|concise|briefer|brief|less wordy|less verbose|short(?: answers| replies)?|(?:that was |that's |thats |it's |its |answers are |you're |youre |way )?too (?:long|wordy|verbose)|tl;?dr|less text|fewer words)(?: answers| replies)?$/,
+  [/^(?:be |make (?:it|them|answers|replies|your (?:answers|replies)) |keep (?:it|them|answers|replies) |give (?:me )?)?(?:shorter|more concise|concise|terse|briefer|(?:more )?brief|less wordy|less verbose|short(?: answers| replies)?|(?:that was |that's |thats |it's |its |answers are |you're |youre |way )?too (?:long|wordy|verbose|detailed|detail|many words)|tl;?dr|(?:you )?talk(?:ing)? too(?: much)?|less text|less words|(?:stop|less) rambling|talk less|fewer words|less detail(?:ed)?|(?:(?:stop being|don'?t be|do not be) |you(?:'re| are) )?(?:so |too )?(?:wordy|chatty|verbose)|(?:answers|replies) (?:are |is )?too long|not (?:so|that) long)(?: answers| replies)?$/,
     (p) => ({ length: p.length === 'detailed' ? 'normal' : 'short' })],
-  [/^(?:be |give (?:me )?|i want |i need )?(?:more detail(?:ed|s)?|longer(?: answers| replies)?|more thorough|(?:that was |that's |thats |it's |its |answers are |way )?too short|go into more detail|detailed(?: answers| replies)?|more in[- ]depth)(?: answers| replies)?$/,
+  [/^(?:be |make (?:it|them) |give (?:me )?|i want |i need |answer in |reply in )?(?:more detail(?:ed|s)?|longer(?: answers| replies)?|more thorough|(?:that was |that's |thats |it's |its |answers are |answers |replies are |replies |way )?too short|go into more detail|detailed(?: answers| replies)?|more in[- ]depth|not (?:so|that) short)(?: answers| replies)?$/,
     (p) => ({ length: p.length === 'short' ? 'normal' : 'detailed' })],
-  [/^(?:(?:use |with )?(?:less|fewer|no)|stop using|stop with the|without|don'?t use|drop the|too many) emojis?$/, () => ({ emoji: false })],
-  [/^(?:use|more|add|with) emojis?$/, () => ({ emoji: true })],
-  [/^(?:be |sound )?(?:more )?(?:formal|professional)$|^too (?:casual|informal|silly)$/, () => ({ tone: 'formal' })],
-  [/^(?:be )?(?:more serious|less playful|less silly|less cute|no jokes|fewer jokes|less jokes|stop joking|plainer|plain)$|^too (?:playful|silly|cute)$/, () => ({ tone: 'plain' })],
-  [/^(?:be )?(?:more (?:playful|fun|casual|cute)|less formal|less serious)$|^too (?:formal|serious|stiff)$/, () => ({ tone: 'playful' })],
+  [/^(?:(?:use |with )?(?:less|fewer|no(?: more)?)|stop using|stop with the|stop the|without|don'?t use|drop the|(?:remove|get rid of)(?: the| all)?|too many) emojis?(?: in (?:your |the )?(?:answers|replies))?$|^(?:turn )?emojis? off$|^(?:turn )?off (?:the )?emojis?$/, () => ({ emoji: false })],
+  [/^(?:use more|use|more|add|with) emojis?(?: again)?$|^(?:you can |go ahead and |you may )?(?:use|add) emojis? again$|^(?:bring|put|turn) (?:back )?(?:the |on )?emojis?(?: back)?(?: on)?$|^emojis? (?:back|again|on)$/, () => ({ emoji: true })],
+  [/^(?:(?:back to |go back to )(?:normal|default|regular|usual|standard)(?: length)?|(?:normal|default|regular|medium|standard) (?:length|answers|replies)|(?:normal|default|regular|medium|standard) length (?:answers|replies))$/, () => ({ length: 'normal' })],
+  [/^(?:be |sound )?(?:more )?(?:formal|professional)(?: tone)?$|^too (?:casual|informal|silly)$/, () => ({ tone: 'formal' })],
+  [/^(?:be (?:more )?serious|more serious|(?:be )?less playful|less silly|less cute|no jokes|fewer jokes|less jokes|no more jokes|stop (?:the )?jokes|stop joking(?: around)?|(?:drop|skip|cut) (?:the )?(?:jokes|puns)|(?:no|fewer|less|stop the) (?:cat )?puns|serious mode|tone down (?:the )?(?:jokes|humou?r|sass|snark|sarcasm)|tone (?:it|things) down|(?:less|no) (?:sass|snark|sarcasm|humou?r|attitude)|less (?:sassy|snarky|sarcastic)|stop being (?:so |too )?(?:sassy|snarky|sarcastic|playful|silly|cute)|plainer|plain)$|^too (?:playful|silly|cute)$/, () => ({ tone: 'plain' })],
+  [/^(?:reset|restore|default) (?:the |my |your )?(?:style|replies|reply style|answers|personality|tone and length)(?: to default)?$/, () => ({ length: 'normal', tone: 'playful', emoji: true })],
+  [/^(?:be )?(?:(?:go )?back to playful|playful again|chill(?: out)?|(?:normal|default|usual) tone|(?:talk|speak|be|act|sound) (?:normal(?:ly)?|like (?:normal|yourself))|(?:more )?(?:playful|fun|funny|casual|cute|sass|snark)|funnier|sassier|snarkier|cuter|less formal|less serious)$|^too (?:formal|serious|stiff)$|^stop being (?:so |too )?(?:formal|serious|stiff)$/, () => ({ tone: 'playful' })],
 ];
 const NOTES = {
   length: { short: 'shorter from now on', normal: 'back to normal-length answers', detailed: 'more detail from now on' },
@@ -71,18 +73,20 @@ function parseFeedback(text, current = PERSONAL_DEFAULTS) {
   const raw = String(text || '').toLowerCase();
   if (!raw.trim() || raw.length > 80) return null;
   const t = raw.replace(/[!.?]+\s*$/, '')
-    .replace(/\b(?:please|pls|plz|loon|hey|ok(?:ay)?|can you|could you|would you|try to|a bit|a little|much|kinda|slightly|from now on|going forward|in (?:the )?future|always)\b/g, ' ')
-    .replace(/[,]/g, ' ').replace(/\s+/g, ' ').trim();
+    .replace(/\b(?:please|pls|plz|loon|hey|ok(?:ay)?|can you|could you|would you|try to|a bit|a little|a lot|way|far|much|kinda|tbh|honestly|lol|slightly|from now on|going forward|next time|in (?:the )?future|always)\b/g, ' ')
+    .replace(/[,]|\p{Extended_Pictographic}/gu, ' ').replace(/\s+/g, ' ').trim();
   const p = cleanPersonal(current);
   for (const [re, patchFor] of FEEDBACK) {
     if (!re.test(t)) continue;
     const patch = patchFor(p);
+    if (Object.keys(patch).length > 1) return { patch, note: 'Got it, back to my default style. Change it in Settings.' };
     const [key, value] = Object.entries(patch)[0];
     return { patch, note: `Got it, ${NOTES[key][String(value)]}. Change it in Settings.` };
   }
-  const lang = t.match(/^(?:reply|answer|respond|talk|speak|write)(?: to me)? in ([a-z]+)(?: only)?$/);
-  if (lang && LANGUAGES.includes(lang[1])) {
-    const language = lang[1] === 'english' ? '' : lang[1][0].toUpperCase() + lang[1].slice(1);
+  const lang = t.match(/^(?:(?:reply|replies|answer|answers|respond|talk|speak|write)(?: to me| me)?(?: only)? in|only (?:reply|answer|respond|speak|write) in|(?:(?:switch|change|go) )?back to|(?:switch|change) to|speak) ([a-z]+)(?: only| again)?$|^([a-z]+) only$|^(english)$/);
+  const name = lang && (lang[1] || lang[2] || lang[3]);
+  if (name && LANGUAGES.includes(name)) {
+    const language = name === 'english' ? '' : name[0].toUpperCase() + name.slice(1);
     return { patch: { language }, note: `Got it, ${language ? `I'll reply in ${language}` : 'back to English'} from now on. Change it in Settings.` };
   }
   return null;
@@ -111,7 +115,7 @@ function suggestMemory(text) {
     const clause = s.split(/\s*[,;:]\s*|\s+(?:so|but|because|which|what|can you|could you|please|any)\s+/i)[0].trim();
     if (!clause || /\?$/.test(clause) || clause.length < 4 || clause.length > 140 || clause.split(/\s+/).length > 20) continue;
     if (!STATEMENTS.some((re) => re.test(clause))) continue;
-    const fact = clause.replace(/[.!]+$/, '').replace(/\bi\b/g, 'I').replace(/\bi'(m|ve|d|ll)\b/gi, "I'$1");
+    const fact = clause.replace(/[.!]+$/, '').replace(/\bi\b/g, 'I').replace(/^im\b/i, "I'm").replace(/\bi'(m|ve|d|ll)\b/gi, "I'$1");
     return fact[0].toUpperCase() + fact.slice(1);
   }
   return null;
@@ -212,20 +216,37 @@ const ROLES = {
 };
 const DIETS = { vegetarian: "I'm vegetarian", vegan: "I'm vegan", pescatarian: "I'm pescatarian", gluten_free: "I'm gluten-free", halal: 'I eat halal', kosher: 'I keep kosher', lactose: "I'm lactose intolerant" };
 const tidy = (text, max = 80) => String(text || '').replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
-const list = (text) => tidy(text, 200).split(/\s*(?:,|;|\band\b)\s*/i).map((x) => x.replace(/[.!]+$/, '').trim()).filter(Boolean).slice(0, 6);
+// "None" and "n/a" are answers, not allergies; "I'm allergic to peanuts" is typed often, so the lead-in is dropped.
+const NO_ANSWER = /^(?:i (?:have|got|don'?t have)(?: any)? )?(?:(?:none|no|nope?|nah|nada|nil|nothing|n\/?a|na|-+|idk|skip|pass|thanks?|prefer not to say|all good|ningun[ao]|keine|aucune?|nessun[ao])(?: (?:known |food )?(?:allerg(?:y|ies)|really|at all|thanks?|that i know of?))*|none that i know(?: of)?|not (?:that i know of|really|sure)|(?:i'?m )?not allergic(?: to anything)?|i don'?t have any(?: allergies)?|i don'?t have (?:any )?(?:known |food )?allerg(?:y|ies))$/i;
+const list = (text, split = /\s*(?:[,;]\s*&?|\band(?: also)?\b| & )\s*/i) => (NO_ANSWER.test(tidy(text, 200).replace(/[\u2018\u2019]/g, "'").replace(/[.!]+$/, '')) ? '' : tidy(text, 200)).replace(/\p{Extended_Pictographic}\uFE0F?/gu, '').replace(/\s*[:;=]-?[()DPp]+(?=\s|$)/g, '').trim().replace(/^(?:(?:i(?:'m| am)\s+)?(?:allergic to|interested in|into)|i (?:like|love|enjoy)(?: to)?|i (?:have|got)(?: an?)?|(?:my )?(?:allergies|interests|hobbies) (?:(?:is|are|include)\b:?|:)|(?:my )?(?:allergies|interests|hobbies):|i(?:'m| am))\s*/i, '').split(split)
+  .map((x) => x.replace(/[.!]+$/, '').trim()).filter((x) => x && !NO_ANSWER.test(x))
+  .filter((x, i, all) => all.findIndex((y) => y.toLowerCase() === x.toLowerCase()) === i).slice(0, 12);
 const joinList = (items) => (items.length > 1 ? `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}` : items[0] || '');
+
+// "Hi, I'm Ada", "my name's Ada" and "you can call me Ada" are typed into the name box; only the name is kept.
+const NAME_LEAD = /^(?:(?:(?:hi|hello|hey|yo)\b[\s,!.]*|(?:you can |please |just |everyone |everybody |they |(?:my )?(?:friends|family|mom|mum|dad) )*calls? me\b[\s,:]*|(?:you can )?(?:just )?i go by\b[\s,:]*|my name(?:'s| is)\b[\s,:]*|name(?:'s| is|\b:)[\s,:]*|(?:it'?s|this is|that'?s) me\b[\s,:]*|this is\b\s*|it'?s\b\s*|i'?m\b\s*|i am\b\s*))+/i;
 
 // answers: { name, role, length, tone, diets: [], allergies, interests } (every one optional) → what the review screen
 // shows: { facts: [text] (saved pinned), personal: patch for cleanPersonal, role }. Plain code, no model.
 function onboardingResult(answers = {}) {
   const facts = [];
-  const name = tidy(answers.name, 40).replace(/[^\p{L}\p{N} .'-]/gu, '');
-  if (name) facts.push(`Call me ${name}`);
+  const name = tidy(answers.name, 40).replace(/<[^>]*>/g, '').replace(/\s*\([^)]*\)/g, '').replace(/[\u2018\u2019]/g, "'").replace(NAME_LEAD, '').replace(/\s*,.*$|\s+(?:and|but|nice|pleased|glad)\b.*$/i, '').replace(/[^\p{L}\p{N} .'-]/gu, '').replace(/ (?:please|pls|thanks?|here)$/i, '').replace(/[. ]+$/, '').trim();
+  if (name && !NO_ANSWER.test(name)) facts.push(`Call me ${name}`);
   const role = Object.hasOwn(ROLES, answers.role) ? answers.role : '';
   if (role && ROLES[role].fact) facts.push(ROLES[role].fact);
   for (const d of answers.diets || []) if (Object.hasOwn(DIETS, d)) facts.push(DIETS[d]);
-  const allergies = list(answers.allergies);
+  // "peanuts/shellfish" is two allergies; "lactose intolerant" is not an allergy and gets its own wording.
+  const intolerant = /\s+intoleran(?:t|ce)$/i;
+  const food = list(answers.allergies, /\s*(?:[,;]\s*&?|\/|\band(?: also)?\b| & )\s*/i).map((x) => x.replace(/^lactose$/i, 'lactose intolerant').replace(/^(?:celiac|coeliac)(?: disease)?$/i, 'no gluten (celiac)').replace(/\s+allerg(?:y|ies)$/i, '').replace(/^(?:severe|serious|mild|slight|bad)\s+/i, '').replace(/\s*\((?:severe|serious|mild|slight|bad)\)$/i, '')).filter((x) => !/^(?:severe|serious|mild|slight|bad)$/i.test(x));
+  // "dairy-free" is a diet, not an allergy to "dairy-free".
+  // "no gluten" and "I can't eat pork" are avoided foods too.
+  const free = /[- ]free$|^(?:i (?:can'?t|cannot|don'?t|do not) (?:eat|have|drink)|no|without) /i;
+  const allergies = food.filter((x) => !intolerant.test(x) && !free.test(x));
+  const avoided = food.filter((x) => free.test(x)).map((x) => x.replace(free, ''));
   if (allergies.length) facts.push(`I'm allergic to ${joinList(allergies)}`);
+  const intolerances = food.filter((x) => intolerant.test(x)).map((x) => x.replace(intolerant, ''));
+  if (intolerances.length) facts.push(`I'm intolerant to ${joinList(intolerances)}`);
+  if (avoided.length) facts.push(`I avoid ${joinList(avoided)}`);
   const interests = list(answers.interests);
   if (interests.length) facts.push(`I'm interested in ${joinList(interests)}`);
   const personal = {};

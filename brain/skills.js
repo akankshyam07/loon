@@ -6,7 +6,7 @@ const shopping = require('./shopping');
 const { summarizeReviews, extractReviews } = require('./reviews');
 const food = require('./food');
 const { lookupKnown } = require('./errors');
-const { jsonToDto, fixGrammar } = require('./devtools');
+const { jsonToDto, parseJson, fixGrammar } = require('./devtools');
 const { redact } = require('./redact');
 const { makeQuiz } = require('./quiz');
 
@@ -154,13 +154,14 @@ class Skills {
         return text ? { text, mood: 'focused', detail: 'known-error table' } : null;
       }
       case 'dto': {
+        const json = packet.text;
         try {
-          JSON.parse(packet.text);
+          parseJson(json);
         } catch {
           return { text: "That isn't valid JSON, so I can't make types from it.", mood: 'confused' };
         }
         const language = taskId === 'make_dto_ts' ? 'typescript' : 'java';
-        return { text: await jsonToDto(packet.text, language), mood: 'happy', detail: 'quicktype' };
+        return { text: await jsonToDto(json, language), mood: 'happy', detail: 'quicktype' };
       }
       case 'leetcode': {
         const { LeetcodeIndex, looksLikeRepo } = require('./leetcode');
@@ -180,7 +181,8 @@ class Skills {
         return { text: `**Quiz**: fill in the blanks (${quiz.length} questions).`, mood: 'focused', detail: 'cloze cards from key sentences, no model', quiz };
       }
       case 'grammar': {
-        const { fixed, changes } = await fixGrammar(packet.text || '');
+        const { fixed, changes, notEnglish } = await fixGrammar(packet.text || '');
+        if (notEnglish) return { text: 'This doesn\u2019t look like English, and my grammar checker only knows English. I left it alone.', mood: 'curious', detail: 'Harper grammar checker' };
         if (!changes.length) return { text: 'No grammar or spelling problems found. ✨', mood: 'happy', detail: 'Harper grammar checker' };
         return { text: `${fixed}\n\n_Fixed: ${changes.join(' · ')}_`, mood: 'happy', detail: 'Harper grammar checker', replaceText: fixed };
       }

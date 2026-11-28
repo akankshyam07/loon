@@ -17,6 +17,21 @@ const PAGE = 'https://shop.example.com/p/oats';
 const at = (s) => new Date(s).getTime();
 const MIN = 60 * 1000;
 
+test('routines: "@ 9pm" is a time, not part of the message', () => {
+  const d = R.parseRoutine('every day @ 9pm journal', { now: NOW });
+  assert.strictEqual(d.payload.message, 'Journal');
+  assert.strictEqual(R.describeSchedule(d.schedule), 'every day at 9:00 PM');
+});
+
+test('routines: "o\'clock" and "all weekdays" do not leak into the message', () => {
+  const a = R.parseRoutine("every day at 9 o'clock remind me to meditate", { now: NOW });
+  assert.strictEqual(a.action, 'reminder');
+  assert.strictEqual(a.payload.message, 'meditate');
+  const b = R.parseRoutine('all weekdays at 8 open mail', { now: NOW });
+  assert.strictEqual(R.describeSchedule(b.schedule), 'weekdays at 8:00 AM');
+  assert.strictEqual(b.payload.message, 'Open mail');
+});
+
 test('routines: ~20 phrasings parse in code, and their wording reads back to the same schedule', () => {
   const cases = [
     ['every morning at 9 tell me my day', 'today', 'every day at 9:00 AM'],
@@ -25,6 +40,7 @@ test('routines: ~20 phrasings parse in code, and their wording reads back to the
     ['every Friday at 5 summarize what I worked on this week', 'weekSummary', 'every Friday at 5:00 PM'],
     ['every Monday check the price of this page', 'priceWatch', 'every Monday at 9:00 AM'],
     ['every night at 10 tell me to sleep 😴', 'notify', 'every day at 10:00 PM'],
+    ['every day @9pm remind me to journal', 'reminder', 'every day at 9:00 PM'],
     ['every day at 12am tell me to take my meds', 'notify', 'every day at 12:00 AM'],
     ['every day at 12pm tell me lunch time', 'notify', 'every day at 12:00 PM'],
     ['every night at 12 remind me to lock the door', 'reminder', 'every day at 12:00 AM'],
@@ -55,12 +71,44 @@ test('routines: ~20 phrasings parse in code, and their wording reads back to the
   assert.deepStrictEqual(R.parseRoutine('every night at 10 tell me to sleep 😴', { now: NOW }).payload, { message: 'Time to sleep 😴' });
   assert.deepStrictEqual(R.parseRoutine('every Monday check the price of this page', { now: NOW, pageUrl: PAGE }).payload, { url: PAGE });
   assert.strictEqual(R.parseRoutine('every Monday check the price of this page', { now: NOW }).understood, false); // no page open
+  // politeness must not turn a routine into a one-time reminder titled "every to email bob"
+  for (const wording of ['can you remind me every monday at 9 to email bob', 'please every Monday at 9 remind me to email bob', 'every Monday at 9 please remind me to email bob']) {
+    const polite = R.parseRoutine(wording, { now: NOW });
+    assert.deepStrictEqual([polite.action, polite.payload, polite.understood], ['reminder', { message: 'email bob' }, true], wording);
+  }
+  // two times of day are not understood, so the card asks instead of keeping only 9am
+  const twice = R.parseRoutine('every day at 9am and 5pm remind me to stretch', { now: NOW });
+  assert.strictEqual(twice.schedule, null);
+  assert.strictEqual(twice.understood, false);
+  assert.deepStrictEqual(twice.payload, { message: 'stretch' });
+  for (const bare of ['every day at 9 and 5 remind me to stretch', 'every day at 9, 5 remind me to stretch']) {
+    const r = R.parseRoutine(bare, { now: NOW });
+    assert.strictEqual(r.schedule, null, bare);
+    assert.deepStrictEqual(r.payload, { message: 'stretch' }, bare);
+  }
+  assert.strictEqual(R.parseRoutine('every day at 9 take 2 pills', { now: NOW }).schedule.time, '09:00');
+  // "N times a day" is a routine spread over 9am to 9pm, not a one-off titled "stretch twice"
+  const perDay = R.parseRoutine('remind me to stretch twice a day', { now: NOW });
+  assert.deepStrictEqual(perDay.schedule, { type: 'interval', minutes: 720, window: { start: '09:00', end: '21:00' }, days: R.ALL_DAYS });
+  assert.deepStrictEqual(perDay.payload, { message: 'stretch' });
+  assert.strictEqual(R.parseRoutine('3 times a day remind me to drink water', { now: NOW }).schedule.minutes, 360);
+  assert.deepStrictEqual(R.parseRoutine('remind me to take pills once a day', { now: NOW }).schedule, { type: 'daily', time: '09:00', days: R.ALL_DAYS });
+  // a day word inside the message must not change the days
+  assert.deepStrictEqual(R.parseRoutine('every friday at 5 say have a good weekend', { now: NOW }).schedule.days, [5]);
   assert.strictEqual(R.parseRoutine('on weekends at 10am catch me up on Loon', { now: NOW }).payload.project, 'Loon');
+  assert.strictEqual(R.describeSchedule(R.parseRoutine('everyday at 8 remind me to take meds', { now: NOW }).schedule), 'every day at 8:00 AM'); // one-word spelling
+  const empty = R.parseRoutine('every day at 9 remind me to', { now: NOW }); // the card asks what to say, not a reminder called "To"
+  assert.deepStrictEqual([empty.payload.message, empty.understood], ['', false]);
 
   // one-offs: "in 20 minutes"
   const stretch = R.parseRoutine('in 20 minutes remind me to stretch', { now: NOW });
   assert.deepStrictEqual([stretch.action, stretch.schedule], ['reminder', { type: 'once', at: NOW.getTime() + 20 * MIN }]);
   assert.strictEqual(R.parseRoutine('in an hour tell me to call back', { now: NOW }).schedule.at, NOW.getTime() + 60 * MIN);
+  // dotted and four-digit clock times keep their minutes and stay out of the message
+  for (const [text, time] of [['every day at 7.30 walk', '07:30'], ['every day at 0730 walk', '07:30'], ['every day at 1900 dinner', '19:00']]) {
+    const r = R.parseRoutine(text, { now: NOW });
+    assert.deepStrictEqual([r.schedule.time, /^\d|^\./.test(r.payload.message)], [time, false], text);
+  }
   // edge cases: 12am/12pm, every other day's anchor, a window crossing midnight is refused
   assert.strictEqual(R.parseTime('12am'), '00:00');
   assert.strictEqual(R.parseTime('12pm'), '12:00');
@@ -78,6 +126,13 @@ test('routines: ~20 phrasings parse in code, and their wording reads back to the
   // clearly a routine but no readable time: still a card, with what was understood
   const moon = R.parseRoutine('every blue moon tell me hi', { now: NOW });
   assert.deepStrictEqual([moon.schedule, moon.understood, moon.action, moon.payload.message], [null, false, 'notify', 'Hi']);
+});
+
+test('routines: counts spelled as words work for intervals and one-off timers', () => {
+  assert.strictEqual(R.parseSchedule('every two hours', NOW).schedule.minutes, 120);
+  assert.strictEqual(R.parseSchedule('every thirty minutes', NOW).schedule.minutes, 30);
+  const once = R.parseSchedule('in two hours', NOW).schedule;
+  assert.strictEqual(once.at - NOW.getTime(), 2 * 60 * 60 * 1000);
 });
 
 test('routines: next run across DST changes, month ends, short months and intervals', () => {
@@ -109,6 +164,11 @@ test('routines: next run across DST changes, month ends, short months and interv
   assert.deepStrictEqual([new Date(feb).getMonth(), new Date(feb).getDate()], [1, 28]);
   const mar = R.nextRun(rent, feb);
   assert.deepStrictEqual([new Date(mar).getMonth(), new Date(mar).getDate()], [2, 31]);
+  // "monthly" with no day is today's date (the 12th), not a one-time reminder titled "monthly to pay rent"
+  for (const text of ['remind me monthly to pay rent', 'every month remind me to pay rent']) {
+    const draft = R.parseRoutine(text, { now: NOW });
+    assert.deepStrictEqual([draft.schedule.type, draft.schedule.monthDay, draft.label], ['daily', 12, 'Pay rent'], text);
+  }
   const leap = R.nextRun(rent, at('2028-02-01T00:00:00'));
   assert.strictEqual(new Date(leap).getDate(), 29);
   assert.strictEqual(new Date(R.nextRun(daily9, at('2026-01-31T10:00:00'))).getMonth(), 1);
@@ -360,8 +420,19 @@ test('routines: "show my routines", "pause the water reminder", "delete the Frid
 
   await routines.handleText(5, 'delete the gym reminder', bubble, { execute });
   assert.match(seen.opened.at(-1).message, /don't have a routine like/);
+  await routines.handleText(7, 'delete all routines', bubble, { execute });
+  assert.match(seen.opened.at(-1).message, /one routine at a time/);
+  assert.strictEqual(await routines.handleText(8, 'turn off all notifications', bubble, { execute }), false);
   assert.strictEqual(await routines.handleText(6, 'turn off privacy mode', bubble, { execute }), false); // not about routines
   assert.deepStrictEqual(R.parseRoutineCommand('list my routines'), { action: 'routines' });
+  assert.deepStrictEqual(R.parseRoutineCommand('stop the vitamins routine'), { action: 'routinePause', on: false, query: 'the vitamins routine' });
+  assert.deepStrictEqual(R.parseRoutineCommand('stop reminding me to stretch'), { action: 'routinePause', on: false, query: 'stretch' });
+  assert.deepStrictEqual(R.parseRoutineCommand('stop telling me to stretch again'), { action: 'routinePause', on: false, query: 'stretch' });
+  assert.deepStrictEqual(R.parseRoutineCommand('turn the stretch routine back on'), { action: 'routinePause', on: true, query: 'the stretch routine' });
+  assert.deepStrictEqual(R.parseRoutineCommand('turn my rent reminder off'), { action: 'routinePause', on: false, query: 'my rent reminder' });
+  assert.strictEqual(R.parseRoutineCommand('turn the music off'), null);
+  assert.deepStrictEqual(R.parseRoutineCommand('cancel the stretch reminder'), { action: 'routineDelete', query: 'the stretch reminder' });
+  assert.strictEqual(R.parseRoutineCommand('stop the music'), null);
 });
 
 test('routines: tables are added to an existing memory.db without touching what is there', () => {
@@ -420,4 +491,106 @@ test('companion: routine phrasings reach the routine card before Apple Reminders
   assert.strictEqual((await say('in 20 minutes remind me to stretch')).command.draft.schedule.type, 'once');
   assert.strictEqual((await say('remind me to call mom at 5')).command.action, 'reminder');
   assert.match((await say('show my routines')).message, /No routines yet/);
+});
+
+test('"every other friday" is read as the 14-day cycle, not dropped', () => {
+  const p = R.parseRoutine('every other friday at 9 remind me to submit timesheet', { now: NOW });
+  assert.strictEqual(p.understood, true);
+  assert.strictEqual(R.describeSchedule(p.schedule), 'every other Friday at 9:00 AM');
+  assert.strictEqual(p.payload.message, 'submit timesheet');
+});
+
+test('every N weeks keeps its cycle instead of turning into a weekly routine', () => {
+  const p = R.parseRoutine('every 2 weeks on friday remind me to submit timesheet', { now: NOW });
+  assert.strictEqual(R.describeSchedule(p.schedule), 'every other Friday at 9:00 AM');
+  assert.strictEqual(p.payload.message, 'submit timesheet');
+  const first = R.nextRun(p.schedule, NOW.getTime());
+  assert.strictEqual(new Date(first).getDay(), 5);
+  assert.strictEqual(new Date(R.nextRun(p.schedule, first) - first).getTime(), 14 * 864e5);
+  assert.strictEqual(R.describeSchedule(R.parseRoutine('biweekly remind me to pay', { now: NOW }).schedule), 'every other Monday at 9:00 AM');
+  assert.strictEqual(R.parseSchedule('every 2 weeks on mon and wed', NOW).schedule, null); // two days would drift off one cycle
+});
+
+test('day lists without commas and dotted times are read whole', () => {
+  const run = R.parseRoutine('every mon wed fri at 7am remind me to run', { now: NOW });
+  assert.deepStrictEqual(run.schedule.days, [1, 3, 5]);
+  assert.strictEqual(run.payload.message, 'run');
+  const late = R.parseRoutine('every day at 7.30pm remind me to read', { now: NOW });
+  assert.strictEqual(late.schedule.time, '19:30');
+  assert.strictEqual(late.payload.message, 'read');
+});
+
+test('routines: 0:15 is just after midnight and "on the hour" is not part of the message', () => {
+  assert.strictEqual(R.parseSchedule('every day at 0:15 remind me to sleep', NOW).schedule.time, '00:15');
+  const r = R.parseRoutine('every hour on the hour remind me to drink', { now: NOW });
+  assert.strictEqual(r.schedule.minutes, 60);
+  assert.strictEqual(r.action, 'reminder');
+  assert.strictEqual(r.payload.message, 'drink');
+});
+
+test('"except" removes days from the schedule instead of being ignored', () => {
+  const a = R.parseRoutine('every day except sunday remind me to stretch', { now: NOW });
+  assert.deepStrictEqual(a.schedule.days, [1, 2, 3, 4, 5, 6]);
+  assert.strictEqual(a.payload.message, 'stretch');
+  const b = R.parseRoutine('every weekday except friday at 9am remind me to stand up', { now: NOW });
+  assert.deepStrictEqual(b.schedule.days, [1, 2, 3, 4]);
+  assert.strictEqual(b.schedule.time, '09:00');
+});
+
+test('"every fortnight" is every 14 days and "until" with an interval is not silently dropped', () => {
+  const f = R.parseSchedule('every fortnight on monday', NOW).schedule;
+  assert.strictEqual(f.every, 14);
+  assert.deepStrictEqual(f.days, [1]);
+  assert.strictEqual(R.parseSchedule('every 2 hours until 6pm remind me to drink water', NOW).schedule, null);
+  assert.ok(R.parseSchedule('every 2 hours from 9am to 6pm remind me to drink water', NOW).schedule.window);
+});
+
+test('"every 1st" means the date, and "half past 8" is read as a clock time', () => {
+  const m = R.parseRoutine('every 1st of the month pay rent', { now: NOW });
+  assert.strictEqual(m.schedule.monthDay, 1);
+  assert.strictEqual(m.label, 'Pay rent');
+  assert.strictEqual(R.parseSchedule('every 15th remind me to file', NOW).schedule.monthDay, 15);
+  assert.strictEqual(R.parseSchedule('every day at half past 8 tea', NOW).schedule.time, '08:30');
+  assert.strictEqual(R.parseSchedule('every day at quarter to 9 tea', NOW).schedule.time, '08:45');
+  assert.strictEqual(R.parseRoutine('every day at half past 8 tea', { now: NOW }).label, 'Tea');
+});
+
+test('"every week day" means weekdays, not weekly plus a stray word', () => {
+  const s = R.parseRoutine('every week day at 9 remind me to check mail', { now: NOW });
+  assert.deepStrictEqual(s.schedule.days, [1, 2, 3, 4, 5]);
+  assert.strictEqual(s.label, 'Check mail');
+});
+
+test('"every 3rd thursday" is declined instead of becoming the 3rd of every month', () => {
+  assert.equal(R.parseRoutine('every 3rd thursday at 4 meeting', { now: NOW }), null);
+  assert.equal(R.parseRoutine('every 1st monday at 9 standup', { now: NOW }), null);
+  assert.equal(R.parseRoutine('every 3rd at 4 pay rent', { now: NOW }).schedule.monthDay, 3);
+});
+
+test('a day of the month spelled out as a word is that day, not today', () => {
+  for (const [text, day] of [['on the first of every month remind me to pay rent', 1], ['every first of the month remind me to pay rent', 1], ['every month on the fifteenth remind me to pay bills', 15], ['on the twenty-first of each month remind me to x', 21]]) {
+    const draft = R.parseRoutine(text, { now: NOW });
+    assert.strictEqual(draft.schedule && draft.schedule.monthDay, day, text);
+    assert.ok(!/\b(?:first|fifteenth|twenty-first|remind)\b/i.test(draft.payload.message), draft.payload.message);
+  }
+});
+
+test('routines: day ranges like "mon-fri" and "monday to friday" cover every day between', () => {
+  const now = new Date(2026, 10, 26, 10, 0);
+  const days = (text) => R.parseRoutine(text, { now }).schedule.days;
+  assert.deepStrictEqual(days('every monday to friday at 8 remind me to commute'), [1, 2, 3, 4, 5]);
+  assert.deepStrictEqual(days('mon-fri at 9 remind me to log hours'), [1, 2, 3, 4, 5]);
+  assert.deepStrictEqual(days('every monday through thursday at 5pm remind me to stretch'), [1, 2, 3, 4]);
+  assert.deepStrictEqual(days('every friday to monday at 10 remind me to relax'), [0, 1, 5, 6]);
+  const p = R.parseRoutine('every mon-fri at 9am remind me to log hours', { now });
+  assert.strictEqual(p.payload.message, 'log hours');
+  assert.ok(p.understood);
+  // A weekday followed by an ordinary "to" is not a range.
+  assert.deepStrictEqual(days('every sunday at 9 remind me to monitor the oven'), [0]);
+});
+
+test('"first monday of every month" is declined instead of becoming today\'s date each month', () => {
+  assert.equal(R.parseRoutine('first monday of every month at 10 call mom', { now: NOW }), null);
+  assert.equal(R.parseRoutine('remind me the last friday of each month to invoice', { now: NOW }), null);
+  assert.equal(R.parseRoutine('the 15th of every month at 9 pay rent', { now: NOW }).schedule.monthDay, 15);
 });

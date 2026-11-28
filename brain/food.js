@@ -1,11 +1,24 @@
 // Food Cat (DESIGN.md §3.7): picks from keywords, no model. Numbers only when the user asks ("Estimate calories"),
 // and those are labelled estimated. Allergens are never promised.
 
-const PRICE = /[$€£]\s?(\d+(?:\.\d{2})?)/;
-const HEAVY = { fried: 3, 'deep-fried': 4, crispy: 2, battered: 3, breaded: 2, creamy: 2, cream: 2, cheese: 1.5, cheesy: 2, alfredo: 3, aioli: 2, mayo: 2, butter: 1.5, bacon: 2, sausage: 2, loaded: 2, smothered: 2, gravy: 2, carbonara: 3, ranch: 1.5, fries: 2, 'double': 1.5, pastry: 2, 'pork belly': 3 };
+// "$9", "€11,50", "14.00 €" or a bare "13.50" or "11" at the end of the line. "$11 - 14" is one price (the lower one)
+const PRICE = /([$€£])\s?(\d+(?:[.,]\d{1,2})?)(?:\s?[-–—]\s?\d+(?:[.,]\d{1,2})?(?!\s?[a-z%\d]))?|(\d+(?:[.,]\d{1,2})?)\s?([€£])|\s(\d+[.,]\d{2}|\d{1,3})\s*$/;
+// Promos, fees and add-ons share the line shape of a dish but are not dishes. "gluten-free" is a dish.
+const NOT_A_DISH = /\b(off|(?<!-)free|delivery|tax|tip|service charge|discount|coupon|minimum|surcharge)\b|^\s*(add|extra|\+)/i;
+// A bare whole number after these words is a table, page or serving count, not a price
+const NOT_A_PRICE_NUMBER = /\b(table|section|page|step|serves?|size|no|number|pcs|pieces|day|days|menu|part|course|item|call|tel|phone|open|level|floor)\s+\d+\s*$/i;
+const HEAVY = { fried: 3, 'deep-fried': 4, crispy: 2, battered: 3, breaded: 2, creamy: 2, cream: 2, cheese: 1.5, cheesy: 2, alfredo: 3, aioli: 2, mayo: 2, butter: 1.5, bacon: 2, sausage: 2, loaded: 2, smothered: 2, gravy: 2, carbonara: 3, ranch: 1.5, hollandaise: 2, tempura: 3, gratin: 2, korma: 2, fries: 2, chips: 2, poutine: 3, katsu: 3, tonkatsu: 3, masala: 2, parmigiana: 2, 'double': 1.5, pastry: 2, 'pork belly': 3, 'chicken parmesan': 2, 'veal parmesan': 2 };
 const LIGHT = { grilled: -2, steamed: -3, baked: -1, roasted: -1, poached: -2, salad: -2, broth: -2, 'raw': -1, sashimi: -2, vinaigrette: -1, greens: -1, vegetable: -1, veggie: -1, lean: -2 };
-const PROTEIN = /\b(chicken|turkey|salmon|tuna|shrimp|prawns?|beef|steak|pork|tofu|tempeh|egg whites?|eggs?|lentils?|chickpeas?|beans|edamame|greek yogurt|cod|fish|seitan)\b/gi;
-const MEAT = /\b(chicken|turkey|beef|steak|pork|bacon|ham|sausage|salami|pepperoni|lamb|veal|venison|duck|prosciutto|chorizo|meatballs?|burger|anchov(y|ies)|fish|salmon|tuna|shrimp|prawns?|cod|crab|lobster|clams?|mussels|oysters?|scallops?|squid|calamari|octopus|gelatin)\b/i;
+const PROTEIN = /\b(chicken|turkey|salmon|tuna|shrimp|prawns?|beef|steak|pork|tofu|tempeh|egg whites?|eggs?|lentils?|chickpeas?|beans|edamame|greek yogurt|cod|fish|seitan|falafel|lamb|duck|paneer|dal|chana)\b/gi;
+// Classic recipes hide meat or fish in these dishes (anchovy in Caesar, bacon in Cobb, guanciale in carbonara, beef stock in French onion)
+const MEAT = /\b(chicken|turkey|beef|steak|pork|bacon|ham|sausage|salami|pepperoni|lamb|veal|venison|duck|prosciutto|chorizo|meatballs?|(?:ham|cheese)?burger|hot dogs?|brisket|pastrami|ribs|anchov(y|ies)|fish|salmon|tuna|shrimp|prawns?|cod|crab|lobster|clams?|mussels|oysters?|scallops?|squid|calamari|octopus|gelatin|pancetta|guanciale|mortadella|bresaola|bolognese|ragu|carbonara|caesar|cobb|fish sauce|french onion|gyros?|doner|shawarma|schnitzel|paella|bouillabaisse|poke|tonkotsu|cheesesteak|blt|reuben|meat|meatloaf|gumbo|jambalaya|carne|carnitas|al pastor|lox|ceviche|foie gras|escargot|unagi|eel|ramen|nicoise|surf and turf|sloppy joes?|bangers|haggis|wings?|dumplings?|gyoza|potstickers?|wontons?|siu mai|shumai|lasagn[ae]|pho|banh mi|california roll|corn dogs?|pigs in a blanket|shepherd'?s pie|cottage pie|bulgogi|mapo|bibimbap|miso soup|tom kha|tom yum|worcestershire|lard|bone broth|poutine|tonkatsu|rogan josh|keema|kebabs?|kababs?|club sandwich|benedict|chef['’]?s salad)\b/i;
+// "veggie burger" and friends name a meat dish on purpose without meat
+const MEAT_FREE = /\b(veggie|veg|vegetable|vegetarian|vegan|plant-based|meatless|impossible|beyond|cauliflower|spinach|mushroom|paneer|halloumi|tofu|black bean|bean|garden|lentil|chickpea|jackfruit|soy|quinoa|tempeh|seitan|(?:meat|beef|pork|chicken|fish|lamb|turkey)-(?:free|less))\s+(?:(?:meat|beef)\s+)?(?:(?:ham|cheese)?burgers?|sausages?|hot dogs?|meatballs?|bacon|chicken|ribs|wings?|dumplings?|gyoza|potstickers?|wontons?|lasagn[ae]|poutine|pho|kebabs?|kababs?|carnitas|bolognese|ragu|banh mi|nuggets?|reuben|ramen|benedict)\b/gi;
+// "Gyoza (veg)", "Wonton Soup [V]" and "Curry (GF, VG)": the menu itself says vegetarian, so implied meat in the dish name does not count
+const VEG_MARK = /[(\[]\s*(?:(?:gf|df|n|vg|ve|v|veg|vegan|vegetarian)\s*[,/&]\s*)*(?:vg|ve|v|veg|vegan|vegetarian)(?:\s*[,/&]\s*(?:gf|df|n|vg|ve|v|veg|vegan|vegetarian))*\s*[)\]]/i;
+// The dish names itself vegan ("chay" is Vietnamese for vegetarian, as in "Pho Chay"), so "Vegan Bacon Cheeseburger" or "Plant Based Chicken Sandwich" has no meat or fish whatever else its name says
+const NAMED_VEGAN = /\b(vegan|plant[- ]based|chay)\b/i;
+const MEAT_PROTEIN = /\b(chicken|turkey|beef|steak|pork|shrimp|prawns?|salmon|tuna|cod|fish|lamb|duck)\b/gi;
 const TIPS = [
   [/\bdressing\b/i, 'Ask for the dressing on the side.'],
   [/\baioli|mayo\b/i, 'Skip or halve the aioli/mayo.'],
@@ -22,18 +35,22 @@ function extractMenu(text) {
   const items = [];
   for (let i = 0; i < lines.length; i++) {
     const m = lines[i].match(PRICE);
-    if (!m) continue;
-    const name = lines[i].replace(PRICE, '').replace(/[.·…\-–|]+\s*$/, '').replace(/^[.·…\-–|\s]+/, '').trim();
+    if (!m || NOT_A_DISH.test(lines[i]) || NOT_A_PRICE_NUMBER.test(lines[i])) continue;
+    // "Soup $6 | Bowl $8": the dish is the text before the first price
+    const name = (lines[i].match(new RegExp(PRICE.source, 'g')).length > 1 ? lines[i].slice(0, m.index) : lines[i].replace(PRICE, '')).replace(/\s\d{1,3}\s*\/\s*$/, '').replace(/[.,·…\-–—|/*†]+\s*$/, '').replace(/^[.·…\-–—|\s]+/, '').replace(/\s{2,}/g, ' ').trim();
     if (!name || name.length > 80) continue;
     const next = lines[i + 1];
     const description = next && !PRICE.test(next) && next.length > 15 ? next : '';
-    items.push({ name, price: Number(m[1]), description });
+    items.push({ name, price: Number((m[2] || m[3] || m[5]).replace(',', '.')), currency: m[1] || m[4] || '$', description });
   }
   return items;
 }
 
 function score(item) {
   const text = `${item.name} ${item.description}`.toLowerCase();
+  // "chicken-fried steak" is a beef dish with a chicken-style crust, not chicken, and "chicken-free" or "vegan chicken" has none
+  const proteinText = text.replace(/\b(chicken|country)[- ]fried\b/g, 'fried').replace(MEAT_FREE, '').replace(/\b[a-z]+-(?:free|less)\b/g, '');
+  const vegan = NAMED_VEGAN.test(item.name);
   let heaviness = 0;
   const reasons = [];
   for (const [word, weight] of Object.entries({ ...HEAVY, ...LIGHT })) {
@@ -42,8 +59,10 @@ function score(item) {
       reasons.push(word);
     }
   }
-  const proteins = [...new Set((text.match(PROTEIN) || []).map((p) => p.toLowerCase()))];
-  return { ...item, heaviness, reasons, proteins, likelyVegetarian: !MEAT.test(text), tips: TIPS.filter(([re]) => re.test(text)).map(([, tip]) => tip) };
+  let proteins = [...new Set(((vegan ? proteinText.replace(MEAT_PROTEIN, '') : proteinText).match(PROTEIN) || []).map((p) => p.toLowerCase()))];
+  // "beer-battered cod" is one fish, not two proteins
+  if (proteins.some((p) => ['salmon', 'tuna', 'cod'].includes(p))) proteins = proteins.filter((p) => p !== 'fish');
+  return { ...item, heaviness, reasons, proteins, likelyVegetarian: vegan || VEG_MARK.test(item.name) || !MEAT.test(text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(MEAT_FREE, '').replace(/\b[a-z]+-(?:free|less)\b/g, '')), tips: TIPS.filter(([re]) => re.test(text)).map(([, tip]) => tip) };
 }
 
 const GOALS = {
@@ -60,7 +79,7 @@ function recommend(items, goal = 'lightest', { count = 3, vegetarianOnly = false
     const why = p.reasons.length ? ` (${p.reasons.join(', ')})` : '';
     const protein = goal === 'protein' ? ` · protein from ${p.proteins.join(', ')}` : '';
     const tip = p.tips[0] ? `\n  _Tip: ${p.tips[0]}_` : '';
-    return `- **${p.name}**${p.price ? ` $${p.price.toFixed(2)}` : ''}${why}${protein}${tip}`;
+    return `- **${p.name}**${p.price ? ` ${p.currency || '$'}${p.price.toFixed(2)}` : ''}${why}${protein}${tip}`;
   });
   const note = goal === 'vegetarian' ? '\n\nBased on ingredients listed; ask the restaurant about allergens and hidden meat stocks.' : '\n\nFrom menu wording only: no numbers here. Tap "Estimate calories" for rough estimates.';
   const heavy = items.map(score).sort((a, b) => b.heaviness - a.heaviness)[0];

@@ -21,15 +21,95 @@ test('commands: reminders, events, open, find, notes, memory; questions fall thr
   assert.strictEqual(at5.when.getHours(), 17);
   assert.strictEqual(at5.when.getDate(), 30); // today, since 5pm hasn't happened yet
   assert.strictEqual(parseCommand('remind me to water plants', NOW).when, null);
+  assert.strictEqual(parseCommand('remind me tomorrow to buy milk', NOW).title, 'buy milk');
+  assert.strictEqual(parseCommand('remind me to', NOW), null);
+  assert.strictEqual(parseCommand('Could you please remind me to call mom at 5, thanks!', NOW).title, 'call mom');
+  assert.deepStrictEqual(parseCommand('can you open Spotify', NOW), { action: 'open', target: 'Spotify', kind: 'app' });
+  // Not app names, so no confirm card for an app that does not exist.
+  for (const q of ['open a new tab', 'open an incognito window', 'open the file report.pdf', 'open Slack and Teams', 'open the link']) assert.strictEqual(parseCommand(q, NOW), null, q);
+  // File names and paths are not apps, and a link with a query string is still a link.
+  for (const q of ['open report.pdf', 'open /tmp', 'open ~/Desktop/a.txt']) assert.strictEqual(parseCommand(q, NOW), null, q);
+  assert.deepStrictEqual(parseCommand('open https://x.com?a=b', NOW), { action: 'open', target: 'https://x.com?a=b', kind: 'url' });
+  // "create a reminder" is a reminder, not a calendar event.
+  for (const q of ['create a reminder to email bob on friday', 'add a reminder to email bob on friday']) {
+    const r = parseCommand(q, NOW);
+    assert.deepStrictEqual([r.action, r.title, r.when.getDay()], ['reminder', 'email bob', 5], q);
+  }
   const event = parseCommand('schedule meeting with Sam next Tuesday 10am', NOW);
   assert.deepStrictEqual([event.action, event.title, event.start.getDay(), event.start.getHours()], ['event', 'meeting with Sam', 2, 10]);
   assert.deepStrictEqual(parseCommand('open github.com', NOW), { action: 'open', target: 'https://github.com', kind: 'url' });
   assert.deepStrictEqual(parseCommand('open Spotify', NOW), { action: 'open', target: 'Spotify', kind: 'app' });
+  // App names lose "the" and "app", file names are not websites, and "open it" has nothing to open.
+  assert.deepStrictEqual(parseCommand('open the Calculator app', NOW), { action: 'open', target: 'Calculator', kind: 'app' });
+  assert.deepStrictEqual(parseCommand('launch chrome', NOW), { action: 'open', target: 'chrome', kind: 'app' });
+  assert.strictEqual(parseCommand('open notes.txt', NOW), null);
+  assert.deepStrictEqual(parseCommand('open reddit.com/r/cats', NOW), { action: 'open', target: 'https://reddit.com/r/cats', kind: 'url' });
+  assert.strictEqual(parseCommand('open that link', NOW), null);
+  // Router pages are plain http, and schemes or places with no app go to the chat instead of a card that fails.
+  assert.deepStrictEqual(parseCommand('open 192.168.1.1', NOW), { action: 'open', target: 'http://192.168.1.1', kind: 'url' });
+  for (const q of ['open mailto:a@b.com', 'open file:///tmp/a', 'open the trash', 'open home folder']) assert.strictEqual(parseCommand(q, NOW), null, q);
+  // Two-step requests go to the chat, local servers are web links, quotes around an app name are dropped.
+  assert.strictEqual(parseCommand('open youtube and search cats', NOW), null);
+  assert.strictEqual(parseCommand('launch safari and go to apple.com', NOW), null);
+  assert.deepStrictEqual(parseCommand('open localhost:3000', NOW), { action: 'open', target: 'http://localhost:3000', kind: 'url' });
+  assert.deepStrictEqual(parseCommand('open http://127.0.0.1:8080/app', NOW), { action: 'open', target: 'http://127.0.0.1:8080/app', kind: 'url' });
+  assert.deepStrictEqual(parseCommand('open "Visual Studio Code"', NOW), { action: 'open', target: 'Visual Studio Code', kind: 'app' });
+  // Trailing filler and emoji aren't part of the app name, and "music app" is the Music app, not the folder.
+  for (const [q, t] of [['open chrome 🙂', 'chrome'], ['open slack for me', 'slack'], ['open Slack now', 'Slack'], ['open the music app', 'music']]) assert.deepStrictEqual(parseCommand(q, NOW), { action: 'open', target: t, kind: 'app' }, q);
+  // Web services have no Mac app to launch, and spaced links and dotfiles go to the chat.
+  assert.deepStrictEqual(parseCommand('open gmail', NOW), { action: 'open', target: 'https://mail.google.com', kind: 'url' });
+  for (const [q, t] of [['open task manager', 'Activity Monitor'], ['open cmd', 'Terminal'], ['open explorer', 'Finder'], ['open notepad', 'TextEdit']]) assert.deepStrictEqual(parseCommand(q, NOW), { action: 'open', target: t, kind: 'app' }, q);
+  for (const [q, t] of [['open system settings', 'System Settings'], ['open code', 'Visual Studio Code'], ['open vs', 'Visual Studio Code']]) assert.deepStrictEqual(parseCommand(q, NOW), { action: 'open', target: t, kind: 'app' }, q);
+  for (const [q, t] of [['open github', 'https://github.com'], ['open chatgpt', 'https://chatgpt.com'], ['open google', 'https://www.google.com'], ['open yt', 'https://www.youtube.com']]) assert.deepStrictEqual(parseCommand(q, NOW), { action: 'open', target: t, kind: 'url' }, q);
+  assert.strictEqual(parseCommand('open wifi settings', NOW), null);
+  for (const [q, t] of [['open chrome browser', 'chrome'], ['open music', 'music']]) assert.deepStrictEqual(parseCommand(q, NOW), { action: 'open', target: t, kind: 'app' }, q);
+  for (const [q, t] of [['open google meet', 'https://meet.google.com'], ['open drive', 'https://drive.google.com']]) assert.deepStrictEqual(parseCommand(q, NOW), { action: 'open', target: t, kind: 'url' }, q);
+  assert.deepStrictEqual(parseCommand('open music folder', NOW), { action: 'open', target: '~/Music', kind: 'folder' });
+  for (const [q, t] of [['open reddit', 'https://www.reddit.com'],['open twitter', 'https://x.com'], ['open amazon', 'https://www.amazon.com']]) assert.deepStrictEqual(parseCommand(q, NOW), { action: 'open', target: t, kind: 'url' }, q);
+  assert.deepStrictEqual(parseCommand('open YouTube', NOW), { action: 'open', target: 'https://www.youtube.com', kind: 'url' });
+  assert.strictEqual(parseCommand('open http://localhost:3000/a b', NOW), null);
+  assert.strictEqual(parseCommand('open .env', NOW), null);
+  assert.deepStrictEqual(parseCommand('open my downloads folder', NOW), { action: 'open', target: '~/Downloads', kind: 'folder' });
+  assert.deepStrictEqual(parseCommand('open ~/Documents', NOW), { action: 'open', target: '~/Documents', kind: 'folder' });
+  assert.deepStrictEqual(parseCommand('open my calendar', NOW), { action: 'open', target: 'calendar', kind: 'app' });
+  for (const [q, t] of [['open settings', 'System Settings'], ['open system preferences', 'System Settings'], ['open vs code', 'Visual Studio Code'], ['open my email', 'Mail']]) assert.deepStrictEqual(parseCommand(q, NOW), { action: 'open', target: t, kind: 'app' }, q);
+  assert.strictEqual(parseCommand('open wifi settings', NOW), null);
   assert.deepStrictEqual(parseCommand('find my resume', NOW), { action: 'find', query: 'resume' });
   assert.deepStrictEqual(parseCommand('note: buy cat food', NOW), { action: 'note', text: 'buy cat food' });
   assert.deepStrictEqual(parseCommand('remember that I am vegetarian', NOW), { action: 'remember', text: 'I am vegetarian' });
   assert.strictEqual(parseCommand('what is the capital of France?', NOW), null);
   assert.match(describe(at5), /^Reminder: call mom, /);
+});
+
+test('commands: timers, alarms and "reminder:" forms become reminders; "focus 90" starts focus', () => {
+  const timer = parseCommand('set a timer for 1 hour 30 minutes', NOW);
+  assert.deepStrictEqual([timer.action, timer.title, timer.when.getTime() - NOW.getTime()], ['reminder', 'Timer is up', 90 * 60000]);
+  assert.strictEqual(parseCommand('timer 10 min', NOW).when.getTime() - NOW.getTime(), 10 * 60000);
+  assert.strictEqual(parseCommand('25 minute timer', NOW).when.getTime() - NOW.getTime(), 25 * 60000);
+  const alarm = parseCommand('wake me at 7', NOW);
+  assert.deepStrictEqual([alarm.title, alarm.when.getHours()], ['Wake up', 7]);
+  assert.strictEqual(parseCommand('set an alarm for 7am', NOW).when.getHours(), 7);
+  const dated = parseCommand('set a reminder for 3pm to call bob', NOW);
+  assert.deepStrictEqual([dated.title, dated.when.getHours()], ['call bob', 15]);
+  assert.strictEqual(parseCommand('reminder: dentist friday 2pm', NOW).title, 'dentist');
+  assert.deepStrictEqual(parseCommand('focus 90', NOW), { action: 'focus', minutes: 90 });
+  assert.strictEqual(parseCommand('timer', NOW), null);
+});
+
+test('commands: focus with the length first, and a reminder with only a day gets a plain title', () => {
+  assert.deepStrictEqual(parseCommand('start a 25 minute focus', NOW), { action: 'focus', minutes: 25 });
+  assert.deepStrictEqual(parseCommand('focus for an hour', NOW), { action: 'focus', minutes: 60 });
+  assert.strictEqual(parseCommand('focus a', NOW), null);
+  assert.strictEqual(parseCommand('remind me on friday', NOW).title, 'Reminder');
+  for (const q of ['remind me about this tomorrow', 'remind me about that on friday', 'remind me about it tomorrow']) assert.strictEqual(parseCommand(q, NOW).title, 'Reminder', q);
+});
+
+test('commands: the time after "at" wins over a time inside the title, and focus takes decimals', () => {
+  const r = parseCommand('remind me about the 5pm meeting at 4:30', NOW);
+  assert.strictEqual(new Date(r.when).getHours(), 16);
+  assert.strictEqual(new Date(r.when).getMinutes(), 30);
+  assert.strictEqual(r.title, 'the 5pm meeting');
+  assert.deepStrictEqual(parseCommand('focus 1.5 hours', NOW), { action: 'focus', minutes: 90 });
 });
 
 test('notes: markdown per day, entries with sources, search', () => {
@@ -68,6 +148,115 @@ test('memory: categories, per-task groups, forget', () => {
   assert.strictEqual(memory.forget(parseCommand('forget that I am vegetarian').text).length, 1);
   assert.strictEqual(memory.forget("I'm not vegetarian any more").length, 0); // already gone
   assert.strictEqual(memory.all().length, 1);
+});
+
+test('memory: forget needs most words to match, and "what I just said" matches nothing', () => {
+  const memory = new Memory(path.join(tmp(), 'memory.db'));
+  memory.add('I prefer just short answers');
+  memory.add('Dentist appointment is on Friday');
+  memory.add('Accountant appointment is in May');
+  assert.strictEqual(memory.forget(parseCommand('forget what I just said').text).length, 0);
+  assert.strictEqual(memory.forget('forget the last thing').length, 0);
+  assert.strictEqual(memory.forget('forget my dentist appointment').length, 1);
+  assert.strictEqual(memory.all().length, 2);
+});
+
+test('memory: forget matches whole words, not parts of other words', () => {
+  const memory = new Memory(path.join(tmp(), 'memory.db'));
+  memory.add('I work as a manager');
+  memory.add('My cat is called Mo');
+  memory.add('I love Café Müller');
+  assert.strictEqual(memory.forget('my age').length, 0);
+  assert.strictEqual(memory.forget('the cats').length, 1);
+  assert.strictEqual(memory.forget('café').length, 1);
+  assert.strictEqual(memory.all().length, 1);
+});
+
+test('commands: remember with a colon, forget idioms are not deletions, blanket forget is flagged', () => {
+  assert.deepStrictEqual(parseCommand('Remember: my name is Sam'), { action: 'remember', text: 'my name is Sam' });
+  for (const t of ['forget it', 'forget about it', 'forget that']) assert.strictEqual(parseCommand(t), null, t);
+  assert.strictEqual(parseCommand('forget everything you know about me').all, true);
+  assert.strictEqual(parseCommand('forget that I am vegetarian').all, false);
+});
+
+test('commands: remember to is a reminder, empty remembers save nothing, clearing memory is flagged', () => {
+  assert.strictEqual(parseCommand('remember to buy milk').action, 'reminder');
+  assert.strictEqual(parseCommand('remember to buy milk').title, 'buy milk');
+  for (const t of ['remember to', 'remember me', 'remember:']) assert.strictEqual(parseCommand(t), null, t);
+  for (const t of ['clear your memory', 'delete my memories', 'wipe all memory']) assert.strictEqual(parseCommand(t).all, true, t);
+});
+
+test('commands: "remove X from memory" forgets X and "remember everything I say" saves nothing', () => {
+  assert.deepStrictEqual(parseCommand('remove my name from memory'), { action: 'forget', text: 'my name', all: false });
+  assert.deepStrictEqual(parseCommand('delete the pork thing out of your memory'), { action: 'forget', text: 'the pork thing', all: false });
+  assert.strictEqual(parseCommand('delete everything from memory').all, true);
+  for (const t of ['remember everything I say', 'always remember everything i tell you']) assert.strictEqual(parseCommand(t), null, t);
+});
+
+test('commands: "clear my history" points at Settings and never searches memories', () => {
+  for (const t of ['clear my history', 'forget my history', 'delete all history', 'erase my chat history', 'wipe the search history']) {
+    const c = parseCommand(t);
+    assert.ok(c && c.action === 'forget' && c.history && c.all, t);
+  }
+  assert.strictEqual(parseCommand('show history').action, 'recall');
+  for (const q of ["what's in my history", 'whats in my history', 'show me old questions']) assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: '' }, q);
+  assert.deepStrictEqual(parseCommand('what did i google about cats'), { action: 'recall', query: 'cats' });
+  for (const q of ['wat did i ask', 'recall', 'what did you tell me earlier', 'what did I say earlier', 'repeat my last question', 'last conversation', 'show me my chats', 'pull up my last chat']) assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: '' }, q);
+  for (const q of ['find my chat about docker', 'history docker', 'search for our conversations about docker']) assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: 'docker' }, q);
+  assert.strictEqual(parseCommand('find my chat app').action, 'find');
+});
+
+test('commands: "stop remembering" and "go private" point at Privacy mode and never reach the model', () => {
+  for (const t of ['stop remembering my stuff', "don't remember anything about me", 'never save anything', 'turn off memory', 'pause memory', 'private mode on', 'go private', 'please stop remembering things.']) {
+    const c = parseCommand(t);
+    assert.ok(c && c.action === 'forget' && c.privacy && c.all, t);
+  }
+  assert.strictEqual(parseCommand('remember that I like private jets').action, 'remember');
+  assert.strictEqual(parseCommand('go private equity analysis'), null);
+});
+
+test('commands: bare "remember that" saves nothing, "never forget" saves a fact, "delete memory about X" forgets X', () => {
+  assert.strictEqual(parseCommand('remember that'), null);
+  assert.strictEqual(parseCommand('remember this'), null);
+  assert.deepStrictEqual(parseCommand("never forget that I'm vegan"), { action: 'remember', text: "I'm vegan" });
+  assert.deepStrictEqual(parseCommand('delete memory about food'), { action: 'forget', text: 'food', all: false });
+  assert.deepStrictEqual(parseCommand('remove the memories of my dog'), { action: 'forget', text: 'my dog', all: false });
+  assert.strictEqual(parseCommand('delete everything you know about me').all, true);
+});
+
+test('commands: "forget what you know", "wipe everything you remember" and "forget it all" point to the wipe path, not a word match', () => {
+  for (const t of ['forget what you know about me', 'delete everything you remember', 'wipe everything you know about me', 'forget it all']) {
+    assert.strictEqual(parseCommand(t).all, true, t);
+  }
+  assert.strictEqual(parseCommand('forget what you know about me').text, 'everything');
+});
+
+test('commands: dont forget, keep in mind and trailing remember that all save a fact', () => {
+  assert.deepStrictEqual(parseCommand("don't forget I'm vegan"), { action: 'remember', text: "I'm vegan" });
+  assert.deepStrictEqual(parseCommand('keep in mind that I am allergic to nuts'), { action: 'remember', text: 'I am allergic to nuts' });
+  assert.deepStrictEqual(parseCommand("keep that in mind: I'm lactose intolerant"), { action: 'remember', text: "I'm lactose intolerant" });
+  assert.deepStrictEqual(parseCommand('do you remember my name?'), { action: 'recall', about: 'name' });
+  assert.deepStrictEqual(parseCommand("I'm vegetarian, remember that"), { action: 'remember', text: "I'm vegetarian" });
+  assert.deepStrictEqual(parseCommand('remember this: I like short answers'), { action: 'remember', text: 'I like short answers' });
+  assert.strictEqual(parseCommand("don't forget to call mom at 5").action, 'reminder');
+  assert.strictEqual(parseCommand("don't forget"), null);
+});
+
+test('commands: "don\'t remember this" saves nothing, pls is polite, and memory can be listed by asking', () => {
+  assert.strictEqual(parseCommand("don't remember this"), null);
+  assert.strictEqual(parseCommand('never remember that'), null);
+  assert.deepStrictEqual(parseCommand("remember I'm vegan pls"), { action: 'remember', text: "I'm vegan" });
+  assert.strictEqual(parseCommand('pls forget everything').all, true);
+  for (const t of ["what's in your memory", 'show my memories', 'what have you saved about me']) assert.deepStrictEqual(parseCommand(t), { action: 'recall', facts: true }, t);
+});
+
+test('actions: remember refuses a password', async () => {
+  const dir = tmp();
+  const memory = new Memory(path.join(dir, 'memory.json'));
+  const actions = new Actions({ auditFile: path.join(dir, 'audit.jsonl'), notes: new Notes(path.join(dir, 'notes')), memory, executors: {} });
+  const result = await actions.execute({ action: 'remember', text: 'my wifi password is hunter2' });
+  assert.match(result.message, /won't keep/);
+  assert.strictEqual(memory.all().length, 0);
 });
 
 test('actions: executors only via execute, audit keeps metadata not content', async () => {
@@ -160,4 +349,248 @@ test('memory store: profile, BM25 recall with site boost, budget, history search
   assert.deepStrictEqual(parseCommand('what did I look up about kubernetes?'), { action: 'recall', query: 'kubernetes' });
   assert.deepStrictEqual(parseCommand('What do you know about me?'), { action: 'recall', facts: true });
   assert.deepStrictEqual(parseCommand('what did I ask today'), { action: 'recall', query: '' });
+  // Typed shorthand and "save to memory" must reach the memory code, not the model that may claim to have saved something.
+  assert.deepStrictEqual(parseCommand('what do u know about me'), { action: 'recall', facts: true });
+  assert.deepStrictEqual(parseCommand('what do you remember'), { action: 'recall', facts: true });
+  assert.deepStrictEqual(parseCommand('save to memory: I work at Acme'), { action: 'remember', text: 'I work at Acme' });
+  assert.deepStrictEqual(parseCommand("add to memory I'm left handed"), { action: 'remember', text: "I'm left handed" });
+});
+
+test('history lookups in other wordings search history instead of reaching the model or saving a memory', () => {
+  for (const t of ['recall docker', 'recall: docker', 'what was that thing I asked about docker', 'recent questions about docker', 'what did you tell me about docker', 'what did you say about docker', 'remember what we discussed about docker']) {
+    assert.deepStrictEqual(parseCommand(t), { action: 'recall', query: 'docker' }, t);
+  }
+});
+
+test('history questions drop time words and "you" instead of searching for them', () => {
+  assert.deepStrictEqual(parseCommand('what did I ask yesterday'), { action: 'recall', query: '' });
+  assert.deepStrictEqual(parseCommand('what did I search for last week'), { action: 'recall', query: '' });
+  assert.deepStrictEqual(parseCommand('what did i read about taxes yesterday'), { action: 'recall', query: 'taxes' });
+  assert.deepStrictEqual(parseCommand('what did i ask you about the laptop'), { action: 'recall', query: 'the laptop' });
+  assert.deepStrictEqual(parseCommand('show my history'), { action: 'recall', query: '' });
+  for (const t of ['show me my last question', 'pull up my history', 'what did i ask u']) assert.deepStrictEqual(parseCommand(t), { action: 'recall', query: '' }, t);
+  assert.deepStrictEqual(parseCommand('pull up history for docker'), { action: 'recall', query: 'docker' });
+  for (const q of ['what did I ask', 'what have I asked you', "what's my history", 'what are my recent questions', 'what did we talk about yesterday']) {
+    assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: '' }, q);
+  }
+  assert.deepStrictEqual(parseCommand('history for docker'), { action: 'recall', query: 'docker' });
+  for (const q of ['my last 5 searches', 'show last 10 searches', 'remind me what I asked']) assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: '' }, q);
+  assert.strictEqual(parseCommand('searches'), null);
+  assert.deepStrictEqual(parseCommand('find my question about redis'), { action: 'recall', query: 'redis' });
+  assert.deepStrictEqual(parseCommand('did I look up kubernetes'), { action: 'recall', query: 'kubernetes' });
+  assert.deepStrictEqual(parseCommand('what was my last question'), { action: 'recall', query: '' });
+  assert.deepStrictEqual(parseCommand('show me my past questions'), { action: 'recall', query: '' });
+  assert.deepStrictEqual(parseCommand('what have I asked'), { action: 'recall', query: '' });
+  assert.deepStrictEqual(parseCommand('what did I ask earlier about spring boot'), { action: 'recall', query: 'spring boot' });
+  assert.deepStrictEqual(parseCommand('have I looked up docker before?'), { action: 'recall', query: 'docker' });
+  assert.deepStrictEqual(parseCommand('what did i search for'), { action: 'recall', query: '' });
+  assert.deepStrictEqual(parseCommand('what did I ask last'), { action: 'recall', query: '' });
+  for (const q of ['what did I look up', 'show me what I looked up', 'show me what i searched for yesterday', 'what did I google', 'what was the last thing I asked', 'my last search', 'open my history']) {
+    assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: '' }, q);
+  }
+  assert.deepStrictEqual(parseCommand('search my history for docker'), { action: 'recall', query: 'docker' });
+  assert.deepStrictEqual(parseCommand('find in my history redis'), { action: 'recall', query: 'redis' });
+  assert.deepStrictEqual(parseCommand('what did i ask you earlier about docker'), { action: 'recall', query: 'docker' });
+  // Found by a user run: "find X in my history" searched files, and "loon" became the search word.
+  for (const q of ['find docker in my history', 'show me history for docker', 'search for docker in history']) assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: 'docker' }, q);
+  for (const q of ['what did i ask loon', 'what was the last thing I asked you']) assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: '' }, q);
+  for (const q of ['what did we discuss', 'what did we discuss yesterday']) assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: '' }, q);
+  assert.deepStrictEqual(parseCommand('what did we talk about last week'), { action: 'recall', query: '' });
+  for (const q of ['show my past chats', 'my recent conversations', 'last thing we talked about', 'what was the last thing we discussed']) assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: '' }, q);
+  for (const q of ['chat history', 'show chat history', 'conversation history', 'history of my questions', 'search history']) assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: '' }, q);
+  assert.deepStrictEqual(parseCommand('look up docker in history'), { action: 'recall', query: 'docker' });
+  for (const q of ['what have I asked about docker', 'what have i looked up about docker']) assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: 'docker' }, q);
+  for (const q of ['did we talk about docker', 'anything about docker in my history', 'show me what i asked about docker', 'remind me what we discussed about docker']) assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: 'docker' }, q);
+  for (const q of ['what did we say about docker', 'what did we discuss about docker', 'find what I asked about docker', 'what did I ask about docker 🐳']) assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: 'docker' }, q);
+  for (const q of ['what were we talking about', 'what were we talking about yesterday']) assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: '' }, q);
+  for (const q of ['remember when I asked about docker', 'remember when we talked about docker?', 'chat history for docker']) assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: 'docker' }, q);
+  for (const q of ['look up my past searches about docker', 'show me everything I asked about docker']) assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: 'docker' }, q);
+  for (const q of ['look at my past questions', 'show my chat history from last week', 'show me everything i asked today']) assert.deepStrictEqual(parseCommand(q), { action: 'recall', query: '' }, q);
+  for (const q of ['delete my chats', 'clear my past conversations', 'wipe my searches']) assert.deepStrictEqual(parseCommand(q), { action: 'forget', text: 'history', all: true, history: true }, q);
+  // "history of Rome" is a real question for the model, not a history search.
+  assert.strictEqual(parseCommand('history of rome'), null);
+});
+
+test('commands: "timer 1h30" and a bare number are timers, "on the 1st" is a date', () => {
+  const ms = (t) => parseCommand(t, NOW).when.getTime() - NOW.getTime();
+  assert.strictEqual(ms('timer 1h30'), 90 * 60000);
+  assert.strictEqual(ms('set a timer for 5'), 5 * 60000);
+  const rent = parseCommand('remind me to pay rent on the 1st', NOW);
+  assert.strictEqual(rent.title, 'pay rent');
+  assert.strictEqual(rent.when.getDate(), 1);
+  assert.ok(rent.when > NOW);
+});
+
+test('commands: "in 10 to check oven" means ten minutes', () => {
+  const oven = parseCommand('remind me in 10 to check oven', NOW);
+  assert.strictEqual(oven.title, 'check oven');
+  assert.strictEqual(oven.when.getTime() - NOW.getTime(), 10 * 60000);
+  assert.strictEqual(parseCommand('remind me in 3 days to follow up', NOW).title, 'follow up');
+});
+
+test('alarms are mornings, timers can carry a label, and "about" does not stay in a reminder title', () => {
+  assert.strictEqual(parseCommand('wake me up at 6:45 tomorrow', NOW).when.getHours(), 6);
+  assert.strictEqual(parseCommand('wake me at 6', NOW).when.getHours(), 6);
+  const tea = parseCommand('set a 5 minute timer for tea', NOW);
+  assert.strictEqual(tea.title, 'Timer is up for tea');
+  assert.strictEqual(tea.when.getTime() - NOW.getTime(), 5 * 60 * 1000);
+  assert.strictEqual(parseCommand('remind me next friday about the dentist', NOW).title, 'the dentist');
+});
+
+test('commands: midnight is the next 00:00, and plain "focus mode" starts a default session', () => {
+  const r = parseCommand('remind me at midnight to lock up', NOW);
+  assert.strictEqual(r.title, 'lock up');
+  assert.strictEqual(r.when.getHours(), 0);
+  assert.ok(r.when > NOW);
+  assert.deepStrictEqual(parseCommand('focus mode', NOW), { action: 'focus', minutes: 25 });
+  assert.strictEqual(parseCommand('focus on my essay', NOW), null);
+});
+
+test('commands: "and a half" durations are read as one and a half, not dropped', () => {
+  const mins = (s) => (parseCommand(s, NOW).when - NOW) / 60000;
+  assert.strictEqual(mins('set a timer for 2 and a half minutes'), 2.5);
+  assert.strictEqual(mins('remind me in 2 and a half hours to call'), 150);
+  assert.strictEqual(mins('remind me in an hour and a half to eat'), 90);
+  assert.strictEqual(parseCommand('remind me in an hour and a half to eat', NOW).title, 'eat');
+});
+
+test('commands: note phrasings drop their lead-in word, and "note taking tips" is a question', () => {
+  const note = (t) => (parseCommand(t, NOW) || {}).text;
+  assert.strictEqual(note('note that I prefer metric'), 'I prefer metric');
+  assert.strictEqual(note('note to self: call mom'), 'call mom');
+  assert.strictEqual(note('make a note that the meeting moved'), 'the meeting moved');
+  assert.strictEqual(note('write this down: ping Bob'), 'ping Bob');
+  assert.strictEqual(note('jot down that the meeting moved'), 'the meeting moved');
+  assert.strictEqual(parseCommand('note taking tips', NOW), null);
+  assert.strictEqual(parseCommand('note that', NOW), null);
+});
+
+test('commands: "end of day" and "eod" mean 5pm, and "remindme" without a space still works', () => {
+  const eod = parseCommand('remind me end of day to submit the report', NOW);
+  assert.strictEqual(eod.title, 'submit the report');
+  assert.strictEqual(eod.when.getHours(), 17);
+  assert.strictEqual(parseCommand('remind me eod to send notes', NOW).when.getHours(), 17);
+  const glued = parseCommand('remindme to call mom at 6pm', NOW);
+  assert.strictEqual(glued.title, 'call mom');
+  assert.strictEqual(glued.when.getHours(), 18);
+});
+
+test('a reminder for a time that has already passed has no time instead of a past one', () => {
+  const past = parseCommand('remind me yesterday to call bob', NOW);
+  assert.strictEqual(past.title, 'call bob');
+  assert.strictEqual(past.when, null);
+  assert.ok(parseCommand('remind me tomorrow to call bob', NOW).when > NOW);
+});
+
+test('commands: "forget everything about X" forgets X and only a bare "forget everything" is a wipe', () => {
+  assert.deepStrictEqual(parseCommand('forget everything about pork'), { action: 'forget', text: 'pork', all: false });
+  assert.deepStrictEqual(parseCommand('forget all about pork'), { action: 'forget', text: 'pork', all: false });
+  assert.deepStrictEqual(parseCommand('forget about pork'), { action: 'forget', text: 'pork', all: false });
+  assert.strictEqual(parseCommand('forget everything').all, true);
+  assert.strictEqual(parseCommand('forget about everything').all, true);
+});
+
+test('commands: "remember nothing" and "remember it" save no fact', () => {
+  for (const t of ['remember nothing', 'remember it', 'remember everything', 'remember all of this']) assert.strictEqual(parseCommand(t), null, t);
+});
+
+test('commands: "thursday at 3" is the coming Thursday, not today at 3pm', () => {
+  const wed = new Date(2026, 10, 11, 10, 0, 0);
+  const r = parseCommand('remind me thursday at 3 to pay', wed);
+  assert.strictEqual(r.title, 'pay');
+  assert.strictEqual(r.when.getDate(), 12);
+  assert.strictEqual(r.when.getHours(), 15);
+});
+
+test('commands: time-first reminders, "hey loon" prefix and m:ss timers', () => {
+  const now = new Date(2026, 10, 11, 10, 0, 0);
+  const a = parseCommand('in 10 minutes remind me to stretch', now);
+  assert.strictEqual(a.title, 'stretch');
+  assert.strictEqual(a.when.getTime(), now.getTime() + 10 * 60 * 1000);
+  const b = parseCommand('tomorrow at 9, remind me to email bob', now);
+  assert.strictEqual(b.title, 'email bob');
+  assert.strictEqual(b.when.getDate(), 12);
+  assert.strictEqual(b.when.getHours(), 9);
+  assert.strictEqual(parseCommand('hey loon remind me to drink water in 20 min', now).title, 'drink water');
+  assert.strictEqual(parseCommand('timer 1:30', now).when.getTime(), now.getTime() + 90 * 1000);
+  assert.strictEqual(parseCommand('set a timer for 2 mins 30 secs', now).when.getTime(), now.getTime() + 150 * 1000);
+  assert.strictEqual(parseCommand('timer 90 secs', now).when.getTime(), now.getTime() + 90 * 1000);
+});
+
+test('food: rich sauces and tempura are not light picks', () => {
+  const { score } = require('../brain/food');
+  const items = extractMenu('Poached Eggs Benedict with hollandaise $15\nShrimp Tempura $13\nSteamed Fish with greens $18');
+  assert.ok(score(items[0]).heaviness >= 0);
+  assert.ok(score(items[1]).heaviness >= 3);
+  assert.ok(recommend(items, 'lightest').text.startsWith('**Lightest picks**\n- **Steamed Fish'));
+});
+
+test('commands: "call me Sam" saves the name, "call me back" does not, and "you can forget" deletes', () => {
+  assert.deepStrictEqual(parseCommand('from now on call me Sam'), { action: 'remember', text: 'Call me Sam' });
+  assert.deepStrictEqual(parseCommand('you can call me Mary Ann'), { action: 'remember', text: 'Call me Mary Ann' });
+  assert.strictEqual(parseCommand('call me back'), null);
+  assert.strictEqual(parseCommand('call me when you land'), null);
+  assert.deepStrictEqual(parseCommand('you can forget the peanut thing'), { action: 'forget', text: 'the peanut thing', all: false });
+});
+
+test('commands: "quarter past 3" and "half past 4" are times, and "egg timer 5 minutes" is a labeled timer', () => {
+  const at = (s) => parseCommand(s, NOW).when;
+  assert.deepStrictEqual([at('remind me at quarter past 3 to call mom').getHours(), at('remind me at quarter past 3 to call mom').getMinutes()], [15, 15]);
+  assert.strictEqual(parseCommand('remind me at half past 4 to stretch', NOW).title, 'stretch');
+  assert.deepStrictEqual([at('remind me at quarter to 4 to leave').getHours(), at('remind me at quarter to 4 to leave').getMinutes()], [15, 45]);
+  const egg = parseCommand('egg timer 5 minutes', NOW);
+  assert.strictEqual(egg.title, 'Timer is up for egg');
+  assert.strictEqual(egg.when.getTime() - NOW.getTime(), 5 * 60000);
+  assert.strictEqual(parseCommand('set a pasta timer for 10 min', NOW).when.getTime() - NOW.getTime(), 10 * 60000);
+  const plain = parseCommand('set timer 2h', NOW);
+  assert.strictEqual(plain.title, 'Timer is up');
+  assert.strictEqual(plain.when.getTime() - NOW.getTime(), 120 * 60000);
+  assert.deepStrictEqual(parseCommand('set a 25 minute pomodoro', NOW), { action: 'focus', minutes: 25 });
+  assert.deepStrictEqual(parseCommand('start a pomodoro', NOW), { action: 'focus', minutes: 25 });
+});
+
+test('commands: "always remember" and "memorize" save a fact, "remember me?" and "remember what I said" save nothing', () => {
+  assert.deepStrictEqual(parseCommand('always remember that I use vim'), { action: 'remember', text: 'I use vim' });
+  assert.deepStrictEqual(parseCommand('memorize that I like jazz'), { action: 'remember', text: 'I like jazz' });
+  for (const t of ['remember me?', 'remember what I said', 'remember the last thing I told you']) assert.strictEqual(parseCommand(t), null, t);
+});
+
+test('commands: "the 1st of next month" is a date, so "of next month" does not stay in the reminder title', () => {
+  const now = new Date(2026, 10, 21, 10, 0);
+  const r = parseCommand('remind me to pay bill on the 1st of next month', now);
+  assert.strictEqual(r.title, 'pay bill');
+  assert.strictEqual(r.when.getMonth(), 11);
+  assert.strictEqual(r.when.getDate(), 1);
+});
+
+test('commands: "the 3rd of march" is a date, so "the" does not stay in the reminder title', () => {
+  const now = new Date(2026, 10, 21, 10, 0);
+  const r = parseCommand('remind me on the 3rd of march to renew', now);
+  assert.strictEqual(r.title, 'renew');
+  assert.strictEqual(r.when.getMonth(), 2);
+  assert.strictEqual(r.when.getDate(), 3);
+  assert.strictEqual(parseCommand('remind me the 15th of December to pay', now).title, 'pay');
+});
+
+test('commands: "for the record", "I want you to remember" and "from now on remember" save a fact', () => {
+  assert.deepStrictEqual(parseCommand("for the record, I'm vegetarian"), { action: 'remember', text: "I'm vegetarian" });
+  assert.deepStrictEqual(parseCommand('FYI my dog is called Rex'), { action: 'remember', text: 'my dog is called Rex' });
+  assert.strictEqual(parseCommand('fyi the meeting moved to 3'), null);
+  assert.deepStrictEqual(parseCommand('I want you to remember that I am vegan'), { action: 'remember', text: 'I am vegan' });
+  assert.deepStrictEqual(parseCommand('from now on remember I like tea'), { action: 'remember', text: 'I like tea' });
+  assert.deepStrictEqual(parseCommand('remember about me that I am 30'), { action: 'remember', text: 'I am 30' });
+});
+
+test('commands: "on the weekend" leaves no "the" in the title and "at 1730" is 5:30pm', () => {
+  const now = new Date(2026, 10, 23, 10, 0);
+  assert.strictEqual(parseCommand('remind me on the weekend to clean', now).title, 'clean');
+  const r = parseCommand('remind me at 1730 to leave', now);
+  assert.strictEqual(r.title, 'leave');
+  assert.strictEqual(r.when.getHours(), 17);
+  assert.strictEqual(r.when.getMinutes(), 30);
+});
+
+test('commands: "forget everything about me" is a wipe request, not a search for the word me', () => {
+  for (const t of ['forget everything about me', 'forget all about myself']) assert.strictEqual(parseCommand(t).all, true, t);
+  assert.strictEqual(parseCommand('forget everything about pork').all, false);
 });

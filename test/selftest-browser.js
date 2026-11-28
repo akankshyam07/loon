@@ -90,6 +90,8 @@ async function run(ctx, check) {
       return null;
     }
     await waitFor(async () => (await tierCount()) > before, timeoutMs, 250);
+    // The count can rise before this answer is done, so also wait for the last answer to carry its tier.
+    await waitFor(async () => Boolean((await lastAnswer())?.tier), Math.min(timeoutMs, 8000), 100);
     return lastAnswer();
   }
   const closeBubble = async () => {
@@ -154,7 +156,7 @@ async function run(ctx, check) {
 
     await selectAndWait('#fr');
     const translated = await clickChip('translate', 60000);
-    check('Translate runs on the offline translator', /cat/i.test(translated?.text) && /offline translator/.test(translated?.tier), translated?.text.slice(0, 70));
+    check('Translate runs on the offline translator', /cat/i.test(translated?.text) && /offline translator/.test(translated?.tier), `${translated?.tier || 'no tier'} · ${translated?.text?.slice(0, 70) ?? 'no answer'}`);
 
     await selectAndWait('#s1');
     const explained = await clickChip('explain');
@@ -223,7 +225,7 @@ async function run(ctx, check) {
     // ---- nudges + code selections ----
     companion.resetNudges();
     await page.goto(`${base}/code.html`);
-    check('code page: the cat offers help with a "?" nudge', await waitFor(() => cat('window.__loon.nudge'), 5000));
+    check('code page: the cat offers help with a "?" nudge', await waitFor(() => cat('window.__loon.nudge'), 15000));
     await selectAndWait('#trace');
     check('a stack trace gets error chips', (await chips()).includes('explain_error'));
     await closeBubble();

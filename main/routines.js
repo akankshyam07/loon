@@ -261,6 +261,10 @@ function createRoutines({ memory, settings, tasks, ui, audit = () => {}, now = (
       return true;
     }
     if (command) {
+      if (/^(?:all|every|each)\b/i.test(command.query) && mentionsRoutine(text)) {
+        bubble('action-done', { id, ok: false, message: 'I change one routine at a time, so nothing goes by accident. Say "show my routines", then name the one you want.' });
+        return true;
+      }
       const matches = matchRoutines(store.list(), command.query);
       if (!matches.length) {
         if (!mentionsRoutine(text)) return false; // "turn off privacy mode" and friends aren't about routines

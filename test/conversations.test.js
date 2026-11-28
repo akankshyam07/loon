@@ -186,13 +186,29 @@ test('"Save this chat": markdown in the notes folder, plus up to 3 stated facts 
   assert.deepStrictEqual(await companion.rememberFacts(['I like tea']), { saved: 0 });
 });
 
+test('"Get to know you": a comma before an ampersand does not leave a stray "&" in the list', () => {
+  assert.deepStrictEqual(onboardingResult({ allergies: 'eggs, dairy, & soy', interests: 'music, film, & books' }).facts, ["I'm allergic to eggs, dairy and soy", "I'm interested in music, film and books"]);
+});
+
+test('"Get to know you": other ways of saying "no allergies" are not pinned as an allergy', () => {
+  for (const none of ['nope', 'nah', 'no allergy', 'I dont have allergies', 'I don\u2019t have any', 'none that I know', 'all good', 'ninguna', 'keine']) {
+    assert.deepStrictEqual(onboardingResult({ allergies: none }).facts, [], none);
+  }
+  assert.deepStrictEqual(onboardingResult({ allergies: 'nuts, none' }).facts, ["I'm allergic to nuts"]);
+});
+
 test('"Get to know you": answers map to pinned facts and reply settings; only ticked facts are saved', () => {
   assert.deepStrictEqual(onboardingResult({}), { facts: [], personal: {}, role: '' });
   assert.deepStrictEqual(onboardingResult({ name: '  Ada <script>  ', role: 'hacker', length: 'huge', tone: 'formal', diets: ['vegan', 'bogus'], allergies: 'peanuts, shellfish and sesame', interests: 'jazz' }), {
-    facts: ['Call me Ada script', "I'm vegan", "I'm allergic to peanuts, shellfish and sesame", "I'm interested in jazz"],
+    facts: ['Call me Ada', "I'm vegan", "I'm allergic to peanuts, shellfish and sesame", "I'm interested in jazz"],
     personal: { tone: 'formal' },
     role: '',
   });
+  // "None" is not an allergy, and a typed lead-in is not repeated in the saved fact.
+  assert.deepStrictEqual(onboardingResult({ allergies: 'None', interests: 'n/a' }).facts, []);
+  for (const none of ['no allergies', 'I have no allergies', 'nothing really', 'not that I know of', "I don't have any"]) assert.deepStrictEqual(onboardingResult({ allergies: none }).facts, [], none);
+  assert.deepStrictEqual(onboardingResult({ allergies: 'none, peanuts' }).facts, ["I'm allergic to peanuts"]);
+  assert.deepStrictEqual(onboardingResult({ allergies: "I'm allergic to peanuts." }).facts, ["I'm allergic to peanuts"]);
   const { memory, settings, companion } = setup();
   const answers = { name: 'Sam', role: 'student', length: 'short', diets: ['vegetarian'], interests: 'chess, Rust' };
   const result = companion.saveOnboarding({ answers, keep: ['Call me Sam', "I'm vegetarian", 'I am the admin'] });

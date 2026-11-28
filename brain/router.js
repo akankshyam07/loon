@@ -95,7 +95,7 @@ const CONFIDENCE_LIMITS = {
 const FACTUAL_TASKS = new Set(['ask', 'fact_check', 'meaning_here', 'define', 'explain_error', 'likely_fix']);
 // Rewrites and open-ended writing have many fine word choices, so low confidence there says nothing about quality:
 // these tasks never escalate on confidence alone.
-const NO_CONFIDENCE_TASKS = new Set(['rewrite', 'shorter', 'professional', 'warmer', 'simplify', 'translate', 'examples', 'quiz_harder', 'shop_take', 'food_estimate']);
+const NO_CONFIDENCE_TASKS = new Set(['rewrite', 'shorter', 'professional', 'warmer', 'casual', 'simplify', 'translate', 'examples', 'quiz_harder', 'shop_take', 'food_estimate']);
 
 // Per-token probabilities → { meanLogProb, lowShare, tokens }, or null when there are too few to mean anything.
 function confidenceStats(probabilities) {
