@@ -4055,3 +4055,13 @@ As a user, one and two word terms, synonyms and antonyms parsed well. A three wo
 Fixed: dictionaryTerm in brain/define.js now accepts up to three words. Test added in test/brain.test.js and checked to fail before the change.
 
 Left for later: "what does mean ephemeral" keeps "mean" in the term. "what is ephemeral" and "whats ephemeral" go to the model. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-28 — food and menu (twenty-fourth pass)
+
+Tried 50 dish names such as "Eggs Benedict", "Pad Thai", "Clam Chowder", "Cobb Salad", "Bao Buns", "Shakshuka", "Dal Makhani" and "Chicken-free Nuggets".
+
+As a user, the worst problem was a wrong vegetarian answer. "Eggs Benedict" was listed as likely vegetarian although it is made with ham or bacon.
+
+Fixed: brain/food.js treats benedict as a meat dish unless a veggie word comes before it. Test added in test/modes.test.js and checked to fail before the change.
+
+Left for later: "Pad Thai", "Pad See Ew", "Bao Buns" and "Spring Rolls" are listed as vegetarian, but they often hold shrimp, fish sauce or pork. The answer already says to ask the restaurant, so they need a deliberate "maybe" tier. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

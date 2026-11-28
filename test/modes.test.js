@@ -678,6 +678,11 @@ test('menu: Pho Chay and tempeh or veggie ramen are vegetarian, plain ramen is n
   for (const name of ['Ramen', 'Miso Ramen', 'Corned Beef Reuben']) assert.strictEqual(food.score({ name, description: '' }).likelyVegetarian, false, name);
 });
 
+test('menu: eggs benedict is not listed as vegetarian, a veggie benedict is', () => {
+  for (const name of ['Eggs Benedict', 'Classic Benedict']) assert.strictEqual(food.score({ name, description: '' }).likelyVegetarian, false, name);
+  assert.strictEqual(food.score({ name: 'Veggie Benedict', description: '' }).likelyVegetarian, true);
+});
+
 test('Kotlin DTOs keep the JSON names of keys that are not plain camelCase', async () => {
   const kt = await jsonToDto('{"first-name":"a","user_id":1,"class":"x"}', 'kotlin');
   assert.match(kt, /@get:JsonProperty\("first-name"/);
