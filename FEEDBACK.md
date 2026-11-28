@@ -4065,3 +4065,13 @@ As a user, the worst problem was a wrong vegetarian answer. "Eggs Benedict" was 
 Fixed: brain/food.js treats benedict as a meat dish unless a veggie word comes before it. Test added in test/modes.test.js and checked to fail before the change.
 
 Left for later: "Pad Thai", "Pad See Ew", "Bao Buns" and "Spring Rolls" are listed as vegetarian, but they often hold shrimp, fish sauce or pork. The answer already says to ask the restaurant, so they need a deliberate "maybe" tier. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.
+
+## 2026-11-28 — settings UI, reply style feedback (seventeenth pass)
+
+Tried 62 style requests such as "emoji off", "turn off emojis", "skip the jokes", "english please", "be nicer", "ELI5", "bullet points", "just the answer", "wayyy shorter", "reply in español" and "reply in 中文".
+
+As a user, the clearest ways to say "no emoji", "no jokes" and "back to English" were ignored and went to the model, so the setting stayed unchanged.
+
+Fixed: parseFeedback in brain/personal.js now reads "emoji off" and "turn off emojis" as no emoji, "skip the jokes" and "cut the puns" as the plain tone, and a bare "english" or "english please" as English. Test added in test/personal.test.js and checked to fail before the change.
+
+Left for later: "be nicer", "ELI5", bullet point requests, "just the answer", "one sentence answers", "too much text" and "wayyy shorter" have no rule. Language names in other languages are still unknown. The 5 failures in `npm test` are the usual WordNet and demo ones from the sandbox install.

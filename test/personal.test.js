@@ -430,3 +430,11 @@ test('onboarding does not turn "not allergic" into an allergy, and reads "it\'s 
   assert.deepStrictEqual(onboardingResult({ allergies: 'lactose' }).facts, ["I'm intolerant to lactose"]);
   assert.deepStrictEqual(onboardingResult({ allergies: 'celiac' }).facts, ['I avoid gluten (celiac)']);
 });
+
+test('style feedback: "emoji off", "skip the jokes" and "english please"', () => {
+  assert.deepStrictEqual(parseFeedback('emoji off').patch, { emoji: false });
+  assert.deepStrictEqual(parseFeedback('turn off emojis').patch, { emoji: false });
+  assert.deepStrictEqual(parseFeedback('skip the jokes').patch, { tone: 'plain' });
+  assert.deepStrictEqual(parseFeedback('english please').patch, { language: '' });
+  assert.strictEqual(parseFeedback('spanish'), null);
+});
